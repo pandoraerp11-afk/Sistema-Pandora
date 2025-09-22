@@ -18,18 +18,10 @@ services:
         fromDatabase:
           name: sitema-pandora-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: sitema-pandora-redis
-          type: redis
       - key: RENDER_EXTERNAL_URL
         fromService:
           name: sitema-pandora
           type: web
-  - type: redis
-    name: sitema-pandora-redis
-    plan: free
-    ipAllowList: []
 
 databases:
   - name: sitema-pandora-db

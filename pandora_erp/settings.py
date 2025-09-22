@@ -9,7 +9,7 @@ import warnings
 from datetime import timedelta
 from pathlib import Path
 
-import core.monkeypatches  # noqa: F401  # aplica monkeypatches globais cedo
+import core.monkeypatches  # type: ignore[reportMissingImports]  # noqa: F401  # aplica monkeypatches globais cedo
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
