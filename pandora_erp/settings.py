@@ -4,12 +4,14 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import warnings
 from datetime import timedelta
 from pathlib import Path
 
-import core.monkeypatches  # type: ignore[reportMissingImports]  # noqa: F401  # aplica monkeypatches globais cedo
+# Aplica monkeypatches globais cedo sem depender de análise estática
+importlib.import_module("core.monkeypatches")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
