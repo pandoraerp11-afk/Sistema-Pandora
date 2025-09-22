@@ -38,12 +38,24 @@ ALLOWED_HOSTS = [
     "https://8000-i881injdm9bubmu7elb87-5ff893a2.manusvm.computer",
     "*",
 ]
-
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     "https://8000-i881injdm9bubmu7elb87-5ff893a2.manusvm.computer",
 ]
+
+# Render.com: adicionar host/origem dinamicamente se variável estiver presente
+_render_external_url = os.environ.get("RENDER_EXTERNAL_URL")
+if _render_external_url:
+    from urllib.parse import urlparse
+
+    _p = urlparse(_render_external_url)
+    if _p.hostname and _p.hostname not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_p.hostname)
+    if _p.scheme and _p.hostname:
+        _origin = f"{_p.scheme}://{_p.hostname}"
+        if _origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_origin)
 
 INSTALLED_APPS = [
     # Aplicação ASGI em primeiro lugar
@@ -181,6 +193,29 @@ DATABASES = {
     },
 }
 
+# Suporte a DATABASE_URL (Render/Heroku). Se definida, sobrescreve a configuração padrão.
+_db_url = os.environ.get("DATABASE_URL")
+if _db_url:
+    import importlib
+    try:
+        _djdb = importlib.import_module("dj_database_url")
+    except ModuleNotFoundError:
+        from urllib.parse import urlparse
+        url = urlparse(_db_url)
+        if url.scheme in {"postgres", "postgresql"}:
+            DATABASES["default"] = {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": (url.path or "/")[1:],
+                "USER": url.username or "",
+                "PASSWORD": url.password or "",
+                "HOST": url.hostname or "",
+                "PORT": str(url.port or ""),
+                "CONN_MAX_AGE": 600,
+                "OPTIONS": {"sslmode": "require"},
+            }
+    else:
+        DATABASES["default"] = _djdb.parse(_db_url, conn_max_age=600, ssl_require=True)
+
 # Configuração específica para habilitar foreign keys no SQLite
 engine_val = DATABASES["default"].get("ENGINE")
 if isinstance(engine_val, str) and "sqlite" in engine_val:
@@ -226,6 +261,10 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Armazenamento otimizado de estáticos em produção (WhiteNoise)
+if not DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ----------------------------------------------------------------------------
 # Warnings Filters (redução de ruído deprecações conhecidas)

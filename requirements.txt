@@ -15,6 +15,7 @@ drf-yasg>=1.21.0
 
 # Banco de Dados PostgreSQL (produção)
 psycopg2-binary>=2.9.9
+dj-database-url>=2.2.0
 
 # Formulários e UI (CONFIGURADO PARA BOOTSTRAP 5)
 django-crispy-forms>=2.0

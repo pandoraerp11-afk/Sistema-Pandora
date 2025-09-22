@@ -29,11 +29,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.13 /usr/local/lib/python3.13
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app /app
+
+# Entrypoint: migrações e estáticos antes de iniciar
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && chown appuser:appuser /app/entrypoint.sh
+
 USER appuser
 
 EXPOSE 8000
 ENV GUNICORN_WORKERS=3 GUNICORN_TIMEOUT=90
-CMD ["gunicorn", "pandora_erp.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "3", "--timeout", "90"]
+CMD ["/app/entrypoint.sh"]
 
 # Target de desenvolvimento (executar com --target dev)
 FROM builder AS dev
