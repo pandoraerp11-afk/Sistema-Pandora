@@ -1,0 +1,23 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% block title %}Minhas Propostas{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <h2>Minhas Propostas</h2>
+  <table class="table table-sm table-striped">
+    <thead><tr><th>Cotação</th><th>Status</th><th>Total Estimado</th><th>Atualizado</th><th></th></tr></thead>
+    <tbody>
+      {% for p in propostas %}
+        <tr>
+          <td>{{ p.cotacao.codigo }} - {{ p.cotacao.titulo }}</td>
+          <td>{{ p.get_status_display }}</td>
+          <td>{{ p.total_estimado|default:'-' }}</td>
+          <td>{{ p.updated_at|date:'d/m/Y H:i' }}</td>
+          <td><a href="{% url 'cotacoes:portal-proposta-detail' p.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-muted">Nenhuma proposta.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

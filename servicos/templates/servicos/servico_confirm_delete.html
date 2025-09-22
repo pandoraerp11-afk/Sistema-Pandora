@@ -1,0 +1,47 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static i18n %}
+
+{% block page_title %}{% trans "Confirmar Exclusão" %}{% endblock %}
+
+{% block content_header %}
+<div class="container-fluid">
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1>{% trans "Confirmar Exclusão" %}</h1>
+        </div>
+        <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Início" %}</a></li>
+                <li class="breadcrumb-item"><a href="{{ object.get_list_url }}">{% trans "Serviços" %}</a></li>
+                <li class="breadcrumb-item active">{% trans "Confirmar Exclusão" %}</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card card-danger" data-aos="fade-up">
+                <div class="card-header">
+                    <h3 class="card-title">{% trans "Excluir Serviço" %}</h3>
+                </div>
+                <div class="card-body">
+                    <p>{% blocktrans %}Você tem certeza que deseja excluir o serviço permanentemente?{% endblocktrans %}</p>
+                    <h4 class="text-center my-3"><strong>"{{ object.nome_servico }}"</strong></h4>
+                    <p class="text-danger text-center"><i class="fas fa-exclamation-triangle me-1"></i> {% trans "Esta ação não pode ser desfeita." %}</p>
+                </div>
+                <div class="card-footer text-right">
+                    <form method="post">
+                        {% csrf_token %}
+                        <a href="{{ object.get_absolute_url }}" class="btn btn-secondary">{% trans "Cancelar" %}</a>
+                        <button type="submit" class="btn btn-danger">{% trans "Sim, Excluir Permanentemente" %}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

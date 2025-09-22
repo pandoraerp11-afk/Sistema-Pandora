@@ -1,0 +1,69 @@
+{% extends 'pandora_wizard_form_ultra_modern.html' %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+  <div class="row">
+    <div class="col-md-8">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.logradouro label='Logradouro' %}
+    </div>
+    <div class="col-md-2">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.numero label='Número' %}
+    </div>
+    <div class="col-md-2">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.complemento label='Compl.' %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.bairro label='Bairro' %}
+    </div>
+    <div class="col-md-4">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.cidade label='Cidade' %}
+    </div>
+    <div class="col-md-2">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.uf label='UF' %}
+    </div>
+    <div class="col-md-2">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.cep label='CEP' %}
+    </div>
+  </div>
+  <input type="hidden" id="id_main-additional_addresses_json" name="main-additional_addresses_json" />
+  <div class="mt-3">
+    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addAddress()"><i class="fas fa-plus"></i> Adicionar Endereço</button>
+    <div id="addressList" class="mt-2"></div>
+  </div>
+
+  <script>
+    const addressList = document.getElementById('addressList');
+    function addAddress(){
+      const idx = addressList.children.length + 1;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'card card-body mb-2';
+      wrapper.innerHTML = `
+        <div class="row g-2">
+          <div class="col-md-6"><input class="form-control" placeholder="Logradouro"></div>
+          <div class="col-md-2"><input class="form-control" placeholder="Número"></div>
+          <div class="col-md-4"><input class="form-control" placeholder="Complemento"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="Bairro"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="Cidade"></div>
+          <div class="col-md-2"><input class="form-control" placeholder="UF"></div>
+          <div class="col-md-2"><input class="form-control" placeholder="CEP"></div>
+          <div class="col-md-2 d-grid"><button class="btn btn-outline-danger" onclick="this.closest('.card').remove(); syncAddresses()">Remover</button></div>
+        </div>`;
+      addressList.appendChild(wrapper);
+      syncAddresses();
+    }
+    function syncAddresses(){
+      const list = [];
+      addressList.querySelectorAll('.card').forEach(c => {
+        const inputs = c.querySelectorAll('input');
+        list.push({
+          logradouro: inputs[0].value, numero: inputs[1].value, complemento: inputs[2].value,
+          bairro: inputs[3].value, cidade: inputs[4].value, uf: inputs[5].value, cep: inputs[6].value
+        });
+      });
+      document.getElementById('id_main-additional_addresses_json').value = JSON.stringify(list);
+    }
+    addressList?.addEventListener('input', syncAddresses);
+  </script>
+{% endblock %}

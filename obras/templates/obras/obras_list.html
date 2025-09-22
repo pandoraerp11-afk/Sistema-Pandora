@@ -1,0 +1,56 @@
+{% extends "pandora_list_ultra_modern.html" %}
+
+{% block title %}Obras - Lista{% endblock %}
+
+{% block list_icon %}fas fa-hard-hat{% endblock %}
+{% block list_title %}Obras{% endblock %}
+{% block list_subtitle %}Gerenciamento de obras cadastradas{% endblock %}
+
+{% block list_actions %}
+{% if perms_ui.can_add|default:perms.can_add|default:True %}
+<a href="{% url 'obras:obra_wizard' %}" class="btn btn-primary">
+    <i class="fas fa-plus me-1"></i> Nova Obra
+</a>
+{% endif %}
+<a href="{% url 'obras:obras_home' %}" class="btn btn-outline-info">
+    <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+</a>
+{% endblock %}
+
+{% block list_metrics %}
+<div class="row g-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="action-card h-100"><div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-info text-white mx-auto mb-2"><i class="fas fa-hard-hat"></i></div>
+            <div class="display-6 fw-bold text-info mb-0">{{ total_count }}</div>
+            <small class="text-muted">Total de Obras</small>
+        </div></div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="action-card h-100"><div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-success text-white mx-auto mb-2"><i class="fas fa-play-circle"></i></div>
+            <div class="display-6 fw-bold text-success mb-0">{{ active_count }}</div>
+            <small class="text-muted">Ativas</small>
+        </div></div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="action-card h-100"><div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-warning text-white mx-auto mb-2"><i class="fas fa-pause-circle"></i></div>
+            <div class="display-6 fw-bold text-warning mb-0">{{ inactive_count }}</div>
+            <small class="text-muted">Pausadas</small>
+        </div></div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="action-card h-100"><div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-danger text-white mx-auto mb-2"><i class="fas fa-clock"></i></div>
+            <div class="display-6 fw-bold text-danger mb-0">{{ recent_count }}</div>
+            <small class="text-muted">Recentes</small>
+        </div></div>
+    </div>
+    </div>
+{% endblock %}
+
+{% block list_table %}
+{% load render_table from django_tables2 %}
+{% render_table table %}
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Gerenciamento de Usuários - Pandora ERP{% endblock %}
+
+{% block page_title %}Usuários{% endblock %}
+{% block page_subtitle %}Gerencie os usuários do sistema{% endblock %}
+
+{% block add_button_url %}{% url 'user_management:usuario_create' %}{% endblock %}
+{% block add_button_text %}Novo Usuário{% endblock %}
+
+{% block table_content %}
+{% if object_list %}
+<div class="table-responsive">
+    <table class="table table-hover" id="usuariosTable">
+        <thead>
+            <tr>
+                <th class="col-usuario">
+                    <i class="fas fa-user me-2"></i>Usuário
+                </th>
+                <th class="col-email">
+                    <i class="fas fa-envelope me-2"></i>Email
+                </th>
+                <th class="col-status text-center">
+                    <i class="fas fa-toggle-on me-2"></i>Status
+                </th>
+                <th class="col-tipo text-center">
+                    <i class="fas fa-user-tag me-2"></i>Tipo
+                </th>
+                <th class="col-ultimo-login text-center">
+                    <i class="fas fa-clock me-2"></i>Último Login
+                </th>
+                <th class="col-criado text-center">
+                    <i class="fas fa-calendar-plus me-2"></i>Criado em
+                </th>
+                <th class="col-acoes">
+                    <i class="fas fa-cogs me-2"></i>Ações
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for usuario in object_list %}
+            <tr>
+                <td class="col-usuario">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-3">
+                            {% if usuario.avatar %}
+                                <img src="{{ usuario.avatar.url }}" alt="{{ usuario.user.get_full_name|default:usuario.user.username }}" class="rounded-circle">
+                            {% else %}
+                                <div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">
+                                    {{ usuario.user.first_name|first|default:usuario.user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h6 class="mb-0">
+                                {{ usuario.user.get_full_name|default:usuario.user.username }}
+                                {% if usuario.user.is_superuser %}
+                                    <span class="badge bg-warning text-dark ms-2" title="Superusuário">
+                                        <i class="fas fa-crown"></i>
+                                    </span>
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">@{{ usuario.user.username }}</small>
+                        </div>
+                    </div>
+                </td>
+                <td class="col-email">
+                    <div class="text-truncate">
+                        {% if usuario.user.email %}
+                            <span>{{ usuario.user.email }}</span>
+                        {% else %}
+                            <span class="text-muted">Não informado</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="col-status text-center">
+                    {% if usuario.user.is_active %}
+                        <span class="badge badge-ultra-modern badge-status-compact badge-status-ativo">
+                            <i class="fas fa-check-circle"></i> Ativo
+                        </span>
+                    {% else %}
+                        <span class="badge badge-ultra-modern badge-status-compact badge-status-inativo">
+                            <i class="fas fa-times-circle"></i> Inativo
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="col-tipo text-center">
+                    {% if usuario.user.is_superuser %}
+                        <span class="badge badge-ultra-modern badge-type-compact badge-type-admin">
+                            <i class="fas fa-crown"></i> Super
+                        </span>
+                    {% elif usuario.user.is_staff %}
+                        <span class="badge badge-ultra-modern badge-type-compact badge-type-staff">
+                            <i class="fas fa-user-cog"></i> Staff
+                        </span>
+                    {% else %}
+                        <span class="badge badge-ultra-modern badge-type-compact badge-type-user">
+                            <i class="fas fa-user"></i> Comum
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="col-ultimo-login text-center">
+                    <div class="text-xs">
+                        {% if usuario.user.last_login %}
+                            <div>{{ usuario.user.last_login|date:"d/m/Y" }}</div>
+                            <small class="text-muted">{{ usuario.user.last_login|date:"H:i" }}</small>
+                        {% else %}
+                            <span class="text-muted">Nunca</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="col-criado text-center">
+                    <div class="text-xs">
+                        <div>{{ usuario.user.date_joined|date:"d/m/Y" }}</div>
+                        <small class="text-muted">{{ usuario.user.date_joined|date:"H:i" }}</small>
+                    </div>
+                </td>
+                <td class="col-acoes">
+                    <div class="d-flex gap-1 justify-content-center">
+                        <a href="{% url 'user_management:usuario_detail' usuario.pk %}" class="btn btn-outline-info btn-sm" title="Visualizar">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'user_management:usuario_update' usuario.pk %}" class="btn btn-outline-primary btn-sm" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% comment %}Botão de permissões - implementar futuramente{% endcomment %}
+                        {% if usuario.user.is_active %}
+                        <button type="button" class="btn btn-outline-warning btn-sm" title="Desativar Usuário" onclick="toggleUserStatus({{ usuario.pk }}, false)">
+                            <i class="fas fa-user-times"></i>
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-outline-success btn-sm" title="Ativar Usuário" onclick="toggleUserStatus({{ usuario.pk }}, true)">
+                            <i class="fas fa-user-check"></i>
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm" title="Resetar Senha" onclick="resetUserPassword({{ usuario.pk }})">
+                            <i class="fas fa-unlock-alt"></i>
+                        </button>
+                        {% if not usuario.user.is_superuser %}
+                        <a href="{% url 'user_management:usuario_delete' usuario.pk %}" class="btn btn-outline-danger btn-sm" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <div class="empty-state">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5>Nenhum usuário encontrado</h5>
+                        <p class="text-muted">Nenhum usuário corresponde aos filtros aplicados.</p>
+                        <a href="{% url 'user_management:usuario_create' %}" class="btn btn-outline-primary" title="Criar primeiro usuário">
+                            <i class="fas fa-plus"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">
+        <i class="fas fa-users"></i>
+    </div>
+    <h3>Nenhum usuário encontrado</h3>
+    <p>Adicione o primeiro usuário para começar.</p>
+    <a href="{% url 'user_management:usuario_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Adicionar Usuário
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Temporariamente removendo a paginação para padronização futura */
+.card-footer {
+    display: none !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Função para alternar status do usuário
+function toggleUserStatus(userId, activate) {
+    const action = activate ? 'ativar' : 'desativar';
+    const message = activate ? 'Usuário será ativado' : 'Usuário será desativado';
+    
+    if (confirm(`Tem certeza que deseja ${action} este usuário?`)) {
+        // TODO: Implementar chamada AJAX para alternar status
+        console.log(`${action} usuário ${userId}`);
+        // Por enquanto, apenas recarrega a página
+        window.location.reload();
+    }
+}
+
+// Função para resetar senha do usuário
+function resetUserPassword(userId) {
+    if (confirm('Tem certeza que deseja resetar a senha deste usuário? Uma nova senha será enviada por email.')) {
+        // TODO: Implementar chamada AJAX para resetar senha
+        console.log(`Reset senha usuário ${userId}`);
+        // Por enquanto, apenas mostra mensagem
+        alert('Funcionalidade em desenvolvimento. Nova senha será enviada por email.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Funcionalidades futuras podem ser adicionadas aqui
+    console.log('Lista de usuários carregada com funcionalidades extras');
+});
+</script>
+{% endblock %}

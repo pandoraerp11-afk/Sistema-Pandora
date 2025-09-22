@@ -1,0 +1,395 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Selecionar Empresa - Pandora ERP{% endblock %}
+
+{% block page_title %}Selecionar Empresa{% endblock %}
+
+{% block page_subtitle %}Escolha a empresa para acessar o sistema{% endblock %}
+
+{% block form_title %}Empresas Disponíveis{% endblock %}
+
+{% block extra_css %}
+<style>
+
+.tenant-card {
+    display: block;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.tenant-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.15);
+    text-decoration: none;
+    color: inherit;
+}
+
+.tenant-card.selected {
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    border-color: #0d6efd;
+    color: white;
+}
+
+.tenant-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin: 0 auto 1rem;
+    transition: all 0.3s ease;
+}
+
+.tenant-card:hover .tenant-icon {
+    transform: scale(1.05);
+}
+
+.tenant-card.selected .tenant-icon {
+    background: white;
+    color: #0d6efd;
+}
+
+.tenant-info h5 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.tenant-info p {
+    color: #6c757d;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.tenant-card.selected .tenant-info p {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.tenant-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e9ecef;
+    font-size: 0.8rem;
+}
+
+.tenant-card.selected .tenant-meta {
+    border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.tenant-type {
+    display: flex;
+    align-items: center;
+    color: #6c757d;
+}
+
+.tenant-card.selected .tenant-type {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.tenant-status {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #198754;
+}
+
+.tenant-card.selected .tenant-status {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.no-tenants {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+}
+
+.no-tenants-icon {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 1.5rem;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .tenant-card {
+        padding: 1.25rem;
+    }
+    
+    .tenant-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .tenant-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}
+
+{% block form_content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-aos="fade-up">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-body">
+                    <h5 class="fw-bold text-primary mb-4" translate="no">
+                        <i class="fas fa-building me-2"></i>
+                        Empresas Disponíveis
+                    </h5>
+                    
+                    {% if user_tenants %}
+                        <div class="row">
+                            {% for tenant in user_tenants %}
+                            <div class="col-md-6 mb-3" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1|stringformat:'d' }}00">
+                                <a href="{% url 'core:tenant_select' %}?tenant_id={{ tenant.id }}" class="tenant-card" translate="no">
+                                    <div class="tenant-icon">
+                                        {% if tenant.tipo_pessoa == 'PJ' %}
+                                        <i class="fas fa-building"></i>
+                                        {% else %}
+                                        <i class="fas fa-user"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="tenant-info">
+                                        <h5>
+                                            {% if tenant.tipo_pessoa == 'PJ' and tenant.pessoajuridica_info %}
+                                                {{ tenant.pessoajuridica_info.nome_fantasia|default:tenant.pessoajuridica_info.razao_social }}
+                                            {% elif tenant.tipo_pessoa == 'PF' and tenant.pessoafisica_info %}
+                                                {{ tenant.pessoafisica_info.nome_completo }}
+                                            {% else %}
+                                                {{ tenant.name }}
+                                            {% endif %}
+                                        </h5>
+                                        <p>
+                                            {% if tenant.tipo_pessoa == 'PJ' and tenant.pessoajuridica_info %}
+                                                {{ tenant.pessoajuridica_info.razao_social }}
+                                            {% elif tenant.tipo_pessoa == 'PF' and tenant.pessoafisica_info %}
+                                                {{ tenant.pessoafisica_info.nome_completo }}
+                                            {% else %}
+                                                {{ tenant.name }}
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="tenant-meta">
+                                        <div class="tenant-type">
+                                            {% if tenant.tipo_pessoa == 'PJ' and tenant.pessoajuridica_info %}
+                                            <i class="fas fa-id-card me-1"></i> CNPJ: {{ tenant.pessoajuridica_info.cnpj|default:"Não informado" }}
+                                            {% elif tenant.tipo_pessoa == 'PF' and tenant.pessoafisica_info %}
+                                            <i class="fas fa-id-card me-1"></i> CPF: {{ tenant.pessoafisica_info.cpf|default:"Não informado" }}
+                                            {% else %}
+                                            <i class="fas fa-building me-1"></i> {{ tenant.get_tipo_pessoa_display }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="tenant-status">
+                                            <i class="fas fa-check-circle me-1"></i> {{ tenant.get_status_display|default:"Ativo" }}
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="no-tenants" data-aos="fade-up">
+                            <div class="no-tenants-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <h5>Nenhuma empresa encontrada</h5>
+                            <p>Você não está vinculado a nenhuma empresa ativa no sistema.</p>
+                            <p class="text-muted">Entre em contato com o administrador para obter acesso.</p>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            {% if user.is_superuser %}
+                            <a href="{% url 'core:tenant_create' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i> Nova Empresa
+                            </a>
+                            <a href="{% url 'core:tenant_list' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list me-1"></i> Gerenciar Empresas
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'core:logout' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-sign-out-alt me-1"></i> Sair do Sistema
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview/Info Panel -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-user me-2"></i>
+                        Informações do Usuário
+                    </h6>
+                    
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-3 fs-5" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                                    <div class="text-muted small">{{ user.email|default:"Email não informado" }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="fw-bold text-primary">{{ user_tenants|length }}</div>
+                                        <div class="small text-muted">Empresa{{ user_tenants|length|pluralize }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        {% if user.is_superuser %}
+                                        <div class="fw-bold text-warning">Super Admin</div>
+                                        <div class="small text-muted">Acesso Total</div>
+                                        {% else %}
+                                        <div class="fw-bold text-success">Usuário</div>
+                                        <div class="small text-muted">Status</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-clock me-2"></i>
+                        Acesso Recente
+                    </h6>
+                    
+                    <div class="d-flex align-items-center text-muted">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        <span class="small">Último login: {{ user.last_login|date:"d/m/Y H:i"|default:"Primeiro acesso" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add loading state to tenant cards
+    const tenantCards = document.querySelectorAll('.tenant-card');
+    tenantCards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Add loading state
+            const icon = this.querySelector('.tenant-icon i');
+            const originalClass = icon.className;
+            icon.className = 'fas fa-spinner fa-spin';
+            
+            // Add loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div>';
+            this.style.position = 'relative';
+            this.appendChild(loadingOverlay);
+            
+            // Navigate after short delay
+            setTimeout(() => {
+                window.location.href = this.href;
+            }, 800);
+        });
+        
+        // Add hover effects
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Auto-hide messages
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert.querySelector('.btn-close')) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }
+        });
+    }, 5000);
+
+    // Add animation to action buttons
+    const actionButtons = document.querySelectorAll('.btn');
+    actionButtons.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-1px)';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,507 @@
+{% load widget_tweaks %}
+
+<!-- Modal para Entrada de Estoque -->
+<div class="modal fade" id="modalEntrada" tabindex="-1" aria-labelledby="modalEntradaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalEntradaLabel">
+                    <i class="fas fa-arrow-up me-2"></i>Nova Entrada de Estoque
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="formEntrada" data-url="{% url 'estoque:movimento_entrada' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Produto e Lote -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="id_produto" class="form-label">
+                                <i class="fas fa-cube me-1"></i>Produto *
+                            </label>
+                            <select name="produto" id="id_produto" class="form-select produto-select" required>
+                                <option value="">Selecione um produto...</option>
+                            </select>
+                            <div class="form-text">
+                                Digite para pesquisar por nome ou código do produto
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="id_lote" class="form-label">
+                                <i class="fas fa-barcode me-1"></i>Lote
+                            </label>
+                            <input type="text" name="lote_codigo" id="id_lote" class="form-control" 
+                                   placeholder="Código do lote">
+                            <div class="form-text">
+                                Opcional - deixe em branco para produtos sem controle de lote
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informações do Produto Selecionado -->
+                    <div id="produto-info" class="alert alert-info d-none">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <strong id="produto-nome"></strong>
+                                <br><small class="text-muted" id="produto-codigo"></small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="fw-semibold text-success">Estoque Atual</div>
+                                <div class="fs-5" id="produto-estoque">0</div>
+                                <small class="text-muted" id="produto-unidade">UN</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quantidade e Depósito -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="id_quantidade" class="form-label">
+                                <i class="fas fa-hashtag me-1"></i>Quantidade *
+                            </label>
+                            <input type="number" name="quantidade" id="id_quantidade" class="form-control" 
+                                   min="0.01" step="0.01" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="id_custo_unitario" class="form-label">
+                                <i class="fas fa-dollar-sign me-1"></i>Custo Unitário
+                            </label>
+                            <input type="number" name="custo_unitario" id="id_custo_unitario" class="form-control" 
+                                   min="0" step="0.01" placeholder="0,00">
+                            <div class="form-text">
+                                Opcional - custo por unidade
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="id_deposito" class="form-label">
+                                <i class="fas fa-warehouse me-1"></i>Depósito *
+                            </label>
+                            <select name="deposito" id="id_deposito" class="form-select" required>
+                                <option value="">Selecione um depósito...</option>
+                                {% for deposito in depositos %}
+                                    <option value="{{ deposito.id }}">{{ deposito.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Data de Validade e Vencimento (se aplicável) -->
+                    <div class="row mb-3" id="dados-lote" style="display: none;">
+                        <div class="col-md-6">
+                            <label for="id_data_fabricacao" class="form-label">
+                                <i class="fas fa-calendar-plus me-1"></i>Data de Fabricação
+                            </label>
+                            <input type="date" name="data_fabricacao" id="id_data_fabricacao" class="form-control">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="id_data_validade" class="form-label">
+                                <i class="fas fa-calendar-times me-1"></i>Data de Validade
+                            </label>
+                            <input type="date" name="data_validade" id="id_data_validade" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <!-- Referência Externa -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_ref_externa" class="form-label">
+                                <i class="fas fa-link me-1"></i>Referência Externa
+                            </label>
+                            <input type="text" name="ref_externa" id="id_ref_externa" class="form-control" 
+                                   placeholder="Ex: Nota Fiscal, Pedido de Compra...">
+                            <div class="form-text">
+                                Opcional - documento ou referência relacionada
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="id_solicitante" class="form-label">
+                                <i class="fas fa-user me-1"></i>Solicitante
+                            </label>
+                            <input type="text" name="solicitante_nome" id="id_solicitante" class="form-control" 
+                                   placeholder="Nome do solicitante">
+                        </div>
+                    </div>
+                    
+                    <!-- Observações -->
+                    <div class="mb-3">
+                        <label for="id_observacoes" class="form-label">
+                            <i class="fas fa-sticky-note me-1"></i>Observações
+                        </label>
+                        <textarea name="observacoes" id="id_observacoes" class="form-control" 
+                                rows="3" placeholder="Informações adicionais sobre a entrada..."></textarea>
+                    </div>
+                    
+                    <!-- Aprovação (se necessária) -->
+                    <div id="aprovacao-section" class="mb-3" style="display: none;">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Atenção:</strong> Esta entrada requer aprovação devido ao valor alto ou políticas de estoque.
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="solicitar_aprovacao" 
+                                   id="id_solicitar_aprovacao">
+                            <label class="form-check-label" for="id_solicitar_aprovacao">
+                                Solicitar aprovação antes de processar
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Evidências -->
+                    <div class="mb-3">
+                        <label for="id_evidencias" class="form-label">
+                            <i class="fas fa-paperclip me-1"></i>Evidências (Anexos)
+                        </label>
+                        <input type="file" name="evidencias" id="id_evidencias" class="form-control" 
+                               multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+                        <div class="form-text">
+                            Opcional - anexe fotos, documentos ou comprovantes
+                        </div>
+                        
+                        <div id="preview-evidencias" class="mt-2"></div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="processarEntrada('salvar')">
+                        <i class="fas fa-save me-1"></i>Salvar Rascunho
+                    </button>
+                    
+                    <button type="button" class="btn btn-success" onclick="processarEntrada('processar')">
+                        <i class="fas fa-check me-1"></i>Processar Entrada
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.produto-select {
+    min-height: 38px;
+}
+
+#produto-info {
+    border-left: 4px solid #198754;
+}
+
+.preview-file {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.preview-file img {
+    max-width: 100px;
+    max-height: 100px;
+    border-radius: 4px;
+}
+
+/* Animação para carregamento */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicialização do Select2 para produtos
+    $('#id_produto').select2({
+        dropdownParent: $('#modalEntrada'),
+        ajax: {
+            url: '{% url "estoque:api_produtos_search" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    search: params.term,
+                    page: params.page
+                };
+            },
+            processResults: function (data, params) {
+                params.page = params.page || 1;
+                return {
+                    results: data.results.map(item => ({
+                        id: item.id,
+                        text: `${item.nome} (${item.codigo || 'S/C'})`,
+                        produto: item
+                    })),
+                    pagination: {
+                        more: data.next !== null
+                    }
+                };
+            }
+        },
+        placeholder: 'Digite para pesquisar produtos...',
+        minimumInputLength: 2
+    });
+    
+    // Evento ao selecionar produto
+    $('#id_produto').on('select2:select', function (e) {
+        const produto = e.params.data.produto;
+        mostrarInfoProduto(produto);
+        verificarControleLote(produto);
+        calcularAprovacao();
+    });
+    
+    // Preview de evidências
+    $('#id_evidencias').on('change', function() {
+        previewEvidencias(this.files);
+    });
+    
+    // Cálculo automático de total
+    $('#id_quantidade, #id_custo_unitario').on('input', function() {
+        calcularTotal();
+        verificarAprovacao();
+    });
+    
+    // Validação de datas
+    $('#id_data_fabricacao, #id_data_validade').on('change', function() {
+        validarDatas();
+    });
+});
+
+function mostrarInfoProduto(produto) {
+    $('#produto-nome').text(produto.nome);
+    $('#produto-codigo').text(produto.codigo || 'Sem código');
+    $('#produto-estoque').text(produto.estoque_atual || 0);
+    $('#produto-unidade').text(produto.unidade_medida || 'UN');
+    
+    $('#produto-info').removeClass('d-none');
+    
+    // Preencher custo padrão se disponível
+    if (produto.custo_medio && !$('#id_custo_unitario').val()) {
+        $('#id_custo_unitario').val(produto.custo_medio.toFixed(2));
+    }
+}
+
+function verificarControleLote(produto) {
+    if (produto.controla_lote) {
+        $('#dados-lote').show();
+        $('#id_lote').attr('required', true);
+    } else {
+        $('#dados-lote').hide();
+        $('#id_lote').removeAttr('required');
+    }
+}
+
+function calcularTotal() {
+    const quantidade = parseFloat($('#id_quantidade').val()) || 0;
+    const custoUnitario = parseFloat($('#id_custo_unitario').val()) || 0;
+    const total = quantidade * custoUnitario;
+    
+    // Exibir total se houver valores
+    if (quantidade > 0 && custoUnitario > 0) {
+        if (!$('#total-info').length) {
+            $('#id_custo_unitario').parent().append(
+                `<div id="total-info" class="mt-2">
+                    <small class="text-muted">Total: R$ <span id="valor-total">${total.toFixed(2)}</span></small>
+                </div>`
+            );
+        } else {
+            $('#valor-total').text(total.toFixed(2));
+        }
+    } else {
+        $('#total-info').remove();
+    }
+}
+
+function verificarAprovacao() {
+    const quantidade = parseFloat($('#id_quantidade').val()) || 0;
+    const custoUnitario = parseFloat($('#id_custo_unitario').val()) || 0;
+    const total = quantidade * custoUnitario;
+    
+    // Configuração - valores que requerem aprovação (podem vir do backend)
+    const limiteAprovacao = 5000; // R$ 5.000
+    
+    if (total > limiteAprovacao) {
+        $('#aprovacao-section').show();
+        $('#id_solicitar_aprovacao').prop('checked', true);
+    } else {
+        $('#aprovacao-section').hide();
+        $('#id_solicitar_aprovacao').prop('checked', false);
+    }
+}
+
+function validarDatas() {
+    const dataFabricacao = $('#id_data_fabricacao').val();
+    const dataValidade = $('#id_data_validade').val();
+    
+    if (dataFabricacao && dataValidade) {
+        const fabricacao = new Date(dataFabricacao);
+        const validade = new Date(dataValidade);
+        
+        if (validade <= fabricacao) {
+            alert('A data de validade deve ser posterior à data de fabricação.');
+            $('#id_data_validade').val('');
+        }
+    }
+}
+
+function previewEvidencias(files) {
+    const preview = $('#preview-evidencias');
+    preview.empty();
+    
+    Array.from(files).forEach(file => {
+        const div = $('<div class="preview-file"></div>');
+        
+        if (file.type.startsWith('image/')) {
+            const img = $('<img>');
+            img.attr('src', URL.createObjectURL(file));
+            img.attr('alt', file.name);
+            div.append(img);
+        } else {
+            div.html(`
+                <i class="fas fa-file-alt fa-2x text-muted"></i>
+                <br><small>${file.name}</small>
+            `);
+        }
+        
+        const removeBtn = $('<button type="button" class="btn btn-sm btn-danger mt-1">×</button>');
+        removeBtn.on('click', function() {
+            div.remove();
+            // Recriar input file sem este arquivo
+            const dt = new DataTransfer();
+            Array.from($('#id_evidencias')[0].files).forEach(f => {
+                if (f !== file) dt.items.add(f);
+            });
+            $('#id_evidencias')[0].files = dt.files;
+        });
+        
+        div.append(removeBtn);
+        preview.append(div);
+    });
+}
+
+function processarEntrada(acao) {
+    const form = $('#formEntrada');
+    const formData = new FormData(form[0]);
+    
+    // Adicionar ação
+    formData.append('acao', acao);
+    
+    // Validação básica
+    if (!form[0].checkValidity()) {
+        form[0].reportValidity();
+        return;
+    }
+    
+    // Mostrar loading
+    mostrarLoading();
+    
+    // Enviar dados
+    fetch(form.data('url'), {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        esconderLoading();
+        
+        if (data.success) {
+            // Fechar modal
+            $('#modalEntrada').modal('hide');
+            
+            // Mostrar mensagem de sucesso
+            mostrarMensagem('success', data.message);
+            
+            // Recarregar lista se estiver na página de movimentos
+            if (typeof recarregarMovimentos === 'function') {
+                recarregarMovimentos();
+            }
+            
+            // Limpar formulário
+            form[0].reset();
+            $('#id_produto').val(null).trigger('change');
+            $('#produto-info').addClass('d-none');
+            $('#preview-evidencias').empty();
+            
+        } else {
+            mostrarMensagem('error', data.message || 'Erro ao processar entrada');
+            
+            // Mostrar erros de campos se houver
+            if (data.errors) {
+                Object.keys(data.errors).forEach(field => {
+                    const input = form.find(`[name="${field}"]`);
+                    input.addClass('is-invalid');
+                    input.siblings('.invalid-feedback').remove();
+                    input.after(`<div class="invalid-feedback">${data.errors[field].join(', ')}</div>`);
+                });
+            }
+        }
+    })
+    .catch(error => {
+        esconderLoading();
+        console.error('Erro:', error);
+        mostrarMensagem('error', 'Erro interno do sistema');
+    });
+}
+
+function mostrarLoading() {
+    $('.modal-content').append(`
+        <div class="loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Processando...</span>
+            </div>
+        </div>
+    `);
+}
+
+function esconderLoading() {
+    $('.loading-overlay').remove();
+}
+
+function mostrarMensagem(tipo, mensagem) {
+    // Implementar sistema de mensagens/toasts
+    if (typeof showToast === 'function') {
+        showToast(tipo, mensagem);
+    } else {
+        alert(mensagem);
+    }
+}
+
+// Limpar formulário ao fechar modal
+$('#modalEntrada').on('hidden.bs.modal', function() {
+    $('#formEntrada')[0].reset();
+    $('#id_produto').val(null).trigger('change');
+    $('#produto-info').addClass('d-none');
+    $('#dados-lote').hide();
+    $('#aprovacao-section').hide();
+    $('#preview-evidencias').empty();
+    $('#total-info').remove();
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+});
+</script>

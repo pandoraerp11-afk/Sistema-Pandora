@@ -1,0 +1,113 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Detalhes da Resposta para: {{ formulario.titulo }}</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">ID da Resposta:</dt>
+                        <dd class="col-sm-9">{{ resposta.pk }}</dd>
+
+                        <dt class="col-sm-3">Formulário:</dt>
+                        <dd class="col-sm-9">{{ formulario.titulo }}</dd>
+
+                        <dt class="col-sm-3">Usuário:</dt>
+                        <dd class="col-sm-9">{{ resposta.usuario.username|default:"Anônimo" }}</dd>
+
+                        <dt class="col-sm-3">Status:</dt>
+                        <dd class="col-sm-9">{{ resposta.get_status_display }}</dd>
+
+                        <dt class="col-sm-3">Enviado em:</dt>
+                        <dd class="col-sm-9">{{ resposta.enviado_em }}</dd>
+
+                        <dt class="col-sm-3">IP Address:</dt>
+                        <dd class="col-sm-9">{{ resposta.ip_address }}</dd>
+
+                        <dt class="col-sm-3">User Agent:</dt>
+                        <dd class="col-sm-9">{{ resposta.user_agent }}</dd>
+
+                        {% if resposta.analisado_por %}
+                            <dt class="col-sm-3">Analisado por:</dt>
+                            <dd class="col-sm-9">{{ resposta.analisado_por.username }}</dd>
+
+                            <dt class="col-sm-3">Analisado em:</dt>
+                            <dd class="col-sm-9">{{ resposta.analisado_em }}</dd>
+
+                            <dt class="col-sm-3">Observações da Análise:</dt>
+                            <dd class="col-sm-9">{{ resposta.observacoes_analise|default:"N/A" }}</dd>
+                        {% endif %}
+                    </dl>
+
+                    <h4>Dados da Resposta</h4>
+                    {% if dados_organizados %}
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Campo</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in dados_organizados %}
+                                    <tr>
+                                        <td>{{ item.campo.label }}</td>
+                                        <td>
+                                            {% if item.campo.tipo == 'file' or item.campo.tipo == 'image' %}
+                                                {% with arquivo=resposta.arquivos.filter(campo=item.campo.nome).first %}
+                                                    {% if arquivo %}
+                                                        <a href="{{ arquivo.arquivo.url }}" target="_blank">{{ arquivo.nome_original }}</a>
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% else %}
+                                                {{ item.valor|default:"N/A" }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>Nenhum dado encontrado para esta resposta.</p>
+                    {% endif %}
+
+                    {% if request.user.is_authenticated and request.user.is_staff %}
+                        <h4>Atualizar Status da Resposta</h4>
+                        <form method="post" action="{% url 'formularios_dinamicos:resposta_update_status' form_pk=formulario.pk resposta_pk=resposta.pk %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="id_status">Status:</label>
+                                <select name="status" id="id_status" class="form-control">
+                                    {% for choice_value, choice_label in resposta.STATUS_CHOICES %}
+                                        <option value="{{ choice_value }}" {% if resposta.status == choice_value %}selected{% endif %}>{{ choice_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_observacoes">Observações:</label>
+                                <textarea name="observacoes" id="id_observacoes" class="form-control" rows="3">{{ resposta.observacoes_analise|default:'' }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Atualizar Status</button>
+                        </form>
+                    {% endif %}
+
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'formularios_dinamicos:form_render' slug=formulario.slug %}" class="btn btn-secondary">Voltar para o Formulário</a>
+                    {% if request.user.is_authenticated and request.user.is_staff %}
+                        <a href="{% url 'formularios_dinamicos:resposta_list' form_pk=formulario.pk %}" class="btn btn-info">Ver Todas as Respostas</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

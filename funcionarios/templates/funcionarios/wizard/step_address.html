@@ -1,0 +1,207 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{# Template espelhado do core/wizard/step_address.html adaptado para campos de Funcionário (#}
+{# Campos do Funcionário usam prefixo endereco_*. Mantemos mesma experiência visual. #}
+
+{% block step_content %}
+  <div class="alert alert-info border-0 mb-4 wizard-alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-map-marker-alt text-info me-3" style="font-size: 1.5rem;"></i>
+      <div>
+        <h6 class="mb-1 text-info mb-0">Endereço Principal</h6>
+        <small class="text-muted">Digite o CEP para preenchimento automático dos campos</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="wizard-section">
+    <h5 class="wizard-section-title">
+      <i class="fas fa-home wizard-icon"></i>
+      Dados do Endereço
+    </h5>
+    <div class="row g-2">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_cep field_size='xs-auto' %}
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_logradouro field_size='lg' %}
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_numero field_size='xs' %}
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_complemento field_size='grow' %}
+    </div>
+    <div class="row g-2 mt-0">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_bairro field_size='sm' %}
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_cidade field_size='md' %}
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_uf field_size='sm' %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.main.endereco_pais field_size='xs' %}
+    </div>
+  </div>
+
+  <div class="wizard-section">
+    <div class="d-flex align-items-center justify-content-between">
+      <h5 class="wizard-section-title mb-0">
+        <i class="fas fa-map-pin wizard-icon"></i>
+        Endereços Adicionais (opcional)
+      </h5>
+      <button type="button"
+          class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+          id="btnAddAddress"
+          formnovalidate
+          data-bs-toggle="tooltip"
+          data-bs-placement="left"
+          title="Clique para adicionar outros endereços"
+          aria-label="Adicionar endereço"
+          style="width: 2rem; height: 2rem;">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+    {% if forms.main.additional_addresses_json %}
+      {% render_field forms.main.additional_addresses_json class+="wizard-additional-addresses-json" style="display:none" %}
+    {% endif %}
+    <div class="table-responsive mt-3">
+      <table class="table table-sm align-middle mb-0" id="tblAdditionalAddresses">
+        <colgroup>
+          <col style="width: 140px;">
+          <col>
+          <col style="width: 110px;">
+          <col style="width: 120px;">
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="text-nowrap">Tipo</th>
+            <th>Endereço</th>
+            <th class="text-center text-nowrap">Principal</th>
+            <th class="text-center text-nowrap">Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <small class="text-muted d-block text-center mt-2">Use para correspondência, entrega ou outros.</small>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const cepField = document.getElementById('{{ forms.main.endereco_cep.id_for_label }}');
+  if (cepField){
+    cepField.addEventListener('blur', function(){
+      const cep = (this.value || '').replace(/\D/g,'');
+      if (cep.length === 8){
+        fetch(`https://viacep.com.br/ws/${cep}/json/`)
+          .then(r => r.json())
+          .then(data => {
+          if (!data.erro){
+            const map = {
+              '{{ forms.main.endereco_logradouro.id_for_label }}': data.logradouro,
+              '{{ forms.main.endereco_bairro.id_for_label }}': data.bairro,
+              '{{ forms.main.endereco_cidade.id_for_label }}': data.localidade,
+              '{{ forms.main.endereco_uf.id_for_label }}': data.uf,
+            };
+            Object.entries(map).forEach(([id,val])=>{ if (val){ const el=document.getElementById(id); if (el && !el.value) el.value = val; }});
+          }
+          })
+          .catch(()=>{});
+      }
+    });
+  }
+});
+    // ---------- Endereços adicionais ----------
+    const jsonField = document.querySelector('.wizard-additional-addresses-json');
+    const tableBody = document.querySelector('#tblAdditionalAddresses tbody');
+    const addBtn = document.getElementById('btnAddAddress');
+    let list = [];
+    try { if (jsonField && jsonField.value) list = JSON.parse(jsonField.value) || []; } catch(_) { list = []; }
+
+    function sync(){ if (jsonField) jsonField.value = JSON.stringify(list); render(); }
+    function render(){
+        if (!tableBody) return; tableBody.innerHTML='';
+        list.forEach((item,idx)=>{
+            const tr=document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-nowrap">${item.tipo||''}</td>
+                <td>${item.logradouro||''} ${item.numero||''} - ${item.cidade||''}/${item.uf||''}</td>
+                <td class="text-center">${item.principal?'<i class="fas fa-check text-success"></i>':''}</td>
+                <td class="text-center">
+                   <button type="button" class="btn btn-sm btn-outline-secondary me-1 btn-edit" data-idx="${idx}"><i class="fas fa-edit"></i></button>
+                   <button type="button" class="btn btn-sm btn-outline-danger btn-del" data-idx="${idx}"><i class="fas fa-trash"></i></button>
+                </td>`;
+            tableBody.appendChild(tr);
+        });
+    }
+    render();
+
+    function openModal(editIndex){
+        const modal = document.getElementById('modalAddAddress');
+        if (!modal) buildModal();
+        const m = new bootstrap.Modal(document.getElementById('modalAddAddress'));
+        fillForm(editIndex);
+        m.show();
+    }
+
+    function buildModal(){
+        const div=document.createElement('div');
+        div.innerHTML=`<div class="modal fade" id="modalAddAddress" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header py-2"><h6 class="modal-title">Endereço Adicional</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+              <div class="modal-body">
+                <div class="row g-2 mb-2">
+                  <div class="col-md-3"><label class="form-label small mb-0">Tipo</label><input id="addrTipo" class="form-control form-control-sm" placeholder="Entrega"></div>
+                  <div class="col-md-3"><label class="form-label small mb-0">CEP</label><input id="addrCep" class="form-control form-control-sm"></div>
+                  <div class="col-md-6"><label class="form-label small mb-0">Logradouro</label><input id="addrLogradouro" class="form-control form-control-sm"></div>
+                  <div class="col-md-2"><label class="form-label small mb-0">Número</label><input id="addrNumero" class="form-control form-control-sm"></div>
+                  <div class="col-md-4"><label class="form-label small mb-0">Complemento</label><input id="addrComplemento" class="form-control form-control-sm"></div>
+                  <div class="col-md-3"><label class="form-label small mb-0">Bairro</label><input id="addrBairro" class="form-control form-control-sm"></div>
+                  <div class="col-md-3"><label class="form-label small mb-0">Cidade</label><input id="addrCidade" class="form-control form-control-sm"></div>
+                  <div class="col-md-2"><label class="form-label small mb-0">UF</label><input id="addrUf" maxlength="2" class="form-control form-control-sm text-uppercase"></div>
+                  <div class="col-md-4"><label class="form-label small mb-0">País</label><input id="addrPais" class="form-control form-control-sm" value="Brasil"></div>
+                  <div class="col-12"><label class="form-label small mb-0">Ponto Referência</label><input id="addrPonto" class="form-control form-control-sm"></div>
+                  <div class="col-12 form-check ms-2 mt-2">
+                    <input id="addrPrincipal" type="checkbox" class="form-check-input"><label class="form-check-label small" for="addrPrincipal">Principal</label>
+                  </div>
+                </div>
+                <div id="addrError" class="text-danger small d-none"></div>
+              </div>
+              <div class="modal-footer py-2"><button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" id="btnSaveAddress" class="btn btn-sm btn-primary">Salvar</button></div>
+            </div></div></div>`;
+        document.body.appendChild(div.firstElementChild);
+    }
+
+    function fillForm(idx){
+        const item = idx!=null ? list[idx] : {};
+        ['Tipo','Cep','Logradouro','Numero','Complemento','Bairro','Cidade','Uf','Pais','Ponto'].forEach(k=>{
+            const el=document.getElementById('addr'+k); if (!el) return; const key=k.toLowerCase(); el.value = item[key]||'';
+        });
+        const chk=document.getElementById('addrPrincipal'); if (chk) chk.checked = !!item.principal;
+        document.getElementById('btnSaveAddress').dataset.editIndex = idx!=null?idx:'';
+    }
+
+    addBtn && addBtn.addEventListener('click', ()=>openModal(null));
+    document.addEventListener('click', e=>{
+        if (e.target.closest('.btn-edit')){ openModal(parseInt(e.target.closest('.btn-edit').dataset.idx)); }
+        if (e.target.closest('.btn-del')){ const i=parseInt(e.target.closest('.btn-del').dataset.idx); list.splice(i,1); sync(); }
+    });
+    document.addEventListener('click', e=>{
+        if (e.target.id==='btnSaveAddress'){
+            const idx = e.target.dataset.editIndex;
+            const obj = {
+              tipo: document.getElementById('addrTipo').value,
+              cep: document.getElementById('addrCep').value,
+              logradouro: document.getElementById('addrLogradouro').value,
+              numero: document.getElementById('addrNumero').value,
+              complemento: document.getElementById('addrComplemento').value,
+              bairro: document.getElementById('addrBairro').value,
+              cidade: document.getElementById('addrCidade').value,
+              uf: document.getElementById('addrUf').value,
+              pais: document.getElementById('addrPais').value || 'Brasil',
+              ponto_referencia: document.getElementById('addrPonto').value,
+              principal: document.getElementById('addrPrincipal').checked
+            };
+            if (obj.principal){ list.forEach(i=> i.principal=False); }
+            if (idx==='') list.push(obj); else list[parseInt(idx)]=obj;
+            sync();
+            bootstrap.Modal.getInstance(document.getElementById('modalAddAddress')).hide();
+        }
+    });
+});
+</script>
+{% endblock %}

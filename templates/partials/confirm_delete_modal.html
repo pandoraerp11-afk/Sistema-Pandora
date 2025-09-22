@@ -1,0 +1,252 @@
+<!-- Modal de Confirmação Universal para Exclusões -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-trash-alt text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h6 class="fw-bold mb-3" id="deleteMessage">Tem certeza que deseja excluir este item?</h6>
+                <p class="text-muted mb-0" id="deleteDescription">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer justify-content-center border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-1"></i>Sim, Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Sistema Universal de Confirmação de Exclusão
+class ConfirmDelete {
+    constructor() {
+        this.modal = null;
+        this.confirmBtn = null;
+        this.pendingAction = null;
+        this.init();
+    }
+
+    init() {
+        // Aguardar DOM carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setup());
+        } else {
+            this.setup();
+        }
+    }
+
+    setup() {
+        this.modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+        this.confirmBtn = document.getElementById('confirmDeleteBtn');
+        
+        // Listener do botão de confirmação
+        this.confirmBtn.addEventListener('click', () => {
+            if (this.pendingAction) {
+                this.pendingAction();
+                this.pendingAction = null;
+            }
+            this.modal.hide();
+        });
+
+        // Event delegation para capturar todos os cliques em botões de exclusão
+        document.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('[data-confirm-delete]');
+            if (deleteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showConfirmation(deleteBtn);
+            }
+        });
+
+        console.log('✅ Sistema Universal de Confirmação de Exclusão inicializado');
+    }
+
+    showConfirmation(button) {
+        // Extrair dados do botão
+        const message = button.getAttribute('data-delete-message') || 'Tem certeza que deseja excluir este item?';
+        const description = button.getAttribute('data-delete-description') || 'Esta ação não pode ser desfeita.';
+        const type = button.getAttribute('data-delete-type') || 'item';
+        
+        // Atualizar conteúdo do modal
+        document.getElementById('deleteMessage').textContent = message;
+        document.getElementById('deleteDescription').textContent = description;
+        
+        // Definir ação pendente
+        this.pendingAction = () => {
+            this.executeDelete(button);
+        };
+
+        // Mostrar modal
+        this.modal.show();
+    }
+
+    executeDelete(button) {
+        const formElement = button.closest('.formset-form');
+        const deleteType = button.getAttribute('data-delete-type');
+        
+        console.log(`🗑️ Executando exclusão de ${deleteType}`);
+
+        if (formElement) {
+            // Verificar se é formulário existente (tem campo DELETE)
+            const deleteField = formElement.querySelector('[name$="-DELETE"]');
+            
+            if (deleteField) {
+                // Formulário existente - marcar para exclusão
+                deleteField.checked = true;
+                formElement.style.display = 'none';
+                console.log(`✅ ${deleteType} marcado para exclusão no servidor`);
+            } else {
+                // Formulário novo - remover do DOM
+                formElement.remove();
+                console.log(`✅ ${deleteType} removido do formulário`);
+                
+                // Reajustar contador se necessário
+                this.updateFormsetCounter(button);
+            }
+
+            // Atualizar contadores específicos
+            this.updateCounters(deleteType);
+            
+            // Mostrar notificação de sucesso
+            this.showSuccessNotification(deleteType);
+        }
+    }
+
+    updateFormsetCounter(button) {
+        // Detectar tipo de formset pelo contexto
+        const container = button.closest('[id$="-formset"]');
+        if (container) {
+            const formsetId = container.id.replace('-formset', '');
+            const totalField = document.querySelector(`#id_${formsetId}-TOTAL_FORMS`);
+            
+            if (totalField) {
+                totalField.value = parseInt(totalField.value) - 1;
+                console.log(`📊 Contador ${formsetId} ajustado para: ${totalField.value}`);
+            }
+        }
+    }
+
+    updateCounters(deleteType) {
+        // Atualizar contadores específicos baseado no tipo
+        const updateFunctions = {
+            'administrador': this.updateAdminCount,
+            'contato': this.updateContactCount,
+            'endereco': this.updateAddressCount,
+            'documento': this.updateDocumentCount
+        };
+
+        if (updateFunctions[deleteType]) {
+            updateFunctions[deleteType]();
+        }
+    }
+
+    updateAdminCount() {
+        const container = document.getElementById('admins-formset');
+        const countElement = document.getElementById('adminsCount');
+        
+        if (container && countElement) {
+            const forms = container.querySelectorAll('.formset-form:not([style*="display: none"])');
+            const count = forms.length;
+            
+            if (count === 0) {
+                countElement.textContent = 'Clique na seta para configurar administradores iniciais';
+            } else if (count === 1) {
+                countElement.textContent = '1 administrador configurado';
+            } else {
+                countElement.textContent = `${count} administradores configurados`;
+            }
+        }
+    }
+
+    updateContactCount() {
+        const container = document.getElementById('contatos-formset');
+        const countElement = document.getElementById('contatosCount');
+        
+        if (container && countElement) {
+            const forms = container.querySelectorAll('.formset-form:not([style*="display: none"])');
+            const count = forms.length;
+            const hasMainContact = document.querySelector('[name*="contato_principal"]') ? true : false;
+            const contactType = hasMainContact ? 'contatos adicionais' : 'contatos empresariais';
+            
+            if (count === 0) {
+                countElement.textContent = `Clique na seta para gerenciar ${contactType}`;
+            } else if (count === 1) {
+                countElement.textContent = '1 contato configurado';
+            } else {
+                countElement.textContent = `${count} contatos configurados`;
+            }
+        }
+    }
+
+    updateAddressCount() {
+        const container = document.getElementById('adicionais-formset');
+        const countElement = document.getElementById('enderecosCount');
+        
+        if (container && countElement) {
+            const forms = container.querySelectorAll('.formset-form:not([style*="display: none"])');
+            const count = forms.length;
+            
+            if (count === 0) {
+                countElement.textContent = 'Clique na seta para gerenciar endereços adicionais';
+            } else if (count === 1) {
+                countElement.textContent = '1 endereço adicional configurado';
+            } else {
+                countElement.textContent = `${count} endereços adicionais configurados`;
+            }
+        }
+    }
+
+    updateDocumentCount() {
+        const container = document.getElementById('documentos-formset');
+        const countElement = document.getElementById('documentosCount');
+        
+        if (container && countElement) {
+            const forms = container.querySelectorAll('.formset-form:not([style*="display: none"])');
+            const count = forms.length;
+            
+            if (count === 0) {
+                countElement.textContent = 'Clique na seta para gerenciar documentos';
+            } else if (count === 1) {
+                countElement.textContent = '1 documento anexado';
+            } else {
+                countElement.textContent = `${count} documentos anexados`;
+            }
+        }
+    }
+
+    showSuccessNotification(deleteType) {
+        // Criar notificação temporária
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>${deleteType.charAt(0).toUpperCase() + deleteType.slice(1)}</strong> excluído com sucesso!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Remover após 3 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+}
+
+// Inicializar sistema global
+window.confirmDelete = new ConfirmDelete();
+</script>

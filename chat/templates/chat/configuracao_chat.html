@@ -1,0 +1,252 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title|default:'Configurações do Chat' }}{% endblock %}
+{% block page_subtitle %}{{ page_subtitle|default:'Ajuste opções globais do módulo de chat' }}{% endblock %}
+{% block page_actions %}
+    <a href="{% url 'chat:conversa_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar
+    </a>
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'chat:conversa_list' %}">Chat</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Configurações</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- Form -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="action-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cog me-2"></i>Configurações do Chat
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Erros gerais do form -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <!-- Configurações Gerais -->
+                            <div class="col-12 mb-4">
+                                <h5 class="text-primary">
+                                    <i class="fas fa-sliders-h me-2"></i>Configurações Gerais
+                                </h5>
+                                <hr>
+                            </div>
+
+                            <!-- Chat Ativo -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.chat_ativo }}
+                                    <label class="form-check-label" for="{{ form.chat_ativo.id_for_label }}">
+                                        <i class="fas fa-toggle-on me-2"></i>{{ form.chat_ativo.label }}
+                                    </label>
+                                </div>
+                                {% if form.chat_ativo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.chat_ativo.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.chat_ativo.help_text %}
+                                    <div class="form-text">{{ form.chat_ativo.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Permitir Anexos -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.permitir_anexos }}
+                                    <label class="form-check-label" for="{{ form.permitir_anexos.id_for_label }}">
+                                        <i class="fas fa-paperclip me-2"></i>{{ form.permitir_anexos.label }}
+                                    </label>
+                                </div>
+                                {% if form.permitir_anexos.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.permitir_anexos.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.permitir_anexos.help_text %}
+                                    <div class="form-text">{{ form.permitir_anexos.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Tamanho Máximo de Arquivo -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tamanho_maximo_arquivo.id_for_label }}" class="form-label">
+                                    <i class="fas fa-file-alt me-2"></i>{{ form.tamanho_maximo_arquivo.label }}
+                                    {% if form.tamanho_maximo_arquivo.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.tamanho_maximo_arquivo }}
+                                    <span class="input-group-text">MB</span>
+                                </div>
+                                {% if form.tamanho_maximo_arquivo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tamanho_maximo_arquivo.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.tamanho_maximo_arquivo.help_text %}
+                                    <div class="form-text">{{ form.tamanho_maximo_arquivo.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Tipos de Arquivo Permitidos -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tipos_arquivo_permitidos.id_for_label }}" class="form-label">
+                                    <i class="fas fa-file-archive me-2"></i>{{ form.tipos_arquivo_permitidos.label }}
+                                    {% if form.tipos_arquivo_permitidos.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.tipos_arquivo_permitidos }}
+                                {% if form.tipos_arquivo_permitidos.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tipos_arquivo_permitidos.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.tipos_arquivo_permitidos.help_text %}
+                                    <div class="form-text">{{ form.tipos_arquivo_permitidos.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Configurações de Moderação -->
+                            <div class="col-12 mb-4 mt-4">
+                                <h5 class="text-primary">
+                                    <i class="fas fa-shield-alt me-2"></i>Configurações de Moderação
+                                </h5>
+                                <hr>
+                            </div>
+
+                            <!-- Moderar Mensagens -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.moderar_mensagens }}
+                                    <label class="form-check-label" for="{{ form.moderar_mensagens.id_for_label }}">
+                                        <i class="fas fa-user-shield me-2"></i>{{ form.moderar_mensagens.label }}
+                                    </label>
+                                </div>
+                                {% if form.moderar_mensagens.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.moderar_mensagens.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.moderar_mensagens.help_text %}
+                                    <div class="form-text">{{ form.moderar_mensagens.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Palavras Proibidas -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.palavras_proibidas.id_for_label }}" class="form-label">
+                                    <i class="fas fa-ban me-2"></i>{{ form.palavras_proibidas.label }}
+                                    {% if form.palavras_proibidas.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.palavras_proibidas }}
+                                {% if form.palavras_proibidas.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.palavras_proibidas.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.palavras_proibidas.help_text %}
+                                    <div class="form-text">{{ form.palavras_proibidas.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Configurações de Notificação -->
+                            <div class="col-12 mb-4 mt-4">
+                                <h5 class="text-primary">
+                                    <i class="fas fa-bell me-2"></i>Configurações de Notificação
+                                </h5>
+                                <hr>
+                            </div>
+
+                            <!-- Notificações Ativas -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.notificacoes_ativas }}
+                                    <label class="form-check-label" for="{{ form.notificacoes_ativas.id_for_label }}">
+                                        <i class="fas fa-bell-slash me-2"></i>{{ form.notificacoes_ativas.label }}
+                                    </label>
+                                </div>
+                                {% if form.notificacoes_ativas.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.notificacoes_ativas.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.notificacoes_ativas.help_text %}
+                                    <div class="form-text">{{ form.notificacoes_ativas.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Notificação por Email -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.notificacao_email }}
+                                    <label class="form-check-label" for="{{ form.notificacao_email.id_for_label }}">
+                                        <i class="fas fa-envelope me-2"></i>{{ form.notificacao_email.label }}
+                                    </label>
+                                </div>
+                                {% if form.notificacao_email.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.notificacao_email.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.notificacao_email.help_text %}
+                                    <div class="form-text">{{ form.notificacao_email.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'chat:conversa_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Salvar Configurações
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add form classes for Bootstrap styling
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to form fields
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(function(input) {
+        if (input.type === 'checkbox') {
+            input.classList.add('form-check-input');
+        } else if (input.tagName === 'SELECT') {
+            input.classList.add('form-select');
+        } else {
+            input.classList.add('form-control');
+        }
+    });
+});
+</script>
+{% endblock %}

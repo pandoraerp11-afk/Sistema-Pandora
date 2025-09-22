@@ -1,0 +1,265 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Mão de Obra - Pandora ERP{% endblock %}
+
+{% block page_title %}Mão de Obra{% endblock %}
+
+{% block page_subtitle %}Gestão de registros de mão de obra{% endblock %}
+
+{% block page_icon %}fas fa-hard-hat{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Mão de Obra</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2 align-items-center">
+    <div class="btn-group btn-group-sm">
+    {% if perms_ui.can_add|default:perms.can_add|default:True %}
+        <a href="{% url 'mao_obra:mao_obra_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Novo Registro
+        </a>
+        {% endif %}
+        <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+            <span class="visually-hidden">Toggle Dropdown</span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="exportData('excel')">
+                <i class="fas fa-file-excel me-2"></i> Exportar Excel
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="exportData('pdf')">
+                <i class="fas fa-file-pdf me-2"></i> Exportar PDF
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'mao_obra:mao_obra_home' %}">
+                <i class="fas fa-chart-bar me-2"></i> Dashboard
+            </a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block filter_form %}
+<form method="get" class="row g-3 align-items-end">
+    <div class="col-md-3">
+        <label class="form-label">Pesquisar</label>
+        <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Funcionário, obra ou atividade...">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Funcionário</label>
+        <select name="funcionario" class="form-select">
+            <option value="">Todos</option>
+            {% for funcionario in funcionarios %}
+            <option value="{{ funcionario.id }}" {% if funcionario_selected == funcionario.id|stringformat:"s" %}selected{% endif %}>
+                {{ funcionario.nome_completo }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Obra</label>
+        <select name="obra" class="form-select">
+            <option value="">Todas</option>
+            {% for obra in obras %}
+            <option value="{{ obra.id }}" {% if obra_selected == obra.id|stringformat:"s" %}selected{% endif %}>
+                {{ obra.nome }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Data Início</label>
+        <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Data Fim</label>
+        <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+    </div>
+    <div class="col-md-1">
+        <button type="submit" class="btn btn-outline-primary w-100">
+            <i class="fas fa-search"></i>
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block stats_cards %}
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-gradient-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Total de Registros</h6>
+                        <h3 class="mb-0">{{ total_count|default:0 }}</h3>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-gradient-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Total de Horas</h6>
+                        <h3 class="mb-0">{{ total_horas|floatformat:1|default:0 }}</h3>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-gradient-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Valor Total</h6>
+                        <h3 class="mb-0">R$ {{ total_valor|floatformat:2|default:0 }}</h3>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-gradient-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Últimos 7 Dias</h6>
+                        <h3 class="mb-0">{{ recent_count|default:0 }}</h3>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block table_headers %}
+<th>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="selectAll">
+    </div>
+</th>
+<th>Data</th>
+<th>Funcionário</th>
+<th>Obra</th>
+<th>Atividade</th>
+<th>Horas</th>
+<th>Valor/Hora</th>
+<th>Total</th>
+<th class="text-center">Ações</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for item in mao_obra_list %}
+<tr>
+    <td>
+        <div class="form-check">
+            <input class="form-check-input row-select" type="checkbox" value="{{ item.id }}">
+        </div>
+    </td>
+    <td>
+        <span class="text-muted small">{{ item.data|date:"d/m/Y" }}</span>
+    </td>
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="user-avatar bg-primary text-white me-2">
+                {{ item.funcionario.nome_completo|slice:":2"|upper }}
+            </div>
+            <div>
+                <div class="fw-semibold">{{ item.funcionario.nome_completo }}</div>
+                <small class="text-muted">{{ item.funcionario.cargo|default:"" }}</small>
+            </div>
+        </div>
+    </td>
+    <td>
+        <div>
+            <div class="fw-semibold">{{ item.obra.nome }}</div>
+            <small class="text-muted">{{ item.obra.cliente|default:"" }}</small>
+        </div>
+    </td>
+    <td>
+        <span class="text-truncate" style="max-width: 200px;">{{ item.atividade }}</span>
+        {% if item.observacoes %}
+        <i class="fas fa-comment text-muted ms-1" title="{{ item.observacoes }}"></i>
+        {% endif %}
+    </td>
+    <td>
+        <span class="badge bg-info">{{ item.horas_trabalhadas }} h</span>
+    </td>
+    <td>
+        <span class="text-success fw-semibold">R$ {{ item.valor_hora|floatformat:2 }}</span>
+    </td>
+    <td>
+        <span class="text-primary fw-bold">R$ {{ item.horas_trabalhadas|mul:item.valor_hora|floatformat:2 }}</span>
+    </td>
+    <td class="text-center">
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'mao_obra:mao_obra_detail' item.pk %}" class="btn btn-outline-primary" title="Visualizar">
+                <i class="fas fa-eye"></i>
+            </a>
+            {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                <a href="{% url 'mao_obra:mao_obra_update' item.pk %}" class="btn btn-outline-warning" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </a>
+            {% endif %}
+            {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+                <a href="{% url 'mao_obra:mao_obra_delete' item.pk %}" class="btn btn-outline-danger" title="Excluir"
+                   onclick="return confirm('Tem certeza que deseja excluir este registro?')">
+                    <i class="fas fa-trash"></i>
+                </a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="9" class="text-center py-4">
+        <div class="empty-state">
+            <i class="fas fa-hard-hat fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhum registro encontrado</h5>
+            <p class="text-muted">Não há registros de mão de obra cadastrados.</p>
+            {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                <a href="{% url 'mao_obra:mao_obra_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Adicionar Primeiro Registro
+                </a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportData(format) {
+    // Implementar exportação de dados
+    console.log('Exportando dados em formato:', format);
+}
+
+// Seleção múltipla
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.row-select');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

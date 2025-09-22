@@ -1,0 +1,321 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}Compras - Lista{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dist/css/pandora-ultra-modern.css' %}">
+<style>
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-pendente { background-color: #fff3cd; color: #856404; }
+    .status-aprovado { background-color: #d1ecf1; color: #0c5460; }
+    .status-em_transito { background-color: #cce5ff; color: #004085; }
+    .status-entregue { background-color: #d4edda; color: #155724; }
+    .status-cancelado { background-color: #f8d7da; color: #721c24; }
+    
+    .valor-destaque {
+        font-weight: 700;
+        color: #2c5aa0;
+        font-size: 1.1em;
+    }
+    
+    .compact-table .table td {
+        padding: 0.75rem 0.5rem;
+        vertical-align: middle;
+    }
+    
+    .fornecedor-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .fornecedor-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i></a></li>
+                        <li class="breadcrumb-item active">Compras</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="page-title">
+                    <i class="fas fa-shopping-cart page-icon"></i>
+                    Gestão de Compras
+                </h1>
+                <p class="page-subtitle text-muted">Controle completo de compras e fornecedores</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="{% url 'compras:compras_create' %}" class="btn btn-primary btn-modern">
+                    <i class="fas fa-plus me-2"></i>Nova Compra
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <!-- Filtros e Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <form method="GET" class="filter-form">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Buscar</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               name="search" 
+                                               class="form-control" 
+                                               placeholder="Número, fornecedor, obra..."
+                                               value="{{ request.GET.search }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-select">
+                                        <option value="">Todos</option>
+                                        <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                        <option value="aprovado" {% if request.GET.status == 'aprovado' %}selected{% endif %}>Aprovado</option>
+                                        <option value="em_transito" {% if request.GET.status == 'em_transito' %}selected{% endif %}>Em Trânsito</option>
+                                        <option value="entregue" {% if request.GET.status == 'entregue' %}selected{% endif %}>Entregue</option>
+                                        <option value="cancelado" {% if request.GET.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fornecedor</label>
+                                    <input type="text" 
+                                           name="fornecedor" 
+                                           class="form-control"
+                                           placeholder="Nome do fornecedor"
+                                           value="{{ request.GET.fornecedor }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-outline-primary">
+                                            <i class="fas fa-filter"></i> Filtrar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stat-card bg-primary">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">{{ table.data|length }}</div>
+                                <div class="stat-label">Total de Compras</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card bg-success">
+                            <div class="stat-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">0</div>
+                                <div class="stat-label">Entregas Hoje</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Compras -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-modern">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>Lista de Compras
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if table.data %}
+                            <div class="table-responsive compact-table">
+                                <table class="table table-hover table-striped modern-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th width="8%">Número</th>
+                                            <th width="20%">Fornecedor</th>
+                                            <th width="18%">Obra</th>
+                                            <th width="12%">Data Pedido</th>
+                                            <th width="12%">Entrega Prevista</th>
+                                            <th width="12%">Valor Total</th>
+                                            <th width="10%">Status</th>
+                                            <th width="8%" class="text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for compra in table.data %}
+                                        <tr>
+                                            <td class="fw-bold">#{{ compra.numero }}</td>
+                                            <td>
+                                                <div class="fornecedor-info">
+                                                    <div class="fornecedor-icon">
+                                                        {{ compra.fornecedor.nome|first|upper }}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-medium">{{ compra.fornecedor.nome|truncatechars:25 }}</div>
+                                                        <small class="text-muted">{{ compra.fornecedor.cnpj|default:"-" }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-medium">{{ compra.obra.nome|truncatechars:30 }}</div>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-user me-1"></i>{{ compra.obra.cliente.nome|default:"--" }}
+                                                </small>
+                                            </td>
+                                            <td>{{ compra.data_pedido|date:"d/m/Y" }}</td>
+                                            <td>
+                                                <span class="fw-medium">{{ compra.data_entrega_prevista|date:"d/m/Y" }}</span>
+                                                {% if compra.data_entrega_real %}
+                                                    <br><small class="text-success">
+                                                        <i class="fas fa-check me-1"></i>{{ compra.data_entrega_real|date:"d/m/Y" }}
+                                                    </small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="valor-destaque">R$ {{ compra.valor_total|floatformat:2 }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge status-{{ compra.status }}">
+                                                    {{ compra.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{% url 'compras:compras_detail' compra.pk %}" 
+                                                       class="btn btn-outline-info btn-sm" 
+                                                       title="Visualizar">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{% url 'compras:compras_edit' compra.pk %}" 
+                                                       class="btn btn-outline-warning btn-sm" 
+                                                       title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'compras:compras_delete' compra.pk %}" 
+                                                       class="btn btn-outline-danger btn-sm" 
+                                                       title="Excluir">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <h4>Nenhuma compra encontrada</h4>
+                                <p class="text-muted">
+                                    {% if request.GET.search or request.GET.status or request.GET.fornecedor %}
+                                        Não encontramos compras com os filtros aplicados.
+                                    {% else %}
+                                        Você ainda não cadastrou nenhuma compra.
+                                    {% endif %}
+                                </p>
+                                <a href="{% url 'compras:compras_create' %}" class="btn btn-primary btn-modern">
+                                    <i class="fas fa-plus me-2"></i>Cadastrar Primeira Compra
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Confirmação de exclusão
+    $('a[href*="delete"]').on('click', function(e) {
+        e.preventDefault();
+        const url = $(this).attr('href');
+        const compraNum = $(this).closest('tr').find('td:first').text();
+        
+        Swal.fire({
+            title: 'Confirmar Exclusão',
+            text: `Tem certeza que deseja excluir a compra ${compraNum}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+    
+    // Auto-submit dos filtros
+    $('.filter-form select, .filter-form input[name="search"]').on('change', function() {
+        $(this).closest('form').submit();
+    });
+    
+    // Limpar filtros
+    $('.btn-clear-filters').on('click', function() {
+        $('.filter-form')[0].reset();
+        window.location.href = window.location.pathname;
+    });
+});
+</script>
+{% endblock %}

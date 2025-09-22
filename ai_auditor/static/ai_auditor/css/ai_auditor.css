@@ -1,0 +1,368 @@
+/* AI Auditor - Estilos Personalizados */
+
+/* Animações e Transições */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Cards do AI Auditor */
+.ai-auditor-card {
+    border-left: 4px solid #4f46e5;
+    transition: all 0.3s ease-in-out;
+    animation: fadeInUp 0.6s ease-out;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
+}
+
+.ai-auditor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.15);
+    border-left-color: #6366f1;
+}
+
+.ai-auditor-card .card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e3e9f7 100%);
+    border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Badges de Severidade */
+.severity-critical {
+    color: #dc3545;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(220, 53, 69, 0.2);
+}
+
+.severity-high {
+    color: #fd7e14;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(253, 126, 20, 0.2);
+}
+
+.severity-medium {
+    color: #ffc107;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(255, 193, 7, 0.2);
+}
+
+.severity-low {
+    color: #28a745;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(40, 167, 69, 0.2);
+}
+
+/* Badges de Problemas */
+.issue-badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.issue-badge:hover {
+    transform: scale(1.1);
+}
+
+.badge-critical {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.badge-high {
+    background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(253, 126, 20, 0.3);
+}
+
+.badge-medium {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #212529;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.badge-low {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* Cards de Métricas */
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+    animation: slideInRight 0.8s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+}
+
+.metric-number {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    animation: pulse 2s infinite;
+}
+
+.metric-label {
+    font-size: 0.95rem;
+    opacity: 0.95;
+    margin-top: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Variações de cores para métricas */
+.metric-card.metric-danger {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.metric-card.metric-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.metric-card.metric-success {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+/* Barras de Progresso */
+.ai-progress-bar {
+    height: 10px;
+    border-radius: 6px;
+    background-color: #e9ecef;
+    overflow: hidden;
+    position: relative;
+}
+
+.ai-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+    transition: width 0.6s ease;
+    position: relative;
+}
+
+.ai-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Tabelas Responsivas */
+.table-hover tbody tr:hover {
+    background-color: rgba(79, 70, 229, 0.05);
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+/* Botões Personalizados */
+.btn-ai-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+}
+
+.btn-ai-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+/* Info Boxes Personalizadas */
+.info-box {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.info-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.info-box-icon {
+    border-radius: 12px 0 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* Modais Personalizados */
+.modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-radius: 16px 16px 0 0;
+    border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+/* Alertas Personalizados */
+.alert {
+    border-radius: 12px;
+    border: none;
+    font-weight: 500;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%);
+    color: #721c24;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    color: #856404;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    color: #0c5460;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .metric-card {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-number {
+        font-size: 2.5rem;
+    }
+    
+    .ai-auditor-card {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .ai-auditor-card {
+        background-color: #1f2937;
+        border-color: #6366f1;
+    }
+    
+    .ai-auditor-card .card-header {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        color: #f9fafb;
+    }
+}
+
+/* Loading States */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-running {
+    background-color: #3b82f6;
+    animation: pulse 1.5s infinite;
+}
+
+.status-completed {
+    background-color: #10b981;
+}
+
+.status-failed {
+    background-color: #ef4444;
+}
+
+.status-cancelled {
+    background-color: #6b7280;
+}
+

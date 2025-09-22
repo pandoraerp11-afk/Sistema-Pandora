@@ -1,0 +1,75 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Pandora ERP{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}Confirme a exclusão do usuário{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'user_management:usuario_list' %}">Usuários</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-warning me-2"></i>
+                        <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <div class="user-avatar mb-3">
+                            {% if usuario.avatar %}
+                                <img src="{{ usuario.avatar.url }}" 
+                                     alt="{{ usuario.user.get_full_name|default:usuario.user.username }}" 
+                                     class="rounded-circle" 
+                                     width="80" height="80">
+                            {% else %}
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                                     style="width: 80px; height: 80px; font-size: 2rem;">
+                                    {{ usuario.user.first_name|first|default:usuario.user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="mb-2">{{ usuario.user.get_full_name|default:usuario.user.username }}</h5>
+                        <p class="text-muted mb-1">@{{ usuario.user.username }}</p>
+                        {% if usuario.user.email %}
+                            <p class="text-muted">{{ usuario.user.email }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="text-center">
+                        Tem certeza que deseja excluir este usuário?<br>
+                        <strong>Todos os dados associados serão perdidos permanentemente.</strong>
+                    </p>
+                    
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'user_management:usuario_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Sim, Excluir
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

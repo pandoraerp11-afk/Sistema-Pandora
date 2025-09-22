@@ -1,0 +1,741 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ relatorio.nome }} - Detalhes do Relatório{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .detail-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .detail-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .detail-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-group {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-size: 1.125rem;
+            color: #2c3e50;
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-ativo {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inativo {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-rascunho {
+            background: #ffeaa7;
+            color: #856404;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-execucoes {
+            color: #007bff;
+        }
+
+        .metric-ultimo {
+            color: #28a745;
+        }
+
+        .metric-tamanho {
+            color: #ffc107;
+        }
+
+        .metric-downloads {
+            color: #17a2b8;
+        }
+
+        .tabs-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .nav-tabs {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .nav-tab button {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab button:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .nav-tab button.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+            background: white;
+        }
+
+        .tab-content {
+            padding: 2rem;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .execution-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .execution-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .execution-item:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .execution-info {
+            flex: 1;
+        }
+
+        .execution-date {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .execution-status {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .execution-details {
+            font-size: 0.875rem;
+            color: #495057;
+        }
+
+        .execution-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 6px;
+        }
+
+        .preview-container {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-placeholder {
+            color: #6c757d;
+        }
+
+        .preview-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .parameters-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .parameters-table th,
+        .parameters-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+            text-align: left;
+        }
+
+        .parameters-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            color: #2c3e50;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #6c757d;
+        }
+
+        .empty-state p {
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .detail-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .detail-info {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .execution-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .execution-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="detail-card">
+        <div class="detail-header">
+            <h1 class="detail-title">
+                <i class="fas fa-chart-bar mr-3"></i>
+                {{ relatorio.nome }}
+            </h1>
+            <span class="status-badge status-{{ relatorio.status|lower }}">
+                {{ relatorio.get_status_display }}
+            </span>
+        </div>
+
+        <!-- Informações Básicas -->
+        <div class="detail-info">
+            <div class="info-group">
+                <div class="info-label">Nome do Relatório</div>
+                <div class="info-value">{{ relatorio.nome }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">Tipo</div>
+                <div class="info-value">{{ relatorio.get_tipo_display }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">Formato</div>
+                <div class="info-value">{{ relatorio.formato|upper }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">Período</div>
+                <div class="info-value">
+                    {% if relatorio.data_inicio and relatorio.data_fim %}
+                        {{ relatorio.data_inicio|date:"d/m/Y" }} - {{ relatorio.data_fim|date:"d/m/Y" }}
+                    {% else %}
+                        Não definido
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">Criado por</div>
+                <div class="info-value">{{ relatorio.created_by|default:"Sistema" }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">Última Atualização</div>
+                <div class="info-value">{{ relatorio.updated_at|date:"d/m/Y H:i" }}</div>
+            </div>
+        </div>
+
+        <!-- Descrição -->
+        {% if relatorio.descricao %}
+        <div class="info-group">
+            <div class="info-label">Descrição</div>
+            <div class="info-value">{{ relatorio.descricao }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Botões de Ação -->
+        <div class="action-buttons">
+            <a href="#" class="btn btn-success" onclick="executeReport()">
+                <i class="fas fa-play"></i> Executar Relatório
+            </a>
+            <a href="{% url 'relatorios:relatorios_update' relatorio.pk %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="#" class="btn btn-warning" onclick="duplicateReport()">
+                <i class="fas fa-copy"></i> Duplicar
+            </a>
+            <a href="{% url 'relatorios:relatorios_delete' relatorio.pk %}" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Excluir
+            </a>
+            <a href="{% url 'relatorios:relatorios_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Métricas -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon metric-execucoes">
+                <i class="fas fa-play-circle"></i>
+            </div>
+            <div class="metric-value">{{ relatorio.total_execucoes|default:"0" }}</div>
+            <div class="metric-label">Execuções</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-ultimo">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="metric-value">{{ relatorio.ultima_execucao|date:"d/m"|default:"Nunca" }}</div>
+            <div class="metric-label">Última Execução</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-tamanho">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="metric-value">{{ relatorio.tamanho_medio|default:"0" }} KB</div>
+            <div class="metric-label">Tamanho Médio</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-downloads">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="metric-value">{{ relatorio.total_downloads|default:"0" }}</div>
+            <div class="metric-label">Downloads</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+        <ul class="nav-tabs">
+            <li class="nav-tab">
+                <button class="tab-button active" data-tab="execucoes">
+                    <i class="fas fa-history mr-2"></i>
+                    Execuções
+                </button>
+            </li>
+            <li class="nav-tab">
+                <button class="tab-button" data-tab="parametros">
+                    <i class="fas fa-cogs mr-2"></i>
+                    Parâmetros
+                </button>
+            </li>
+            <li class="nav-tab">
+                <button class="tab-button" data-tab="preview">
+                    <i class="fas fa-eye mr-2"></i>
+                    Preview
+                </button>
+            </li>
+            <li class="nav-tab">
+                <button class="tab-button" data-tab="logs">
+                    <i class="fas fa-list-alt mr-2"></i>
+                    Logs
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Execuções -->
+            <div class="tab-pane active" id="execucoes">
+                <ul class="execution-list">
+                    {% for execucao in execucoes %}
+                    <li class="execution-item">
+                        <div class="execution-info">
+                            <div class="execution-date">{{ execucao.data|date:"d/m/Y H:i" }}</div>
+                            <div class="execution-status">{{ execucao.get_status_display }}</div>
+                            <div class="execution-details">
+                                Duração: {{ execucao.duracao }} | Tamanho: {{ execucao.tamanho }} KB
+                            </div>
+                        </div>
+                        <div class="execution-actions">
+                            <a href="#" class="btn btn-sm btn-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <a href="#" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h3>Nenhuma execução encontrada</h3>
+                        <p>Este relatório ainda não foi executado.</p>
+                        <a href="#" class="btn btn-primary" onclick="executeReport()">
+                            <i class="fas fa-play"></i> Executar Agora
+                        </a>
+                    </div>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Parâmetros -->
+            <div class="tab-pane" id="parametros">
+                {% if relatorio.parametros %}
+                <div class="code-block">{{ relatorio.parametros }}</div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-cogs"></i>
+                    <h3>Nenhum parâmetro configurado</h3>
+                    <p>Este relatório não possui parâmetros personalizados.</p>
+                </div>
+                {% endif %}
+
+                <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Filtros Disponíveis</h4>
+                <table class="parameters-table">
+                    <thead>
+                        <tr>
+                            <th>Parâmetro</th>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th>Valor Padrão</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>data_inicio</td>
+                            <td>Date</td>
+                            <td>Data de início do período</td>
+                            <td>{{ relatorio.data_inicio|date:"d/m/Y"|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td>data_fim</td>
+                            <td>Date</td>
+                            <td>Data de fim do período</td>
+                            <td>{{ relatorio.data_fim|date:"d/m/Y"|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td>formato</td>
+                            <td>String</td>
+                            <td>Formato de saída do relatório</td>
+                            <td>{{ relatorio.formato|upper }}</td>
+                        </tr>
+                        <tr>
+                            <td>status</td>
+                            <td>String</td>
+                            <td>Status dos registros a incluir</td>
+                            <td>{{ relatorio.status }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Preview -->
+            <div class="tab-pane" id="preview">
+                <div class="preview-container">
+                    <div class="preview-placeholder">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Preview do Relatório</h3>
+                        <p>Execute o relatório para visualizar o resultado aqui.</p>
+                        <a href="#" class="btn btn-primary" onclick="executeReport()">
+                            <i class="fas fa-play"></i> Executar Relatório
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="tab-pane" id="logs">
+                <ul class="execution-list">
+                    {% for log in logs %}
+                    <li class="execution-item">
+                        <div class="execution-info">
+                            <div class="execution-date">{{ log.data|date:"d/m/Y H:i:s" }}</div>
+                            <div class="execution-status">{{ log.nivel }}</div>
+                            <div class="execution-details">{{ log.mensagem }}</div>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <div class="empty-state">
+                        <i class="fas fa-list-alt"></i>
+                        <h3>Nenhum log encontrado</h3>
+                        <p>Não há logs registrados para este relatório.</p>
+                    </div>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab functionality
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            
+            // Remove active class from all buttons and panes
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanes.forEach(pane => pane.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding pane
+            this.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+});
+
+function executeReport() {
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executando...';
+    button.disabled = true;
+
+    // Simulate report execution
+    setTimeout(() => {
+        alert('Relatório executado com sucesso!');
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        // Refresh the page to show new execution
+        location.reload();
+    }, 3000);
+}
+
+function duplicateReport() {
+    if (confirm('Deseja criar uma cópia deste relatório?')) {
+        // Duplicate report logic
+        alert('Relatório duplicado com sucesso!');
+    }
+}
+</script>
+{% endblock %}

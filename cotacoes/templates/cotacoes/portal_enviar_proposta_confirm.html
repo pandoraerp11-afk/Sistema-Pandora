@@ -1,0 +1,13 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% block title %}Enviar Proposta{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <h2>Confirmar Envio da Proposta</h2>
+  <p>Cotação: {{ proposta.cotacao.codigo }} - {{ proposta.cotacao.titulo }}</p>
+  <p>Após o envio não será mais possível editar os itens.</p>
+  <form method="post">{% csrf_token %}
+    <button type="submit" class="btn btn-success">Confirmar Envio</button>
+    <a href="{% url 'cotacoes:portal-proposta-detail' proposta.pk %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

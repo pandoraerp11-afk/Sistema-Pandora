@@ -1,0 +1,15 @@
+<div class="d-flex align-items-center">
+    <div class="avatar avatar-sm me-3">
+        {% if object.avatar %}
+            <img src="{{ object.avatar.url }}" alt="{{ object.user.get_full_name }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+        {% else %}
+            <div class="avatar-initials rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 12px; font-weight: bold;">
+                {{ object.user.first_name|first|upper|default:"U" }}{{ object.user.last_name|first|upper|default:"" }}
+            </div>
+        {% endif %}
+    </div>
+    <div>
+        <div class="fw-bold">{{ object.user.get_full_name|default:object.user.username }}</div>
+        <small class="text-muted">@{{ object.user.username }}</small>
+    </div>
+</div>

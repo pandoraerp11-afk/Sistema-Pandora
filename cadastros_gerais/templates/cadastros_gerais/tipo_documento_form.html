@@ -1,0 +1,67 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% if form.instance.pk %}{% trans "Editar Tipo de Documento" %}{% else %}{% trans "Novo Tipo de Documento" %}{% endif %}{% endblock %}
+{% block page_title %}{% trans "Tipo de Documento" %}{% endblock %}
+{% block page_subtitle %}{% trans "Configure os campos e regras do tipo de documento" %}{% endblock %}
+
+{% block form_content %}
+<div class="card card-ultra-modern mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><i class="fas fa-file-alt me-2"></i> {% trans "Tipo de Documento" %}</h5>
+    <p class="card-subtitle text-muted mt-1 mb-0">{% trans "Preencha os dados abaixo para cadastrar ou editar o tipo de documento." %}</p>
+  </div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          {{ form.nome.label_tag }}
+          {{ form.nome }}
+        </div>
+        <div class="col-md-6">
+          {{ form.categoria.label_tag }}
+          {{ form.categoria }}
+        </div>
+        <div class="col-md-12">
+          {{ form.descricao.label_tag }}
+          {{ form.descricao }}
+        </div>
+        <div class="col-md-4">
+          {{ form.periodicidade.label_tag }}
+          {{ form.periodicidade }}
+        </div>
+        <div class="col-md-4">
+          {{ form.versionavel.label_tag }}
+          <div class="form-check">{{ form.versionavel }}</div>
+        </div>
+        <div class="col-md-4">
+          {{ form.ativo.label_tag }}
+          <div class="form-check">{{ form.ativo }}</div>
+        </div>
+        <div class="col-md-6">
+          {{ form.alvo.label_tag }}
+          {{ form.alvo }}
+        </div>
+        <div class="col-md-6">
+          {{ form.targets.label_tag }}
+          {{ form.targets }}
+        </div>
+        <div class="col-md-4">
+          {{ form.ordem.label_tag }}
+          {{ form.ordem }}
+        </div>
+        <div class="col-md-8">
+          {{ form.config.label_tag }}
+          {{ form.config }}
+        </div>
+      </div>
+      <div class="mt-4 d-flex justify-content-end">
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save me-2"></i>{% trans "Salvar" %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Dashboard de Materiais{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .stat-card-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .stat-card-warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .stat-card-info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .action-btn {
+        border-radius: 25px;
+        padding: 15px 25px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .btn-retirada {
+        background: linear-gradient(45deg, #28a745, #20c997);
+    }
+    .btn-devolucao {
+        background: linear-gradient(45deg, #dc3545, #fd7e14);
+    }
+    .recent-activity {
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #007bff;
+    }
+    .activity-item {
+        border-bottom: 1px solid #e9ecef;
+        padding: 15px;
+    }
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+    .quick-access {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        color: white;
+        padding: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-boxes text-primary me-2"></i>
+                Dashboard de Materiais
+            </h1>
+            <p class="text-muted mb-0">Controle de retiradas e devoluções de materiais</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'funcionarios:funcionarios_home' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Funcionários
+            </a>
+            <a href="{% url 'estoque:estoque_home' %}" class="btn btn-outline-primary">
+                <i class="fas fa-warehouse me-1"></i> Estoque
+            </a>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card stat-card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-hourglass-half fa-2x mb-3 opacity-75"></i>
+                    <h2 class="fw-bold mb-1">{{ stats.pendentes }}</h2>
+                    <p class="mb-0">Solicitações Pendentes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card stat-card-success h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-3 opacity-75"></i>
+                    <h2 class="fw-bold mb-1">{{ stats.aprovadas }}</h2>
+                    <p class="mb-0">Solicitações Aprovadas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card stat-card-info h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-truck fa-2x mb-3 opacity-75"></i>
+                    <h2 class="fw-bold mb-1">{{ stats.entregues_hoje }}</h2>
+                    <p class="mb-0">Entregas Hoje</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card dashboard-card stat-card-warning h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-shield fa-2x mb-3 opacity-75"></i>
+                    <h2 class="fw-bold mb-1">{{ materiais_responsabilidade|length }}</h2>
+                    <p class="mb-0">Responsabilidades Ativas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="quick-access text-center">
+                <h4 class="mb-4">
+                    <i class="fas fa-bolt me-2"></i>
+                    Ações Rápidas do Almoxarifado
+                </h4>
+                <div class="row justify-content-center">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'funcionarios_estoque:retirada_rapida' %}" class="btn btn-retirada action-btn w-100">
+                            <i class="fas fa-hand-holding-box fa-2x d-block mb-2"></i>
+                            Retirada Rápida
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'funcionarios_estoque:devolucao_material' %}" class="btn btn-devolucao action-btn w-100">
+                            <i class="fas fa-undo fa-2x d-block mb-2"></i>
+                            Devolução
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'funcionarios_estoque:solicitacao_list' %}" class="btn btn-primary action-btn w-100">
+                            <i class="fas fa-list-alt fa-2x d-block mb-2"></i>
+                            Solicitações
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'funcionarios_estoque:responsabilidade_list' %}" class="btn btn-warning action-btn w-100">
+                            <i class="fas fa-user-shield fa-2x d-block mb-2"></i>
+                            Responsabilidades
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="row">
+        <!-- Histórico Recente -->
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history text-info me-2"></i>
+                        Atividade Recente
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if historico_recente %}
+                        <div class="recent-activity">
+                            {% for item in historico_recente %}
+                            <div class="activity-item d-flex align-items-center">
+                                <div class="activity-icon bg-{{ item.status|lower }} text-white me-3">
+                                    {% if item.status == 'ENTREGUE' %}
+                                        <i class="fas fa-check"></i>
+                                    {% elif item.status == 'PENDENTE' %}
+                                        <i class="fas fa-clock"></i>
+                                    {% elif item.status == 'APROVADA' %}
+                                        <i class="fas fa-thumbs-up"></i>
+                                    {% else %}
+                                        <i class="fas fa-circle"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>{{ item.funcionario.nome_completo }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ item.motivo|truncatechars:50 }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-{{ item.status|lower }}">{{ item.get_status_display }}</span>
+                                            <br>
+                                            <small class="text-muted">{{ item.criado_em|timesince }} atrás</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
+                            Nenhuma atividade recente
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{% url 'funcionarios_estoque:solicitacao_list' %}" class="btn btn-outline-primary btn-sm">
+                        Ver Todas as Solicitações
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Materiais sob Responsabilidade -->
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-shield text-warning me-2"></i>
+                        Responsabilidades Ativas
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if materiais_responsabilidade %}
+                        <div class="list-group list-group-flush">
+                            {% for resp in materiais_responsabilidade %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong class="text-dark">{{ resp.funcionario.nome_completo }}</strong>
+                                        <br>
+                                        <span class="text-muted">{{ resp.produto.nome }}</span>
+                                        <br>
+                                        <small class="text-info">{{ resp.data_retirada|timesince }} atrás</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary">{{ resp.quantidade }}</span>
+                                        <br>
+                                        {% if resp.data_previsao_devolucao %}
+                                            {% if resp.data_previsao_devolucao < today %}
+                                                <span class="badge bg-danger">Atrasado</span>
+                                            {% else %}
+                                                <span class="badge bg-success">No prazo</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">Sem prazo</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-shield-alt fa-2x mb-2 d-block"></i>
+                            Nenhuma responsabilidade ativa
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{% url 'funcionarios_estoque:responsabilidade_list' %}" class="btn btn-outline-warning btn-sm">
+                        Ver Todas as Responsabilidades
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas e Notificações -->
+    {% if funcionario %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="fas fa-info-circle fa-2x me-3"></i>
+                <div>
+                    <h5 class="alert-heading mb-1">Bem-vindo, {{ funcionario.nome_completo }}!</h5>
+                    <p class="mb-0">Use as ações rápidas acima para controlar retiradas e devoluções de materiais de forma eficiente.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Efeitos de hover nos cards
+    $('.dashboard-card').hover(
+        function() {
+            $(this).find('.fa-2x').addClass('fa-spin');
+        },
+        function() {
+            $(this).find('.fa-2x').removeClass('fa-spin');
+        }
+    );
+
+    // Auto-refresh das estatísticas a cada 30 segundos
+    setInterval(function() {
+        // Aqui poderia ter uma chamada AJAX para atualizar as estatísticas
+        // location.reload(); // Descomente se quiser refresh automático
+    }, 30000);
+});
+</script>
+{% endblock %}

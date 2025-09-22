@@ -1,0 +1,349 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Excluir Apropriação | Pandora ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .delete-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .delete-icon {
+        font-size: 4rem;
+        color: #e74c3c;
+        margin-bottom: 1rem;
+    }
+    
+    .delete-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #e74c3c;
+        margin-bottom: 0.5rem;
+    }
+    
+    .delete-subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+    
+    .item-info {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-left: 4px solid #e74c3c;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+    
+    .item-info h5 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .info-item {
+        margin-bottom: 0.75rem;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #34495e;
+        margin-right: 0.5rem;
+    }
+    
+    .info-value {
+        color: #2c3e50;
+    }
+    
+    .warning-box {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .warning-box h6 {
+        color: #856404;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .warning-box p {
+        color: #856404;
+        margin: 0;
+    }
+    
+    .action-buttons {
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-right: 1rem;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #95a5a6;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #7f8c8d;
+        transform: translateY(-2px);
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #e74c3c;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+    
+    .icon-detail {
+        color: #e74c3c;
+        margin-right: 0.5rem;
+    }
+    
+    .danger-zone {
+        border: 2px dashed #e74c3c;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(231, 76, 60, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="page-title">
+                    <i class="fas fa-trash"></i> Excluir Apropriação
+                </h1>
+                <p class="page-subtitle">Confirme a exclusão da apropriação</p>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'apropriacao:apropriacao_list' %}">Apropriações</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'apropriacao:apropriacao_detail' apropriacao.pk %}">{{ apropriacao.descricao|truncatewords:3 }}</a></li>
+                    <li class="breadcrumb-item active">Excluir</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="delete-section">
+                    <div class="delete-header">
+                        <div class="delete-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h2 class="delete-title">Confirmar Exclusão</h2>
+                        <p class="delete-subtitle">Esta ação não pode ser desfeita</p>
+                    </div>
+                    
+                    <div class="item-info">
+                        <h5><i class="fas fa-tasks icon-detail"></i> Apropriação que será excluída:</h5>
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <i class="fas fa-align-left"></i> Descrição:
+                            </span>
+                            <span class="info-value">{{ apropriacao.descricao }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <i class="fas fa-building"></i> Obra:
+                            </span>
+                            <span class="info-value">{{ apropriacao.obra.nome|default:"N/A" }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <i class="fas fa-calendar-alt"></i> Data:
+                            </span>
+                            <span class="info-value">{{ apropriacao.data|date:"d/m/Y" }}</span>
+                        </div>
+                        
+                        {% if apropriacao.responsavel %}
+                        <div class="info-item">
+                            <span class="info-label">
+                                <i class="fas fa-user"></i> Responsável:
+                            </span>
+                            <span class="info-value">{{ apropriacao.responsavel.nome }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <i class="fas fa-hashtag"></i> ID:
+                            </span>
+                            <span class="info-value">#{{ apropriacao.id }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Atenção!</h6>
+                        <p>Ao excluir esta apropriação, todos os dados relacionados serão perdidos permanentemente. Esta ação não pode ser desfeita.</p>
+                    </div>
+                    
+                    <div class="danger-zone">
+                        <h5 class="text-danger mb-3">
+                            <i class="fas fa-skull-crossbones"></i> Zona de Perigo
+                        </h5>
+                        <p class="mb-4">Tem certeza absoluta que deseja excluir esta apropriação?</p>
+                        
+                        <div class="action-buttons">
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-lg" id="confirmDelete">
+                                    <i class="fas fa-trash"></i> Confirmar Exclusão
+                                </button>
+                            </form>
+                            
+                            <a href="{% url 'apropriacao:apropriacao_detail' apropriacao.pk %}" 
+                               class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let clickCount = 0;
+    let timeoutId;
+    
+    $('#confirmDelete').on('click', function(e) {
+        e.preventDefault();
+        clickCount++;
+        
+        if (clickCount === 1) {
+            // Primeira clicada - mostrar aviso
+            $(this).removeClass('btn-danger').addClass('btn-warning');
+            $(this).html('<i class="fas fa-exclamation-triangle"></i> Clique novamente para confirmar');
+            
+            // Reset após 3 segundos
+            timeoutId = setTimeout(function() {
+                $('#confirmDelete').removeClass('btn-warning').addClass('btn-danger');
+                $('#confirmDelete').html('<i class="fas fa-trash"></i> Confirmar Exclusão');
+                clickCount = 0;
+            }, 3000);
+            
+        } else if (clickCount === 2) {
+            // Segunda clicada - confirmar com SweetAlert
+            clearTimeout(timeoutId);
+            
+            Swal.fire({
+                title: 'Última confirmação',
+                text: 'Esta é sua última chance! Tem certeza que deseja excluir esta apropriação?',
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, excluir definitivamente!',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Excluindo...',
+                        text: 'Por favor, aguarde...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submeter formulário
+                    $(this).closest('form').submit();
+                } else {
+                    // Reset button
+                    $('#confirmDelete').removeClass('btn-warning').addClass('btn-danger');
+                    $('#confirmDelete').html('<i class="fas fa-trash"></i> Confirmar Exclusão');
+                    clickCount = 0;
+                }
+            });
+        }
+    });
+    
+    // Animação suave para botões
+    $('.btn').on('mouseenter', function() {
+        $(this).addClass('shadow-lg');
+    }).on('mouseleave', function() {
+        $(this).removeClass('shadow-lg');
+    });
+    
+    // Animação de pulso para zona de perigo
+    setInterval(function() {
+        $('.danger-zone').addClass('pulse');
+        setTimeout(function() {
+            $('.danger-zone').removeClass('pulse');
+        }, 1000);
+    }, 3000);
+});
+</script>
+
+<style>
+.pulse {
+    animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}

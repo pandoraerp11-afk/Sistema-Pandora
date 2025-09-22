@@ -1,0 +1,160 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Formulário de Contatos Redesenhado -->
+
+<!-- Alerta Informativo -->
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-address-book text-info me-3" style="font-size: 1.5rem;"></i>
+        <div>
+            <h6 class="mb-1 text-info">Contatos e Redes Sociais</h6>
+            <small class="text-muted">Informe os principais pontos de contato e presença online da empresa.</small>
+        </div>
+    </div>
+</div>
+
+<!-- Seção: Contato Principal -->
+<div class="wizard-section">
+    <h5 class="wizard-section-title">
+        <i class="fas fa-user-tie wizard-icon"></i>
+        Contato Principal
+    </h5>
+    <div class="row g-2">
+        {% include 'core/wizard/wizard_field.html' with field=form.nome_contato_principal field_size='md' hide_help_text=True %}
+        {% include 'core/wizard/wizard_field.html' with field=form.cargo_contato_principal field_size='xs' %}
+        {% include 'core/wizard/wizard_field.html' with field=form.telefone_contato_principal field_size='xs-auto' %}
+        {% include 'core/wizard/wizard_field.html' with field=form.email_contato_principal field_size='grow' %}
+    </div>
+</div>
+
+<!-- Seção: Contatos Departamentais -->
+<div class="wizard-section">
+    <h5 class="wizard-section-title">
+        <i class="fas fa-building wizard-icon"></i>
+        Contatos Departamentais (Opcional)
+    </h5>
+
+    <!-- Comercial -->
+    <div class="row g-2">
+        {% include 'core/wizard/wizard_field.html' with field=form.nome_responsavel_comercial field_size='md' %}
+        {% include 'core/wizard/wizard_field.html' with field=form.cargo_responsavel_comercial field_size='xs' %}
+        {% include 'core/wizard/wizard_field.html' with field=form.telefone_comercial field_size='xs-auto' hide_help_text=True %}
+        {% include 'core/wizard/wizard_field.html' with field=form.email_comercial field_size='grow' hide_help_text=True %}
+    </div>
+
+    <!-- Financeiro -->
+    <div class="row g-2 mt-1">
+        {% include 'core/wizard/wizard_field.html' with field=form.nome_responsavel_financeiro field_size='md' %}
+        {% include 'core/wizard/wizard_field.html' with field=form.cargo_responsavel_financeiro field_size='xs' %}
+        {% include 'core/wizard/wizard_field.html' with field=form.telefone_financeiro field_size='xs-auto' hide_help_text=True %}
+        {% include 'core/wizard/wizard_field.html' with field=form.email_financeiro field_size='grow' hide_help_text=True %}
+    </div>
+</div>
+
+<!-- Seção: Contato de Emergência -->
+<div class="wizard-section">
+    <h5 class="wizard-section-title">
+        <i class="fas fa-phone-volume wizard-icon text-danger"></i>
+        Contato de Emergência (Opcional)
+    </h5>
+    <div class="row">
+        {% include 'core/wizard/wizard_field.html' with field=form.telefone_emergencia %}
+    </div>
+</div>
+
+<!-- Seção: Redes Sociais -->
+<div class="wizard-section" id="wizard-socials-section" data-max-socials="50">
+    <div class="d-flex align-items-center justify-content-between">
+        <h5 class="wizard-section-title mb-0">
+            <i class="fas fa-globe wizard-icon"></i>
+            Redes Sociais
+        </h5>
+        <button type="button"
+                class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                id="btnAddSocial"
+                formnovalidate
+                data-bs-toggle="tooltip"
+                data-bs-placement="left"
+                title="Adicionar rede social"
+                aria-label="Adicionar rede social"
+                style="width: 2rem; height: 2rem;">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+    {% if form.socials_json %}
+        {% render_field form.socials_json class+="wizard-socials-json" style="display:none" %}
+    {% endif %}
+    <div class="table-responsive mt-2">
+        <table class="table table-sm align-middle mb-0" id="tblSocials">
+            <colgroup>
+                <col style="width: 220px;"> {# Nome #}
+                <col> {# Link #}
+                <col style="width: 120px;"> {# Ações #}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="text-nowrap">Rede</th>
+                    <th class="text-nowrap">Link</th>
+                    <th class="text-center text-nowrap">Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Seção: Contatos Adicionais (refatorada para modal + botão redondo) -->
+<div class="wizard-section" id="wizard-extra-contacts-section" data-max-contacts="100" data-cargo-api="{% url 'core:api_cargo_suggestions' %}">
+    <div class="d-flex align-items-center justify-content-between">
+        <h5 class="wizard-section-title mb-0">
+            <i class="fas fa-users wizard-icon"></i>
+            Contatos Adicionais
+        </h5>
+        <button type="button"
+                        class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                        id="btnAddExtraContact"
+                        formnovalidate
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="left"
+                        title="Adicionar contato"
+                        aria-label="Adicionar contato"
+                        style="width: 2rem; height: 2rem;">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+    <p class="text-muted small mt-2 mb-2">Cadastre contatos relevantes (técnico, jurídico, operações, etc.). Cada item pode conter Nome, Cargo, Telefone, E-mail e Observação.</p>
+    <!-- Campo oculto JSON -->
+    {% if form.contacts_json %}
+        {% render_field form.contacts_json class+="wizard-extra-contacts-json" style="display:none" %}
+    {% endif %}
+    <div class="table-responsive mt-2">
+        <table class="table table-sm align-middle mb-0" id="tblExtraContacts">
+            <colgroup>
+                <col>
+                <col style="width: 180px;"> {# Cargo #}
+                <col style="width: 280px;"> {# Contatos #}
+                <col style="width: 220px;"> {# Observação #}
+                <col style="width: 120px;"> {# Ações #}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th class="text-nowrap">Cargo</th>
+                    <th class="text-nowrap">Contatos</th>
+                    <th class="text-nowrap">Observação</th>
+                    <th class="text-center text-nowrap">Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <small class="text-muted d-block text-center mt-2">Adicione quantos contatos forem necessários.</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}
+
+{% block modals %}{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Formulário de Endereço Modernizado -->
+
+    <!-- Alerta Informativo -->
+    <div class="alert alert-info border-0 mb-4 wizard-alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-map-marker-alt text-info me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-info">Endereço Principal</h6>
+                <small class="text-muted">Digite o CEP para preenchimento automático dos campos</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Endereço Principal -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-home wizard-icon"></i>
+            Dados do Endereço
+        </h5>
+        
+        <!-- Linha 1: CEP, Logradouro, Número, Complemento (gutter reduzido) -->
+        <div class="row g-2">
+            {% include 'core/wizard/wizard_field.html' with field=form.cep field_size='xs-auto' %}
+            {% include 'core/wizard/wizard_field.html' with field=form.logradouro field_size='lg' %}
+            {% include 'core/wizard/wizard_field.html' with field=form.numero field_size='xs' %}
+            {% include 'core/wizard/wizard_field.html' with field=form.complemento field_size='grow' %}
+        </div>
+
+        <!-- Linha 2: Bairro, Cidade, Estado, País (gutter reduzido) -->
+        <div class="row g-2">
+            {% include 'core/wizard/wizard_field.html' with field=form.bairro field_size='sm' %}
+            {% include 'core/wizard/wizard_field.html' with field=form.cidade field_size='md' %}
+            {% include 'core/wizard/wizard_field.html' with field=form.uf field_size='sm' %}
+            {% include 'core/wizard/wizard_field.html' with field=form.pais field_size='xs' %}
+        </div>
+    </div>
+
+    <!-- Seção: Informações Complementares -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-info-circle wizard-icon"></i>
+            Informações Complementares
+        </h5>
+        
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=form.ponto_referencia field_size='lg' %}
+        </div>
+    </div>
+
+  <!-- Seção: Endereços Adicionais -->
+  <div class="wizard-section" id="wizard-addresses-section" data-max-additional-addresses="{{ MAX_ADDITIONAL_ADDRESSES }}">
+        <div class="d-flex align-items-center justify-content-between">
+            <h5 class="wizard-section-title mb-0">
+                <i class="fas fa-map-pin wizard-icon"></i>
+                Endereços Adicionais (opcional)
+            </h5>
+            <button type="button"
+                    class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                    id="btnAddAddress"
+                    formnovalidate
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="left"
+                    title="Clique para adicionar outros endereços"
+                    aria-label="Adicionar endereço"
+                    style="width: 2rem; height: 2rem;">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <!-- Campo oculto JSON -->
+        {% if form.additional_addresses_json %}
+            {% render_field form.additional_addresses_json class+="wizard-additional-addresses-json" style="display:none" %}
+        {% endif %}
+
+        <!-- Lista/Tabela de endereços -->
+        <div class="table-responsive mt-3">
+            <table class="table table-sm align-middle mb-0" id="tblAdditionalAddresses">
+                <colgroup>
+                    <col style="width: 140px;">
+                    <col>
+                    <col style="width: 110px;">
+                    <col style="width: 120px;">{# aumentada para 2 botões #}
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="text-nowrap">Tipo</th>
+                        <th>Endereço</th>
+                        <th class="text-center text-nowrap">Principal</th>
+                        <th class="text-center text-nowrap">Ações</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="modalAddAddress" tabindex="-1" aria-labelledby="modalAddAddressLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalAddAddressLabel">Adicionar Endereço</h5>
+        <button type="button" class="btn-close close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"><span class="d-none" aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div id="addrError" class="alert alert-danger py-2 px-3 d-none mb-3"></div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label" for="addrTipo">Tipo</label>
+            <select id="addrTipo" class="form-select form-select-sm">
+              <option value="ENT" selected>Entrega</option>
+              <option value="COB">Cobrança</option>
+              <option value="FISCAL">Fiscal</option>
+              <option value="OUTRO">Outro</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="addrCep">CEP</label>
+            <input id="addrCep" type="text" class="form-control form-control-sm cep-mask" placeholder="00000-000"
+                   maxlength="10" size="10" inputmode="numeric" pattern="[0-9]{5}-[0-9]{3}"
+                   title="CEP no formato 00000-000"
+                   style="width: calc(10ch + 3rem + 2px);" />
+          </div>
+          <div class="col-8">
+            <label class="form-label" for="addrLogradouro">Logradouro</label>
+            <input id="addrLogradouro" type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-4">
+            <label class="form-label" for="addrNumero">Número</label>
+            <input id="addrNumero" type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="addrComplemento">Complemento</label>
+            <input id="addrComplemento" type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="addrBairro">Bairro</label>
+            <input id="addrBairro" type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="addrCidade">Cidade</label>
+            <input id="addrCidade" type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-2">
+            <label class="form-label" for="addrUf">UF</label>
+            <input id="addrUf" type="text" maxlength="2" class="form-control form-control-sm text-uppercase" />
+          </div>
+          <div class="col-4">
+            <label class="form-label" for="addrPais">País</label>
+            <input id="addrPais" type="text" class="form-control form-control-sm" value="Brasil" />
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="addrPonto">Ponto de Referência</label>
+            <input id="addrPonto" type="text" class="form-control form-control-sm" />
+          </div>
+          <!-- Checkbox alinhado -->
+          <div class="col-12">
+            <div class="form-check mt-2 d-flex align-items-center gap-2 ps-1">
+              <input id="addrPrincipal" class="form-check-input m-0" type="checkbox" />
+              <label class="form-check-label mb-0" for="addrPrincipal">Marcar como principal deste tipo</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSaveAddress">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,203 @@
+{# Formulário de filtros para movimentações #}
+{% load static %}
+
+<div class="filter-card" data-aos="fade-up">
+    <div class="card-body">
+        <form method="get" class="row g-3" id="filtros-movimentos">
+            <div class="col-md-3">
+                <label for="produto" class="form-label fw-semibold">Produto</label>
+                <select class="form-select form-select-modern" name="produto" id="produto">
+                    <option value="">Todos os produtos</option>
+                    {% for produto in produtos %}
+                        <option value="{{ produto.id }}" {% if request.GET.produto == produto.id|stringformat:"s" %}selected{% endif %}>
+                            {{ produto.nome }} {% if produto.codigo %}({{ produto.codigo }}){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label for="tipo" class="form-label fw-semibold">Tipo</label>
+                <select class="form-select form-select-modern" name="tipo" id="tipo">
+                    <option value="">Todos os tipos</option>
+                    <option value="ENTRADA" {% if request.GET.tipo == "ENTRADA" %}selected{% endif %}>Entrada</option>
+                    <option value="SAIDA" {% if request.GET.tipo == "SAIDA" %}selected{% endif %}>Saída</option>
+                    <option value="TRANSFERENCIA" {% if request.GET.tipo == "TRANSFERENCIA" %}selected{% endif %}>Transferência</option>
+                    <option value="AJUSTE_POS" {% if request.GET.tipo == "AJUSTE_POS" %}selected{% endif %}>Ajuste Positivo</option>
+                    <option value="AJUSTE_NEG" {% if request.GET.tipo == "AJUSTE_NEG" %}selected{% endif %}>Ajuste Negativo</option>
+                    <option value="RESERVA" {% if request.GET.tipo == "RESERVA" %}selected{% endif %}>Reserva</option>
+                    <option value="LIB_RESERVA" {% if request.GET.tipo == "LIB_RESERVA" %}selected{% endif %}>Liberação Reserva</option>
+                    <option value="CONSUMO_BOM" {% if request.GET.tipo == "CONSUMO_BOM" %}selected{% endif %}>Consumo BOM</option>
+                    <option value="DESCARTE" {% if request.GET.tipo == "DESCARTE" %}selected{% endif %}>Descarte</option>
+                    <option value="PERDA" {% if request.GET.tipo == "PERDA" %}selected{% endif %}>Perda</option>
+                    <option value="VENCIMENTO" {% if request.GET.tipo == "VENCIMENTO" %}selected{% endif %}>Vencimento</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="deposito" class="form-label fw-semibold">Depósito</label>
+                <select class="form-select form-select-modern" name="deposito" id="deposito">
+                    <option value="">Todos os depósitos</option>
+                    {% for deposito in depositos %}
+                        <option value="{{ deposito.id }}" {% if request.GET.deposito == deposito.id|stringformat:"s" %}selected{% endif %}>
+                            {{ deposito.nome }} {% if deposito.codigo %}({{ deposito.codigo }}){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label for="data_inicio" class="form-label fw-semibold">Data Início</label>
+                <input type="date" class="form-control form-control-modern" name="data_inicio" id="data_inicio" value="{{ request.GET.data_inicio }}">
+            </div>
+
+            <div class="col-md-2">
+                <label for="data_fim" class="form-label fw-semibold">Data Fim</label>
+                <input type="date" class="form-control form-control-modern" name="data_fim" id="data_fim" value="{{ request.GET.data_fim }}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="usuario" class="form-label fw-semibold">Usuário</label>
+                <select class="form-select form-select-modern" name="usuario" id="usuario">
+                    <option value="">Todos os usuários</option>
+                    {% for user in usuarios %}
+                        <option value="{{ user.id }}" {% if request.GET.usuario == user.id|stringformat:"s" %}selected{% endif %}>
+                            {{ user.get_full_name|default:user.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label for="status_aprovacao" class="form-label fw-semibold">Status</label>
+                <select class="form-select form-select-modern" name="status_aprovacao" id="status_aprovacao">
+                    <option value="">Todos</option>
+                    <option value="APROVADO" {% if request.GET.status_aprovacao == "APROVADO" %}selected{% endif %}>Aprovado</option>
+                    <option value="PENDENTE" {% if request.GET.status_aprovacao == "PENDENTE" %}selected{% endif %}>Pendente</option>
+                    <option value="REJEITADO" {% if request.GET.status_aprovacao == "REJEITADO" %}selected{% endif %}>Rejeitado</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="referencia" class="form-label fw-semibold">Referência Externa</label>
+                <input type="text" class="form-control form-control-modern" name="referencia" id="referencia" 
+                       placeholder="Número do pedido, OS, etc." value="{{ request.GET.referencia }}">
+            </div>
+
+            <div class="col-md-2">
+                <label for="valor_min" class="form-label fw-semibold">Valor Mín.</label>
+                <div class="input-group">
+                    <span class="input-group-text">R$</span>
+                    <input type="number" class="form-control form-control-modern" name="valor_min" id="valor_min" 
+                           step="0.01" min="0" value="{{ request.GET.valor_min }}">
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <label for="valor_max" class="form-label fw-semibold">Valor Máx.</label>
+                <div class="input-group">
+                    <span class="input-group-text">R$</span>
+                    <input type="number" class="form-control form-control-modern" name="valor_max" id="valor_max" 
+                           step="0.01" min="0" value="{{ request.GET.valor_max }}">
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="submit" class="btn btn-gradient-primary">
+                        <i class="fas fa-search me-1"></i>Filtrar
+                    </button>
+                    <a href="{% url 'estoque:movimentos_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Limpar
+                    </a>
+                    
+                    {# Filtros rápidos #}
+                    <div class="ms-3 d-flex gap-2">
+                        <span class="text-muted me-2">Filtros rápidos:</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filtroRapido('hoje')">
+                            Hoje
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filtroRapido('semana')">
+                            Esta Semana
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filtroRapido('mes')">
+                            Este Mês
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="filtroRapido('pendentes')">
+                            Pendentes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Filtros rápidos
+function filtroRapido(tipo) {
+    const form = document.getElementById('filtros-movimentos');
+    const hoje = new Date();
+    const formatDate = (date) => date.toISOString().split('T')[0];
+    
+    // Limpar filtros anteriores
+    form.reset();
+    
+    switch(tipo) {
+        case 'hoje':
+            document.getElementById('data_inicio').value = formatDate(hoje);
+            document.getElementById('data_fim').value = formatDate(hoje);
+            break;
+            
+        case 'semana':
+            const inicioSemana = new Date(hoje);
+            inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+            document.getElementById('data_inicio').value = formatDate(inicioSemana);
+            document.getElementById('data_fim').value = formatDate(hoje);
+            break;
+            
+        case 'mes':
+            const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+            document.getElementById('data_inicio').value = formatDate(inicioMes);
+            document.getElementById('data_fim').value = formatDate(hoje);
+            break;
+            
+        case 'pendentes':
+            document.getElementById('status_aprovacao').value = 'PENDENTE';
+            break;
+    }
+    
+    form.submit();
+}
+
+// Auto-submit nos selects principais
+document.addEventListener('DOMContentLoaded', function() {
+    const autoSubmitFields = ['produto', 'tipo', 'deposito', 'usuario', 'status_aprovacao'];
+    
+    autoSubmitFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', function() {
+                setTimeout(() => {
+                    document.getElementById('filtros-movimentos').submit();
+                }, 100);
+            });
+        }
+    });
+    
+    // Validação de datas
+    const dataInicio = document.getElementById('data_inicio');
+    const dataFim = document.getElementById('data_fim');
+    
+    function validarDatas() {
+        if (dataInicio.value && dataFim.value) {
+            if (new Date(dataInicio.value) > new Date(dataFim.value)) {
+                dataFim.value = dataInicio.value;
+            }
+        }
+    }
+    
+    dataInicio.addEventListener('change', validarDatas);
+    dataFim.addEventListener('change', validarDatas);
+});
+</script>

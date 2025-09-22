@@ -1,0 +1,441 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}Nova Movimentação Financeira{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dist/css/pandora-ultra-modern.css' %}">
+<style>
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+    
+    .section-header h5 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .section-body {
+        padding: 2rem;
+    }
+    
+    .form-floating label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.15);
+    }
+    
+    .required-asterisk {
+        color: #dc3545;
+        font-weight: bold;
+        margin-left: 3px;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .tipo-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .tipo-btn {
+        flex: 1;
+        padding: 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .tipo-btn.active {
+        border-color: #007bff;
+        background: #f8f9ff;
+    }
+    
+    .tipo-btn.receita.active {
+        border-color: #28a745;
+        background: #f8fff9;
+    }
+    
+    .tipo-btn.despesa.active {
+        border-color: #dc3545;
+        background: #fff8f8;
+    }
+    
+    .tipo-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .valor-calculator {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 2px dashed #dee2e6;
+    }
+    
+    .calculator-display {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .valor-receita {
+        color: #28a745;
+    }
+    
+    .valor-despesa {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i></a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'financeiro:financeiro_list' %}">Financeiro</a></li>
+                        <li class="breadcrumb-item active">{{ financeiro.pk|yesno:"Editar,Nova" }} Movimentação</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title">
+                    <i class="fas fa-dollar-sign page-icon"></i>
+                    {{ financeiro.pk|yesno:"Editar Movimentação,Nova Movimentação" }}
+                </h1>
+                <p class="page-subtitle text-muted">
+                    {% if financeiro.pk %}
+                        Atualize as informações da movimentação {{ financeiro.descricao }}
+                    {% else %}
+                        Registre uma nova movimentação financeira
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'financeiro:financeiro_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar ao Financeiro
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            
+            <!-- Tipo de Movimentação -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-exchange-alt me-2"></i>Tipo de Movimentação</h5>
+                </div>
+                <div class="section-body">
+                    <div class="tipo-buttons">
+                        <div class="tipo-btn receita" data-tipo="receita">
+                            <div class="tipo-icon text-success">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <h6>Receita</h6>
+                            <small class="text-muted">Entrada de dinheiro</small>
+                        </div>
+                        <div class="tipo-btn despesa" data-tipo="despesa">
+                            <div class="tipo-icon text-danger">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <h6>Despesa</h6>
+                            <small class="text-muted">Saída de dinheiro</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Campo tipo oculto -->
+                    {{ form.tipo.as_hidden }}
+                    {% if form.tipo.errors %}
+                        <div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Informações Básicas -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Informações Básicas</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="form-floating">
+                                {{ form.descricao }}
+                                <label for="{{ form.descricao.id_for_label }}">
+                                    Descrição<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.descricao.errors %}
+                                <div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Descrição clara da movimentação financeira</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.data_vencimento }}
+                                <label for="{{ form.data_vencimento.id_for_label }}">
+                                    Data<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.data_vencimento.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_vencimento.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.valor }}
+                                <label for="{{ form.valor.id_for_label }}">
+                                    Valor<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.valor.errors %}
+                                <div class="invalid-feedback d-block">{{ form.valor.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.categoria }}
+                                <label for="{{ form.categoria.id_for_label }}">
+                                    Categoria
+                                </label>
+                            </div>
+                            {% if form.categoria.errors %}
+                                <div class="invalid-feedback d-block">{{ form.categoria.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.status }}
+                                <label for="{{ form.status.id_for_label }}">
+                                    Status<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Calculadora de Valor -->
+                    <div class="valor-calculator mt-4">
+                        <h6 class="mb-3"><i class="fas fa-calculator me-2"></i>Valor da Movimentação</h6>
+                        <div class="calculator-display">
+                            <span id="valor-display">R$ 0,00</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            O valor será tratado como <span id="tipo-display">movimentação</span> quando salvo.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detalhes Adicionais -->
+            {% if form.conta or form.centro_custo or form.observacoes %}
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-clipboard-list me-2"></i>Detalhes Adicionais</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row g-3">
+                        {% if form.conta %}
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {{ form.conta }}
+                                <label for="{{ form.conta.id_for_label }}">
+                                    Conta Bancária
+                                </label>
+                            </div>
+                            {% if form.conta.errors %}
+                                <div class="invalid-feedback d-block">{{ form.conta.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if form.centro_custo %}
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {{ form.centro_custo }}
+                                <label for="{{ form.centro_custo.id_for_label }}">
+                                    Centro de Custo
+                                </label>
+                            </div>
+                            {% if form.centro_custo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.centro_custo.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if form.observacoes %}
+                    <div class="row g-3 mt-3">
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {{ form.observacoes }}
+                                <label for="{{ form.observacoes.id_for_label }}">Observações</label>
+                            </div>
+                            {% if form.observacoes.errors %}
+                                <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Informações adicionais sobre a movimentação</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Botões de Ação -->
+            <div class="form-section">
+                <div class="section-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'financeiro:financeiro_list' %}" class="btn btn-outline-secondary btn-modern">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-modern">
+                                <i class="fas fa-save me-2"></i>{{ financeiro.pk|yesno:"Atualizar,Salvar" }} Movimentação
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Máscaras
+    $('#id_valor').mask('000.000.000.000.000,00', {reverse: true});
+    
+    // Configurar tipo de movimentação
+    const tipoAtual = $('#id_tipo').val() || 'receita';
+    $(`.tipo-btn[data-tipo="${tipoAtual}"]`).addClass('active');
+    
+    // Eventos dos botões de tipo
+    $('.tipo-btn').on('click', function() {
+        $('.tipo-btn').removeClass('active');
+        $(this).addClass('active');
+        const tipo = $(this).data('tipo');
+        $('#id_tipo').val(tipo);
+        updateValorDisplay();
+    });
+    
+    // Atualizar display do valor
+    function updateValorDisplay() {
+        const valor = parseFloat($('#id_valor').val().replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        const tipo = $('#id_tipo').val();
+        
+        $('#valor-display').text('R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
+        
+        if (tipo === 'receita') {
+            $('#valor-display').removeClass('valor-despesa').addClass('valor-receita');
+            $('#tipo-display').text('receita');
+        } else {
+            $('#valor-display').removeClass('valor-receita').addClass('valor-despesa');
+            $('#tipo-display').text('despesa');
+        }
+    }
+    
+    // Atualizar display quando valor mudar
+    $('#id_valor').on('input', updateValorDisplay);
+    
+    // Atualizar display inicial
+    updateValorDisplay();
+    
+    // Auto-preenchimento da data
+    {% if not financeiro.pk %}
+    if (!$('#id_data_vencimento').val()) {
+        const hoje = new Date().toISOString().split('T')[0];
+        $('#id_data_vencimento').val(hoje);
+    }
+    {% endif %}
+    
+    // Validação antes do envio
+    $('form').on('submit', function(e) {
+        const valor = parseFloat($('#id_valor').val().replace(/[^\d,]/g, '').replace(',', '.'));
+        const tipo = $('#id_tipo').val();
+        
+        if (!tipo) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Tipo Obrigatório',
+                text: 'Por favor, selecione o tipo de movimentação (Receita ou Despesa).',
+                confirmButtonColor: '#007bff'
+            });
+            return;
+        }
+        
+        if (valor > 100000) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Valor Alto',
+                text: `O valor R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})} é muito alto. Confirma?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#007bff',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, confirmar',
+                cancelButtonText: 'Revisar valor'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $(this).off('submit').submit();
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

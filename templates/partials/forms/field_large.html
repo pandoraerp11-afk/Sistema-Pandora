@@ -1,0 +1,23 @@
+{% load widget_tweaks %}
+{# Partial para campos grandes - nomes completos, endereços, emails #}
+
+<div class="col-12 col-md-8 col-lg-6">
+    <div class="form-field-compact">
+        <label for="{{ field.id_for_label }}" class="form-label form-label-compact">
+            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+            {{ field.label }}
+        </label>
+        
+        {{ field|add_class:"form-control form-control-sm" }}
+        
+        {% if field.help_text %}
+        <div class="form-text form-text-sm">{{ field.help_text }}</div>
+        {% endif %}
+        
+        {% if field.errors %}
+        <div class="invalid-feedback d-block">
+            {% for error in field.errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>

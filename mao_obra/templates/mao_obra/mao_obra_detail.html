@@ -1,0 +1,282 @@
+{% extends "pandora_detail_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Registro de Mão de Obra - {{ mao_obra_item.funcionario.nome_completo }}{% endblock %}
+
+{% block page_title %}Registro de Mão de Obra{% endblock %}
+
+{% block page_subtitle %}{{ mao_obra_item.funcionario.nome_completo }} - {{ mao_obra_item.data|date:"d/m/Y" }}{% endblock %}
+
+{% block page_icon %}fas fa-hard-hat{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'mao_obra:mao_obra_list' %}">Mão de Obra</a></li>
+<li class="breadcrumb-item active">{{ mao_obra_item.funcionario.nome_completo }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2 align-items-center">
+    <div class="btn-group btn-group-sm">
+    {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+        <a href="{% url 'mao_obra:mao_obra_update' mao_obra_item.pk %}" class="btn btn-warning">
+            <i class="fas fa-edit me-1"></i> Editar
+        </a>
+        {% endif %}
+    {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+        <a href="{% url 'mao_obra:mao_obra_delete' mao_obra_item.pk %}" class="btn btn-danger" 
+           onclick="return confirm('Tem certeza que deseja excluir este registro?')">
+            <i class="fas fa-trash me-1"></i> Excluir
+        </a>
+        {% endif %}
+        <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+            <span class="visually-hidden">Toggle Dropdown</span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="window.print()">
+                <i class="fas fa-print me-2"></i> Imprimir
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="exportToPDF()">
+                <i class="fas fa-file-pdf me-2"></i> Exportar PDF
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'funcionarios:funcionario_detail' mao_obra_item.funcionario.pk %}">
+                <i class="fas fa-user me-2"></i> Ver Funcionário
+            </a></li>
+            {% if mao_obra_item.obra %}
+            <li><a class="dropdown-item" href="{% url 'obras:obra_detail' mao_obra_item.obra.pk %}">
+                <i class="fas fa-building me-2"></i> Ver Obra
+            </a></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block detail_content %}
+<!-- Seção 1: Informações Gerais -->
+<div class="detail-section">
+    <div class="section-header">
+        <h3><i class="fas fa-info-circle me-2"></i> Informações Gerais</h3>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="info-group">
+                <label class="info-label">Funcionário</label>
+                <div class="info-value">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar bg-primary text-white me-2">
+                            {{ mao_obra_item.funcionario.nome_completo|slice:":2"|upper }}
+                        </div>
+                        <div>
+                            <div class="fw-semibold">{{ mao_obra_item.funcionario.nome_completo }}</div>
+                            <small class="text-muted">{{ mao_obra_item.funcionario.cargo|default:"" }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="info-group">
+                <label class="info-label">Obra</label>
+                <div class="info-value">
+                    {% if mao_obra_item.obra %}
+                    <div>
+                        <div class="fw-semibold">{{ mao_obra_item.obra.nome }}</div>
+                        <small class="text-muted">{{ mao_obra_item.obra.cliente|default:"" }}</small>
+                    </div>
+                    {% else %}
+                    <div class="text-muted">Obra não especificada</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="info-group">
+                <label class="info-label">Data</label>
+                <div class="info-value">
+                    <span class="badge bg-info">{{ mao_obra_item.data|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="info-group">
+                <label class="info-label">Atividade</label>
+                <div class="info-value">{{ mao_obra_item.atividade }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção 2: Valores e Cálculos -->
+<div class="detail-section">
+    <div class="section-header">
+        <h3><i class="fas fa-calculator me-2"></i> Valores e Cálculos</h3>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="info-group">
+                <label class="info-label">Horas Trabalhadas</label>
+                <div class="info-value">
+                    <span class="badge bg-success fs-6">{{ mao_obra_item.horas_trabalhadas }} h</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-group">
+                <label class="info-label">Valor por Hora</label>
+                <div class="info-value">
+                    <span class="text-primary fw-semibold">R$ {{ mao_obra_item.valor_hora|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-group">
+                <label class="info-label">Valor Total</label>
+                <div class="info-value">
+                    <span class="text-success fw-bold fs-5">R$ {{ valor_total|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-group">
+                <label class="info-label">Custo por Hora</label>
+                <div class="info-value">
+                    <span class="text-warning">R$ {{ mao_obra_item.valor_hora|floatformat:2 }}/h</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção 3: Observações -->
+{% if mao_obra_item.observacoes %}
+<div class="detail-section">
+    <div class="section-header">
+        <h3><i class="fas fa-comments me-2"></i> Observações</h3>
+    </div>
+    
+    <div class="alert alert-light border">
+        <div class="text-break">{{ mao_obra_item.observacoes|linebreaks }}</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Seção 4: Registros Relacionados -->
+{% if registros_relacionados %}
+<div class="detail-section">
+    <div class="section-header">
+        <h3><i class="fas fa-history me-2"></i> Outros Registros - {{ mao_obra_item.funcionario.nome_completo }}{% if mao_obra_item.obra %} em {{ mao_obra_item.obra.nome }}{% endif %}</h3>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Data</th>
+                    <th>Atividade</th>
+                    <th>Horas</th>
+                    <th>Valor/Hora</th>
+                    <th>Total</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for registro in registros_relacionados %}
+                <tr>
+                    <td>{{ registro.data|date:"d/m/Y" }}</td>
+                    <td>{{ registro.atividade|truncatechars:50 }}</td>
+                    <td><span class="badge bg-info">{{ registro.horas_trabalhadas }} h</span></td>
+                    <td>R$ {{ registro.valor_hora|floatformat:2 }}</td>
+                    <td><span class="text-success fw-semibold">R$ {{ registro.valor_total_calculado|floatformat:2 }}</span></td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'mao_obra:mao_obra_detail' registro.pk %}" class="btn btn-outline-primary" title="Ver">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                                <a href="{% url 'mao_obra:mao_obra_update' registro.pk %}" class="btn btn-outline-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Seção 5: Resumo de Estatísticas -->
+<div class="detail-section">
+    <div class="section-header">
+        <h3><i class="fas fa-chart-bar me-2"></i> Resumo Rápido</h3>
+    </div>
+    
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card stat-card bg-gradient-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h4>{{ mao_obra_item.horas_trabalhadas }}</h4>
+                    <small>Horas Trabalhadas</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-gradient-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                    <h4>{{ valor_total|floatformat:0 }}</h4>
+                    <small>Valor Total (R$)</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-gradient-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-percentage fa-2x mb-2"></i>
+                    <h4>{{ mao_obra_item.valor_hora|floatformat:0 }}</h4>
+                    <small>Valor/Hora (R$)</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-gradient-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar fa-2x mb-2"></i>
+                    <h4>{{ mao_obra_item.data|date:"d" }}</h4>
+                    <small>{{ mao_obra_item.data|date:"M/Y" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportToPDF() {
+    // Implementar exportação para PDF
+    console.log('Exportando para PDF...');
+}
+
+// Adicionar tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

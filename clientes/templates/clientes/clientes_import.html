@@ -1,0 +1,132 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 -->
+<link rel="stylesheet" href="{% static 'plugins/select2/css/select2.min.css' %}">
+{% endblock %}
+
+{% block content_header %}
+<div class="container-fluid">
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1>{{ titulo }}</h1>
+        </div>
+        <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Início</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'clientes:clientes_list' %}">Clientes</a></li>
+                <li class="breadcrumb-item active">{{ titulo }}</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">{{ subtitulo }}</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-info"></i> Instruções para importação</h5>
+                    <p>Para importar clientes, siga as instruções abaixo:</p>
+                    <ol>
+                        <li>Selecione o formato do arquivo (CSV, XLS ou XLSX)</li>
+                        <li>Selecione o arquivo contendo os dados dos clientes</li>
+                        <li>Clique em "Importar" para iniciar o processo</li>
+                    </ol>
+                    <p>O arquivo deve conter as seguintes colunas:</p>
+                    <ul>
+                        <li><strong>tipo</strong>: PF (Pessoa Física) ou PJ (Pessoa Jurídica)</li>
+                        <li><strong>nome_completo</strong>: Nome completo (para PF)</li>
+                        <li><strong>cpf</strong>: CPF (para PF)</li>
+                        <li><strong>razao_social</strong>: Razão Social (para PJ)</li>
+                        <li><strong>nome_fantasia</strong>: Nome Fantasia (para PJ)</li>
+                        <li><strong>cnpj</strong>: CNPJ (para PJ)</li>
+                        <li><strong>email</strong>: E-mail de contato</li>
+                        <li><strong>telefone</strong>: Telefone de contato</li>
+                        <li><strong>endereco</strong>: Endereço</li>
+                        <li><strong>cidade</strong>: Cidade</li>
+                        <li><strong>estado</strong>: Estado (UF)</li>
+                        <li><strong>cep</strong>: CEP</li>
+                    </ul>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.formato.id_for_label }}">{{ form.formato.label }}</label>
+                                {{ form.formato }}
+                                {% if form.formato.errors %}
+                                <div class="text-danger">
+                                    {{ form.formato.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.arquivo.id_for_label }}">{{ form.arquivo.label }}</label>
+                                {{ form.arquivo }}
+                                {% if form.arquivo.errors %}
+                                <div class="text-danger">
+                                    {{ form.arquivo.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 text-right">
+                            <a href="{% url 'clientes:clientes_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left mr-1"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-file-import mr-1"></i> Importar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="mt-4">
+                    <h4>Modelos de Arquivo</h4>
+                    <p>Baixe um modelo de arquivo para importação:</p>
+                    <a href="#" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-csv mr-1"></i> Modelo CSV
+                    </a>
+                    <a href="#" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-excel mr-1"></i> Modelo Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Select2 -->
+<script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
+
+<script>
+    $(function () {
+        // Inicializar Select2
+        $('.select2').select2({
+            theme: 'bootstrap-5'
+        });
+    });
+</script>
+{% endblock %}

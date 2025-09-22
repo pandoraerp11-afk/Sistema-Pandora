@@ -1,0 +1,76 @@
+{% extends "generic_list.html" %}
+{% load humanize %}
+{% block page_icon %}fas fa-list{% endblock %}
+{% load static humanize agendamento_extras %}
+{% block title %}Agendamentos{% endblock %}
+{% block page_subtitle %}Gerencie agendamentos e status{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'agendamentos:dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-chart-line"></i></a>
+  {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}
+    <a href="{% url 'agendamentos:agendamento-create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Novo</a>
+  {% endif %}
+{% endblock %}
+{% block add_url %}{% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}{% url 'agendamentos:agendamento-create' %}{% endif %}{% endblock %}
+{% block list_filters %}
+  <form class="row g-2" method="get">
+    <div class="col-md-2"><input type="date" name="data" value="{{ request.GET.data }}" class="form-control form-control-sm" /></div>
+    <div class="col-md-3"><input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar cliente ou observação" class="form-control form-control-sm" /></div>
+    <div class="col-md-3">
+      <select name="servico" class="form-select form-select-sm">
+        <option value="">Serviço...</option>
+        {% for s in servicos %}
+          <option value="{{ s.id }}" {% if request.GET.servico == s.id|stringformat:'s' %}selected{% endif %}>{{ s.nome_servico }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="status" class="form-select form-select-sm">
+        <option value="">Todos Status</option>
+        {% for s,val in status_choices %}
+          <option value="{{ s }}" {% if request.GET.status == s %}selected{% endif %}>{{ val }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid"><button class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+    <div class="col-md-1 d-grid"><a href="?" class="btn btn-outline-secondary btn-sm" title="Limpar"><i class="fas fa-times"></i></a></div>
+  </form>
+{% endblock %}
+{% block list_table %}
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle">
+      <thead class="table-light">
+      <tr>
+  <th>ID</th><th>Início</th><th>Profissional</th><th>Serviço</th><th>Cliente</th><th>Duração</th><th>Pendências</th><th>Status</th><th></th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for ag in page_obj.object_list %}
+        <tr class="{% if ag.status == 'CANCELADO' %}table-danger{% elif ag.status == 'NO_SHOW' %}table-warning{% endif %}">
+          <td><a href="{% url 'agendamentos:agendamento-detail' ag.id %}" class="text-decoration-none">#{{ ag.id }}</a></td>
+          <td>{{ ag.data_inicio|date:'d/m/Y H:i' }}</td>
+          <td>{{ ag.profissional }}</td>
+          <td>{% if ag.servico_id %}<span class="badge bg-light text-dark">{{ ag.servico.nome_servico }}</span>{% else %}-{% endif %}</td>
+          <td>{{ ag.cliente }}</td>
+          <td><small class="text-muted">{% with dur=ag.data_fim|timesince:ag.data_inicio %}{{ dur|default:'-' }}{% endwith %}</small></td>
+          <td>{% if ag.metadata.pendencias %}<span class="badge bg-warning text-dark">{{ ag.metadata.pendencias|length }}</span>{% else %}-{% endif %}</td>
+          <td><span class="badge bg-{% if ag.status == 'CONFIRMADO' %}success{% elif ag.status == 'PENDENTE' %}secondary{% elif ag.status == 'CANCELADO' %}danger{% elif ag.status == 'EM_ANDAMENTO' %}info{% elif ag.status == 'CONCLUIDO' %}primary{% elif ag.status == 'NO_SHOW' %}warning text-dark{% else %}light{% endif %}">{{ ag.status }}</span></td>
+          <td class="text-end"><a href="{% url 'agendamentos:agendamento-detail' ag.id %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Nenhum agendamento encontrado.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+{% block list_pagination %}
+  {% if is_paginated %}
+    <ul class="pagination pagination-sm mb-0">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>{% endif %}
+      {% for num in paginator.page_range %}
+        <li class="page-item {% if num == page_obj.number %}active{% endif %}"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% endfor %}
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>{% endif %}
+    </ul>
+  {% endif %}
+{% endblock %}

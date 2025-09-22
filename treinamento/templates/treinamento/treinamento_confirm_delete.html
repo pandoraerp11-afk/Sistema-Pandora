@@ -1,0 +1,372 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}Confirmar Exclusão - {{ treinamento.titulo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .confirmation-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: var(--surface-color);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
+    }
+
+    .confirmation-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .confirmation-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1rem;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .confirmation-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .confirmation-subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+    }
+
+    .training-info {
+        background: var(--background-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .training-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .training-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .detail-item i {
+        color: var(--primary-color);
+        width: 16px;
+    }
+
+    .warning-message {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+        color: #856404;
+    }
+
+    .warning-message i {
+        color: #f39c12;
+        margin-right: 0.5rem;
+    }
+
+    .consequences-list {
+        margin-top: 1rem;
+    }
+
+    .consequences-list li {
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .consequences-list i {
+        color: var(--danger-color);
+        margin-top: 0.2rem;
+    }
+
+    .confirmation-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .btn-cancel {
+        background: var(--surface-color);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-cancel:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .btn-delete {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-delete:hover {
+        background: linear-gradient(135deg, #ee5a52, #e74c3c);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(238, 90, 82, 0.3);
+    }
+
+    .btn-delete:active {
+        transform: translateY(0);
+    }
+
+    .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: var(--background-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+    }
+
+    .checkbox-container input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--danger-color);
+    }
+
+    .checkbox-container label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+        .confirmation-container {
+            margin: 1rem;
+            padding: 1.5rem;
+        }
+
+        .confirmation-actions {
+            flex-direction: column;
+        }
+
+        .training-details {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <div class="breadcrumb">
+            <a href="{% url 'treinamento:treinamento_list' %}">Treinamentos</a>
+            <i class="fas fa-chevron-right"></i>
+            <a href="{% url 'treinamento:treinamento_detail' treinamento.pk %}">{{ treinamento.titulo }}</a>
+            <i class="fas fa-chevron-right"></i>
+            <span>Excluir</span>
+        </div>
+    </div>
+</div>
+
+<div class="confirmation-container">
+    <div class="confirmation-header">
+        <div class="confirmation-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h1 class="confirmation-title">Confirmar Exclusão</h1>
+        <p class="confirmation-subtitle">
+            Você está prestes a excluir permanentemente este treinamento
+        </p>
+    </div>
+
+    <div class="training-info">
+        <h3 class="training-title">{{ treinamento.titulo }}</h3>
+        <div class="training-details">
+            {% if treinamento.instrutor %}
+            <div class="detail-item">
+                <i class="fas fa-user-tie"></i>
+                <span>{{ treinamento.instrutor.nome }}</span>
+            </div>
+            {% endif %}
+            <div class="detail-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>{{ treinamento.data_inicio|date:"d/m/Y" }} - {{ treinamento.data_fim|date:"d/m/Y" }}</span>
+            </div>
+            <div class="detail-item">
+                <i class="fas fa-clock"></i>
+                <span>{{ treinamento.carga_horaria }} horas</span>
+            </div>
+            <div class="detail-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ treinamento.local }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="warning-message">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+        
+        <ul class="consequences-list">
+            <li>
+                <i class="fas fa-times-circle"></i>
+                <span>Todas as informações do treinamento serão perdidas permanentemente</span>
+            </li>
+            <li>
+                <i class="fas fa-times-circle"></i>
+                <span>Histórico de participantes será removido</span>
+            </li>
+            {% if treinamento.material %}
+            <li>
+                <i class="fas fa-times-circle"></i>
+                <span>Material anexado será excluído</span>
+            </li>
+            {% endif %}
+            <li>
+                <i class="fas fa-times-circle"></i>
+                <span>Relatórios relacionados podem ser afetados</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="checkbox-container">
+        <input type="checkbox" id="confirm-delete" required>
+        <label for="confirm-delete">
+            Eu entendo que esta ação é irreversível e confirmo que desejo excluir este treinamento
+        </label>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="confirmation-actions">
+            <a href="{% url 'treinamento:treinamento_detail' treinamento.pk %}" class="btn-cancel">
+                <i class="fas fa-arrow-left"></i>
+                Cancelar
+            </a>
+            <button type="submit" class="btn-delete" id="delete-button" disabled>
+                <i class="fas fa-trash"></i>
+                Excluir Treinamento
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('confirm-delete');
+    const deleteButton = document.getElementById('delete-button');
+    
+    // Habilitar/desabilitar botão baseado no checkbox
+    checkbox.addEventListener('change', function() {
+        deleteButton.disabled = !this.checked;
+        if (this.checked) {
+            deleteButton.style.opacity = '1';
+            deleteButton.style.cursor = 'pointer';
+        } else {
+            deleteButton.style.opacity = '0.5';
+            deleteButton.style.cursor = 'not-allowed';
+        }
+    });
+    
+    // Confirmação final antes de enviar
+    deleteButton.addEventListener('click', function(e) {
+        if (!checkbox.checked) {
+            e.preventDefault();
+            showNotification('Por favor, confirme que deseja excluir este treinamento.', 'warning');
+            return;
+        }
+        
+        // Dupla confirmação
+        if (!confirm('Tem certeza ABSOLUTA que deseja excluir este treinamento? Esta ação não pode ser desfeita.')) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Mostrar loading
+        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+        deleteButton.disabled = true;
+    });
+    
+    // Atalhos de teclado
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.location.href = '{% url "treinamento:treinamento_detail" treinamento.pk %}';
+        }
+    });
+    
+    // Avisar sobre navegação
+    let formSubmitted = false;
+    
+    window.addEventListener('beforeunload', function(e) {
+        if (!formSubmitted) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    
+    document.querySelector('form').addEventListener('submit', function() {
+        formSubmitted = true;
+    });
+});
+
+// Função para mostrar notificação
+function showNotification(message, type = 'info') {
+    // Implementar sistema de notificações
+    alert(message);
+}
+</script>
+{% endblock %}

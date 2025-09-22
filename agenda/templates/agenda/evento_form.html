@@ -1,0 +1,133 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static %}
+
+{% block page_icon %}<i class="fas fa-calendar-plus"></i>{% endblock %}
+{% block page_title %}{% firstof titulo page_title 'Evento' %}{% endblock %}
+{% block page_subtitle %}{% firstof subtitulo page_subtitle 'Cadastro e edição de eventos' %}{% endblock %}
+
+{% block form_main %}
+{% block form_content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-compact">
+        <h4 class="card-title mb-0">
+            <i class="fas fa-info-circle"></i>
+            Informações do Evento
+        </h4>
+        {% if page_subtitle %}
+        <small class="card-subtitle text-muted">{{ page_subtitle }}</small>
+        {% endif %}
+    </div>
+    <div class="card-body card-body-compact">
+        <div class="row g-3">
+            {# Título #}
+            {% include 'core/wizard/wizard_field.html' with field=form.titulo field_size='xl' %}
+
+            {# Descrição #}
+            {% include 'core/wizard/wizard_field.html' with field=form.descricao field_size='xl' %}
+
+            {# Local #}
+            {% include 'core/wizard/wizard_field.html' with field=form.local field_size='lg' %}
+
+            <div class="col-12">
+                <div class="form-check form-switch">
+                    {{ form.dia_inteiro }}
+                    <label class="form-check-label" for="{{ form.dia_inteiro.id_for_label }}">Evento de dia inteiro</label>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                {% include 'core/wizard/wizard_field.html' with field=form.data_inicio field_size='md' %}
+            </div>
+            <div class="col-md-6" id="data-fim-group">
+                {% include 'core/wizard/wizard_field.html' with field=form.data_fim field_size='md' %}
+            </div>
+
+            <div class="col-md-6">
+                {% include 'core/wizard/wizard_field.html' with field=form.status field_size='md' %}
+            </div>
+            <div class="col-md-6">
+                {% include 'core/wizard/wizard_field.html' with field=form.prioridade field_size='md' %}
+            </div>
+
+            <div class="col-md-6">
+                {% include 'core/wizard/wizard_field.html' with field=form.tipo_evento field_size='md' %}
+            </div>
+
+            <div class="col-md-6">
+                {% include 'core/wizard/wizard_field.html' with field=form.responsavel field_size='lg' %}
+            </div>
+            <div class="col-12">
+                <label class="form-label">Participantes</label>
+                <div class="border rounded p-3">
+                    <div class="row g-2" style="max-height: 220px; overflow:auto;">
+                        {% for choice in form.participantes %}
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="form-check">
+                                {{ choice.tag }}
+                                <label class="form-check-label">{{ choice.choice_label }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if form.participantes.help_text %}
+                <div class="form-text">{{ form.participantes.help_text }}</div>
+                {% endif %}
+                {% if form.participantes.errors %}
+                <div class="text-danger small">{{ form.participantes.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Lembretes</label>
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            {{ form.lembrete_15 }}
+                            <label class="form-check-label" for="{{ form.lembrete_15.id_for_label }}">15 minutos antes</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            {{ form.lembrete_60 }}
+                            <label class="form-check-label" for="{{ form.lembrete_60.id_for_label }}">60 minutos antes</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+        <a href="{% url 'agenda:evento_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-times"></i>
+        </a>
+        <button type="submit" form="main-form" class="btn btn-primary btn-sm">
+            <i class="fas fa-save"></i>
+        </button>
+    </div>
+    </div>
+{% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const diaInteiro = document.getElementById('{{ form.dia_inteiro.id_for_label }}');
+    const dataFimGroup = document.getElementById('data-fim-group');
+    if (diaInteiro && dataFimGroup) {
+        function toggleFim() {
+            if (diaInteiro.checked) {
+                dataFimGroup.style.display = 'none';
+                const fimInput = document.getElementById('{{ form.data_fim.id_for_label }}');
+                if (fimInput) fimInput.value = '';
+            } else {
+                dataFimGroup.style.display = '';
+            }
+        }
+        diaInteiro.addEventListener('change', toggleFim);
+        toggleFim();
+    }
+});
+</script>
+{% endblock %}

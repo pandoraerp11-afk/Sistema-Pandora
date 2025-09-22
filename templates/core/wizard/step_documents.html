@@ -1,0 +1,172 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{# STEP_DOCUMENTS SENTINEL v2 - deve existir somente UM extends acima e UM block step_content abaixo #}
+
+{% block step_content %}
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="fas fa-wand-magic-sparkles me-3 text-info" style="font-size:1.4rem"></i>
+    <div>
+        <strong>Documentos Dinâmicos.</strong> Tipos + Regras definem obrigatoriedade.
+        <div class="small text-muted">Envie todos os obrigatórios para avançar.</div>
+    </div>
+</div>
+
+<div class="wizard-section mb-2">
+    <div class="wizard-section-title d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-lock text-danger"></i>
+            <span class="fw-semibold">Documentos Obrigatórios</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-danger-subtle text-danger" id="countObrig">0/0</span>
+            {% if view.kwargs.pk %}
+            <a href="{% url 'documentos:documento_list' 'core' view.kwargs.pk %}"
+               class="btn btn-sm btn-outline-secondary" target="_blank" title="Visualizar documentos do tenant">
+               <i class="fas fa-folder-open me-1"></i> Ver Documentos
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="tblObrigatorios">
+                <thead class="table-light"><tr><th>Tipo</th><th>Categoria</th><th>Periodicidade</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="wizard-section mb-2">
+    <div class="wizard-section-title d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-circle-plus text-primary"></i>
+            <span class="fw-semibold">Documentos Adicionais</span>
+        </div>
+        <div class="d-flex gap-2">
+            <select id="selAdicionarOpcional" class="form-select form-select-sm" style="min-width:260px">
+                <option value="">-- Adicionar Documento Adicional --</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary" id="btnAddOpcional" type="button" title="Adicionar"><i class="fas fa-plus"></i></button>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="tblOpcionais">
+                <thead class="table-light"><tr><th>Tipo</th><th>Categoria</th><th>Periodicidade</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="alert alert-secondary small" id="wizardDocsResumo">Carregando...</div>
+
+<template id="rowDocTemplate">
+    <tr data-tipo-id=""><td class="tipo-nome fw-semibold"></td><td class="tipo-categoria small text-muted"></td><td class="tipo-periodicidade small"></td><td class="status-col"></td><td><div class="d-flex gap-2 justify-content-center"><button type="button" class="btn btn-sm btn-outline-primary btn-upload"><i class="fas fa-upload"></i></button><button type="button" class="btn btn-sm btn-outline-secondary d-none btn-ver" title="Abrir arquivo"><i class="fas fa-eye"></i></button><button type="button" class="btn btn-sm btn-outline-danger d-none btn-remover" title="Remover"><i class="fas fa-trash"></i></button></div><input type="file" class="d-none input-file" /></td></tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    function bytes(n){ if(!n && n!==0) return ''; const u=['B','KB','MB']; const i=Math.floor(Math.log(n)/Math.log(1024)); return (n/Math.pow(1024,i)).toFixed(1)+' '+u[i]; }
+    function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+    const URL_LIST = '{% url "documentos:wizard_docs_list" %}';
+    const URL_UPLOAD = '{% url "documentos:wizard_docs_upload" %}';
+    const URL_DELETE_PATTERN = '{% url "documentos:wizard_docs_delete" 999999 %}';
+    function buildDeleteUrl(id){ return URL_DELETE_PATTERN.replace('999999', id); }
+    let state = { obrigatorios:[], opcionais:[] };
+    let el={};
+    function init(){
+        el.tblObrig=document.querySelector('#tblObrigatorios tbody');
+        el.tblOpc=document.querySelector('#tblOpcionais tbody');
+        el.tmpl=document.getElementById('rowDocTemplate');
+        el.selOpc=document.getElementById('selAdicionarOpcional');
+        el.btnAdd=document.getElementById('btnAddOpcional');
+        el.resumo=document.getElementById('wizardDocsResumo');
+        el.countObrig=document.getElementById('countObrig');
+        el.btnAdd.addEventListener('click', onAdd); load();
+    }
+    function onAdd(){ const v=el.selOpc.value; if(!v) return; const obj=state.opcionais.find(o=>o.tipo_id==v); if(obj){ obj.addedTempRow=true; render(); el.selOpc.value=''; } }
+    function render(){
+        el.tblObrig.innerHTML=''; el.tblOpc.innerHTML=''; el.selOpc.querySelectorAll('option:not([value=""])').forEach(o=>o.remove());
+        let env=0,total=state.obrigatorios.length;
+        state.obrigatorios.forEach(d=>{const tr=row(d,true); el.tblObrig.appendChild(tr); if(d.uploaded) env++;});
+        state.opcionais.forEach(d=>{ if(!d.uploaded){ const opt=document.createElement('option'); opt.value=d.tipo_id; opt.textContent=d.nome+' ('+d.categoria+')'; el.selOpc.appendChild(opt);} if(d.addedTempRow||d.uploaded){ d.addedTempRow=true; el.tblOpc.appendChild(row(d,false)); }});
+        el.countObrig.textContent=env+'/'+total;
+        el.resumo.innerHTML= env===total? '<span class="text-success"><i class="fas fa-check me-1"></i>Todos os obrigatórios enviados.</span>' : '<span class="text-danger"><i class="fas fa-triangle-exclamation me-1"></i>Envie todos os obrigatórios para avançar.</span>';
+        controlaNext(env===total);
+    }
+    function controlaNext(ok){ const b=document.querySelector('[data-wizard-next]'); if(b){ b.disabled=!ok; b.title= ok? '' : 'Envie todos os documentos obrigatórios.'; } }
+    function row(d,ob){ const n=el.tmpl.content.firstElementChild.cloneNode(true); n.dataset.tipoId=d.tipo_id; n.querySelector('.tipo-nome').textContent=d.nome; n.querySelector('.tipo-categoria').textContent=d.categoria||'-'; n.querySelector('.tipo-periodicidade').textContent=d.periodicidade||'-'; const st=n.querySelector('.status-col'); if(d.uploaded){ st.innerHTML='<span class="badge bg-success-subtle text-success">Enviado</span><div class="small text-muted">'+(d.filename||'')+' '+(d.tamanho? '('+bytes(d.tamanho)+')':'')+'</div>'; n.querySelector('.btn-remover').classList.remove('d-none'); n.querySelector('.btn-ver').classList.remove('d-none'); } else { st.innerHTML= ob? '<span class="badge bg-danger-subtle text-danger">Pendente</span>' : '<span class="badge bg-secondary">Opcional</span>'; } const inp=n.querySelector('.input-file'); n.querySelector('.btn-upload').addEventListener('click',()=>inp.click()); inp.addEventListener('change',()=>{ if(!inp.files.length) return; upload(d.tipo_id, inp.files[0]); }); n.querySelector('.btn-remover').addEventListener('click',()=>remover(d)); n.querySelector('.btn-ver').addEventListener('click',()=>visualizar(d)); return n; }
+        function row(d,ob){ const n=el.tmpl.content.firstElementChild.cloneNode(true); n.dataset.tipoId=d.tipo_id; n.querySelector('.tipo-nome').textContent=d.nome; n.querySelector('.tipo-categoria').textContent=d.categoria||'-'; n.querySelector('.tipo-periodicidade').textContent=d.periodicidade||'-'; const st=n.querySelector('.status-col'); if(d.uploaded){ st.innerHTML='<span class="badge bg-success-subtle text-success">Enviado</span><div class="small text-muted">'+(d.filename||'')+' '+(d.tamanho? '('+bytes(d.tamanho)+')':'')+'</div>'; n.querySelector('.btn-remover').classList.remove('d-none'); n.querySelector('.btn-ver').classList.remove('d-none'); } else { st.innerHTML= ob? '<span class="badge bg-danger-subtle text-danger">Pendente</span>' : '<span class="badge bg-secondary">Adicional</span>'; } const inp=n.querySelector('.input-file'); n.querySelector('.btn-upload').addEventListener('click',()=>inp.click()); inp.addEventListener('change',()=>{ if(!inp.files.length) return; upload(d.tipo_id, inp.files[0]); }); n.querySelector('.btn-remover').addEventListener('click',()=>remover(d)); n.querySelector('.btn-ver').addEventListener('click',()=>visualizar(d)); return n; }
+    function visualizar(d){ if(!d.temp_id) return; window.open('/media/'+d.filename,'_blank'); }
+    function remover(d){ if(!d.temp_id) return; fetch(buildDeleteUrl(d.temp_id),{method:'POST',headers:{'X-CSRFToken':csrf()}}).then(r=>r.json()).then(j=>{ if(j.ok){ d.uploaded=false; d.temp_id=null; render(); } else alert('Erro remover'); }).catch(()=>alert('Falha remover')); }
+    function upload(id,file){ const fd=new FormData(); fd.append('tipo_id',id); fd.append('arquivo',file); fetch(URL_UPLOAD,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd}).then(r=>r.json()).then(j=>{ if(j.ok){ const all=[...state.obrigatorios,...state.opcionais]; const obj=all.find(x=>x.tipo_id==id); Object.assign(obj,{uploaded:true,temp_id:j.temp_id,filename:j.filename,tamanho:j.tamanho,addedTempRow:true}); render(); } else alert(j.error||'Falha upload'); }).catch(()=>alert('Erro upload')); }
+    function load(){
+        el.resumo.textContent='Carregando...';
+        fetch(URL_LIST, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(async r=>{
+                let data=null; try{ data = await r.json(); }catch(_){ /* pode ser html */ }
+                if(!r.ok){
+                    if(data && data.detail){
+                        el.resumo.innerHTML='<span class="text-danger">500: '+escapeHtml(data.detail)+'</span>';
+                        console.error('wizard_docs_list 500 detail', data);
+                    } else {
+                        el.resumo.innerHTML='<span class="text-danger">Falha '+r.status+' '+r.statusText+'</span>';
+                        console.error('wizard_docs_list HTTP', r.status, r.statusText, data);
+                    }
+                    throw new Error('HTTP '+r.status);
+                }
+                return data;
+            })
+            .then(d=>{ console.debug('wizard_docs_list payload', d); state=d; render(); })
+            .catch(err=>{ if(!(err && err.message && err.message.startsWith('HTTP'))){ console.error(err); el.resumo.innerHTML='<span class="text-danger">Erro ao carregar (network)</span>'; } });
+    }
+    function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
+<style>
+    #tblObrigatorios tbody tr td, #tblOpcionais tbody tr td { vertical-align: middle; }
+    .bg-success-subtle{ background:#e9f7ef; }
+    .bg-danger-subtle{ background:#fdecec; }
+    .badge{ font-weight:500; }
+    .wizard-section-title{ padding:.25rem 0 .5rem; border-bottom:1px solid #e9ecef; margin-bottom:.75rem; }
+            /* Larguras: Tipo 22%, Categoria 30%, demais 16% */
+            #tblObrigatorios th:nth-child(1), #tblObrigatorios td:nth-child(1),
+            #tblOpcionais   th:nth-child(1), #tblOpcionais   td:nth-child(1){ width:22%; }
+            #tblObrigatorios th:nth-child(2), #tblObrigatorios td:nth-child(2),
+            #tblOpcionais   th:nth-child(2), #tblOpcionais   td:nth-child(2){ width:30%; }
+            #tblObrigatorios th:nth-child(3), #tblObrigatorios td:nth-child(3),
+            #tblObrigatorios th:nth-child(4), #tblObrigatorios td:nth-child(4),
+            #tblObrigatorios th:nth-child(5), #tblObrigatorios td:nth-child(5),
+            #tblOpcionais   th:nth-child(3), #tblOpcionais   td:nth-child(3),
+            #tblOpcionais   th:nth-child(4), #tblOpcionais   td:nth-child(4),
+            #tblOpcionais   th:nth-child(5), #tblOpcionais   td:nth-child(5){ width:16%; }
+            /* Não quebrar o cabeçalho Periodicidade */
+            #tblObrigatorios th:nth-child(3), #tblOpcionais th:nth-child(3){ white-space: nowrap; }
+            /* Centralizar Categoria também */
+            #tblObrigatorios th:nth-child(2), #tblObrigatorios td:nth-child(2),
+            #tblOpcionais   th:nth-child(2), #tblOpcionais   td:nth-child(2){ text-align:center; }
+        /* Centralizar Periodicidade (3), Status (4) e Ação (5) */
+        #tblObrigatorios th:nth-child(3), #tblObrigatorios td:nth-child(3),
+        #tblObrigatorios th:nth-child(4), #tblObrigatorios td:nth-child(4),
+        #tblObrigatorios th:nth-child(5), #tblObrigatorios td:nth-child(5),
+        #tblOpcionais th:nth-child(3), #tblOpcionais td:nth-child(3),
+        #tblOpcionais th:nth-child(4), #tblOpcionais td:nth-child(4),
+        #tblOpcionais th:nth-child(5), #tblOpcionais td:nth-child(5){
+            text-align: center;
+        }
+        #tblObrigatorios td:nth-child(5) .d-flex,
+        #tblOpcionais td:nth-child(5) .d-flex{ justify-content: center; }
+</style>
+{% endblock %}
+
+{% block modals %}{% endblock %}
+

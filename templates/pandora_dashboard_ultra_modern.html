@@ -1,0 +1,438 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block body_classes %} dashboard-page{% endblock %}
+
+{# ANÁLISE: O aninhamento de blocos de título é uma técnica avançada do Django. #}
+{# Permite que templates filhos modifiquem apenas o título do dashboard ou o título completo da página. #}
+{% block title %}{% block dashboard_title %}Dashboard{% endblock %} - Pandora ERP{% endblock %}
+
+{% block page_title %}{% block dashboard_title_content %}Dashboard{% endblock %}{% endblock %}
+{% block page_subtitle %}{% block dashboard_subtitle %}Painel de controle personalizável{% endblock %}{% endblock %}
+
+{% block extra_css %}
+{# Carregamento de bibliotecas via CDN. Para produção, considere servi-las localmente com {% static '...' %} #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.2.0/dist/gridstack.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+{# CSS migrado para pandora-ultra-modern.css - Estilos agora carregados automaticamente via template base #}
+{% block dashboard_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-3 align-items-center">
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-secondary" onclick="dashboardEngine.saveLayout()" title="Salvar Layout">
+            <i class="fas fa-save"></i>
+            <span class="d-none d-md-inline ms-1">Salvar</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="dashboardEngine.resetLayout()" title="Resetar Layout">
+            <i class="fas fa-undo"></i>
+            <span class="d-none d-md-inline ms-1">Resetar</span>
+        </button>
+    </div>
+    
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-secondary" onclick="dashboardEngine.toggleEditMode()" title="Modo Edição">
+            <i class="fas fa-edit"></i>
+            <span class="d-none d-md-inline ms-1">Editar</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="dashboardEngine.toggleFullscreen()" title="Tela Cheia">
+            <i class="fas fa-expand"></i>
+        </button>
+    </div>
+    
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-download"></i>
+            <span class="d-none d-md-inline ms-1">Exportar</span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="dashboardEngine.export('pdf')">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="dashboardEngine.export('excel')">
+                <i class="fas fa-file-excel"></i> Excel
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="dashboardEngine.export('image')">
+                <i class="fas fa-image"></i> Imagem
+            </a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-engine" x-data="dashboardData()">
+    <button class="customize-toggle" @click="toggleCustomization">
+        <i class="fas fa-cogs"></i>
+    </button>
+
+    <div class="dashboard-container">
+        <div class="grid-stack" id="dashboard-grid">
+            {% block dashboard_widgets %}
+            <div class="grid-stack-item" gs-w="3" gs-h="2" gs-id="metrics">
+                <div class="grid-stack-item-content">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <i class="fas fa-chart-line"></i>
+                                Métricas Principais
+                            </h3>
+                            <div class="widget-actions">
+                                <button class="widget-action" onclick="dashboardEngine.refreshWidget('metrics')">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                                <button class="widget-action" onclick="dashboardEngine.configureWidget('metrics')">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-body">
+                            {% block metrics_widget %}
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="metric-card">
+                                        <div class="metric-trend positive">+12%</div>
+                                        {# ANÁLISE: O filtro 'default' é uma boa prática para evitar erros de renderização se a variável não for passada no contexto. #}
+                                        <div class="metric-value">{{ total_count|default:"0" }}</div>
+                                        <div class="metric-label">Total</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-card">
+                                        <div class="metric-trend positive">+8%</div>
+                                        <div class="metric-value">{{ active_count|default:"0" }}</div>
+                                        <div class="metric-label">Ativos</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-w="6" gs-h="4" gs-id="chart">
+                <div class="grid-stack-item-content">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Gráfico Principal
+                            </h3>
+                            <div class="widget-actions">
+                                <button class="widget-action" onclick="dashboardEngine.changeChartType('chart')">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                                <button class="widget-action" onclick="dashboardEngine.refreshWidget('chart')">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-body">
+                            {% block chart_widget %}
+                            <div class="chart-container">
+                                <canvas id="mainChart"></canvas>
+                            </div>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-w="3" gs-h="3" gs-id="actions">
+                <div class="grid-stack-item-content">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <i class="fas fa-bolt"></i>
+                                Ações Rápidas
+                            </h3>
+                        </div>
+                        <div class="widget-body">
+                            {% block actions_widget %}
+                            <div class="action-grid">
+                                <a href="#" class="action-item">
+                                    <i class="fas fa-plus action-icon"></i>
+                                    <div class="action-title">Novo</div>
+                                </a>
+                                <a href="#" class="action-item">
+                                    <i class="fas fa-list action-icon"></i>
+                                    <div class="action-title">Listar</div>
+                                </a>
+                                <a href="#" class="action-item">
+                                    <i class="fas fa-chart-line action-icon"></i>
+                                    <div class="action-title">Relatórios</div>
+                                </a>
+                                <a href="#" class="action-item">
+                                    <i class="fas fa-cog action-icon"></i>
+                                    <div class="action-title">Config</div>
+                                </a>
+                            </div>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-w="6" gs-h="4" gs-id="list">
+                <div class="grid-stack-item-content">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <i class="fas fa-list"></i>
+                                Lista Recente
+                            </h3>
+                            <div class="widget-actions">
+                                <button class="widget-action" onclick="dashboardEngine.refreshWidget('list')">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-body">
+                            {% block list_widget %}
+                            <div class="list-container">
+                                <div class="list-item">
+                                    <div class="list-avatar">AB</div>
+                                    <div class="list-content">
+                                        <div class="list-title">Item de Exemplo</div>
+                                        <div class="list-subtitle">Descrição do item</div>
+                                    </div>
+                                    <div class="list-meta">Agora</div>
+                                </div>
+                            </div>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% block custom_widgets %}{% endblock %}
+            
+            {% endblock %}
+        </div>
+    </div>
+
+    <div class="customization-sidebar" :class="{ 'active': showCustomization }">
+        <div class="sidebar-header">
+            <h4 class="mb-0">Personalizar Dashboard</h4>
+            <button type="button" class="btn btn-link text-white p-0" @click="toggleCustomization">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-3">
+            <div class="mb-4">
+                <h6 class="fw-bold mb-2">Tema</h6>
+                <div class="theme-selector">
+                    <div class="theme-option theme-blue" :class="{ 'active': theme === 'blue' }" @click="setTheme('blue')"></div>
+                    <div class="theme-option theme-green" :class="{ 'active': theme === 'green' }" @click="setTheme('green')"></div>
+                    <div class="theme-option theme-purple" :class="{ 'active': theme === 'purple' }" @click="setTheme('purple')"></div>
+                    <div class="theme-option theme-orange" :class="{ 'active': theme === 'orange' }" @click="setTheme('orange')"></div>
+                    <div class="theme-option theme-pink" :class="{ 'active': theme === 'pink' }" @click="setTheme('pink')"></div>
+                    <div class="theme-option theme-dark" :class="{ 'active': theme === 'dark' }" @click="setTheme('dark')"></div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h6 class="fw-bold mb-2">Widgets Visíveis</h6>
+                <template x-for="widget in availableWidgets" :key="widget.id">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" :id="'widget-' + widget.id" 
+                               x-model="widget.visible" @change="toggleWidget(widget.id)">
+                        <label class="form-check-label" :for="'widget-' + widget.id" x-text="widget.name"></label>
+                    </div>
+                </template>
+            </div>
+
+            <div class="mb-4">
+                <h6 class="fw-bold mb-2">Layout Predefinido</h6>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm" @click="applyLayout('default')">Padrão</button>
+                    <button class="btn btn-outline-primary btn-sm" @click="applyLayout('compact')">Compacto</button>
+                    <button class="btn btn-outline-primary btn-sm" @click="applyLayout('detailed')">Detalhado</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h6 class="fw-bold mb-2">Atualização Automática</h6>
+                <select class="form-select form-select-sm" x-model="autoRefreshInterval" @change="setAutoRefresh">
+                    <option value="0">Desabilitado</option>
+                    <option value="30">30 segundos</option>
+                    <option value="60">1 minuto</option>
+                    <option value="300">5 minutos</option>
+                    <option value="900">15 minutos</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/gridstack@9.2.0/dist/gridstack-all.js"></script>
+
+{# JavaScript migrado para pandora-ultra-modern.js - Funcionalidades agora carregadas automaticamente #}
+<script>
+// Função para garantir que o Alpine.js seja inicializado corretamente
+function initializeDashboard() {
+    // Verificar se o Alpine.js está disponível
+    if (typeof Alpine === 'undefined') {
+        console.warn('[Pandora Dashboard] Alpine.js não carregado, tentando novamente...');
+        setTimeout(initializeDashboard, 100);
+        return;
+    }
+
+    // Definir o componente dashboardData para o Alpine.js
+    if (!Alpine.data) {
+        console.error('[Pandora Dashboard] Alpine.data não está disponível');
+        return;
+    }
+
+    Alpine.data('dashboardData', () => ({
+        showCustomization: false,
+        theme: localStorage.getItem('dashboard-theme') || 'blue',
+        autoRefreshInterval: parseInt(localStorage.getItem('dashboard-refresh')) || 0,
+        availableWidgets: [], // Inicializa como array vazio para evitar erros
+
+        init() {
+            console.log('[Pandora Dashboard] Inicializando componente Alpine.js');
+            this.loadAvailableWidgets();
+        },
+
+        loadAvailableWidgets() {
+            // Define widgets padrão
+            this.availableWidgets = [
+                { id: 'metrics', name: 'Métricas Principais', visible: true },
+                { id: 'chart', name: 'Gráfico Principal', visible: true },
+                { id: 'actions', name: 'Ações Rápidas', visible: true },
+                { id: 'list', name: 'Lista Recente', visible: true }
+            ];
+            
+            // Tenta carregar widgets do backend se disponível
+            const widgetListUrl = document.body.dataset.widgetListUrl;
+            if (widgetListUrl) {
+                fetch(widgetListUrl, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Resposta não é JSON válido');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        this.availableWidgets = data;
+                        console.log('[Pandora Dashboard] Widgets carregados do backend:', this.availableWidgets);
+                    }
+                })
+                .catch(error => {
+                    console.warn('[Pandora Dashboard] Erro ao carregar widgets do backend, usando padrão:', error);
+                });
+            }
+        },
+
+        toggleCustomization() {
+            this.showCustomization = !this.showCustomization;
+            console.log('[Pandora Dashboard] Customização toggled:', this.showCustomization);
+        },
+
+        setTheme(newTheme) {
+            this.theme = newTheme;
+            localStorage.setItem('dashboard-theme', newTheme);
+            document.body.className = document.body.className.replace(/theme-\w+/g, '') + ` theme-${newTheme}`;
+            console.log('[Pandora Dashboard] Tema alterado para:', newTheme);
+        },
+
+        toggleWidget(widgetId) {
+            const widget = this.availableWidgets.find(w => w.id === widgetId);
+            if (widget) {
+                console.log('[Pandora Dashboard] Widget alterado:', widgetId, 'visível:', widget.visible);
+                
+                // Tenta salvar no backend se disponível
+                const toggleUrl = `/admin/widget/${widgetId}/toggle/`;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                 document.querySelector('meta[name=csrf-token]')?.content || '';
+                
+                if (csrfToken) {
+                    fetch(toggleUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ visible: widget.visible })
+                    }).catch(error => {
+                        console.warn('[Pandora Dashboard] Erro ao salvar estado do widget:', error);
+                    });
+                }
+            }
+        },
+
+        applyLayout(layout) {
+            console.log('[Pandora Dashboard] Aplicando layout:', layout);
+            if (window.dashboardEngine && typeof window.dashboardEngine.applyLayoutPreset === 'function') {
+                window.dashboardEngine.applyLayoutPreset(layout);
+            }
+        },
+
+        setAutoRefresh() {
+            localStorage.setItem('dashboard-refresh', this.autoRefreshInterval);
+            console.log('[Pandora Dashboard] Auto refresh definido:', this.autoRefreshInterval);
+            if (window.dashboardEngine && typeof window.dashboardEngine.setupAutoRefresh === 'function') {
+                window.dashboardEngine.setupAutoRefresh(this.autoRefreshInterval);
+            }
+        }
+    }));
+
+    console.log('[Pandora Dashboard] Componente Alpine.js registrado com sucesso');
+}
+
+// Aguardar o DOM e inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Pandora Dashboard] DOM carregado, aguardando Alpine.js...');
+    initializeDashboard();
+});
+
+// Fallback para o evento alpine:init
+document.addEventListener('alpine:init', function() {
+    console.log('[Pandora Dashboard] Evento alpine:init disparado');
+    initializeDashboard();
+});
+
+// Dashboard engine é inicializado automaticamente pela classe 'dashboard-page' no body
+// O sistema modular detecta a classe e chama setupDashboardWidgets() automaticamente
+
+// Custom dashboard functionality específico da página
+{% block dashboard_extra_js %}{% endblock %}
+</script>
+
+{# Alpine.js carregado com verificação de erro #}
+<script>
+// Carregar Alpine.js de forma segura
+(function() {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js';
+    script.defer = true;
+    script.onload = function() {
+        console.log('[Pandora Dashboard] Alpine.js carregado com sucesso');
+    };
+    script.onerror = function() {
+        console.error('[Pandora Dashboard] Erro ao carregar Alpine.js');
+    };
+    document.head.appendChild(script);
+})();
+</script>
+{% endblock %}

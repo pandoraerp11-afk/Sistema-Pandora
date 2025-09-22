@@ -1,0 +1,639 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ object.nome }} - Detalhes do Projeto - Pandora ERP{% endblock %}
+{% block page_title %}{{ object.nome }}{% endblock %}
+{% block page_subtitle %}Detalhes do projeto de quantificação{% endblock %}
+{% block page_icon %}fas fa-calculator{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'quantificacao_obras:projeto_list' %}">Quantificação de Obras</a></li>
+<li class="breadcrumb-item active">{{ object.nome }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'quantificacao_obras:projeto_update' object.pk %}" class="btn btn-primary">
+        <i class="fas fa-edit"></i> Editar
+    </a>
+    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+        <span class="visually-hidden">Toggle Dropdown</span>
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="exportProject()">
+            <i class="fas fa-file-excel"></i> Exportar para Excel
+        </a></li>
+        <li><a class="dropdown-item" href="#" onclick="generatePDF()">
+            <i class="fas fa-file-pdf"></i> Gerar PDF
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" onclick="duplicateProject()">
+            <i class="fas fa-copy"></i> Duplicar Projeto
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger" href="{% url 'quantificacao_obras:projeto_delete' object.pk %}">
+            <i class="fas fa-trash"></i> Excluir
+        </a></li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .project-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)" /></svg>');
+        opacity: 0.5;
+    }
+    
+    .project-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .project-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .info-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .info-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .info-card-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-card-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .progress-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .progress-bar-custom {
+        height: 12px;
+        background: var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+        transition: width 0.3s ease;
+        border-radius: 6px;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border-color);
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -0.5rem;
+        top: 0.5rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: 2px solid var(--card-bg);
+    }
+    
+    .timeline-date {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-content {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .items-table {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .items-table-header {
+        background: var(--background-secondary);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .items-table-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+    
+    .table-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .table-responsive {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .table th {
+        background: var(--background-secondary);
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+        font-weight: 600;
+        padding: 1rem;
+    }
+    
+    .table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    .table tbody tr:hover {
+        background: var(--hover-bg);
+    }
+    
+    .item-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .type-material {
+        background: rgba(13, 110, 253, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .type-mao_de_obra {
+        background: rgba(25, 135, 84, 0.1);
+        color: var(--success-color);
+    }
+    
+    .type-equipamento {
+        background: rgba(255, 193, 7, 0.1);
+        color: var(--warning-color);
+    }
+    
+    .type-servico {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger-color);
+    }
+    
+    .type-outro {
+        background: rgba(108, 117, 125, 0.1);
+        color: var(--text-muted);
+    }
+    
+    .cost-display {
+        font-weight: 600;
+        color: var(--success-color);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .attachments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .attachment-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .attachment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .attachment-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    .attachment-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .attachment-size {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header -->
+    <div class="project-header">
+        <div class="project-header-content">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <h1 class="h3 mb-0">{{ object.nome }}</h1>
+                        <span class="project-status">
+                            {% if object.status == 'rascunho' %}
+                                <i class="fas fa-file-alt"></i> Rascunho
+                            {% elif object.status == 'em_andamento' %}
+                                <i class="fas fa-play-circle"></i> Em Andamento
+                            {% elif object.status == 'concluido' %}
+                                <i class="fas fa-check-circle"></i> Concluído
+                            {% elif object.status == 'cancelado' %}
+                                <i class="fas fa-times-circle"></i> Cancelado
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if object.descricao %}
+                        <p class="mb-0 opacity-75">{{ object.descricao }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="h4 mb-0">R$ {{ object.valor_total|floatformat:2|default:"0,00" }}</div>
+                    <small class="opacity-75">Valor Total do Projeto</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-card-icon" style="background: rgba(13, 110, 253, 0.1); color: var(--primary-color);">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="info-card-title">Data de Início</div>
+            <div class="info-card-value">{{ object.data_inicio|date:"d/m/Y" }}</div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-icon" style="background: rgba(25, 135, 84, 0.1); color: var(--success-color);">
+                <i class="fas fa-flag-checkered"></i>
+            </div>
+            <div class="info-card-title">Previsão de Conclusão</div>
+            <div class="info-card-value">
+                {% if object.data_previsao_conclusao %}
+                    {{ object.data_previsao_conclusao|date:"d/m/Y" }}
+                {% else %}
+                    Não definida
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-icon" style="background: rgba(255, 193, 7, 0.1); color: var(--warning-color);">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="info-card-title">Responsável</div>
+            <div class="info-card-value">
+                {% if object.responsavel %}
+                    {{ object.responsavel.get_full_name }}
+                {% else %}
+                    Não atribuído
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-card-icon" style="background: rgba(220, 53, 69, 0.1); color: var(--danger-color);">
+                <i class="fas fa-list"></i>
+            </div>
+            <div class="info-card-title">Total de Itens</div>
+            <div class="info-card-value">{{ object.itens_quantificacao.count }}</div>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="progress-section">
+        <div class="row">
+            <div class="col-md-8">
+                <h5 class="mb-3">Progresso do Projeto</h5>
+                <div class="progress-bar-custom">
+                    <div class="progress-fill" style="width: 
+                        {% if object.status == 'rascunho' %}15%
+                        {% elif object.status == 'em_andamento' %}50%
+                        {% elif object.status == 'concluido' %}100%
+                        {% elif object.status == 'cancelado' %}0%
+                        {% endif %}"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted">
+                    <span>Início</span>
+                    <span>
+                        {% if object.status == 'rascunho' %}15% completo
+                        {% elif object.status == 'em_andamento' %}50% completo
+                        {% elif object.status == 'concluido' %}100% completo
+                        {% elif object.status == 'cancelado' %}Cancelado
+                        {% endif %}
+                    </span>
+                    <span>Conclusão</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ object.data_inicio|date:"d/m/Y" }}</div>
+                        <div class="timeline-content">Projeto iniciado</div>
+                    </div>
+                    {% if object.data_previsao_conclusao %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ object.data_previsao_conclusao|date:"d/m/Y" }}</div>
+                        <div class="timeline-content">
+                            {% if object.status == 'concluido' %}
+                                Projeto concluído
+                            {% else %}
+                                Previsão de conclusão
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="items-table">
+        <div class="items-table-header">
+            <h5 class="items-table-title">Itens de Quantificação</h5>
+            <div class="table-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="addItem()">
+                    <i class="fas fa-plus"></i> Adicionar Item
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="exportItems()">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+            </div>
+        </div>
+        
+        {% if object.itens_quantificacao.all %}
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Tipo</th>
+                        <th>Quantidade</th>
+                        <th>Unidade</th>
+                        <th>Custo Unitário</th>
+                        <th>Custo Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in object.itens_quantificacao.all %}
+                    <tr>
+                        <td>
+                            <div>
+                                <strong>{{ item.nome }}</strong>
+                                {% if item.observacoes %}
+                                    <br><small class="text-muted">{{ item.observacoes|truncatechars:50 }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="item-type-badge type-{{ item.tipo_item }}">
+                                {% if item.tipo_item == 'material' %}
+                                    <i class="fas fa-cube"></i> Material
+                                {% elif item.tipo_item == 'mao_de_obra' %}
+                                    <i class="fas fa-users"></i> Mão de Obra
+                                {% elif item.tipo_item == 'equipamento' %}
+                                    <i class="fas fa-tools"></i> Equipamento
+                                {% elif item.tipo_item == 'servico' %}
+                                    <i class="fas fa-cogs"></i> Serviço
+                                {% else %}
+                                    <i class="fas fa-question"></i> Outro
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>{{ item.quantidade|floatformat:2 }}</td>
+                        <td>{{ item.unidade_medida }}</td>
+                        <td>
+                            {% if item.custo_unitario %}
+                                <span class="cost-display">R$ {{ item.custo_unitario|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.custo_total %}
+                                <span class="cost-display">R$ {{ item.custo_total|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editItem({{ item.id }})" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteItem({{ item.id }})" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-active">
+                        <th colspan="5">Total Geral</th>
+                        <th>
+                            <span class="cost-display h6">R$ {{ object.valor_total|floatformat:2|default:"0,00" }}</span>
+                        </th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-list-ul empty-state-icon"></i>
+            <h5>Nenhum item cadastrado</h5>
+            <p>Adicione itens para começar a quantificação.</p>
+            <button class="btn btn-primary" onclick="addItem()">
+                <i class="fas fa-plus"></i> Adicionar Primeiro Item
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Attachments -->
+    {% if object.anexos_quantificacao.all %}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Anexos</h5>
+            <div class="attachments-grid">
+                {% for anexo in object.anexos_quantificacao.all %}
+                <div class="attachment-card">
+                    <div class="attachment-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="attachment-name">{{ anexo.nome_arquivo }}</div>
+                    <div class="attachment-size">{{ anexo.tamanho_arquivo|filesizeformat }}</div>
+                    <div class="mt-2">
+                        <a href="{{ anexo.arquivo.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="fas fa-download"></i> Baixar
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addItem() {
+    // Implementar modal ou redirecionamento para adicionar item
+    alert('Funcionalidade em desenvolvimento: Adicionar Item');
+}
+
+function editItem(itemId) {
+    // Implementar modal ou redirecionamento para editar item
+    alert('Funcionalidade em desenvolvimento: Editar Item ' + itemId);
+}
+
+function deleteItem(itemId) {
+    if (confirm('Tem certeza que deseja excluir este item?')) {
+        // Implementar exclusão do item
+        alert('Funcionalidade em desenvolvimento: Excluir Item ' + itemId);
+    }
+}
+
+function exportItems() {
+    // Implementar exportação dos itens
+    alert('Funcionalidade em desenvolvimento: Exportar Itens');
+}
+
+function exportProject() {
+    // Implementar exportação do projeto
+    alert('Funcionalidade em desenvolvimento: Exportar Projeto');
+}
+
+function generatePDF() {
+    // Implementar geração de PDF
+    alert('Funcionalidade em desenvolvimento: Gerar PDF');
+}
+
+function duplicateProject() {
+    if (confirm('Tem certeza que deseja duplicar este projeto?')) {
+        // Implementar duplicação do projeto
+        alert('Funcionalidade em desenvolvimento: Duplicar Projeto');
+    }
+}
+</script>
+{% endblock %}

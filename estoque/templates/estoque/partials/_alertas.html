@@ -1,0 +1,281 @@
+{# Partial para alertas do sistema #}
+{% load i18n %}
+
+<div class="action-card h-100" data-aos="fade-up" data-aos-delay="350">
+    <div class="card-header border-0">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-exclamation-circle me-2 text-warning"></i>
+            Alertas do Sistema
+            {% if alertas_count > 0 %}
+                <span class="badge bg-danger ms-2">{{ alertas_count }}</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="alertas-container" id="alertas-container">
+            {% for alerta in alertas|default:alertas_placeholder %}
+                <div class="alert-item alert-{{ alerta.tipo|default:'info' }}" data-alerta-id="{{ alerta.id }}">
+                    <div class="alert-icon">
+                        {% if alerta.tipo == 'critico' %}
+                            <i class="fas fa-exclamation-triangle text-danger"></i>
+                        {% elif alerta.tipo == 'aviso' %}
+                            <i class="fas fa-exclamation-circle text-warning"></i>
+                        {% elif alerta.tipo == 'info' %}
+                            <i class="fas fa-info-circle text-info"></i>
+                        {% elif alerta.tipo == 'sucesso' %}
+                            <i class="fas fa-check-circle text-success"></i>
+                        {% else %}
+                            <i class="fas fa-bell text-secondary"></i>
+                        {% endif %}
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <h6 class="alert-title">{{ alerta.titulo|default:'Alerta do Sistema' }}</h6>
+                            <span class="alert-time">{{ alerta.data_criacao|date:"H:i"|default:'--:--' }}</span>
+                        </div>
+                        <div class="alert-message">{{ alerta.mensagem|default:'Mensagem do alerta'|truncatechars:80 }}</div>
+                        {% if alerta.acao_url %}
+                            <div class="alert-action mt-2">
+                                <a href="{{ alerta.acao_url }}" class="btn btn-sm btn-outline-{{ alerta.tipo|default:'primary' }}">
+                                    {{ alerta.acao_texto|default:'Ver Detalhes' }}
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if alerta.pode_fechar|default:True %}
+                        <button class="alert-close" onclick="fecharAlerta({{ alerta.id }})" data-bs-toggle="tooltip" title="Fechar alerta">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <div class="empty-alerts text-center py-4">
+                    <i class="fas fa-shield-alt fa-2x text-success mb-3"></i>
+                    <p class="text-muted mb-0">Nenhum alerta no momento</p>
+                    <small class="text-muted">Sistema funcionando normalmente</small>
+                </div>
+            {% endfor %}
+        </div>
+        
+        {% if alertas_count > 5 %}
+            <div class="alertas-footer mt-3 text-center">
+                <a href="{% url 'estoque:alertas_list' %}" class="btn btn-sm btn-outline-warning">
+                    <i class="fas fa-list me-1"></i>Ver Todos os Alertas ({{ alertas_count }})
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Exemplos de alertas padrão caso não existam dados #}
+{% if not alertas %}
+    <script>
+    // Alertas de exemplo para desenvolvimento
+    const alertasExemplo = [
+        {
+            id: 1,
+            tipo: 'aviso',
+            titulo: 'Estoque Baixo',
+            mensagem: '5 produtos estão com estoque abaixo do mínimo estabelecido',
+            data_criacao: new Date(),
+            acao_url: '/estoque/saldos/?estoque_baixo=true',
+            acao_texto: 'Verificar Produtos'
+        },
+        {
+            id: 2,
+            tipo: 'info',
+            titulo: 'Reservas Expirando',
+            mensagem: '3 reservas irão expirar nas próximas 24 horas',
+            data_criacao: new Date(),
+            acao_url: '/estoque/reservas/?expirando=24h',
+            acao_texto: 'Gerenciar Reservas'
+        },
+        {
+            id: 3,
+            tipo: 'sucesso',
+            titulo: 'Inventário Concluído',
+            mensagem: 'Inventário cíclico do depósito Almoxarifado foi concluído com sucesso',
+            data_criacao: new Date(),
+            pode_fechar: true
+        }
+    ];
+    
+    // Esta função seria chamada pelo sistema real
+    // Exemplo de alertas estáticos - remover quando conectar à API
+    </script>
+{% endif %}
+
+<style>
+.alertas-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.alert-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.alert-item:hover {
+    background: rgba(255,255,255,1);
+    border-color: #dee2e6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 16px;
+}
+
+.alert-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.alert-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #2c3e50;
+    flex: 1;
+}
+
+.alert-time {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.alert-message {
+    font-size: 13px;
+    color: #495057;
+    line-height: 1.4;
+}
+
+.alert-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 12px;
+    padding: 4px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.alert-close:hover {
+    opacity: 1;
+    color: #495057;
+}
+
+/* Tipos de alerta */
+.alert-critico {
+    border-left: 4px solid #dc3545;
+}
+
+.alert-aviso {
+    border-left: 4px solid #ffc107;
+}
+
+.alert-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.alert-sucesso {
+    border-left: 4px solid #28a745;
+}
+
+/* Animação para novos alertas */
+.alert-item.novo {
+    animation: slideInLeft 0.5s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Scrollbar personalizada */
+.alertas-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.alertas-container::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 3px;
+}
+
+.alertas-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.alertas-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.empty-alerts {
+    color: #6c757d;
+}
+</style>
+
+<script>
+// Função para fechar alerta
+function fecharAlerta(alertaId) {
+    const alertElement = document.querySelector(`[data-alerta-id="${alertaId}"]`);
+    if (alertElement) {
+        alertElement.style.animation = 'slideOutRight 0.3s ease-out forwards';
+        setTimeout(() => {
+            alertElement.remove();
+            // Fazer requisição para marcar como lido no backend
+            fetch(`/api/estoque/alertas/${alertaId}/fechar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            }).catch(error => console.error('Erro ao fechar alerta:', error));
+        }, 300);
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+</script>

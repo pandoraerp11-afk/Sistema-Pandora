@@ -1,0 +1,39 @@
+{# Ações do formulário (páginas sem seções) - alinhadas ao padrão do wizard #}
+
+<div class="wizard-navigation mt-3">
+    <div class="nav-left">
+        <a href="javascript:history.back()" class="btn-ghost">
+            <i class="fas fa-chevron-left me-2"></i>Voltar
+        </a>
+    </div>
+    <div class="nav-center">
+        <span class="step-indicator">Pronto para salvar</span>
+    </div>
+    <div class="nav-right">
+        <div class="btn-group">
+                    <button type="submit" form="main-form" class="btn-modern btn-success">
+                        <i class="fas fa-check me-2"></i>{{ save_label|default:'Salvar' }}
+            </button>
+            <button type="button" class="btn-modern btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" title="Opções de salvamento">
+                <span class="visually-hidden">Opções de salvamento</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                <li><a class="dropdown-item" href="#" onclick="saveAndContinue()">
+                    <i class="fas fa-edit fa-sm me-2"></i> Salvar e Continuar Editando
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="saveAndNew()">
+                    <i class="fas fa-plus fa-sm me-2"></i> Salvar e Adicionar Novo
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="saveAndList()">
+                    <i class="fas fa-list fa-sm me-2"></i> Salvar e Voltar à Lista
+                </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Indicador de auto-save -->
+<div class="auto-save-indicator" id="auto-save-indicator" style="display: none;">
+    <i class="fas fa-cloud-check"></i>
+    <span>Salvo automaticamente</span>
+    </div>

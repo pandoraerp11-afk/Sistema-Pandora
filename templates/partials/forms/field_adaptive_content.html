@@ -1,0 +1,38 @@
+{% load widget_tweaks %}
+
+<div class="adaptive-field adaptive-field-{{ field_size }}" data-max-chars="{{ max_chars }}" data-field-type="{{ field.field.widget.input_type|default:'text' }}">
+    <div class="field-container">
+        {% if field.label and field.field.widget.input_type != 'checkbox' %}
+            <label for="{{ field.id_for_label }}" class="field-label">
+                {{ field.label }}
+                {% if field.field.required %}<span class="required">*</span>{% endif %}
+                {% if field.help_text %}
+                    <i class="fas fa-info-circle ms-1 text-muted" 
+                       data-bs-toggle="tooltip" 
+                       title="{{ field.help_text }}"></i>
+                {% endif %}
+            </label>
+        {% endif %}
+        
+        <div class="field-input-wrapper">
+            {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="form-check">
+                    {% render_field field class="form-check-input" %}
+                    <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                </div>
+            {% elif 'observacoes' in field.name|lower or 'descricao' in field.name|lower %}
+                {% render_field field class="adaptive-input form-control" rows="3" %}
+            {% elif field.field.widget.input_type == 'select' %}
+                {% render_field field class="adaptive-input form-select" %}
+            {% else %}
+                {% render_field field class="adaptive-input form-control" %}
+            {% endif %}
+        </div>
+        
+        {% if field.errors %}
+            <div class="field-errors">
+                {% for error in field.errors %}{{ error }}{% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

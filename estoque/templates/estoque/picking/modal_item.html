@@ -1,0 +1,669 @@
+{% load widget_tweaks %}
+
+<!-- Modal para Detalhes do Item/Pedido -->
+<div class="modal fade" id="modalItemPicking" tabindex="-1" aria-labelledby="modalItemPickingLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalItemPickingLabel">
+                    <i class="fas fa-boxes me-2"></i>Detalhes do Pedido #<span id="pedido-numero"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Loading inicial -->
+                <div id="modal-loading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <div class="mt-2">Carregando detalhes do pedido...</div>
+                </div>
+                
+                <!-- Conteúdo do modal -->
+                <div id="modal-content" style="display: none;">
+                    <!-- Informações do Cliente -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-user me-2"></i>Informações do Cliente
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="cliente-dados">
+                                        <h6 class="cliente-nome"></h6>
+                                        <div class="cliente-endereco text-muted"></div>
+                                        <div class="cliente-contato text-muted"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="pedido-status-info">
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <div class="status-item">
+                                                    <div class="status-value pedido-prioridade-display"></div>
+                                                    <div class="status-label">Prioridade</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="status-item">
+                                                    <div class="status-value pedido-prazo-entrega"></div>
+                                                    <div class="status-label">Entrega</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="status-item">
+                                                    <div class="status-value pedido-valor-total"></div>
+                                                    <div class="status-label">Valor Total</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rota de Picking -->
+                    <div class="card border-0 shadow-sm mb-3" id="card-rota" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-route me-2"></i>Rota de Picking
+                                <span class="badge bg-light text-dark ms-2">
+                                    <span id="rota-total-paradas">0</span> paradas
+                                </span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="rota-picking-visual">
+                                <div id="rota-mapa" class="rota-mapa"></div>
+                                <div class="rota-instrucoes mt-3">
+                                    <h6>Instruções de Picking:</h6>
+                                    <ol id="lista-instrucoes" class="lista-instrucoes">
+                                        <!-- Instruções serão carregadas dinamicamente -->
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de Itens -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-success text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-list me-2"></i>Itens do Pedido
+                                    <span class="badge bg-light text-dark ms-2">
+                                        <span id="total-itens">0</span> itens
+                                    </span>
+                                </h6>
+                                <div class="card-actions">
+                                    <button class="btn btn-sm btn-light" onclick="imprimirListaPicking()">
+                                        <i class="fas fa-print me-1"></i>Imprimir
+                                    </button>
+                                    <button class="btn btn-sm btn-light" onclick="exportarListaPicking()">
+                                        <i class="fas fa-download me-1"></i>Exportar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="5%">
+                                                <input type="checkbox" class="form-check-input" id="selectAllItems">
+                                            </th>
+                                            <th width="30%">Produto</th>
+                                            <th width="15%">Localização</th>
+                                            <th width="10%">Qtd</th>
+                                            <th width="10%">Coletado</th>
+                                            <th width="15%">Status</th>
+                                            <th width="15%">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-itens-pedido">
+                                        <!-- Itens serão carregados dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Observações e Notas -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-warning">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-sticky-note me-2"></i>Observações
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="observacoes-pedido">
+                                <!-- Observações serão carregadas dinamicamente -->
+                            </div>
+                            
+                            <div class="mt-3">
+                                <label for="nova-observacao" class="form-label">Adicionar Nova Observação:</label>
+                                <textarea class="form-control" id="nova-observacao" rows="3" 
+                                        placeholder="Digite uma observação sobre o picking deste pedido..."></textarea>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-primary" onclick="adicionarObservacao()">
+                                        <i class="fas fa-plus me-1"></i>Adicionar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Histórico de Movimentações -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i>Histórico de Movimentações
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-picking">
+                                <div id="historico-pedido">
+                                    <!-- Histórico será carregado dinamicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <div class="btn-group me-auto">
+                    <button type="button" class="btn btn-outline-primary" onclick="imprimirEtiquetas()">
+                        <i class="fas fa-tags me-1"></i>Etiquetas
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="exportarDados()">
+                        <i class="fas fa-file-export me-1"></i>Exportar
+                    </button>
+                </div>
+                
+                <div class="btn-group">
+                    <!-- Ações baseadas no status -->
+                    <div id="acoes-status">
+                        <!-- Botões serão inseridos dinamicamente baseados no status -->
+                    </div>
+                    
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cliente-dados h6 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.status-item {
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.status-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.status-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+}
+
+.rota-mapa {
+    height: 200px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.lista-instrucoes {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.instrucao-item {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-left: 4px solid #17a2b8;
+    border-radius: 6px;
+}
+
+.instrucao-localizacao {
+    font-weight: 600;
+    color: #17a2b8;
+}
+
+.instrucao-produto {
+    color: #495057;
+}
+
+.timeline-picking {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 20px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: -20px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #28a745;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-item:last-child::before {
+    display: none;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.timeline-status {
+    font-weight: 600;
+    color: #495057;
+}
+
+.timeline-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.timeline-description {
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.timeline-user {
+    font-size: 0.85rem;
+    color: #17a2b8;
+    margin-top: 4px;
+}
+
+/* Estados dos itens */
+.item-row.coletado {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.item-row.pendente {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.item-row.problema {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.qty-input {
+    width: 80px;
+    text-align: center;
+}
+
+.localizacao-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+</style>
+
+<script>
+let pedidoAtual = null;
+
+// Função para carregar detalhes do pedido
+function carregarDetalhesPedido(pedidoId) {
+    pedidoAtual = pedidoId;
+    
+    // Mostrar loading
+    document.getElementById('modal-loading').style.display = 'block';
+    document.getElementById('modal-content').style.display = 'none';
+    
+    // Fazer requisição
+    fetch(`/api/estoque/picking/pedidos/${pedidoId}/detalhes/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                preencherDetalhes(data.pedido);
+                carregarItens(data.itens);
+                carregarHistorico(data.historico);
+                carregarObservacoes(data.observacoes);
+                configurarAcoes(data.pedido.status);
+                
+                // Mostrar conteúdo
+                document.getElementById('modal-loading').style.display = 'none';
+                document.getElementById('modal-content').style.display = 'block';
+            } else {
+                mostrarErro('Erro ao carregar detalhes do pedido');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            mostrarErro('Erro interno do sistema');
+        });
+}
+
+function preencherDetalhes(pedido) {
+    document.getElementById('pedido-numero').textContent = pedido.numero;
+    
+    // Cliente
+    document.querySelector('.cliente-nome').textContent = pedido.cliente.nome;
+    document.querySelector('.cliente-endereco').textContent = 
+        `${pedido.cliente.endereco}, ${pedido.cliente.cidade} - ${pedido.cliente.estado}`;
+    document.querySelector('.cliente-contato').textContent = 
+        `Tel: ${pedido.cliente.telefone} | Email: ${pedido.cliente.email}`;
+    
+    // Status info
+    document.querySelector('.pedido-prioridade-display').textContent = pedido.prioridade;
+    document.querySelector('.pedido-prazo-entrega').textContent = pedido.prazo_entrega || 'Não definido';
+    document.querySelector('.pedido-valor-total').textContent = `R$ ${pedido.valor_total}`;
+    
+    // Rota (se existir)
+    if (pedido.rota_picking) {
+        document.getElementById('card-rota').style.display = 'block';
+        document.getElementById('rota-total-paradas').textContent = pedido.rota_picking.paradas.length;
+        carregarRotaPicking(pedido.rota_picking);
+    }
+}
+
+function carregarItens(itens) {
+    const tbody = document.getElementById('lista-itens-pedido');
+    tbody.innerHTML = '';
+    
+    document.getElementById('total-itens').textContent = itens.length;
+    
+    itens.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = `item-row ${item.status.toLowerCase()}`;
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input item-checkbox" value="${item.id}">
+            </td>
+            <td>
+                <div class="produto-info">
+                    <div class="fw-semibold">${item.produto.nome}</div>
+                    <small class="text-muted">${item.produto.codigo || 'Sem código'}</small>
+                </div>
+            </td>
+            <td>
+                <span class="localizacao-badge">${item.localizacao || 'Não definido'}</span>
+            </td>
+            <td class="text-center">
+                <span class="fw-bold">${item.quantidade}</span>
+                <br><small class="text-muted">${item.produto.unidade || 'UN'}</small>
+            </td>
+            <td class="text-center">
+                <input type="number" class="form-control qty-input" value="${item.quantidade_coletada}" 
+                       min="0" max="${item.quantidade}" onchange="atualizarQuantidade(${item.id}, this.value)">
+            </td>
+            <td class="text-center">
+                <span class="badge bg-${getStatusColor(item.status)}">${getStatusText(item.status)}</span>
+            </td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-success" onclick="marcarColetado(${item.id})" 
+                            ${item.status === 'COLETADO' ? 'disabled' : ''}>
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="reportarProblema(${item.id})">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function carregarHistorico(historico) {
+    const container = document.getElementById('historico-pedido');
+    container.innerHTML = '';
+    
+    historico.forEach(evento => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.innerHTML = `
+            <div class="timeline-content">
+                <div class="timeline-header">
+                    <span class="timeline-status">${evento.status_display}</span>
+                    <span class="timeline-time">${evento.data_formatada}</span>
+                </div>
+                <div class="timeline-description">${evento.descricao}</div>
+                <div class="timeline-user">Por: ${evento.usuario}</div>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function carregarObservacoes(observacoes) {
+    const container = document.getElementById('observacoes-pedido');
+    container.innerHTML = '';
+    
+    if (observacoes.length === 0) {
+        container.innerHTML = '<p class="text-muted">Nenhuma observação registrada.</p>';
+        return;
+    }
+    
+    observacoes.forEach(obs => {
+        const div = document.createElement('div');
+        div.className = 'observacao-item mb-3 p-3 bg-light border-start border-4 border-info';
+        div.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="observacao-texto">${obs.texto}</div>
+                <small class="text-muted">${obs.data_formatada}</small>
+            </div>
+            <div class="mt-1">
+                <small class="text-info">Por: ${obs.usuario}</small>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function configurarAcoes(status) {
+    const acoesContainer = document.getElementById('acoes-status');
+    acoesContainer.innerHTML = '';
+    
+    const acoes = getAcoesPorStatus(status);
+    
+    acoes.forEach(acao => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `btn btn-${acao.classe} me-2`;
+        btn.innerHTML = `<i class="${acao.icone} me-1"></i>${acao.texto}`;
+        btn.onclick = acao.funcao;
+        acoesContainer.appendChild(btn);
+    });
+}
+
+function getAcoesPorStatus(status) {
+    const acoes = {
+        'PENDENTE': [
+            { classe: 'success', icone: 'fas fa-play', texto: 'Iniciar Separação', funcao: () => iniciarSeparacao(pedidoAtual) }
+        ],
+        'SEPARACAO': [
+            { classe: 'info', icone: 'fas fa-check', texto: 'Concluir Separação', funcao: () => concluirSeparacao(pedidoAtual) },
+            { classe: 'warning', icone: 'fas fa-pause', texto: 'Pausar', funcao: () => pausarSeparacao(pedidoAtual) }
+        ],
+        'CONFERENCIA': [
+            { classe: 'success', icone: 'fas fa-search', texto: 'Conferir', funcao: () => iniciarConferencia(pedidoAtual) }
+        ],
+        'EMBALAGEM': [
+            { classe: 'primary', icone: 'fas fa-box', texto: 'Embalar', funcao: () => iniciarEmbalagem(pedidoAtual) }
+        ],
+        'EXPEDICAO': [
+            { classe: 'info', icone: 'fas fa-truck', texto: 'Expedir', funcao: () => finalizarExpedicao(pedidoAtual) }
+        ]
+    };
+    
+    return acoes[status] || [];
+}
+
+function getStatusColor(status) {
+    const cores = {
+        'PENDENTE': 'warning',
+        'COLETADO': 'success',
+        'PROBLEMA': 'danger',
+        'PARCIAL': 'info'
+    };
+    return cores[status] || 'secondary';
+}
+
+function getStatusText(status) {
+    const textos = {
+        'PENDENTE': 'Pendente',
+        'COLETADO': 'Coletado',
+        'PROBLEMA': 'Problema',
+        'PARCIAL': 'Parcial'
+    };
+    return textos[status] || status;
+}
+
+// Funções de ação
+function atualizarQuantidade(itemId, quantidade) {
+    // Implementar atualização de quantidade
+    fetch(`/api/estoque/picking/itens/${itemId}/quantidade/`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ quantidade: parseFloat(quantidade) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Atualizar UI conforme necessário
+        } else {
+            alert('Erro ao atualizar quantidade');
+        }
+    });
+}
+
+function marcarColetado(itemId) {
+    // Implementar marcação como coletado
+    fetch(`/api/estoque/picking/itens/${itemId}/coletar/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Ou atualizar apenas o item
+        }
+    });
+}
+
+function reportarProblema(itemId) {
+    const problema = prompt('Descreva o problema encontrado:');
+    if (problema) {
+        fetch(`/api/estoque/picking/itens/${itemId}/problema/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ descricao: problema })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function adicionarObservacao() {
+    const texto = document.getElementById('nova-observacao').value.trim();
+    if (texto) {
+        fetch(`/api/estoque/picking/pedidos/${pedidoAtual}/observacao/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ texto: texto })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('nova-observacao').value = '';
+                carregarObservacoes(data.observacoes);
+            }
+        });
+    }
+}
+
+// Função para obter CSRF token
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function mostrarErro(mensagem) {
+    document.getElementById('modal-loading').innerHTML = `
+        <div class="text-center text-danger">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <div>${mensagem}</div>
+        </div>
+    `;
+}
+</script>

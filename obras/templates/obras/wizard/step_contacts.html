@@ -1,0 +1,27 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-user-tie text-info me-3" style="font-size: 1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-info">Responsável e Contatos</h6>
+      <small class="text-muted">Dados de contato do responsável pela obra.</small>
+    </div>
+  </div>
+</div>
+
+<div class="wizard-section">
+  <h5 class="wizard-section-title">
+    <i class="fas fa-user-check wizard-icon"></i>
+    Contato Principal
+  </h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.responsavel_nome field_size='md' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.responsavel_cargo field_size='xs' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.responsavel_email field_size='sm' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.responsavel_telefone field_size='xs-auto' %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Acesso Rápido" %} - {% trans "Pandora ERP" %}{% endblock %}
+
+{% block page_title %}{% trans "Acesso Rápido aos Módulos" %}{% endblock %}
+{% block page_subtitle %}{% trans "Navegue rapidamente para qualquer módulo do sistema a partir daqui." %}{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid quick-access-page">
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        
+        {% comment "Módulos Principais" %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="card-title mb-0 fw-bold text-primary">
+                        <i class="fas fa-star me-2"></i>{% trans "Módulos Principais" %}
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-home me-3"></i>{% trans "Dashboard do Sistema" %}</a>
+                    <a href="{% url 'core:core_home' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-cog me-3"></i>{% trans "Dashboard CORE" %}</a>
+                    <a href="{% url 'produtos:produtos_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-box-open me-3"></i>{% trans "Produtos" %}</a>
+                    <a href="{% url 'clientes_wizard:test_wizard_create' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-magic me-3"></i>{% trans "Novo Cliente (Wizard)" %}</a>
+                    <a href="{% url 'fornecedores:fornecedores_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-truck me-3"></i>{% trans "Fornecedores" %}</a>
+                    <a href="{% url 'orcamentos:orcamentos_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-calculator me-3"></i>{% trans "Orçamentos" %}</a>
+                </div>
+            </div>
+        </div>
+
+        {% comment "Módulos Operacionais" %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="card-title mb-0 fw-bold text-success">
+                        <i class="fas fa-cogs me-2"></i>{% trans "Operações" %}
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'obras:obras_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-building me-3"></i>{% trans "Obras" %}</a>
+                    <a href="{% url 'estoque:estoque_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-warehouse me-3"></i>{% trans "Estoque" %}</a>
+                    <a href="{% url 'compras:compras_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-shopping-cart me-3"></i>{% trans "Compras" %}</a>
+                    <a href="{% url 'financeiro:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-chart-line me-3"></i>{% trans "Financeiro" %}</a>
+                    <a href="{% url 'servicos:servicos_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-wrench me-3"></i>{% trans "Serviços" %}</a>
+                </div>
+            </div>
+        </div>
+
+        {% comment "Módulos Administrativos" %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="card-title mb-0 fw-bold text-warning">
+                        <i class="fas fa-user-cog me-2"></i>{% trans "Administração" %}
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'core:tenant_users_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-users-cog me-3"></i>{% trans "Usuários da Empresa" %}</a>
+                    <a href="{% url 'funcionarios:funcionarios_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-id-badge me-3"></i>{% trans "Funcionários" %}</a>
+                    <a href="{% url 'treinamento:cursos_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-graduation-cap me-3"></i>{% trans "Treinamentos" %}</a>
+                    <a href="{% url 'sst:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-hard-hat me-3"></i>{% trans "SST" %}</a>
+                    <a href="{% url 'cadastros_gerais:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-database me-3"></i>{% trans "Cadastros Gerais" %}</a>
+                </div>
+            </div>
+        </div>
+
+        {% comment "Módulos Adicionais" %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="card-title mb-0 fw-bold text-info">
+                        <i class="fas fa-th-large me-2"></i>{% trans "Módulos Adicionais" %}
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'agenda:agenda_home' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-calendar-alt me-3"></i>{% trans "Agenda" %}</a>
+                    <a href="{% url 'chat:conversa_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-comments me-3"></i>{% trans "Chat" %}</a>
+                    <a href="{% url 'formularios:formularios_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-file-alt me-3"></i>{% trans "Formulários" %}</a>
+                    <a href="{% url 'notifications:notifications_list' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-bell me-3"></i>{% trans "Notificações" %}</a>
+                    <a href="{% url 'prontuarios:home' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-first-aid me-3"></i>{% trans "Prontuários" %}</a>
+                </div>
+            </div>
+        </div>
+
+        {% comment "Módulos Especializados" %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="card-title mb-0 fw-bold text-secondary">
+                        <i class="fas fa-atom me-2"></i>{% trans "Módulos Especializados" %}
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'ai_auditor:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-robot me-3"></i>{% trans "AI Auditor" %}</a>
+                    <a href="{% url 'quantificacao_obras:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-ruler-combined me-3"></i>{% trans "Quantificação de Obras" %}</a>
+                    <a href="{% url 'mao_obra:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-running me-3"></i>{% trans "Mão de Obra" %}</a>
+                    <a href="{% url 'apropriacao:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-chart-pie me-3"></i>{% trans "Apropriação" %}</a>
+                    <a href="{% url 'aprovacoes:dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center"><i class="fas fa-check-square me-3"></i>{% trans "Aprovações" %}</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

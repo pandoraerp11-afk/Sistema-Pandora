@@ -1,0 +1,102 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Item Auxiliar" %}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card">
+        <div class="card-header"><strong>{% trans "Item Auxiliar" %}</strong></div>
+        <div class="card-body">
+          <form method="post">{% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">{% trans "Categoria" %}</label>
+                {{ form.categoria }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{% trans "Nome" %}</label>
+                {{ form.nome }}
+              </div>
+              <div class="col-md-12">
+                <label class="form-label">{% trans "Descrição" %}</label>
+                {{ form.descricao }}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label d-block">{% trans "Aplicar em" %}</label>
+                <div class="row g-2">
+                  {% for checkbox in form.targets %}
+                  <div class="col-6">
+                    <div class="form-check">
+                      {{ checkbox.tag }}
+                      <label class="form-check-label">{{ checkbox.choice_label }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                <small class="text-muted d-block mt-1">{% trans "Selecione um ou mais módulos" %}</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{% trans "Ordem" %}</label>
+                {{ form.ordem }}
+              </div>
+
+              <div class="col-md-12">
+                <div class="row g-3 align-items-center">
+                  <div class="col-auto">
+                    <div class="form-check">
+                      {{ form.ativo }}
+                      <label class="form-check-label">{% trans "Ativo" %}</label>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <div class="form-check">
+                      {{ form.obrigatorio }}
+                      <label class="form-check-label">{% trans "Obrigatório" %}</label>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <div class="form-check">
+                      {{ form.multiplos }}
+                      <label class="form-check-label">{% trans "Permitir múltiplos" %}</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">{% trans "Tipo de Campo" %}</label>
+                {{ form.tipo_campo }}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">{% trans "Extensões permitidas" %}</label>
+                {{ form.extensoes_permitidas }}
+                <small class="text-muted">{% trans "Ex.: pdf,jpg,png" %}</small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{% trans "Tamanho máximo (MB)" %}</label>
+                {{ form.tamanho_max_mb }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{% trans "Validade (dias)" %}</label>
+                {{ form.validade_dias }}
+              </div>
+              <div class="col-md-12">
+                <label class="form-label">{% trans "Opções (para Seleção)" %}</label>
+                {{ form.opcoes }}
+                <small class="text-muted">{% trans "Separe por vírgula" %}</small>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'cadastros_gerais:item_aux_list' %}" class="btn btn-outline-secondary">{% trans "Cancelar" %}</a>
+              <button class="btn btn-primary" type="submit">{% trans "Salvar" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

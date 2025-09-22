@@ -1,0 +1,28 @@
+{# Factory INTELIGENTE para renderizar campos com tamanhos proporcionais #}
+{# Detecta o tipo de campo de forma robusta baseada no widget/tipo, não apenas no nome #}
+
+{% if 'logo' in field.name|lower or 'imagem' in field.name|lower or 'foto' in field.name|lower or 'avatar' in field.name|lower or field.field.widget|slugify == 'fileinput' %}
+    {# Campos de imagem - tamanho compacto #}
+    {% include 'partials/forms/field_image.html' with field=field %}
+
+{% elif field.field.widget.input_type == 'textarea' or field.field.widget|slugify == 'textarea' or 'observa' in field.name|lower or 'descri' in field.name|lower or 'obs' in field.name|lower %}
+    {# Campos de texto longo - largura completa #}
+    {% include 'partials/forms/field_full.html' with field=field %}
+
+{% elif field.field.widget.input_type == 'date' or field.field.widget|slugify == 'dateinput' or 'cep' in field.name|lower or 'cpf' in field.name|lower or 'cnpj' in field.name|lower or 'rg' in field.name|lower or 'codigo' in field.name|lower or field.name in 'idade,numero' %}
+    {# Campos pequenos - datas, documentos, códigos (detecta por tipo de widget) #}
+    {% include 'partials/forms/field_small.html' with field=field %}
+
+{% elif field.field.widget.input_type == 'tel' or field.field.widget|slugify == 'numberinput' or 'telefone' in field.name|lower or 'fone' in field.name|lower or 'celular' in field.name|lower or 'preco' in field.name|lower or 'valor' in field.name|lower %}
+    {# Campos médios - telefones, valores, números (detecta por tipo de widget) #}
+    {% include 'partials/forms/field_medium.html' with field=field %}
+
+{% elif field.field.widget.input_type == 'email' or field.field.widget|slugify == 'emailinput' or 'nome' in field.name|lower or 'email' in field.name|lower or 'endereco' in field.name|lower or 'rua' in field.name|lower or 'razao' in field.name|lower %}
+    {# Campos grandes - emails, nomes, endereços (detecta por tipo de widget) #}
+    {% include 'partials/forms/field_large.html' with field=field %}
+
+{% else %}
+    {# Campos padrão - tamanho médio #}
+    {% include 'partials/forms/field_medium.html' with field=field %}
+
+{% endif %}

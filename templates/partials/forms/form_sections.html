@@ -1,0 +1,26 @@
+{# Renderizador de seções múltiplas #}
+{# Usado quando form_sections tem conteúdo #}
+
+{% for section in form_sections %}
+<div class="form-section card mb-4" id="form-section-{{ forloop.counter0 }}" data-section-index="{{ forloop.counter0 }}" {% if not forloop.first %}style="display: none;"{% endif %}>
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="{{ section.icon|default:'fas fa-form' }}"></i>
+            {{ section.title }}
+        </h5>
+        {% if section.description %}
+        <p class="card-subtitle text-muted mt-1 mb-0">{{ section.description }}</p>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if section.content %}
+            {{ section.content|safe }}
+        {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Seção sem conteúdo definido
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}

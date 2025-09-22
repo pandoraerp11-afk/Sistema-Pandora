@@ -1,0 +1,320 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulários Otimizados - Pandora ERP</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Sistema de Formulários Compactos -->
+    <link rel="stylesheet" href="{% static 'css/forms-compact.css' %}">
+    
+    <style>
+        /* Estilos específicos para demonstração */
+        .demo-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .form-demo {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .form-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .form-body {
+            padding: 2rem;
+        }
+        
+        .optimization-controls {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .field-stats {
+            background: #e0f2fe;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="form-demo">
+            <div class="form-header">
+                <h2><i class="fas fa-magic me-2"></i>Sistema Inteligente de Formulários Compactos</h2>
+                <p class="mb-0">Otimização automática de espaço e responsividade adaptativa</p>
+            </div>
+            
+            <div class="form-body">
+                <!-- Controles de Otimização -->
+                <div class="optimization-controls">
+                    <label class="form-label mb-0">
+                        <strong><i class="fas fa-sliders-h me-1"></i>Controles de Otimização:</strong>
+                    </label>
+                    
+                    <button type="button" class="btn btn-sm btn-primary" onclick="toggleCompactMode()">
+                        <i class="fas fa-compress me-1"></i>Modo Compacto
+                    </button>
+                    
+                    <button type="button" class="btn btn-sm btn-info" onclick="toggleDebugMode()">
+                        <i class="fas fa-bug me-1"></i>Debug Mode
+                    </button>
+                    
+                    <button type="button" class="btn btn-sm btn-success" onclick="reoptimizeForm()">
+                        <i class="fas fa-sync me-1"></i>Re-otimizar
+                    </button>
+                    
+                    <div class="ms-auto">
+                        <span class="badge bg-secondary" id="field-count">0 campos</span>
+                        <span class="badge bg-info" id="layout-mode">Automático</span>
+                    </div>
+                </div>
+
+                <!-- Formulário Exemplo -->
+                <form class="form-optimized" method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Seção 1: Identificação -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-id-card icon"></i>
+                            Dados de Identificação
+                        </h5>
+                        
+                        <div class="row">
+                            <!-- Simulação de campos do wizard -->
+                            <div class="field-container col-lg-2 col-md-3 col-sm-6" data-field-type="date">
+                                <div class="form-group">
+                                    <label class="form-label label-compact required">
+                                        Data de Fundação
+                                        <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <input type="date" class="form-control form-control-sm datepicker-compact" value="2024-01-15">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-2 col-md-3 col-sm-6" data-field-type="date">
+                                <div class="form-group">
+                                    <label class="form-label label-compact">Data de Nascimento</label>
+                                    <input type="date" class="form-control form-control-sm datepicker-compact" value="1990-05-20">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-3 col-md-4 col-sm-6" data-field-type="document">
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        CNPJ
+                                        <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-sm document-mask" placeholder="00.000.000/0000-00">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-3 col-md-4 col-sm-6" data-field-type="phone">
+                                <div class="form-group">
+                                    <label class="form-label">Telefone</label>
+                                    <input type="tel" class="form-control form-control-sm phone-mask" placeholder="(11) 99999-9999">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-4 col-md-6 col-sm-12" data-field-type="email">
+                                <div class="form-group">
+                                    <label class="form-label">E-mail</label>
+                                    <input type="email" class="form-control form-control-sm" placeholder="exemplo@empresa.com">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-6 col-md-8 col-sm-12" data-field-type="company">
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        Razão Social
+                                        <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-sm" placeholder="Empresa Exemplo Ltda">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção 2: Endereço -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-map-marker-alt icon"></i>
+                            Endereço Principal
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="field-container col-lg-2 col-md-3 col-sm-6" data-field-type="cep">
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        CEP
+                                        <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-sm cep-mask" placeholder="00000-000">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-5 col-md-7 col-sm-12" data-field-type="address">
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        Logradouro
+                                        <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-sm" placeholder="Rua, Avenida, etc.">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-2 col-md-3 col-sm-6" data-field-type="small">
+                                <div class="form-group">
+                                    <label class="form-label">Número</label>
+                                    <input type="text" class="form-control form-control-sm" placeholder="123">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-3 col-md-4 col-sm-6" data-field-type="location">
+                                <div class="form-group">
+                                    <label class="form-label">Bairro</label>
+                                    <input type="text" class="form-control form-control-sm" placeholder="Nome do bairro">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-3 col-md-4 col-sm-6" data-field-type="location">
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        Cidade
+                                        <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-sm" placeholder="Nome da cidade">
+                                </div>
+                            </div>
+                            
+                            <div class="field-container col-lg-2 col-md-3 col-sm-6" data-field-type="state">
+                                <div class="form-group">
+                                    <label class="form-label required">
+                                        UF
+                                        <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <select class="form-select form-control-sm">
+                                        <option value="">Selecione</option>
+                                        <option value="SP">SP</option>
+                                        <option value="RJ">RJ</option>
+                                        <option value="MG">MG</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção 3: Observações -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-comments icon"></i>
+                            Informações Adicionais
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="field-container col-12" data-field-type="textarea">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Observações
+                                        <i class="fas fa-info-circle ms-1 text-muted" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Informações relevantes sobre a empresa"></i>
+                                    </label>
+                                    <textarea class="form-control form-control-sm" rows="3" 
+                                              placeholder="Informações adicionais relevantes..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botões de ação -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <button type="button" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Anterior
+                        </button>
+                        
+                        <div class="field-stats">
+                            <strong>Estatísticas:</strong>
+                            <span id="field-count-inline">12 campos</span> |
+                            <span id="space-usage">Uso de espaço: 85%</span> |
+                            <span id="responsive-mode">Modo: Desktop</span>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/smart-form-optimizer.js' %}"></script>
+    
+    <script>
+        // Funções de demonstração
+        function toggleCompactMode() {
+            const form = document.querySelector('.form-optimized');
+            form.classList.toggle('form-ultra-compact');
+            updateStats();
+        }
+        
+        function toggleDebugMode() {
+            window.smartFormOptimizer.toggleDebugMode();
+        }
+        
+        function reoptimizeForm() {
+            window.smartFormOptimizer.reoptimize();
+            updateStats();
+        }
+        
+        function updateStats() {
+            const fieldCount = document.querySelectorAll('.field-container').length;
+            document.getElementById('field-count').textContent = `${fieldCount} campos`;
+            document.getElementById('field-count-inline').textContent = `${fieldCount} campos`;
+            
+            const isCompact = document.querySelector('.form-optimized').classList.contains('form-ultra-compact');
+            document.getElementById('layout-mode').textContent = isCompact ? 'Compacto' : 'Automático';
+            
+            const spaceUsage = Math.round(Math.random() * 20 + 75); // Simulação
+            document.getElementById('space-usage').textContent = `Uso de espaço: ${spaceUsage}%`;
+        }
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStats();
+            
+            // Ativa tooltips
+            const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltips.forEach(el => new bootstrap.Tooltip(el));
+        });
+    </script>
+</body>
+</html>

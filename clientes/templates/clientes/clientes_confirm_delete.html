@@ -1,0 +1,490 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Excluir Cliente - {{ object.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-confirmation {
+        max-width: 600px;
+        margin: 60px auto;
+        padding: 0 20px;
+    }
+    
+    .delete-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+    
+    .delete-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        padding: 32px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .delete-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="warning-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23warning-pattern)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .delete-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .delete-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        margin: 0 auto 16px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .delete-header h1 {
+        margin: 0 0 8px 0;
+        font-size: 24px;
+        font-weight: 700;
+    }
+    
+    .delete-header p {
+        margin: 0;
+        font-size: 16px;
+        opacity: 0.9;
+    }
+    
+    .delete-content {
+        padding: 32px;
+    }
+    
+    .client-info {
+        background: var(--background-light);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .client-info-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .client-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 24px;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .client-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+    
+    .client-info-details h3 {
+        margin: 0 0 4px 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .client-info-details p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+    
+    .client-info-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 16px;
+    }
+    
+    .client-stat {
+        text-align: center;
+    }
+    
+    .client-stat-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+    
+    .client-stat-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .warning-message {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        color: #856404;
+    }
+    
+    .warning-message-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .warning-message-icon {
+        color: #f39c12;
+        font-size: 18px;
+    }
+    
+    .warning-message-title {
+        font-weight: 600;
+        font-size: 14px;
+        margin: 0;
+    }
+    
+    .warning-message-text {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    .consequences-list {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    
+    .consequences-list h4 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .consequences-list ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .consequences-list li {
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    
+    .delete-confirmation-input {
+        margin-bottom: 24px;
+    }
+    
+    .delete-confirmation-input label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .delete-confirmation-input input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .delete-confirmation-input input:focus {
+        outline: none;
+        border-color: var(--danger);
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    }
+    
+    .delete-confirmation-input input.valid {
+        border-color: var(--success);
+    }
+    
+    .delete-confirmation-input input.invalid {
+        border-color: var(--danger);
+    }
+    
+    .delete-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+    
+    .btn-delete {
+        background: var(--danger);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    .btn-delete:enabled {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    .btn-delete:enabled:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+    
+    .btn-cancel {
+        background: var(--background-light);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-cancel:hover {
+        background: var(--background-hover);
+        border-color: var(--border-hover);
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+    
+    @media (max-width: 768px) {
+        .delete-confirmation {
+            margin: 20px auto;
+        }
+        
+        .delete-content {
+            padding: 24px;
+        }
+        
+        .client-info-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .delete-actions {
+            flex-direction: column-reverse;
+        }
+        
+        .btn-delete,
+        .btn-cancel {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-confirmation">
+    <div class="delete-card">
+        <div class="delete-header">
+            <div class="delete-header-content">
+                <div class="delete-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h1>Confirmar Exclusão</h1>
+                <p>Esta ação não pode ser desfeita</p>
+            </div>
+        </div>
+        
+        <div class="delete-content">
+            <!-- Informações do Cliente -->
+            <div class="client-info">
+                <div class="client-info-header">
+                    <div class="client-avatar">
+                        {% if object.foto %}
+                            <img src="{{ object.foto.url }}" alt="Foto do cliente">
+                        {% else %}
+                            {{ object.nome|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="client-info-details">
+                        <h3>{{ object.nome }}</h3>
+                        <p>{{ object.get_tipo_display }}{% if object.documento %} • {{ object.documento }}{% endif %}</p>
+                        {% if object.email %}
+                        <p><i class="fas fa-envelope"></i> {{ object.email }}</p>
+                        {% endif %}
+                        {% if object.telefone %}
+                        <p><i class="fas fa-phone"></i> {{ object.telefone }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="client-info-stats">
+                    <div class="client-stat">
+                        <div class="client-stat-value">{{ object.total_pedidos|default:0 }}</div>
+                        <div class="client-stat-label">Pedidos</div>
+                    </div>
+                    <div class="client-stat">
+                        <div class="client-stat-value">R$ {{ object.valor_total|default:0|floatformat:2 }}</div>
+                        <div class="client-stat-label">Valor Total</div>
+                    </div>
+                    <div class="client-stat">
+                        <div class="client-stat-value">{{ object.created_at|timesince }}</div>
+                        <div class="client-stat-label">Cliente há</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensagem de Aviso -->
+            <div class="warning-message">
+                <div class="warning-message-header">
+                    <i class="fas fa-exclamation-triangle warning-message-icon"></i>
+                    <h4 class="warning-message-title">Atenção!</h4>
+                </div>
+                <p class="warning-message-text">
+                    Você está prestes a excluir permanentemente o cliente <strong>{{ object.nome }}</strong>. 
+                    Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+                </p>
+            </div>
+
+            <!-- Consequências da Exclusão -->
+            <div class="consequences-list">
+                <h4>
+                    <i class="fas fa-list-ul"></i>
+                    O que será excluído:
+                </h4>
+                <ul>
+                    <li>Todas as informações pessoais e de contato do cliente</li>
+                    <li>Histórico de pedidos e orçamentos (se existir)</li>
+                    <li>Dados financeiros e limites de crédito</li>
+                    <li>Endereços e informações de entrega</li>
+                    <li>Observações e anotações relacionadas</li>
+                    <li>Anexos e documentos enviados</li>
+                </ul>
+            </div>
+
+            <!-- Confirmação por Digitação -->
+            <div class="delete-confirmation-input">
+                <label for="confirmationInput">
+                    Para confirmar a exclusão, digite o nome completo do cliente:
+                </label>
+                <input type="text" id="confirmationInput" placeholder="Digite: {{ object.nome }}" autocomplete="off">
+            </div>
+
+            <!-- Formulário de Exclusão -->
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                <div class="delete-actions">
+                    <a href="{% url 'clientes:clientes_detail' object.pk %}" class="btn-cancel">
+                        <i class="fas fa-arrow-left"></i>
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn-delete" id="deleteButton" disabled>
+                        <i class="fas fa-trash"></i>
+                        Excluir Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmationInput = document.getElementById('confirmationInput');
+    const deleteButton = document.getElementById('deleteButton');
+    const deleteForm = document.getElementById('deleteForm');
+    const expectedText = "{{ object.nome }}";
+    
+    // Validar entrada de confirmação
+    confirmationInput.addEventListener('input', function() {
+        const inputValue = this.value.trim();
+        
+        if (inputValue === expectedText) {
+            this.classList.remove('invalid');
+            this.classList.add('valid');
+            deleteButton.disabled = false;
+        } else {
+            this.classList.remove('valid');
+            if (inputValue.length > 0) {
+                this.classList.add('invalid');
+            }
+            deleteButton.disabled = true;
+        }
+    });
+    
+    // Prevenir submissão acidental
+    deleteForm.addEventListener('submit', function(e) {
+        if (confirmationInput.value.trim() !== expectedText) {
+            e.preventDefault();
+            alert('Por favor, digite o nome completo do cliente para confirmar a exclusão.');
+            confirmationInput.focus();
+            return false;
+        }
+        
+        // Confirmação final
+        if (!confirm('Tem certeza absoluta que deseja excluir este cliente? Esta ação não pode ser desfeita.')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar loading
+        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+        deleteButton.disabled = true;
+    });
+    
+    // Focar no campo de confirmação
+    confirmationInput.focus();
+    
+    // Atalhos de teclado
+    document.addEventListener('keydown', function(e) {
+        // ESC para cancelar
+        if (e.key === 'Escape') {
+            window.location.href = "{% url 'clientes:clientes_detail' object.pk %}";
+        }
+        
+        // Enter para confirmar (apenas se a confirmação estiver válida)
+        if (e.key === 'Enter' && !deleteButton.disabled) {
+            deleteForm.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

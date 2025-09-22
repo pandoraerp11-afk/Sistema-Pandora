@@ -1,0 +1,742 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}📄 Gestão de Documentos - Pandora ERP{% endblock %}
+
+{% block home_icon %}<i class="fas fa-file-alt me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Gestão de Documentos{% endblock %}
+{% block home_subtitle %}Central de documentos, tipos, categorias e histórico para todas as entidades do sistema{% endblock %}
+
+{% block home_stats %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            {% trans "Visão Geral de Documentos" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'documentos:tipo_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-primary mb-1">{{ total_tipos|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Tipos de Documento" %}</p>
+                            <small class="text-muted">{% trans "Cadastrados" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'documentos:categoria_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-info mb-1">{{ total_categorias|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Categorias" %}</p>
+                            <small class="text-muted">{% trans "Organização" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'documentos:documento_list' 'fornecedores' 1 %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                                <i class="fas fa-paperclip"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-success mb-1">{{ total_documentos|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Documentos Associados" %}</p>
+                            <small class="text-muted">{% trans "Em todas entidades" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'documentos:versao_list' 1 %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                                <i class="fas fa-history"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-warning mb-1">{{ total_versoes|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Histórico de Versões" %}</p>
+                            <small class="text-muted">{% trans "Últimos envios" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_actions %}
+<div class="mb-5">
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-bolt me-2 text-primary"></i>
+        Ações Rápidas
+    </h2>
+    <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalNovaCategoria">
+                <div class="quick-action-card h-100" style="--accent-color:#0dcaf0">
+                    <div class="card-body p-4 text-center">
+                        <div class="quick-action-icon bg-gradient-info text-white mx-auto mb-3">
+                            <i class="fas fa-folder-plus"></i>
+                        </div>
+                        <h6 class="fw-semibold mb-1">Nova Categoria</h6>
+                        <p class="text-muted small mb-0">Organizar agrupamentos</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+                <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalNovoTipo">
+                <div class="quick-action-card h-100" style="--accent-color:#0d6efd">
+                    <div class="card-body p-4 text-center">
+                        <div class="quick-action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-file-circle-plus"></i>
+                        </div>
+                        <h6 class="fw-semibold mb-1">Novo Tipo</h6>
+                        <p class="text-muted small mb-0">Definir regras & campos</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <a href="{% url 'documentos:categoria_list' %}" class="text-decoration-none">
+                <div class="quick-action-card h-100" style="--accent-color:#198754">
+                    <div class="card-body p-4 text-center">
+                        <div class="quick-action-icon bg-gradient-success text-white mx-auto mb-3">
+                            <i class="fas fa-folders"></i>
+                        </div>
+                        <h6 class="fw-semibold mb-1">Listar Categorias</h6>
+                        <p class="text-muted small mb-0">Gerenciar existentes</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <a href="{% url 'documentos:tipo_list' %}" class="text-decoration-none">
+                <div class="quick-action-card h-100" style="--accent-color:#ffc107">
+                    <div class="card-body p-4 text-center">
+                        <div class="quick-action-icon bg-gradient-warning text-white mx-auto mb-3">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                        <h6 class="fw-semibold mb-1">Listar Tipos</h6>
+                        <p class="text-muted small mb-0">Editar ou revisar</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modalNovaRegra" class="text-decoration-none">
+                <div class="quick-action-card h-100" style="--accent-color:#6f42c1">
+                    <div class="card-body p-4 text-center">
+                        <div class="quick-action-icon bg-gradient-secondary text-white mx-auto mb-3">
+                            <i class="fas fa-sliders"></i>
+                        </div>
+                        <h6 class="fw-semibold mb-1">Nova Regra</h6>
+                        <p class="text-muted small mb-0">Definir exigência</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <a href="{% url 'documentos:setup_inteligente' %}" class="text-decoration-none">
+                <div class="quick-action-card h-100" style="--accent-color:#20c997">
+                    <div class="card-body p-4 text-center">
+                        <div class="quick-action-icon bg-gradient-success text-white mx-auto mb-3">
+                            <i class="fas fa-magic"></i>
+                        </div>
+                        <h6 class="fw-semibold mb-1">Setup Inteligente</h6>
+                        <p class="text-muted small mb-0">Criar em lote</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% if total_tipos == 0 or total_categorias == 0 %}
+    <div class="alert alert-info mt-4 d-flex align-items-center" data-aos="fade-up" data-aos-delay="150">
+        <i class="fas fa-circle-info fa-lg me-2"></i>
+        <div>
+            {% if total_categorias == 0 and total_tipos == 0 %}
+                Comece criando uma categoria e depois cadastre os tipos de documento que serão usados nas entidades.
+            {% elif total_categorias == 0 %}
+                Você já possui tipos mas nenhuma categoria – agrupe-os criando categorias.
+            {% elif total_tipos == 0 %}
+                Crie seus primeiros tipos de documento para associar às entidades (fornecedores, obras, etc.).
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block home_extra_js %}
+<script>
+(function(){
+    const modalHtml = `
+    <div class="modal fade" id="modalNovaCategoria" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class=\"fas fa-folder-plus me-2\"></i>{% trans 'Nova Categoria de Documento' %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formNovaCategoriaHome">
+                        <div class="mb-3">
+                            <label class="form-label">{% trans 'Nome' %}</label>
+                            <input type="text" name="nome" class="form-control" required maxlength="100" autocomplete="off" />
+                            <div class="invalid-feedback" data-field="nome"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{% trans 'Descrição' %}</label>
+                            <textarea name="descricao" class="form-control" rows="2" maxlength="250"></textarea>
+                            <div class="invalid-feedback" data-field="descricao"></div>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="ativo" id="id_home_ativo" checked>
+                            <label class="form-check-label" for="id_home_ativo">{% trans 'Ativo' %}</label>
+                        </div>
+                        <div class="alert alert-danger py-2 px-3 d-none" id="homeCategoriaErrors"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans 'Fechar' %}</button>
+                    <button type="button" class="btn btn-primary" id="btnSalvarCategoriaHome"><i class="fas fa-save me-1"></i>{% trans 'Salvar' %}</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalEl=document.getElementById('modalNovaCategoria');
+    const form=modalEl.querySelector('#formNovaCategoriaHome');
+    const btnSalvar=document.getElementById('btnSalvarCategoriaHome');
+    const errorsBox=document.getElementById('homeCategoriaErrors');
+    const statCategorias=document.querySelector('.action-icon.bg-gradient-info')?.closest('.action-card')?.querySelector('.display-6');
+    function limpar(){ errorsBox.classList.add('d-none'); errorsBox.innerHTML=''; form.querySelectorAll('.is-invalid').forEach(el=>el.classList.remove('is-invalid')); }
+    function erros(errs){ let msgs=[]; Object.entries(errs||{}).forEach(([f,a])=>{ if(['__all__','ordem'].includes(f)) { msgs=msgs.concat(a); return; } const input=form.querySelector(`[name="${f}"]`); if(input){ input.classList.add('is-invalid'); const fb=form.querySelector(`.invalid-feedback[data-field="${f}"]`); if(fb) fb.textContent=a.join(' ');} else { msgs=msgs.concat(a); } }); if(msgs.length){ errorsBox.innerHTML=msgs.join('<br>'); errorsBox.classList.remove('d-none'); } }
+    function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+    btnSalvar.addEventListener('click', ()=>{
+        limpar();
+        const payload={ nome: form.nome.value.trim(), descricao: form.descricao.value.trim(), ativo: form.ativo.checked?'on':'' };
+        if(!payload.nome){ form.nome.classList.add('is-invalid'); erros({nome:['{% trans 'Obrigatório' %}']}); return; }
+        btnSalvar.disabled=true; btnSalvar.classList.add('disabled');
+        fetch('{% url 'documentos:categoria_create_ajax' %}', {method:'POST', headers:{'X-CSRFToken':csrf(),'Content-Type':'application/json'}, body: JSON.stringify(payload)})
+            .then(r=>r.json().then(j=>({status:r.status, body:j})))
+            .then(({status, body})=>{
+                if(status<400 && body.ok){ if(statCategorias){ const atual=parseInt(statCategorias.textContent)||0; statCategorias.textContent=atual+1; } form.reset(); form.ativo.checked=true; bootstrap.Modal.getInstance(modalEl).hide(); window.Pandora?.toast && Pandora.toast('{% trans "Categoria criada" %}'); } else { erros(body.errors||{'__all__':['Erro desconhecido']}); }
+            })
+            .catch(e=>{ console.error(e); errorsBox.textContent='Erro de rede'; errorsBox.classList.remove('d-none'); })
+            .finally(()=>{ btnSalvar.disabled=false; btnSalvar.classList.remove('disabled'); });
+    });
+    modalEl.addEventListener('shown.bs.modal', ()=>{ form.nome.focus(); limpar(); });
+})();
+    // Modal Novo Tipo
+    (function(){
+        const modalTipo = `
+        <div class="modal fade" id="modalNovoTipo" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class=\"fas fa-file-circle-plus me-2\"></i>{% trans 'Novo Tipo de Documento' %}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formNovoTipoHome">
+                            <div class="mb-3">
+                                <label class="form-label">{% trans 'Nome' %}</label>
+                                <input type="text" name="nome" class="form-control" required maxlength="100" autocomplete="off" />
+                                <div class="invalid-feedback" data-field="nome"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{% trans 'Categoria' %}</label>
+                                <select name="categoria_id" class="form-select" required>
+                                    <option value="">-- {% trans 'Selecione' %} --</option>
+                                    {% for c in categorias_options %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+                                </select>
+                                <div class="invalid-feedback" data-field="categoria"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{% trans 'Periodicidade' %}</label>
+                                <select name="periodicidade" class="form-select" required>
+                                    {% for val,label in periodicidade_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+                                </select>
+                                <div class="invalid-feedback" data-field="periodicidade"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{% trans 'Descrição' %}</label>
+                                <textarea name="descricao" class="form-control" rows="2" maxlength="250"></textarea>
+                                <div class="invalid-feedback" data-field="descricao"></div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-4 mb-3 align-items-center">
+                                <div class="form-check form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" name="ativo" id="id_tipo_ativo" checked>
+                                    <label class="form-check-label" for="id_tipo_ativo">{% trans 'Ativo' %}</label>
+                                </div>
+                                <div class="form-check form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" name="versionavel" id="id_tipo_versionavel" checked>
+                                    <label class="form-check-label" for="id_tipo_versionavel">{% trans 'Versionável' %}</label>
+                                </div>
+                            </div>
+                            <div class="alert alert-danger py-2 px-3 d-none" id="homeTipoErrors"></div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans 'Fechar' %}</button>
+                        <button type="button" class="btn btn-primary" id="btnSalvarTipoHome"><i class="fas fa-save me-1"></i>{% trans 'Salvar' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalTipo);
+        const modalEl=document.getElementById('modalNovoTipo');
+        const form=modalEl.querySelector('#formNovoTipoHome');
+        const btnSalvar=document.getElementById('btnSalvarTipoHome');
+        const errorsBox=document.getElementById('homeTipoErrors');
+        const statTipos=document.querySelector('.action-icon.bg-gradient-primary')?.closest('.action-card')?.querySelector('.display-6');
+        function limpar(){ errorsBox.classList.add('d-none'); errorsBox.innerHTML=''; form.querySelectorAll('.is-invalid').forEach(el=>el.classList.remove('is-invalid')); }
+        function erros(errs){ let msgs=[]; Object.entries(errs||{}).forEach(([f,a])=>{ if(f==='__all__') { msgs=msgs.concat(a); return; } const input=form.querySelector(`[name="${f}"]`); if(input){ input.classList.add('is-invalid'); const fb=form.querySelector(`.invalid-feedback[data-field="${f}"]`); if(fb) fb.textContent=a.join(' ');} else { msgs=msgs.concat(a); } }); if(msgs.length){ errorsBox.innerHTML=msgs.join('<br>'); errorsBox.classList.remove('d-none'); } }
+        function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+        btnSalvar.addEventListener('click', ()=>{
+            limpar();
+            const payload={
+                nome: form.nome.value.trim(),
+                categoria_id: form.categoria_id.value,
+                periodicidade: form.periodicidade.value,
+                descricao: form.descricao.value.trim(),
+                ativo: form.ativo.checked? 'on':'',
+                versionavel: form.versionavel.checked? 'on':'',
+            };
+            if(!payload.nome){ erros({nome:['{% trans 'Obrigatório' %}']}); return; }
+            if(!payload.categoria_id){ erros({categoria:['{% trans 'Obrigatório' %}']}); return; }
+            btnSalvar.disabled=true; btnSalvar.classList.add('disabled');
+            fetch('{% url 'documentos:tipo_create_ajax' %}', {method:'POST', headers:{'X-CSRFToken':csrf(),'Content-Type':'application/json'}, body: JSON.stringify(payload)})
+                .then(r=>r.json().then(j=>({status:r.status, body:j})))
+                .then(({status, body})=>{
+                    if(status<400 && body.ok){ if(statTipos){ const atual=parseInt(statTipos.textContent)||0; statTipos.textContent=atual+1; } form.reset(); form.ativo.checked=true; form.versionavel.checked=true; bootstrap.Modal.getInstance(modalEl).hide(); window.Pandora?.toast && Pandora.toast('{% trans "Tipo criado" %}'); }
+                    else { erros(body.errors||{'__all__':['Erro desconhecido']}); }
+                })
+                .catch(e=>{ console.error(e); errorsBox.textContent='Erro de rede'; errorsBox.classList.remove('d-none'); })
+                .finally(()=>{ btnSalvar.disabled=false; btnSalvar.classList.remove('disabled'); });
+        });
+        modalEl.addEventListener('shown.bs.modal', ()=>{ form.nome.focus(); limpar(); });
+    })();
+        // Modal Nova Regra
+        (function(){
+            const modalRegra = `
+            <div class="modal fade" id="modalNovaRegra" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class=\"fas fa-sliders me-2\"></i>{% trans 'Nova Regra de Documento' %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="formNovaRegraHome">
+                                <div class="mb-3">
+                                    <label class="form-label">{% trans 'Tipo de Documento' %}</label>
+                                    <select name="tipo" class="form-select" required>
+                                        <option value="">-- {% trans 'Selecione' %} --</option>
+                                        {% for t in tipos_options %}
+                                            <option value="{{ t.id }}">{{ t.nome }} ({{ t.categoria__nome }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="invalid-feedback" data-field="tipo"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{% trans 'Escopo' %}</label>
+                                    <select name="escopo" class="form-select" required>
+                                        <option value="app">Plataforma (todos os tenants)</option>
+                                        <option value="tenant">Empresa (tenant atual)</option>
+                                        <option value="filtro">Filtro avançado</option>
+                                        <option value="entidade">Entidade específica</option>
+                                    </select>
+                                    <div class="invalid-feedback" data-field="escopo"></div>
+                                </div>
+                                <div class="row g-3 align-items-end mb-3" id="grupoDominio">
+                                    <div class="col" id="colDominioSelect">
+                                        <label class="form-label">Domínio</label>
+                                        <div class="input-group">
+                                            <select name="dominio" class="form-select">
+                                                <option value="">-- {% trans 'Selecione' %} --</option>
+                                                {% for d in dominios_options %}<option value="{{ d.id }}">{{ d.nome }}</option>{% endfor %}
+                                            </select>
+                                            <button class="btn btn-outline-secondary" type="button" id="btnAddDominio" title="Novo Domínio"><i class="fas fa-plus"></i></button>
+                                        </div>
+                                        <div class="invalid-feedback" data-field="dominio"></div>
+                                    </div>
+                                    <div class="col d-none" id="colAppLabelEntidade">
+                                        <label class="form-label">App Label</label>
+                                        <input type="text" name="app_label" class="form-control" placeholder="ex: fornecedores" />
+                                        <div class="invalid-feedback" data-field="app_label"></div>
+                                    </div>
+                                    <div class="col d-none" id="colEntidadeId">
+                                        <label class="form-label">ID Entidade</label>
+                                        <input type="number" name="entidade_object_id" class="form-control" />
+                                        <div class="invalid-feedback" data-field="entidade_object_id"></div>
+                                    </div>
+                                    {% if user.is_superuser %}
+                                    <div class="col d-none" id="colTenantSelect">
+                                        <label class="form-label">Tenant</label>
+                                        <select name="tenant" class="form-select">
+                                            <option value="">-- Selecionar --</option>
+                                            {% load core_tags %}
+                                            {% get_all_tenants as all_tenants %}
+                                            {% for t in all_tenants %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+                                        </select>
+                                        <div class="invalid-feedback" data-field="tenant"></div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{% trans 'Exigência' %}</label>
+                                    <select name="exigencia" class="form-select" required>
+                                        {% for val,label in exigencia_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+                                    </select>
+                                    <div class="invalid-feedback" data-field="exigencia"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{% trans 'Periodicidade Override' %}</label>
+                                    <select name="periodicidade_override" class="form-select">
+                                        <option value="">-- {% trans 'Usar do Tipo' %} --</option>
+                                        {% for val,label in periodicidade_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+                                    </select>
+                                    <div class="invalid-feedback" data-field="periodicidade_override"></div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col">
+                                        <label class="form-label">{% trans 'Validade (dias)' %}</label>
+                                        <input type="number" name="validade_dias" class="form-control" min="0" />
+                                        <div class="invalid-feedback" data-field="validade_dias"></div>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label">{% trans 'Data Base' %}</label>
+                                        <input type="date" name="data_base" class="form-control" />
+                                        <div class="invalid-feedback" data-field="data_base"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{% trans 'Observações' %}</label>
+                                    <input type="text" name="observacoes" class="form-control" maxlength="250" />
+                                    <div class="invalid-feedback" data-field="observacoes"></div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-4 mb-3 align-items-center">
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" name="ativo" id="id_regra_ativo" checked>
+                                        <label class="form-check-label" for="id_regra_ativo">{% trans 'Ativa' %}</label>
+                                    </div>
+                                </div>
+                                <div class="alert alert-danger py-2 px-3 d-none" id="homeRegraErrors"></div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans 'Fechar' %}</button>
+                            <button type="button" class="btn btn-primary" id="btnSalvarRegraHome"><i class="fas fa-save me-1"></i>{% trans 'Salvar' %}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalRegra);
+            const modalEl=document.getElementById('modalNovaRegra');
+            const form=modalEl.querySelector('#formNovaRegraHome');
+            const btnSalvar=document.getElementById('btnSalvarRegraHome');
+            const errorsBox=document.getElementById('homeRegraErrors');
+            const selectEscopo=form.escopo;
+            const colEntidade=document.getElementById('colEntidadeId');
+            const colAppLabelEntidade=document.getElementById('colAppLabelEntidade');
+            const colTenant = document.getElementById('colTenantSelect');
+            function toggleEscopo(){
+                const esc = selectEscopo.value;
+                if(esc==='entidade') { colEntidade.classList.remove('d-none'); colAppLabelEntidade.classList.remove('d-none'); }
+                else { colEntidade.classList.add('d-none'); colAppLabelEntidade.classList.add('d-none'); }
+                if(colTenant){ if(esc==='tenant'){ colTenant.classList.remove('d-none'); } else { colTenant.classList.add('d-none'); } }
+                // Domínio somente para global/app/filtro
+                document.getElementById('colDominioSelect').classList.toggle('d-none', !(esc==='app' || esc==='filtro'));
+            }
+            selectEscopo.addEventListener('change', toggleEscopo);
+            function limpar(){ errorsBox.classList.add('d-none'); errorsBox.innerHTML=''; form.querySelectorAll('.is-invalid').forEach(el=>el.classList.remove('is-invalid')); }
+            function erros(errs){ let msgs=[]; Object.entries(errs||{}).forEach(([f,a])=>{ if(f==='__all__'){ msgs=msgs.concat(a); return; } const input=form.querySelector(`[name="${f}"]`); if(input){ input.classList.add('is-invalid'); const fb=form.querySelector(`.invalid-feedback[data-field="${f}"]`); if(fb) fb.textContent=a.join(' ');} else { msgs=msgs.concat(a);} }); if(msgs.length){ errorsBox.innerHTML=msgs.join('<br>'); errorsBox.classList.remove('d-none'); } }
+            function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+            btnSalvar.addEventListener('click', ()=>{
+                limpar();
+                const payload={
+                    tipo: form.tipo.value,
+                    escopo: form.escopo.value,
+                    dominio: form.dominio.value,
+                    entidade_object_id: form.entidade_object_id?.value || '',
+                    app_label: form.app_label?.value.trim() || '',
+                    tenant: form.tenant ? form.tenant.value : '',
+                    exigencia: form.exigencia.value,
+                    periodicidade_override: form.periodicidade_override.value || '',
+                    validade_dias: form.validade_dias.value || '',
+                    data_base: form.data_base.value || '',
+                    observacoes: form.observacoes.value.trim(),
+                    ativo: form.ativo.checked? 'on':''
+                };
+                if(!payload.tipo){ erros({tipo:['{% trans 'Obrigatório' %}']}); return; }
+                if(['app','filtro','entidade'].includes(payload.escopo)===false){ erros({escopo:['Escopo inválido']}); return; }
+                if(['app','filtro'].includes(payload.escopo) && !payload.dominio){ erros({dominio:['{% trans 'Obrigatório' %}']}); return; }
+                if(payload.escopo==='tenant' && !payload.tenant){ erros({tenant:['{% trans 'Obrigatório' %}']}); return; }
+                if(payload.escopo==='entidade' && (!payload.app_label || !payload.entidade_object_id)){ erros({'__all__':['{% trans 'Informe App Label e ID Entidade' %}']}); return; }
+                btnSalvar.disabled=true; btnSalvar.classList.add('disabled');
+                fetch('{% url 'documentos:regra_create_ajax' %}', {method:'POST', headers:{'X-CSRFToken':csrf(),'Content-Type':'application/json'}, body: JSON.stringify(payload)})
+                    .then(r=>r.json().then(j=>({status:r.status, body:j})))
+                    .then(({status, body})=>{
+                        if(status<400 && body.ok){ form.reset(); form.ativo.checked=true; selectEscopo.value='app'; toggleEscopo(); bootstrap.Modal.getInstance(modalEl).hide(); window.Pandora?.toast && Pandora.toast('{% trans "Regra criada" %}'); }
+                        else { erros(body.errors||{'__all__':['Erro desconhecido']}); }
+                    })
+                    .catch(e=>{ console.error(e); errorsBox.textContent='Erro de rede'; errorsBox.classList.remove('d-none'); })
+                    .finally(()=>{ btnSalvar.disabled=false; btnSalvar.classList.remove('disabled'); });
+            });
+            modalEl.addEventListener('shown.bs.modal', ()=>{ form.tipo.focus(); limpar(); toggleEscopo(); });
+        })();
+                // Modal Novo Domínio (lazy inject)
+                (function(){
+                        const tpl = `
+                        <div class="modal fade" id="modalNovoDominio" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title"><i class='fas fa-layer-group me-2'></i>Novo Domínio</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="formNovoDominio">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nome</label>
+                                                <input type="text" name="nome" class="form-control" required />
+                                                <div class="invalid-feedback" data-field="nome"></div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Slug</label>
+                                                <input type="text" name="slug" class="form-control" placeholder="ex: fiscal" />
+                                                <div class="form-text">Se vazio, será gerado automaticamente.</div>
+                                                <div class="invalid-feedback" data-field="slug"></div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">App Label</label>
+                                                <input type="text" name="app_label" class="form-control" placeholder="ex: fornecedores" />
+                                                <div class="invalid-feedback" data-field="app_label"></div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Descrição</label>
+                                                <input type="text" name="descricao" class="form-control" maxlength="150" />
+                                                <div class="invalid-feedback" data-field="descricao"></div>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" name="ativo" id="id_dom_ativo" checked>
+                                                <label class="form-check-label" for="id_dom_ativo">Ativo</label>
+                                            </div>
+                                            <div class="alert alert-danger py-2 px-3 d-none" id="dominioErrors"></div>
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                                        <button type="button" class="btn btn-primary" id="btnSalvarDominio"><i class="fas fa-save me-1"></i>Salvar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                        document.body.insertAdjacentHTML('beforeend', tpl);
+                        const modalDomEl = document.getElementById('modalNovoDominio');
+                        const formDom = modalDomEl.querySelector('#formNovoDominio');
+                        const btnSalvarDom = modalDomEl.querySelector('#btnSalvarDominio');
+                        const boxErros = modalDomEl.querySelector('#dominioErrors');
+                        function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+                        function limpar(){ boxErros.classList.add('d-none'); boxErros.innerHTML=''; formDom.querySelectorAll('.is-invalid').forEach(e=>e.classList.remove('is-invalid')); }
+                        function erros(errs){ let msgs=[]; Object.entries(errs||{}).forEach(([f,a])=>{ if(f==='__all__'){ msgs=msgs.concat(a); return;} const input=formDom.querySelector(`[name="${f}"]`); if(input){ input.classList.add('is-invalid'); const fb=formDom.querySelector(`.invalid-feedback[data-field="${f}"]`); if(fb) fb.textContent=a.join(' ');} else { msgs=msgs.concat(a);} }); if(msgs.length){ boxErros.innerHTML=msgs.join('<br>'); boxErros.classList.remove('d-none'); } }
+                        document.getElementById('btnAddDominio').addEventListener('click',()=>{ limpar(); formDom.reset(); formDom.nome.focus(); new bootstrap.Modal(modalDomEl).show(); });
+                        btnSalvarDom.addEventListener('click',()=>{
+                                limpar();
+                                const payload={ nome: formDom.nome.value.trim(), slug: formDom.slug.value.trim(), app_label: formDom.app_label.value.trim(), descricao: formDom.descricao.value.trim(), ativo: formDom.ativo.checked? 'on':'' };
+                                if(!payload.nome){ erros({nome:['Obrigatório']}); return; }
+                                btnSalvarDom.disabled=true; btnSalvarDom.classList.add('disabled');
+                                fetch('{% url 'documentos:dominio_create_ajax' %}', {method:'POST', headers:{'X-CSRFToken':csrf(),'Content-Type':'application/json'}, body: JSON.stringify(payload)})
+                                    .then(r=>r.json().then(j=>({status:r.status, body:j})))
+                                    .then(({status, body})=>{
+                                            if(status<400 && body.success){
+                                                    // Atualiza select domínio no modal de regra
+                                                    document.querySelectorAll('select[name="dominio"]').forEach(sel=>{
+                                                            const opt=document.createElement('option');
+                                                            opt.value=body.dominio.id; opt.textContent=body.dominio.nome; sel.appendChild(opt); sel.value=body.dominio.id;
+                                                    });
+                                                    bootstrap.Modal.getInstance(modalDomEl).hide();
+                                                    window.Pandora?.toast && Pandora.toast('Domínio criado');
+                                            } else { erros(body.errors||{'__all__':['Erro desconhecido']}); }
+                                    })
+                                    .catch(e=>{ console.error(e); boxErros.textContent='Erro de rede'; boxErros.classList.remove('d-none'); })
+                                    .finally(()=>{ btnSalvarDom.disabled=false; btnSalvarDom.classList.remove('disabled'); });
+                        });
+                })();
+</script>
+<script>
+// Transições de status de regras (aprovar / inativar)
+(function(){
+    function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+    function handle(btn, acao){
+        const id = btn.getAttribute('data-id');
+        btn.disabled = true; btn.classList.add('disabled');
+        fetch(`{% url 'documentos:documentos_home' %}regras/${id}/transition/`.replace(/\/$/,''), {
+            method:'POST',
+            headers:{'X-CSRFToken':csrf()},
+            body: new URLSearchParams({acao})
+        }).then(r=>r.json().then(j=>({status:r.status,body:j}))).then(({status,body})=>{
+            if(status<400 && body.success){
+                // Atualiza badge
+                const item = btn.closest('.list-group-item');
+                const badge = item.querySelector('.badge');
+                if(badge){ badge.textContent = body.status; }
+                // Ajusta botões
+                const container = btn.parentElement;
+                container.querySelectorAll('.btn-aprovar-regra,.btn-inativar-regra').forEach(b=>b.remove());
+                if(acao==='aprovar'){
+                    const inativar=document.createElement('button');
+                    inativar.className='btn btn-sm btn-outline-warning btn-inativar-regra';
+                    inativar.dataset.id=id; inativar.title='Inativar';
+                    inativar.innerHTML='<i class="fas fa-ban"></i>';
+                    container.appendChild(inativar);
+                }
+                window.Pandora?.toast && Pandora.toast('Status atualizado');
+            } else {
+                window.Pandora?.toast && Pandora.toast('Falha ao transicionar','danger');
+            }
+        }).catch(e=>{ console.error(e); window.Pandora?.toast && Pandora.toast('Erro de rede','danger'); })
+        .finally(()=>{ btn.disabled=false; btn.classList.remove('disabled'); });
+    }
+    document.addEventListener('click', function(ev){
+        const btn = ev.target.closest('.btn-aprovar-regra');
+        if(btn){ ev.preventDefault(); handle(btn,'aprovar'); }
+        const btn2 = ev.target.closest('.btn-inativar-regra');
+        if(btn2){ ev.preventDefault(); if(confirm('Inativar esta regra?')) handle(btn2,'inativar'); }
+    });
+})();
+</script>
+{% endblock %}
+
+{% block content %}{{ block.super }}
+<!-- Removido modal placeholder "Nova Regra"; ação agora abre formulário dedicado. -->
+{% endblock %}
+
+{% block home_content %}
+<div class="row g-4" data-aos="fade-up">
+    <div class="col-lg-7">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <h5 class="mb-3"><i class="fas fa-diagram-project me-2 text-primary"></i>Arquitetura do Módulo</h5>
+                <p class="text-muted small mb-3">O módulo centraliza categorias, tipos e documentos associados dinamicamente a qualquer entidade (GenericForeignKey). Fluxo recomendado:</p>
+                <ol class="small ps-3 mb-4">
+                    <li>Criar <strong>Categoria</strong> (ex: Fiscal, Jurídico, RH)</li>
+                    <li>Criar <strong>Tipo</strong> definindo nome, categoria e regras (campos futuros, periodicidade etc.)</li>
+                    <li>Definir <strong>Regras</strong> por entidade (ex: Fornecedor Serviços exige Mensal para Funcionários)</li>
+                    <li>Associar <strong>Documento</strong> a uma entidade específica (ex: Fornecedor X) – sua periodicidade pode vir da regra</li>
+                    <li>Enviar <strong>Versões</strong> conforme atualização periódica e acompanhar validade</li>
+                </ol>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modalNovaCategoria" class="btn btn-sm btn-outline-info me-2"><i class="fas fa-folder-plus me-1"></i>Nova Categoria</a>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modalNovoTipo" class="btn btn-sm btn-outline-primary me-2"><i class="fas fa-file-circle-plus me-1"></i>Novo Tipo</a>
+                <a href="{% url 'documentos:tipo_list' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-list-check me-1"></i>Tipos</a>
+                <div class="mt-3 small text-muted">
+                    Para gerenciar regras: acesse a página da entidade (ex: Fornecedor) e use o menu "Regras de Documentos".
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <h5 class="mb-3"><i class="fas fa-lightbulb me-2 text-warning"></i>Dicas de Uso</h5>
+                <ul class="small ps-3 mb-0 text-muted">
+                    <li>Mantenha a nomenclatura dos tipos clara e padronizada.</li>
+                    <li>Use categorias para facilitar filtros e relatórios.</li>
+                    <li>Versões permitem histórico e auditoria; evite sobrescrever arquivos.</li>
+                    <li>Planeje campos extras futuros (metadados) nos tipos antes da expansão.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-4" data-aos="fade-up" data-aos-delay="150">
+    <div class="col-lg-7">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="fas fa-sliders me-2 text-primary"></i>Regras Recentes</h5>
+                    <span class="badge bg-light text-dark">{{ recent_regras|length }} itens</span>
+                </div>
+                {% if recent_regras %}
+                <div class="list-group list-group-flush">
+                    {% for regra in recent_regras %}
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <strong>{{ regra.tipo.nome }}</strong>
+                                <span class="badge {% if regra.status == 'aprovada' %}bg-success{% elif regra.status == 'pendente' %}bg-warning text-dark{% elif regra.status == 'rascunho' %}bg-secondary{% else %}bg-dark{% endif %}">{{ regra.get_status_display }}</span>
+                                <small class="text-muted">{{ regra.get_exigencia_display }}{% if regra.periodicidade_override %} • {{ regra.get_periodicidade_override_display }}{% else %} • {{ regra.tipo.get_periodicidade_display }}{% endif %}</small>
+                            </div>
+                            <div class="small text-muted mt-1">
+                                {% if regra.escopo == 'entidade' %}
+                                    Entidade: {{ regra.entidade_content_type.app_label }} #{{ regra.entidade_object_id }}
+                                {% elif regra.dominio %}
+                                    Domínio: {{ regra.dominio.nome }}
+                                {% else %}
+                                    Escopo: {{ regra.get_escopo_display }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column align-items-end gap-2">
+                            <small class="text-muted">{{ regra.atualizado_em|date:'d/m H:i' }}</small>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'documentos:regra_edit' regra.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+                                <a href="{% url 'documentos:regra_delete' regra.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Excluir regra?');"><i class="fas fa-trash"></i></a>
+                                {% if user.is_superuser %}
+                                    {% if regra.status == 'pendente' or regra.status == 'rascunho' %}
+                                        <button class="btn btn-sm btn-outline-success btn-aprovar-regra" data-id="{{ regra.id }}" title="Aprovar"><i class="fas fa-check"></i></button>
+                                    {% elif regra.status == 'aprovada' %}
+                                        <button class="btn btn-sm btn-outline-warning btn-inativar-regra" data-id="{{ regra.id }}" title="Inativar"><i class="fas fa-ban"></i></button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 small text-muted">Edite ou aprove regras pendentes conforme necessidade de compliance.</div>
+                {% else %}
+                <div class="alert alert-info mb-0"><i class="fas fa-info-circle me-1"></i>Nenhuma regra cadastrada ainda.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <h5 class="mb-3"><i class="fas fa-pie-chart me-2 text-primary"></i>Distribuição de Exigência</h5>
+                {% with obrig=exigencia_stats.obrigatorio|default:0 rec=exigencia_stats.recomendado|default:0 opc=exigencia_stats.opcional|default:0 %}
+                    {% if obrig or rec or opc %}
+                    <div class="mb-3">
+                        <div class="small mb-1">Obrigatório ({{ obrig }})</div>
+                        <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-danger" style="width: {{ exigencia_percent.obrigatorio }}%"></div></div>
+                        <div class="small mb-1">Recomendado ({{ rec }})</div>
+                        <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-warning" style="width: {{ exigencia_percent.recomendado }}%"></div></div>
+                        <div class="small mb-1">Opcional ({{ opc }})</div>
+                        <div class="progress" style="height:6px"><div class="progress-bar bg-success" style="width: {{ exigencia_percent.opcional }}%"></div></div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-light border">Sem dados suficientes.</div>
+                    {% endif %}
+                {% endwith %}
+                <div class="small text-muted">Resumo simples — para análise detalhada abra uma entidade e gerencie regras diretamente.</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

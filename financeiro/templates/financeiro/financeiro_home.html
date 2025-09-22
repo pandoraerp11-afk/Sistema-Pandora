@@ -1,0 +1,126 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">{% trans "Início" %}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:financeiro_home' %}">{% trans "Módulo Financeiro" %}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% trans "Dashboard" %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block dashboard_config %}
+<script>
+    // Configuração específica do dashboard de financeiro
+    window.dashboardConfig = {
+        module: 'financeiro',
+        apiEndpoint: '{% url "financeiro:financeiro_home" %}',
+        refreshInterval: 300000, // 5 minutos
+    };
+</script>
+{% endblock %}
+
+{% block dashboard_widgets %}
+{# Ações rápidas (exibidas conforme permissões) #}
+<div class="grid-stack-item" gs-w="12" gs-h="2" gs-id="financeiro-quick-actions">
+    <div class="grid-stack-item-content widget-card">
+        <div class="widget-header">
+            <h5 class="widget-title">
+                <i class="fas fa-bolt text-warning me-2"></i>
+                {% trans "Ações Rápidas" %}
+            </h5>
+        </div>
+        <div class="widget-content d-flex gap-2 flex-wrap">
+            {% if perms_ui.can_add|default:perms.can_add|default:True %}
+            <a href="{% url 'financeiro:financeiro_add' %}" class="btn btn-sm btn-outline-success">
+                <i class="fas fa-plus-circle me-1"></i>{% trans "Nova Movimentação" %}
+            </a>
+            {% endif %}
+            {% if perms_ui.can_view|default:perms.can_view|default:True %}
+            <a href="{% url 'financeiro:financeiro_list' %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-list-ul me-1"></i>{% trans "Listar Movimentações" %}
+            </a>
+            <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-sm btn-outline-warning">
+                <i class="fas fa-file-invoice-dollar me-1"></i>{% trans "Contas a Pagar" %}
+            </a>
+            <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-file-invoice me-1"></i>{% trans "Contas a Receber" %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+<!-- Widget de Métricas Principais -->
+<div class="grid-stack-item" gs-w="12" gs-h="4" gs-id="financeiro-metrics">
+    <div class="grid-stack-item-content widget-card">
+        <div class="widget-header">
+            <h5 class="widget-title">
+                <i class="fas fa-chart-line text-primary me-2"></i>
+                {% trans "Dashboard de Financeiro" %}
+            </h5>
+            <div class="widget-actions">
+                <button class="widget-action" onclick="dashboardEngine.refreshWidget('financeiro-metrics')">
+                    <i class="fas fa-sync"></i>
+                </button>
+            </div>
+        </div>
+        <div class="widget-content">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <div class="metric-card bg-primary">
+                        <div class="metric-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>{% trans "Em Desenvolvimento" %}</h3>
+                            <p>{% trans "Dashboard do módulo Financeiro está sendo desenvolvido" %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Widget de Informações -->
+<div class="grid-stack-item" gs-w="12" gs-h="4" gs-id="financeiro-info">
+    <div class="grid-stack-item-content widget-card">
+        <div class="widget-header">
+            <h5 class="widget-title">
+                <i class="fas fa-info-circle text-info me-2"></i>
+                {% trans "Informações do Módulo" %}
+            </h5>
+        </div>
+        <div class="widget-content">
+            <div class="alert alert-info">
+                <h5>{% trans "Módulo Financeiro" %}</h5>
+                <p>{% trans "Este é o dashboard principal do módulo Financeiro. Aqui você encontrará as principais métricas e informações relevantes para este módulo." %}</p>
+                <hr>
+                <p class="mb-0">{% trans "Em breve, este dashboard será expandido com widgets específicos e funcionalidades avançadas." %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block dashboard_scripts %}
+<script>
+// Expor permissões ao JS para eventuais recursos dinâmicos
+var FIN_CAN_VIEW = {% if perms_ui.can_view|default:perms.can_view|default:True %}true{% else %}false{% endif %};
+var FIN_CAN_ADD = {% if perms_ui.can_add|default:perms.can_add|default:True %}true{% else %}false{% endif %};
+function initializeFinanceiroDashboard() {
+    console.log('Inicializando dashboard de financeiro...');
+    // Funcionalidades específicas do dashboard serão adicionadas aqui
+}
+
+// Inicializar quando o documento estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFinanceiroDashboard();
+});
+</script>
+{% endblock %}

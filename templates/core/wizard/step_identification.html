@@ -1,0 +1,359 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+
+<!-- Alerta Informativo -->
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-id-card text-info me-3" style="font-size: 1.5rem;"></i>
+        <div>
+            <h6 class="mb-1 text-info">Identificação da Empresa</h6>
+            <small class="text-muted">Defina o tipo de pessoa e preencha os dados básicos de identificação</small>
+        </div>
+    </div>
+</div>
+
+<!-- Bloco de Resumo de Erros -->
+{% if forms.pj.errors or forms.pf.errors %}
+    <div class="alert alert-danger wizard-errors-summary" role="alert">
+        <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrija os erros abaixo:</h6>
+        <ul>
+            <!-- Erros não associados a campos específicos -->
+            {% for error in forms.pj.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            {% for error in forms.pf.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+
+            <!-- Erros de campos específicos -->
+            {% for form in forms.values %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<!-- Formulário de Identificação Modernizado -->
+
+    <!-- Seção 1: Seleção de Tipo -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-id-card wizard-icon"></i>
+            Tipo de Pessoa
+        </h5>
+        
+        <!-- Botões de seleção PJ/PF -->
+        <div class="mb-3">
+            <div class="wizard-person-toggle-inline d-flex justify-content-center">
+                <input type="radio" class="btn-check" name="tipo_pessoa" id="wizard_tipo_pf" value="PF" autocomplete="off" {% if forms.pf.data.tipo_pessoa == 'PF' %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="wizard_tipo_pf" data-bs-toggle="tooltip" data-bs-placement="top" title="Pessoa Física - Sistema se adapta automaticamente para dados de pessoas físicas">
+                    <i class="fas fa-user me-2"></i>Pessoa Física
+                </label>
+                <input type="radio" class="btn-check" name="tipo_pessoa" id="wizard_tipo_pj" value="PJ" autocomplete="off" {% if forms.pj.data.tipo_pessoa == 'PJ' or not forms.pj.data.tipo_pessoa %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="wizard_tipo_pj" data-bs-toggle="tooltip" data-bs-placement="top" title="Pessoa Jurídica - Sistema se adapta automaticamente para dados de empresas">
+                    <i class="fas fa-building me-2"></i>Pessoa Jurídica
+                </label>
+            </div>
+        </div>
+        
+        {% if wizard.form.errors.tipo_pessoa %}
+            <div class="invalid-feedback d-block mb-3">{% for error in wizard.form.errors.tipo_pessoa %}{{ error }}{% endfor %}</div>
+        {% endif %}
+    </div>
+
+    <!-- Seção Condicional: Pessoa Jurídica -->
+    <div id="wizard-pj-section" class="wizard-section wizard-conditional-section" style="display: {% if forms.pj.data.tipo_pessoa == 'PJ' or not forms.pj.data.tipo_pessoa %}block{% else %}none{% endif %};">
+        <h5 class="wizard-section-title"><i class="fas fa-building wizard-icon"></i>Dados da Pessoa Jurídica</h5>
+        {{ forms.pj.tipo_pessoa }}
+        
+        <!-- Linha 1: Razão Social (6), Nome Fantasia (3), CNPJ (3) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.razao_social field_size='lg' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.name field_size='sm' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.cnpj field_size='sm' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 2: IE (3), IM (3), Fundação (3), Ramo (3) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.inscricao_estadual field_size='sm' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.inscricao_municipal field_size='sm' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.data_fundacao field_size='sm' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.ramo_atividade field_size='sm' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 3: Porte (4), Regime (4), CNAE (4) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.porte_empresa field_size='md' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.regime_tributario field_size='md' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.cnae_principal field_size='md' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 4: E-mail (6), Telefone (6) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.email field_size='lg' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pj.telefone field_size='lg' hide_help_text=True %}
+        </div>
+    </div>
+
+    <!-- Seção Condicional: Pessoa Física -->
+    <div id="wizard-pf-section" class="wizard-section wizard-conditional-section" style="display: {% if forms.pf.data.tipo_pessoa == 'PF' %}block{% else %}none{% endif %};">
+        <h5 class="wizard-section-title"><i class="fas fa-user wizard-icon"></i>Dados da Pessoa Física</h5>
+        {{ forms.pf.tipo_pessoa }}
+        
+        <!-- Linha 1: Nome (6), CPF (3), RG (3) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.name field_size='lg' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.cpf field_size='sm' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.rg field_size='sm' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 2: Nascimento (3), Sexo (3), Estado Civil (3) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.data_nascimento field_size='sm' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.sexo field_size='sm' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.estado_civil field_size='sm' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 3: E-mail (6), Telefone (6) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.email field_size='lg' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.telefone field_size='lg' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 4: Nacionalidade (6), Naturalidade (6) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.nacionalidade field_size='lg' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.naturalidade field_size='lg' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 5: Nome da Mãe (6), Nome do Pai (6) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.nome_mae field_size='lg' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.nome_pai field_size='lg' hide_help_text=True %}
+        </div>
+        
+        <!-- Linha 6: Profissão (6), Escolaridade (6) -->
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.profissao field_size='lg' hide_help_text=True %}
+            {% include 'core/wizard/wizard_field.html' with field=forms.pf.escolaridade field_size='lg' hide_help_text=True %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Estilos para seleção de tipo de pessoa inline */
+.wizard-person-toggle-inline { 
+    gap: 8px; 
+    display: inline-flex;
+}
+
+.wizard-person-toggle-inline .btn { 
+    border-radius: 8px; 
+    border: 2px solid #dee2e6; 
+    padding: 12px 24px; 
+    font-weight: 600; 
+    font-size: 0.95rem; 
+    transition: all 0.3s ease; 
+    background: #ffffff; 
+    color: #6c757d; 
+    min-height: 48px; 
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.wizard-person-toggle-inline .btn:hover { 
+    background: #f8f9fa; 
+    color: #0d6efd;
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 12px rgba(13,110,253,0.15);
+    border-color: #0d6efd;
+}
+
+.wizard-person-toggle-inline .btn-check:checked + .btn { 
+    background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%); 
+    color: white; 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 20px rgba(13,110,253,0.4);
+    border-color: #0d6efd;
+}
+
+.wizard-person-toggle-inline .btn-check:checked + .btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: rotate(45deg);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.wizard-conditional-section { 
+    transition: all 0.3s ease-in-out; 
+}
+
+@media (max-width: 768px) { 
+    .wizard-person-toggle-inline { 
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+    }
+    
+    .wizard-person-toggle-inline .btn { 
+        padding: 10px 16px; 
+        font-size: 0.9rem; 
+        min-height: 42px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Inicializando step_identification.html...');
+    
+    // Inicializar tooltips do Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    const tipoSelect = document.getElementById('tipo_pessoa');
+    const tipoRadios = document.querySelectorAll('input[name="tipo_pessoa"]');
+    const pjSection = document.getElementById('wizard-pj-section');
+    const pfSection = document.getElementById('wizard-pf-section');
+    
+    console.log('📝 Elementos encontrados:', {
+        tipoRadios: tipoRadios.length,
+        pjSection: pjSection,
+        pfSection: pfSection
+    });
+    
+    function wizardTogglePersonType(tipo) {
+        console.log('🔄 Alternando tipo de pessoa para:', tipo);
+        
+        const fadeOut = (element) => {
+            if (element) {
+                console.log('👻 Escondendo:', element.id);
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    element.style.display = 'none';
+                    // Desabilitar validação HTML5 dos campos ocultos
+                    const fields = element.querySelectorAll('input, select, textarea');
+                    fields.forEach(field => {
+                        field.removeAttribute('required');
+                    });
+                }, 300);
+            }
+        };
+        
+        const fadeIn = (element) => {
+            if (element) {
+                console.log('👁️ Mostrando:', element.id);
+                element.style.display = 'block';
+                setTimeout(() => {
+                    element.style.opacity = '1';
+                    // Restaurar validação HTML5 dos campos visíveis
+                    const fields = element.querySelectorAll('input, select, textarea');
+                    fields.forEach(field => {
+                        if (field.getAttribute('data-required') === 'true') {
+                            field.setAttribute('required', 'required');
+                        }
+                    });
+                }, 50);
+            }
+        };
+        
+        if (tipo === 'PJ') {
+            fadeOut(pfSection);
+            setTimeout(() => fadeIn(pjSection), 350);
+        } else if (tipo === 'PF') {
+            fadeOut(pjSection);
+            setTimeout(() => fadeIn(pfSection), 350);
+        } else {
+            fadeOut(pjSection);
+            fadeOut(pfSection);
+        }
+        
+        console.log('💾 Seção ativa:', tipo);
+    }
+    
+    // Tornar função global se necessário em outros scripts
+    window.wizardTogglePersonType = wizardTogglePersonType;
+    
+    if (tipoRadios.length > 0) {
+        console.log('✅ Radio buttons tipo_pessoa encontrados, adicionando eventos...');
+        
+        // Marcar todos os campos required para posterior restauração
+        const allFields = document.querySelectorAll('#wizard-pj-section input, #wizard-pj-section select, #wizard-pj-section textarea, #wizard-pf-section input, #wizard-pf-section select, #wizard-pf-section textarea');
+        allFields.forEach(field => {
+            if (field.required) {
+                field.setAttribute('data-required', 'true');
+            }
+        });
+        
+        // Adiciona uma transição suave para as seções condicionais
+        if(pfSection) pfSection.style.transition = 'opacity 0.3s ease-in-out';
+        if(pjSection) pjSection.style.transition = 'opacity 0.3s ease-in-out';
+
+        tipoRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    console.log('📋 Mudança detectada:', this.value);
+                    wizardTogglePersonType(this.value);
+                    
+                    // Atualizar preview imediatamente
+                    setTimeout(() => {
+                        if (typeof window.updateWizardPreview === 'function') {
+                            window.updateWizardPreview();
+                        }
+                        // Trigger evento para outros listeners
+                        $(document).trigger('wizard:typeChanged', this.value);
+                    }, 100);
+                }
+            });
+        });
+        
+        // Inicialização para garantir que o estado correto seja exibido ao carregar a página
+        const radioChecked = document.querySelector('input[name="tipo_pessoa"]:checked');
+        const valorInicial = radioChecked ? radioChecked.value : '';
+        console.log('🔄 Valor inicial dos radios:', valorInicial);
+        wizardTogglePersonType(valorInicial);
+    } else {
+        console.error('❌ Radio buttons tipo_pessoa NÃO encontrados!');
+    }
+    
+    // Aplicar máscaras de telefone
+    const phoneFields = document.querySelectorAll('.phone-mask');
+    phoneFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            // Máscara para celular (XX) XXXXX-XXXX
+            if (value.length > 10) {
+                 value = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+            // Máscara para telefone fixo (XX) XXXX-XXXX
+            } else if (value.length > 2) {
+                 value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+            } else if (value.length > 0) {
+                value = value.replace(/^(\d*)/, '($1');
+            }
+            e.target.value = value;
+        });
+    });
+});
+</script>
+{% endblock %}

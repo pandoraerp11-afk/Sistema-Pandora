@@ -1,0 +1,406 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if form.instance.pk %}Editar Produto{% else %}Novo Produto{% endif %}
+{% endblock %}
+
+{% block page_title %}{% if form.instance.pk %}Editar Produto{% else %}Cadastrar Produto{% endif %}{% endblock %}
+{% block page_subtitle %}{% if form.instance.pk %}{{ form.instance.nome }}{% else %}Informe os dados do produto{% endif %}{% endblock %}
+
+{% block extra_css %}{{ block.super }}{% endblock %}
+
+{% block form_main %}
+    {% block form_content %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header card-header-compact">
+            <h4 class="card-title mb-0">
+                <i class="fas fa-box"></i>
+                Dados do Produto
+            </h4>
+        </div>
+        <div class="card-body card-body-compact">
+            {# Linha 1 #}
+            <div class="row g-3">
+                {% if form.nome %}{% include 'core/wizard/wizard_field.html' with field=form.nome field_size='lg' %}{% endif %}
+                {% if form.ncm %}{% include 'core/wizard/wizard_field.html' with field=form.ncm field_size='sm' %}{% endif %}
+                {% if form.codigo_barras %}{% include 'core/wizard/wizard_field.html' with field=form.codigo_barras field_size='sm' %}{% endif %}
+            </div>
+
+            {# Linha 2: Unidade, Marca, Modelo e Fabricante #}
+            <div class="row g-3">
+                {% if form.unidade %}{% include 'core/wizard/wizard_field.html' with field=form.unidade field_size='sm' %}{% endif %}
+                {% if form.marca %}{% include 'core/wizard/wizard_field.html' with field=form.marca field_size='sm' %}{% endif %}
+                {% if form.modelo %}{% include 'core/wizard/wizard_field.html' with field=form.modelo field_size='sm' %}{% endif %}
+                {% if form.fabricante %}{% include 'core/wizard/wizard_field.html' with field=form.fabricante field_size='sm' %}{% endif %}
+            </div>
+
+            {# Linha 3: Dimensões #}
+            <div class="row g-3">
+                {% if form.altura %}{% include 'core/wizard/wizard_field.html' with field=form.altura field_size='sm' %}{% endif %}
+                {% if form.largura %}{% include 'core/wizard/wizard_field.html' with field=form.largura field_size='sm' %}{% endif %}
+                {% if form.profundidade %}{% include 'core/wizard/wizard_field.html' with field=form.profundidade field_size='sm' %}{% endif %}
+                {% if form.peso %}{% include 'core/wizard/wizard_field.html' with field=form.peso field_size='sm' %}{% endif %}
+            </div>
+
+            {# Linha 4: Estoque + Categoria #}
+            <div class="row g-3">
+                {% if form.estoque_minimo %}{% include 'core/wizard/wizard_field.html' with field=form.estoque_minimo field_size='sm' %}{% endif %}
+                {% if form.estoque_maximo %}{% include 'core/wizard/wizard_field.html' with field=form.estoque_maximo field_size='sm' %}{% endif %}
+                {% if form.estoque_atual %}{% include 'core/wizard/wizard_field.html' with field=form.estoque_atual field_size='sm' %}{% endif %}
+                {% if form.categoria %}{% include 'core/wizard/wizard_field.html' with field=form.categoria field_size='sm' %}{% endif %}
+            </div>
+
+            {# Linha 5: Preço Unitário + Custo + Margem + Tipo de Custo #}
+            <div class="row g-3">
+                {% if form.preco_unitario %}{% include 'core/wizard/wizard_field.html' with field=form.preco_unitario field_size='sm' %}{% endif %}
+                {% if form.preco_custo %}{% include 'core/wizard/wizard_field.html' with field=form.preco_custo field_size='sm' %}{% endif %}
+                {% if form.margem_lucro %}{% include 'core/wizard/wizard_field.html' with field=form.margem_lucro field_size='sm' %}{% endif %}
+                {% if form.tipo_custo %}{% include 'core/wizard/wizard_field.html' with field=form.tipo_custo field_size='sm' %}{% endif %}
+            </div>
+
+        {# Demais campos inalterados, na ordem natural do form #}
+            <div class="row g-3">
+                {% for field in form %}
+                    {% if field.is_hidden %}
+                        {{ field }}
+                    {% elif field.name not in 'nome,ncm,codigo_barras,unidade,marca,modelo,fabricante,preco_unitario,preco_custo,margem_lucro,tipo_custo,estoque_minimo,estoque_maximo,estoque_atual,categoria,altura,largura,profundidade,peso,descricao,especificacoes_tecnicas,garantia,ativo,destaque,controla_estoque,imagem_principal' %}
+                        {% include 'core/wizard/wizard_field.html' with field=field field_size='lg' %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+{# bloco form_sidebar será definido fora de form_main para evitar duplicação #}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header card-header-compact">
+            <h4 class="card-title mb-0">
+                <i class="fas fa-images"></i>
+                Imagens do Produto
+            </h4>
+        </div>
+        <div class="card-body card-body-compact">
+            {% if imagens_formset %}
+                {{ imagens_formset.management_form }}
+                <div id="images-grid" class="row g-3" data-formset-prefix="{{ imagens_formset.prefix }}">
+                    {% for f in imagens_formset %}
+                    <div class="col-6 col-md-4 col-lg-3 image-tile" draggable="true" data-index="{{ forloop.counter0 }}">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="position-relative">
+                                <div class="ratio ratio-1x1 bg-light-subtle d-flex align-items-center justify-content-center overflow-hidden preview-wrapper">
+                                    {% if f.instance.pk and f.instance.imagem %}
+                                        <img src="{{ f.instance.imagem.url }}" class="img-fluid object-fit-cover" alt="Imagem">
+                                    {% else %}
+                                        <i class="fas fa-image fa-2x text-muted"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="tile-actions position-absolute top-0 end-0 p-2 d-flex gap-1">
+                                    {% if imagens_formset.can_delete %}
+                                        <button type="button" class="btn btn-sm btn-light border btn-remove-tile" title="Remover">
+                                            <i class="fas fa-trash text-danger"></i>
+                                        </button>
+                                    {% endif %}
+                                    <span class="badge bg-secondary order-badge">#<span class="order-number">{{ f.ordem.value|default:forloop.counter0 }}</span></span>
+                                </div>
+                                <div class="tile-drag-handle position-absolute bottom-0 start-0 p-2 text-muted" title="Arraste para reordenar">
+                                    <i class="fas fa-grip-lines"></i>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                                <div class="mb-2">
+                                    {{ f.imagem|add_class:"form-control form-control-sm file-input"|attr:"accept:image/*" }}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <div class="flex-grow-1">{{ f.titulo|add_class:"form-control form-control-sm"|attr:"placeholder:Título" }}</div>
+                                    <div style="min-width:70px;">{{ f.ordem|add_class:"form-control form-control-sm ordem-input"|attr:"placeholder:Ordem" }}</div>
+                                </div>
+                                {% if imagens_formset.can_delete %}
+                                    <div class="form-check mt-2 d-none delete-checkbox">
+                                        {{ f.DELETE }} <label class="form-check-label">Remover</label>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {# Tile para adicionar novas imagens #}
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <button type="button" class="btn w-100 h-100 border-0 p-0 add-image-tile" style="min-height: 160px;">
+                            <div class="card h-100 d-flex align-items-center justify-content-center bg-light-subtle">
+                                <div class="text-center p-3">
+                                    <i class="fas fa-plus-circle fa-2x text-primary mb-2"></i>
+                                    <div class="small text-muted">Adicionar imagens</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                {# Template do empty_form para novos itens do formset #}
+                <template id="image-empty-form-template">
+                    <div class="col-6 col-md-4 col-lg-3 image-tile" draggable="true" data-index="__index__">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="position-relative">
+                                <div class="ratio ratio-1x1 bg-light-subtle d-flex align-items-center justify-content-center overflow-hidden preview-wrapper">
+                                    <i class="fas fa-image fa-2x text-muted"></i>
+                                </div>
+                                <div class="tile-actions position-absolute top-0 end-0 p-2 d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-light border btn-remove-tile" title="Remover">
+                                        <i class="fas fa-trash text-danger"></i>
+                                    </button>
+                                    <span class="badge bg-secondary order-badge">#<span class="order-number">__index__</span></span>
+                                </div>
+                                <div class="tile-drag-handle position-absolute bottom-0 start-0 p-2 text-muted" title="Arraste para reordenar">
+                                    <i class="fas fa-grip-lines"></i>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                {% with ef=imagens_formset.empty_form %}
+                                    {% for hidden in ef.hidden_fields %}{{ hidden.as_widget|safe }}{% endfor %}
+                                    <div class="mb-2">
+                                        {{ ef.imagem.as_widget|safe }}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <div class="flex-grow-1">{{ ef.titulo.as_widget|safe }}</div>
+                                        <div style="min-width:70px;">{{ ef.ordem.as_widget|safe }}</div>
+                                    </div>
+                                    {% if imagens_formset.can_delete %}
+                                        <div class="form-check mt-2 d-none delete-checkbox">
+                                            {{ ef.DELETE.as_widget|safe }} <label class="form-check-label">Remover</label>
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            {% else %}
+                <div class="text-muted">Formset de imagens indisponível.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.getElementById('images-grid');
+    if (!grid) return;
+
+    const prefix = grid.dataset.formsetPrefix;
+    const totalFormsInput = document.querySelector(`input[name="${prefix}-TOTAL_FORMS"]`);
+    const emptyTemplate = document.getElementById('image-empty-form-template');
+    const addTileBtn = grid.querySelector('.add-image-tile');
+
+    function bindTileEvents(tile) {
+        const fileInput = tile.querySelector('input[type="file"]');
+        const previewWrapper = tile.querySelector('.preview-wrapper');
+        const removeBtn = tile.querySelector('.btn-remove-tile');
+        const deleteCheckbox = tile.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        const orderBadge = tile.querySelector('.order-number');
+        const ordemInput = tile.querySelector('input[name$="-ordem"]');
+
+        // Preview
+        if (fileInput && previewWrapper) {
+            fileInput.addEventListener('change', (e) => {
+                const [file] = e.target.files || [];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    previewWrapper.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.className = 'img-fluid object-fit-cover';
+                    previewWrapper.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Remove (marca DELETE e oculta)
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                if (deleteCheckbox) {
+                    deleteCheckbox.checked = true;
+                }
+                tile.style.display = 'none';
+                updateOrders();
+            });
+        }
+
+        // Drag and drop ordering
+        tile.addEventListener('dragstart', (e) => {
+            tile.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        tile.addEventListener('dragend', () => {
+            tile.classList.remove('dragging');
+            updateOrders();
+        });
+        grid.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const dragging = grid.querySelector('.image-tile.dragging');
+            if (!dragging) return;
+            const afterElement = getDragAfterElement(grid, e.clientY);
+            if (afterElement == null) {
+                grid.appendChild(dragging);
+            } else {
+                grid.insertBefore(dragging, afterElement);
+            }
+        });
+
+        function getDragAfterElement(container, y) {
+            const tiles = [...container.querySelectorAll('.image-tile:not(.dragging)')];
+            let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+            tiles.forEach(el => {
+                const box = el.getBoundingClientRect();
+                const offset = y - (box.top + box.height / 2);
+                if (offset < 0 && offset > closest.offset) {
+                    closest = { offset, element: el };
+                }
+            });
+            return closest.element;
+        }
+
+        // Atualiza badge com valor da ordem
+        if (ordemInput && orderBadge) {
+            ordemInput.addEventListener('input', () => {
+                orderBadge.textContent = ordemInput.value || '';
+            });
+        }
+    }
+
+    function updateOrders() {
+        const visibleTiles = [...grid.querySelectorAll('.image-tile')].filter(t => t.style.display !== 'none');
+        visibleTiles.forEach((tile, idx) => {
+            const ordemInput = tile.querySelector('input[name$="-ordem"]');
+            const orderBadge = tile.querySelector('.order-number');
+            if (ordemInput) ordemInput.value = idx;
+            if (orderBadge) orderBadge.textContent = idx;
+        });
+    }
+
+    function addTileFromTemplate() {
+        const total = parseInt(totalFormsInput.value, 10) || 0;
+        let html = emptyTemplate.innerHTML;
+        html = html.replaceAll('__prefix__', total);
+        html = html.replaceAll('__index__', total);
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html.trim();
+        const tile = wrapper.firstElementChild;
+        const addTileCol = grid.querySelector('.add-image-tile')?.closest('.col-6, .col-md-4, .col-lg-3');
+        if (addTileCol) {
+            grid.insertBefore(tile, addTileCol);
+        } else {
+            grid.appendChild(tile);
+        }
+        totalFormsInput.value = total + 1;
+        bindTileEvents(tile);
+        updateOrders();
+    }
+
+    // Bind existente
+    grid.querySelectorAll('.image-tile').forEach(bindTileEvents);
+    updateOrders();
+
+    // Adicionar imagens
+    if (addTileBtn) addTileBtn.addEventListener('click', addTileFromTemplate);
+});
+</script>
+{% endblock %}
+
+{% block form_sidebar %}
+    {% if sidebar_widgets %}
+        <div class="sidebar-widgets">
+            {% for widget in sidebar_widgets %}
+            <div class="widget card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="{{ widget.icon|default:'fas fa-cube' }}"></i>
+                        {{ widget.title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if widget.template %}
+                        {% include widget.template %}
+                    {% else %}
+                        {{ widget.content|safe }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        {% if preview %}
+    {% include 'partials/widgets/preview_card.html' with title=preview.title subtitle=preview.subtitle text=preview.text description=preview.description items=preview.items icon_class=preview.icon_class metrics=preview.metrics extra_inner_template='partials/widgets/produto_preview_flags.html' %}
+        {% endif %}
+
+        {# Card intermediário: Descrição e Especificações Técnicas #}
+        <div class="card shadow-sm mb-3" data-aos="fade-up" data-aos-delay="130">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-align-left me-2"></i>Descrição do Produto</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% if form.descricao %}
+                        {% include 'core/wizard/wizard_field.html' with field=form.descricao field_size='xl' %}
+                    {% endif %}
+                    {% if form.especificacoes_tecnicas %}
+                        {% include 'core/wizard/wizard_field.html' with field=form.especificacoes_tecnicas field_size='xl' %}
+                    {% endif %}
+                    {% if form.garantia %}
+                        {% include 'core/wizard/wizard_field.html' with field=form.garantia field_size='lg' %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if form_tips %}
+        <div class="card shadow-sm mb-3" data-aos="fade-up" data-aos-delay="150">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Dicas</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    {% for tip in form_tips %}
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i><small>{{ tip }}</small></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if recent_items %}
+        <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>{{ recent_title|default:'Últimos Cadastros' }}</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for it in recent_items %}
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small">{{ it.name|default:it }}</div>
+                                {% if it.created_at %}
+                                <div class="text-muted" style="font-size: 11px;">{{ it.created_at|timesince }} atrás</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted small">Nenhum registro ainda</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

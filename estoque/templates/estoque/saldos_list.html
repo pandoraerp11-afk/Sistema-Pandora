@@ -1,0 +1,343 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{# Título e configurações da página #}
+{% block title %}Consulta de Saldos - Estoque{% endblock %}
+
+{# Header da lista #}
+{% block list_icon %}<i class="fas fa-chart-line me-2 text-primary"></i>{% endblock %}
+{% block list_title %}Saldos de Estoque{% endblock %}
+{% block list_subtitle %}Consulte as posições atuais de estoque por produto e depósito{% endblock %}
+
+{# Botões de ação no header #}
+{% block list_header_actions %}
+    <a href="{% url 'estoque:movimento_add' %}" class="btn btn-gradient-primary me-2" data-bs-toggle="tooltip" title="Nova Movimentação">
+        <i class="fas fa-plus me-1"></i>Nova Movimentação
+    </a>
+    <a href="{% url 'estoque:estoque_home' %}" class="btn btn-gradient-secondary" data-bs-toggle="tooltip" title="Voltar ao Home">
+        <i class="fas fa-home me-1"></i>Home
+    </a>
+{% endblock %}
+
+{# Filtros personalizados #}
+{% block list_filters %}
+    <div class="filter-card" data-aos="fade-up">
+        <div class="card-body">
+            <form method="get" class="row g-3" id="filtros-saldos">
+                <div class="col-md-4">
+                    <label for="produto" class="form-label fw-semibold">Produto</label>
+                    <select class="form-select form-select-modern" name="produto" id="produto">
+                        <option value="">Todos os produtos</option>
+                        {% for produto in produtos %}
+                            <option value="{{ produto.id }}" {% if request.GET.produto == produto.id|stringformat:"s" %}selected{% endif %}>
+                                {{ produto.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="deposito" class="form-label fw-semibold">Depósito</label>
+                    <select class="form-select form-select-modern" name="deposito" id="deposito">
+                        <option value="">Todos os depósitos</option>
+                        {% for deposito in depositos %}
+                            <option value="{{ deposito.id }}" {% if request.GET.deposito == deposito.id|stringformat:"s" %}selected{% endif %}>
+                                {{ deposito.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="situacao" class="form-label fw-semibold">Situação</label>
+                    <select class="form-select form-select-modern" name="situacao" id="situacao">
+                        <option value="">Todas as situações</option>
+                        <option value="positivo" {% if request.GET.situacao == "positivo" %}selected{% endif %}>Estoque Positivo</option>
+                        <option value="zerado" {% if request.GET.situacao == "zerado" %}selected{% endif %}>Estoque Zerado</option>
+                        <option value="baixo" {% if request.GET.situacao == "baixo" %}selected{% endif %}>Estoque Baixo</option>
+                        <option value="negativo" {% if request.GET.situacao == "negativo" %}selected{% endif %}>Estoque Negativo</option>
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-gradient-primary">
+                        <i class="fas fa-search me-1"></i>Filtrar
+                    </button>
+                    <a href="{% url 'estoque:saldos_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Limpar
+                    </a>
+                    <button type="button" class="btn btn-gradient-success" onclick="exportarSaldos()">
+                        <i class="fas fa-file-excel me-1"></i>Exportar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{# Cards de resumo #}
+{% block list_summary %}
+    <div class="row g-3 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-primary">
+                <div class="summary-icon">
+                    <i class="fas fa-cubes"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.total_produtos|default:0 }}</h3>
+                    <p>Produtos com Estoque</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-success">
+                <div class="summary-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>R$ {{ resumo.valor_total|floatformat:2|default:"0,00" }}</h3>
+                    <p>Valor Total</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-warning">
+                <div class="summary-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.estoque_baixo|default:0 }}</h3>
+                    <p>Estoque Baixo</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-danger">
+                <div class="summary-icon">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.estoque_zerado|default:0 }}</h3>
+                    <p>Estoque Zerado</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Tabela de dados #}
+{% block list_table %}
+    <div class="table-card" data-aos="fade-up" data-aos-delay="200">
+        <div class="table-responsive">
+            <table class="table table-modern" id="saldos-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="produto">
+                            <i class="fas fa-cube me-1"></i>Produto
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-sort="deposito">
+                            <i class="fas fa-warehouse me-1"></i>Depósito
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-center" data-sort="quantidade">
+                            <i class="fas fa-hashtag me-1"></i>Quantidade
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-center" data-sort="reservado">
+                            <i class="fas fa-hand-holding me-1"></i>Reservado
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-center" data-sort="disponivel">
+                            <i class="fas fa-check-circle me-1"></i>Disponível
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-end" data-sort="valor">
+                            <i class="fas fa-dollar-sign me-1"></i>Valor Total
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for saldo in saldos %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if saldo.produto.imagem %}
+                                        <img src="{{ saldo.produto.imagem.url }}" alt="{{ saldo.produto.nome }}" 
+                                             class="rounded me-2" width="32" height="32" style="object-fit: cover;">
+                                    {% else %}
+                                        <div class="product-avatar me-2">
+                                            <i class="fas fa-cube"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ saldo.produto.nome }}</strong><br>
+                                        <small class="text-muted">{{ saldo.produto.codigo|default:"—" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-warehouse text-muted me-2"></i>
+                                    <div>
+                                        <strong>{{ saldo.deposito.nome }}</strong><br>
+                                        <small class="text-muted">{{ saldo.deposito.codigo|default:"—" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge-quantity">{{ saldo.quantidade|floatformat:0 }}</span>
+                                <br><small class="text-muted">{{ saldo.produto.unidade_medida|default:"UN" }}</small>
+                            </td>
+                            <td class="text-center">
+                                {% if saldo.quantidade_reservada > 0 %}
+                                    <span class="badge bg-warning">{{ saldo.quantidade_reservada|floatformat:0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-bold {% if saldo.quantidade_disponivel <= 0 %}text-danger{% elif saldo.quantidade_disponivel <= saldo.produto.estoque_minimo %}text-warning{% else %}text-success{% endif %}">
+                                    {{ saldo.quantidade_disponivel|floatformat:0 }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <strong>R$ {{ saldo.valor_total|floatformat:2|default:"0,00" }}</strong>
+                            </td>
+                            <td class="text-center">
+                                {% if saldo.quantidade_disponivel <= 0 %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-ban me-1"></i>Esgotado
+                                    </span>
+                                {% elif saldo.quantidade_disponivel <= saldo.produto.estoque_minimo %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Baixo
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Normal
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'estoque:movimento_add' %}?produto={{ saldo.produto.id }}&deposito={{ saldo.deposito.id }}">
+                                                <i class="fas fa-plus me-2"></i>Nova Movimentação
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'estoque:reserva_add' %}?produto={{ saldo.produto.id }}&deposito={{ saldo.deposito.id }}">
+                                                <i class="fas fa-hand-holding me-2"></i>Criar Reserva
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'estoque:movimento_list' %}?produto={{ saldo.produto.id }}">
+                                                <i class="fas fa-history me-2"></i>Histórico
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Nenhum saldo encontrado</h5>
+                                    <p class="text-muted mb-0">Tente ajustar os filtros ou adicione produtos ao estoque</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{# Scripts personalizados #}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Auto-submit do formulário de filtros
+    const selects = document.querySelectorAll('#filtros-saldos select');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            // Pequeno delay para melhorar UX
+            setTimeout(() => {
+                document.getElementById('filtros-saldos').submit();
+            }, 100);
+        });
+    });
+    
+    // Função de exportação
+    window.exportarSaldos = function() {
+        const form = document.getElementById('filtros-saldos');
+        const formData = new FormData(form);
+        formData.append('export', 'excel');
+        
+        // Criar link temporário para download
+        const params = new URLSearchParams(formData);
+        const downloadUrl = `{% url 'estoque:saldos_export' %}?${params.toString()}`;
+        
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `saldos_estoque_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    // Atualização em tempo real via WebSocket
+    if ('WebSocket' in window) {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${protocol}${window.location.host}/ws/estoque/`;
+        
+        try {
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                
+                if (data.event === 'estoque.saldo_atualizado' && data.produto_id && data.deposito_id) {
+                    // Atualizar linha específica da tabela se estiver visível
+                    const row = document.querySelector(`tr[data-produto="${data.produto_id}"][data-deposito="${data.deposito_id}"]`);
+                    if (row) {
+                        // Destacar a linha atualizada
+                        row.classList.add('table-warning');
+                        setTimeout(() => {
+                            row.classList.remove('table-warning');
+                        }, 3000);
+                        
+                        // Mostrar notificação
+                        if (window.PandoraNotif) {
+                            PandoraNotif.toast('Saldo atualizado em tempo real', 'info', 2000);
+                        }
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('Erro ao conectar WebSocket:', error);
+        }
+    }
+});
+</script>
+{% endblock %}

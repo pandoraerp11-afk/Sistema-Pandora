@@ -1,0 +1,177 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}Enviar Mensagem{% endblock %}
+{% block page_title %}Enviar Mensagem{% endblock %}
+{% block page_subtitle %}Envie uma mensagem na conversa selecionada{% endblock %}
+{% block page_actions %}
+    <a href="{% url 'chat:conversa_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">Enviar Mensagem</h1>
+                    <p class="text-muted">Envie uma mensagem na conversa</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'chat:conversa_list' %}">Chat</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Enviar Mensagem</li>
+        </ol>
+    </nav>
+
+    <!-- Form -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="action-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Nova Mensagem
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Erros gerais do form -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <!-- Conteúdo da mensagem -->
+                            <div class="col-12 mb-3">
+                                <label for="{{ form.conteudo.id_for_label }}" class="form-label">
+                                    <i class="fas fa-comment me-2"></i>{{ form.conteudo.label }}
+                                    {% if form.conteudo.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.conteudo }}
+                                {% if form.conteudo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.conteudo.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.conteudo.help_text %}
+                                    <div class="form-text">{{ form.conteudo.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Tipo de mensagem -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tag me-2"></i>{{ form.tipo.label }}
+                                    {% if form.tipo.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.tipo }}
+                                {% if form.tipo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tipo.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.tipo.help_text %}
+                                    <div class="form-text">{{ form.tipo.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Arquivo -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.arquivo.id_for_label }}" class="form-label">
+                                    <i class="fas fa-paperclip me-2"></i>{{ form.arquivo.label }}
+                                    {% if form.arquivo.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.arquivo }}
+                                {% if form.arquivo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.arquivo.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.arquivo.help_text %}
+                                    <div class="form-text">{{ form.arquivo.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Resposta para -->
+                            {% if form.resposta_para %}
+                            <div class="col-12 mb-3">
+                                <label for="{{ form.resposta_para.id_for_label }}" class="form-label">
+                                    <i class="fas fa-reply me-2"></i>{{ form.resposta_para.label }}
+                                    {% if form.resposta_para.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.resposta_para }}
+                                {% if form.resposta_para.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.resposta_para.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.resposta_para.help_text %}
+                                    <div class="form-text">{{ form.resposta_para.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'chat:conversa_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-2"></i>Enviar Mensagem
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add form classes for Bootstrap styling
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to form fields
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(function(input) {
+        if (input.type === 'checkbox') {
+            input.classList.add('form-check-input');
+        } else if (input.tagName === 'SELECT') {
+            input.classList.add('form-select');
+        } else if (input.type === 'file') {
+            input.classList.add('form-control');
+        } else {
+            input.classList.add('form-control');
+        }
+    });
+});
+</script>
+{% endblock %}

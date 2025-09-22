@@ -1,0 +1,149 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Detalhes" }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid detail-page">
+    <div class="detail-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    {# Botão Voltar removido conforme solicitação #}
+                    <div>
+                        <h1 class="detail-title mb-1">
+                            {% block detail_title %}{{ object|default:"Detalhes" }}{% endblock %}
+                        </h1>
+                        <p class="detail-subtitle text-muted mb-0">
+                            {% block detail_subtitle %}Visualização de detalhes{% endblock %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="detail-actions">
+                    {% block detail_actions %}
+                    {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                    <a href="{% block edit_url %}#{% endblock %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-pencil-alt me-1"></i>
+                        Editar
+                    </a>
+                    {% endif %}
+                    {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+                    <a href="{% block delete_url %}#{% endblock %}" 
+                       onclick="window.Pandora.confirmDelete(event, this.href, '{{ object|escapejs|default:'este item' }}')" 
+                       class="btn btn-outline-danger">
+                        <i class="fas fa-trash me-1"></i>
+                        Excluir
+                    </a>
+                    {% endif %}
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-content">
+        {% block detail_content %}
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="detail-main-card">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                {% block content_title %}Informações Principais{% endblock %}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% block main_content %}
+                            <p class="text-muted">Conteúdo não definido.</p>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                {% block sidebar_content %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Informações
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% block meta_info %}
+                        {% if object.created_at %}
+                        <div class="info-item mb-3">
+                            <small class="text-muted d-block">Criado em</small>
+                            <span>{{ object.created_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                        {% if object.updated_at %}
+                        <div class="info-item mb-3">
+                            <small class="text-muted d-block">Última atualização</small>
+                            <span>{{ object.updated_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                        {% if object.created_by %}
+                        <div class="info-item mb-3">
+                            <small class="text-muted d-block">Criado por</small>
+                            <span>{{ object.created_by.get_full_name|default:object.created_by.username }}</span>
+                        </div>
+                        {% endif %}
+                        {% endblock %}
+                    </div>
+                </div>
+
+                {% if object.status %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-flag me-2"></i>
+                            Status
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% block status_info %}
+                        <span class="badge badge-status bg-{{ object.status|default:'secondary' }}">
+                            {{ object.get_status_display|default:object.status }}
+                        </span>
+                        {% endblock %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% block additional_sidebar %}
+                {% endblock %}
+                {% endblock %}
+            </div>
+        </div>
+        {% endblock %}
+
+        {% block related_content %}
+        {% endblock %}
+
+        {% block action_buttons %}
+        <div class="detail-actions-bottom mt-4 pt-4 border-top">
+            <div class="row">
+                <div class="col-sm-6">
+                    <button onclick="history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Voltar
+                    </button>
+                </div>
+                <div class="col-sm-6 text-end">
+                    {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                    <a href="{% block edit_button_url %}{% if object.get_absolute_url %}{{ object.get_edit_url }}{% else %}#{% endif %}{% endblock %}" class="btn btn-primary me-2">
+                        <i class="fas fa-pencil-alt me-1"></i>
+                        Editar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+    </div>
+</div>
+{% endblock %}

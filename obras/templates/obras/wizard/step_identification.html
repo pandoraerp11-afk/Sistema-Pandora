@@ -1,0 +1,48 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-hard-hat text-info me-3" style="font-size: 1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-info">Dados iniciais da obra</h6>
+      <small class="text-muted">Preencha as informações básicas para começar.</small>
+    </div>
+  </div>
+</div>
+
+<div class="wizard-section">
+  <h5 class="wizard-section-title">
+    <i class="fas fa-id-card wizard-icon"></i>
+    Identificação
+  </h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.nome field_size='lg' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.tipo_obra field_size='sm' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.cno field_size='sm' %}
+  </div>
+</div>
+
+<div class="wizard-section">
+  <h5 class="wizard-section-title">
+    <i class="fas fa-user wizard-icon"></i>
+    Cliente (opcional)
+  </h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.cliente field_size='lg' %}
+  </div>
+</div>
+
+<div class="wizard-section">
+  <h5 class="wizard-section-title">
+    <i class="fas fa-calendar-alt wizard-icon"></i>
+    Prazos e Valor
+  </h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.data_inicio field_size='sm' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.data_previsao_termino field_size='sm' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.valor_contrato field_size='sm' %}
+  </div>
+</div>
+{% endblock %}

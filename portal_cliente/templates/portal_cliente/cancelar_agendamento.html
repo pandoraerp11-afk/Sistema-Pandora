@@ -1,0 +1,96 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal Cliente - Cancelar Agendamento{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Header -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h3>Cancelar Agendamento</h3>
+                    <p class="text-muted">Tem certeza que deseja cancelar este agendamento?</p>
+                </div>
+            </div>
+
+            <!-- Detalhes do Agendamento -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Detalhes do Agendamento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Data e Horário</h6>
+                            <p class="fw-bold">{{ agendamento.data_inicio|date:"d/m/Y \à\s H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Procedimento</h6>
+                            <p class="fw-bold">{{ agendamento.servico.nome_servico }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Profissional</h6>
+                            <p class="fw-bold">{{ agendamento.profissional.nome }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Status Atual</h6>
+                            <span class="badge bg-primary">{{ agendamento.get_status_display }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if agendamento.observacoes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-muted">Observações</h6>
+                            <div class="alert alert-light">{{ agendamento.observacoes }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Formulário de Cancelamento -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="motivo" class="form-label">Motivo do Cancelamento (Opcional)</label>
+                            <textarea class="form-control" id="motivo" name="motivo" rows="3" 
+                                      placeholder="Descreva o motivo do cancelamento..."></textarea>
+                            <small class="text-muted">
+                                Esta informação nos ajuda a melhorar nossos serviços.
+                            </small>
+                        </div>
+
+                        <!-- Política de Cancelamento -->
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Política de Cancelamento:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Cancelamentos devem ser feitos com pelo menos 24 horas de antecedência</li>
+                                <li>Cancelamentos em cima da hora podem estar sujeitos a taxas</li>
+                                <li>Este cancelamento será registrado em seu histórico</li>
+                            </ul>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-danger btn-lg me-3">
+                                <i class="fas fa-times me-2"></i>Confirmar Cancelamento
+                            </button>
+                            <a href="{% url 'portal_cliente:agendamentos_lista' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>Voltar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

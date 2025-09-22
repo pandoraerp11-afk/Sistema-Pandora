@@ -1,0 +1,60 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+{% block title %}Portal Fornecedor - Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <h1 class="mb-4"><i class="fas fa-handshake"></i> Portal do Fornecedor</h1>
+  <div class="row">
+    <div class="col-md-3">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="text-muted">Propostas Enviadas</h6>
+          <h3>{{ propostas_enviadas }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="text-muted">Propostas em Rascunho</h6>
+          <h3>{{ propostas_rascunho }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="text-muted">Cotações Disponíveis</h6>
+          <h3>{{ cotacoes_disponiveis }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="text-muted">Total Propostas</h6>
+          <h3>{{ total_propostas }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h4 class="mt-4">Últimas Propostas</h4>
+  <table class="table table-sm table-hover">
+    <thead><tr><th>Cotação</th><th>Status</th><th>Atualizado</th><th></th></tr></thead>
+    <tbody>
+      {% for p in ultimas_propostas %}
+        <tr>
+          <td>{{ p.cotacao.codigo }} - {{ p.cotacao.titulo }}</td>
+            <td><span class="badge bg-secondary">{{ p.get_status_display }}</span></td>
+            <td>{{ p.updated_at|date:'d/m/Y H:i' }}</td>
+            <td><a href="{% url 'cotacoes:portal-proposta-detail' p.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-muted">Nenhuma proposta ainda.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <a href="{% url 'cotacoes:portal-cotacoes' %}" class="btn btn-primary">Ver Cotações Disponíveis</a>
+  <a href="{% url 'cotacoes:portal-propostas' %}" class="btn btn-outline-secondary">Minhas Propostas</a>
+</div>
+{% endblock %}

@@ -1,0 +1,552 @@
+{% extends 'pandora_form_ultra_modern.html' %}
+{% load static %}
+{% block title %}⚙️ Setup Inteligente de Documentos{% endblock %}
+{% block page_title %}Setup Inteligente{% endblock %}
+{% block page_subtitle %}Crie Categorias, Tipos e Regras em uma única tela (transacional).{% endblock %}
+
+{% block form_main %}
+<div id="doc-setup-app" class="mb-4">
+  <form @submit.prevent="submitAll" id="setup-form" novalidate>
+    <div class="card shadow-sm mb-4">
+      <div class="card-header card-header-compact">
+        <h4 class="card-title mb-0">
+          <i class="fas fa-layer-group me-1"></i>
+          Setup Inteligente
+        </h4>
+        <small class="text-muted">Categorias, Tipos e Regras em lote</small>
+      </div>
+      <div class="card-body card-body-compact">
+        <div class="alert alert-info small py-2 px-3 mb-3"><i class="fas fa-lightbulb me-2"></i>Marque as seções desejadas, adicione os itens e salve tudo em uma única transação.</div>
+        <div class="row g-3 mb-2">
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="chkCategorias" v-model="sections.categorias">
+              <label class="form-check-label fw-semibold" for="chkCategorias">Categorias <span class="badge bg-light text-dark" v-if="cats.length">[[ cats.length ]]</span></label>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="chkTipos" v-model="sections.tipos">
+              <label class="form-check-label fw-semibold" for="chkTipos">Tipos <span class="badge bg-light text-dark" v-if="tipos.length">[[ tipos.length ]]</span></label>
+            </div>
+          </div>
+            <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="chkRegras" v-model="sections.regras">
+              <label class="form-check-label fw-semibold" for="chkRegras">Regras <span class="badge bg-light text-dark" v-if="regras.length">[[ regras.length ]]</span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção Categorias -->
+        <div v-if="sections.categorias" class="mb-4 wizard-section">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="wizard-section-title mb-0 d-flex align-items-center">
+              <i class="fas fa-folder-open wizard-icon"></i>Categorias
+              <span class="badge bg-light text-dark ms-2" v-if="cats.length">[[ cats.length ]]</span>
+              <span class="badge bg-danger ms-2" v-if="cats.some(c=>c.errors)">Erros</span>
+            </h5>
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width:2rem;height:2rem;" @click="openModal('categoria')" title="Adicionar Categoria"><i class="fas fa-plus"></i></button>
+          </div>
+          <div class="table-responsive rounded">
+            <table class="table table-sm align-middle mb-0 table-compact" style="min-width:640px;">
+              <colgroup>
+                <col style="width: 26%;">
+                <col>
+                <col style="width: 80px;">
+                <col style="width: 58px;">
+              </colgroup>
+              <thead class="table-light small"><tr><th class="text-nowrap">Nome</th><th class="text-nowrap">Descrição</th><th class="text-center text-nowrap">Ativo</th><th class="text-end text-nowrap">Ações</th></tr></thead>
+              <tbody>
+                <tr v-if="!cats.length"><td colspan="4" class="text-muted small text-center py-3">Nenhuma categoria</td></tr>
+                <tr v-for="c in cats" :key="c.temp_id" :class="{'table-danger': c.errors}">
+                  <td>
+                    <span class="d-inline-block text-truncate" style="max-width:160px" :title="c.nome || '(sem nome)'"><i class="fas fa-tag text-muted me-1"></i>[[ c.nome || '(sem nome)' ]]</span>
+                    <span v-if="c.errors" class="badge bg-danger ms-1">!</span>
+                  </td>
+                  <td><span class="text-muted d-inline-block text-truncate" style="max-width:220px" :title="c.descricao">[[ c.descricao ]]</span></td>
+                  <td class="text-center">
+                    <i :class="c.ativo ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i>
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-link text-primary px-1" @click="openModal('categoria', c)" title="Editar"><i class="fas fa-pen"></i></button>
+                      <button type="button" class="btn btn-link text-danger px-1" @click="removeCat(c.temp_id)" title="Remover"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Seção Tipos -->
+        <div v-if="sections.tipos" class="mb-4 wizard-section">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="wizard-section-title mb-0 d-flex align-items-center">
+              <i class="fas fa-file-alt wizard-icon"></i>Tipos
+              <span class="badge bg-light text-dark ms-2" v-if="tipos.length">[[ tipos.length ]]</span>
+              <span class="badge bg-danger ms-2" v-if="tipos.some(t=>t.errors)">Erros</span>
+            </h5>
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width:2rem;height:2rem;" @click="openModal('tipo')" title="Adicionar Tipo"><i class="fas fa-plus"></i></button>
+          </div>
+          <div class="table-responsive rounded">
+            <table class="table table-sm align-middle mb-0 table-compact" style="min-width:880px;">
+              <colgroup>
+                <col style="width: 16%;">
+                <col>
+                <col style="width: 190px;">
+                <col style="width: 135px;">
+                <col style="width: 60px;">
+                <col style="width: 60px;">
+                <col style="width: 58px;">
+              </colgroup>
+              <thead class="table-light small"><tr><th class="text-nowrap">Nome</th><th class="text-nowrap">Descrição</th><th class="text-nowrap">Categoria</th><th class="text-nowrap">Periodicidade</th><th class="text-center text-nowrap">Vers.</th><th class="text-center text-nowrap">Ativo</th><th class="text-end text-nowrap">Ações</th></tr></thead>
+              <tbody>
+                <tr v-if="!tipos.length"><td colspan="7" class="text-muted small text-center py-3">Nenhum tipo</td></tr>
+                <tr v-for="t in tipos" :key="t.temp_id" :class="{'table-danger': t.errors}">
+                  <td>
+                    <span class="d-inline-block text-truncate" style="max-width:140px" :title="t.nome || '(sem nome)'"><i class="fas fa-file text-muted me-1"></i>[[ t.nome || '(sem nome)' ]]</span>
+                    <span v-if="t.errors" class="badge bg-danger ms-1">!</span>
+                  </td>
+                  <td><span class="text-muted d-inline-block text-truncate" style="max-width:200px" :title="t.descricao">[[ t.descricao ]]</span></td>
+                  <td>
+                    <span class="d-inline-block text-truncate" style="max-width:170px" :title="resolveCategoriaNome(t)">[[ resolveCategoriaNome(t) ]]</span>
+                  </td>
+                  <td><span class="badge bg-light text-dark">[[ labelPeriodicidade(t.periodicidade) ]]</span></td>
+                  <td class="text-center"><i :class="t.versionavel ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i></td>
+                  <td class="text-center"><i :class="t.ativo ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i></td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-link text-primary px-1" @click="openModal('tipo', t)" title="Editar"><i class="fas fa-pen"></i></button>
+                      <button type="button" class="btn btn-link text-danger px-1" @click="removeTipo(t.temp_id)" title="Remover"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Seção Regras -->
+        <div v-if="sections.regras" class="mb-3 wizard-section">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="wizard-section-title mb-0 d-flex align-items-center">
+              <i class="fas fa-sliders wizard-icon"></i>Regras
+              <span class="badge bg-light text-dark ms-2" v-if="regras.length">[[ regras.length ]]</span>
+              <span class="badge bg-danger ms-2" v-if="regras.some(r=>r.errors)">Erros</span>
+            </h5>
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width:2rem;height:2rem;" @click="openModal('regra')" title="Adicionar Regra"><i class="fas fa-plus"></i></button>
+          </div>
+          <div class="table-responsive rounded">
+            <table class="table table-sm align-middle mb-0 table-compact" style="min-width:820px;">
+              <colgroup>
+                <col style="width: 22%;">
+                <col style="width: 130px;">
+                <col style="width: 120px;">
+                <col style="width: 120px;">
+                <col>
+                <col style="width: 60px;">
+                <col style="width: 58px;">
+              </colgroup>
+              <thead class="table-light small"><tr><th class="text-nowrap">Tipo</th><th class="text-nowrap">Exigência</th><th class="text-nowrap">Escopo</th><th class="text-nowrap">Domínio/App</th><th class="text-nowrap">Nível</th><th class="text-nowrap">Observações</th><th class="text-center text-nowrap">Ativo</th><th class="text-end text-nowrap">Ações</th></tr></thead>
+              <tbody>
+                <tr v-if="!regras.length"><td colspan="8" class="text-muted small text-center py-3">Nenhuma regra</td></tr>
+                <tr v-for="(r,idx) in regras" :key="idx" :class="{'table-danger': r.errors}">
+                  <td><span class="d-inline-block text-truncate" style="max-width:170px" :title="resolveTipoNome(r)">[[ resolveTipoNome(r) ]]</span><span v-if="r.errors" class="badge bg-danger ms-1">!</span></td>
+                  <td><span class="badge bg-light text-dark">[[ labelExigencia(r.exigencia) ]]</span></td>
+                  <td><span class="text-muted text-truncate" style="max-width:95px" :title="labelEscopo(r.escopo)">[[ labelEscopo(r.escopo) ]]</span></td>
+                  <td><span class="text-muted text-truncate" style="max-width:120px" :title="labelDominioOuApp(r)">[[ labelDominioOuApp(r) ]]</span></td>
+                  <td><span class="text-muted text-truncate" style="max-width:95px" :title="labelNivel(r.nivel_aplicacao)">[[ labelNivel(r.nivel_aplicacao) ]]</span></td>
+                  <td><span class="d-inline-block text-truncate" style="max-width:220px" :title="r.observacoes">[[ r.observacoes ]]</span></td>
+                  <td class="text-center"><i :class="r.ativo ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i></td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-link text-primary px-1" @click="openModal('regra', r, idx)" title="Editar"><i class="fas fa-pen"></i></button>
+                      <button type="button" class="btn btn-link text-danger px-1" @click="removeRegra(idx)" title="Remover"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="serverErrors" class="alert alert-danger small py-2 mb-2"><strong>Falha:</strong> Verifique os itens destacados.</div>
+        <div v-if="lastResult" class="alert alert-success small py-2 mb-2"><strong>Sucesso!</strong> Criados: [[ lastResult.categorias?.length||0 ]] categorias, [[ lastResult.tipos?.length||0 ]] tipos, [[ lastResult.regras?.length||0 ]] regras.</div>
+        <div class="text-muted small">Transação única: qualquer erro cancela tudo.</div>
+      </div>
+      <div class="card-footer bg-transparent d-flex justify-content-end gap-2 py-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" @click="resetAll"><i class="fas fa-rotate-left me-1"></i>Limpar</button>
+        <button type="submit" class="btn btn-primary btn-sm" :disabled="loading">
+          <span v-if="!loading"><i class="fas fa-cloud-upload-alt me-1"></i>Salvar Tudo</span>
+          <span v-else><i class="fas fa-spinner fa-spin me-1"></i>Salvando...</span>
+        </button>
+      </div>
+    </div>
+    <!-- Modal removido: agora criado dinamicamente via JS padrão step_contacts -->
+  </form>
+</div>
+{% endblock %}
+
+{# Sidebar padrão herdada da base usando preview + form_tips fornecidos pela view #}
+
+{% block extra_js %}
+<script>
+// Vue leve via CDN se não existir (fallback simples) - degrade para vanilla se indisponível
+(function(){
+  if (window.Vue) return; // já carregado em outro lugar?
+  var s=document.createElement('script'); s.src='https://unpkg.com/vue@3/dist/vue.global.prod.js'; s.defer=true; document.head.appendChild(s);
+})();
+</script>
+<script>
+(function initApp(){
+  function start(){
+    const { createApp, reactive } = window.Vue || {};
+    if (!createApp){ setTimeout(start, 200); return; }
+    const app = createApp({
+      delimiters:['[[',']]'],
+      data(){
+        return {
+          sections: { categorias:true, tipos:true, regras:false },
+          cats: [], tipos: [], regras: [],
+          categoriasExistentes: {{ categorias_existentes|safe }},
+          tiposExistentes: {{ tipos_existentes|safe }},
+          periodicidades: {{ PERIODICIDADE_CHOICES|safe }},
+            exigencias: {{ EXIGENCIA_CHOICES|safe }},
+            niveis: {{ NIVEL_APLICACAO_CHOICES|safe }},
+          loading:false,
+          serverErrors:null,
+          lastResult:null,
+          seq:0,
+          modal: { open:false, mode:'create', entity:null, index:null, form:{}, error:null, triggerEl:null }
+        };
+      },
+      methods:{
+        uid(p){ return p + (++this.seq); },
+        removeCat(id){ this.cats = this.cats.filter(c=>c.temp_id!==id); },
+        removeTipo(id){ this.tipos = this.tipos.filter(t=>t.temp_id!==id); },
+        removeRegra(idx){ this.regras.splice(idx,1); },
+        openModal(entity, item=null, index=null){
+          this.modal.entity = entity;
+          this.modal.index = index;
+          this.modal.mode = item ? 'edit' : 'create';
+          this.modal.triggerEl = document.activeElement;
+          if(window.__setupCrudModal){ window.__setupCrudModal.open(entity, item, index, this); }
+        },
+        closeModal(){ if(window.__setupCrudModal){ window.__setupCrudModal.close(this); } },
+        validateModal(){
+          const ent=this.modal.entity; const f=this.modal.form; if(!ent) return false;
+          // trim campos texto
+          ['nome','descricao','observacoes'].forEach(k=>{ if(f[k]!==undefined && f[k]!==null){ f[k]=String(f[k]).trim(); }});
+          if(ent==='categoria'){
+            if(!f.nome){ this.modal.error='Informe o nome da categoria.'; return false; }
+            return true;
+          }
+          if(ent==='tipo'){
+            if(!f.nome){ this.modal.error='Informe o nome do tipo.'; return false; }
+            if(!f.categoria_ref){ this.modal.error='Selecione uma categoria.'; return false; }
+            return true;
+          }
+            if(ent==='regra'){
+              if(!f.tipo_ref){ this.modal.error='Selecione um tipo.'; return false; }
+              return true;
+            }
+          return true;
+        },
+        saveModal(){
+          this.modal.error=null;
+          if(!this.validateModal()) return;
+          const f=this.modal.form;
+          const creating = this.modal.mode==='create';
+          const entity = this.modal.entity;
+          if(this.modal.entity==='categoria'){
+            if(this.modal.mode==='create'){ this.cats.push(f); } else { Object.assign(this.cats.find(c=>c.temp_id===f.temp_id)||{}, f); }
+          } else if(this.modal.entity==='tipo'){
+            if(this.modal.mode==='create'){ this.tipos.push(f); } else { Object.assign(this.tipos.find(t=>t.temp_id===f.temp_id)||{}, f); }
+          } else if(this.modal.entity==='regra'){
+            if(this.modal.mode==='create'){ this.regras.push(f); } else if(this.modal.index!==null){ this.regras.splice(this.modal.index,1,f); }
+          }
+          this.closeModal();
+          if(creating){
+            // tentar focar botão add daquela entidade para agilizar múltiplos cadastros
+            setTimeout(()=>{
+              try{
+                const btn = document.querySelector(`[title='Adicionar ${entity.charAt(0).toUpperCase()+entity.slice(1)}']`);
+                btn && btn.focus();
+              }catch(_){ }
+            },80);
+          }
+        },
+        resolveCategoriaNome(t){ if(!t) return ''; const ref=t.categoria_ref; if(!ref) return '(sem categoria)'; const novo=this.cats.find(c=>c.temp_id===ref); if(novo) return '(novo) ' + (novo.nome||'Sem nome'); const existente=this.categoriasExistentes.find(c=>c.id===ref); return existente?existente.nome:'?'; },
+        resolveTipoNome(r){ if(!r) return ''; const ref=r.tipo_ref; if(!ref) return '(sem tipo)'; const novo=this.tipos.find(t=>t.temp_id===ref); if(novo) return '(novo) ' + (novo.nome||'Sem nome'); const existente=this.tiposExistentes.find(t=>t.id===ref); return existente?existente.nome:'?'; },
+        labelPeriodicidade(val){ const it=this.periodicidades.find(p=>p[0]===val); return it?it[1]:val; },
+        labelExigencia(val){ const it=this.exigencias.find(e=>e[0]===val); return it?it[1]:val; },
+        labelEscopo(val){ return ({entidade:'Entidade', app:'App', filtro:'Filtro'})[val]||val; },
+        labelDominioOuApp(r){ if(!r) return ''; if(r.dominio_id){ const d=(window.__DOMINIOS__||[]).find(x=>x.id===r.dominio_id); return d?d.nome:('Domínio #'+r.dominio_id); } if(r.app_label) return 'app:'+r.app_label; return ''; },
+        labelNivel(val){ return ({entidade:'Entidade (direto)', subentidades:'Subentidades'})[val]||val; },
+        hasErr(item, field){ return item.errors && item.errors[field]; },
+        firstErr(item, field){ return this.hasErr(item,field) ? item.errors[field][0] : ''; },
+        resetErrors(){ [...this.cats, ...this.tipos, ...this.regras].forEach(i=>{ delete i.errors; }); this.serverErrors=null; },
+        resetAll(){ this.cats=[]; this.tipos=[]; this.regras=[]; this.resetErrors(); this.lastResult=null; },
+        payload(){ return { categorias:this.sections.categorias?this.cats:[], tipos:this.sections.tipos?this.tipos:[], regras:this.sections.regras?this.regras:[] }; },
+        async submitAll(){
+          this.loading=true; this.resetErrors(); this.lastResult=null;
+          const bodyPayload = this.payload();
+          console.log('[SetupInteligente] Enviando payload', JSON.parse(JSON.stringify(bodyPayload)));
+          try {
+            const resp = await fetch('{% url 'documentos:bulk_setup_api' %}', {
+              method:'POST',
+              headers:{'Content-Type':'application/json','X-CSRFToken':this.getCsrf()},
+              body: JSON.stringify(bodyPayload)
+            });
+            console.log('[SetupInteligente] Status resposta', resp.status);
+            const text = await resp.text();
+            let data=null; try { data = text ? JSON.parse(text) : {}; } catch(parseErr){ console.warn('Resposta não JSON', text); }
+            console.log('[SetupInteligente] Corpo resposta', data||text);
+            if (resp.status===201){ this.lastResult=data; }
+            else {
+              if (data && data.errors){ this.applyErrors(data.errors); this.serverErrors=true; }
+              else { this.serverErrors=true; this.modal.error=null; this.lastResult=null; alert('Falha ao salvar. Status '+resp.status+'\n'+(data?.error||text||'')); }
+            }
+          } catch(e){ console.error('[SetupInteligente] Erro fetch', e); this.serverErrors=true; alert('Erro de rede ou exceção no envio. Ver console.'); }
+          finally { this.loading=false; }
+        },
+        applyErrors(errs){ if (errs.categorias){ errs.categorias.forEach(e=>{ const it=this.cats.find(c=>c.temp_id===e.temp_id); if(it) it.errors=e.errors; }); }
+          if (errs.tipos){ errs.tipos.forEach(e=>{ const it=this.tipos.find(t=>t.temp_id===e.temp_id); if(it) it.errors=e.errors; }); }
+          if (errs.regras){ errs.regras.forEach(e=>{ const it=this.regras[e.index]; if(it) it.errors=e.errors; }); }
+        },
+        getCsrf(){ const m=document.cookie.match(/csrftoken=([^;]+)/); return m?m[1]:''; }
+      }
+  });
+  window.__setupInteligenteApp = app;
+  try { window.__DOMINIOS__ = JSON.parse('{{ DOMINIOS_OPTIONS|escapejs }}'); } catch(_){ window.__DOMINIOS__ = []; }
+  const vm = app.mount('#doc-setup-app');
+  // Inicializa modal dinâmico padrão step_contacts
+  (function initCrudModal(){
+    if(window.__setupCrudModal) return; // já inicializado
+    const appRef = vm;
+    let modalEl = document.getElementById('modalSetupCrud');
+    if(!modalEl){
+      modalEl = document.createElement('div');
+      modalEl.className='modal fade';
+      modalEl.id='modalSetupCrud';
+      modalEl.tabIndex=-1;
+      modalEl.setAttribute('aria-hidden','true');
+      modalEl.innerHTML = `
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header py-2">
+              <h5 class="modal-title" id="modalSetupCrudLabel">Adicionar Item</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+              <div class="alert alert-danger py-2 px-3 small d-none" id="modalSetupCrudError"></div>
+              <div id="crudFormCategoria" class="d-none">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control form-control-sm" id="crudCategoriaNome" maxlength="80">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" class="form-control form-control-sm" id="crudCategoriaDescricao" maxlength="160">
+                  </div>
+                  <div class="col-12">
+                    <div class="form-check form-switch mt-2">
+                      <input class="form-check-input" type="checkbox" id="crudCategoriaAtivo" checked>
+                      <label for="crudCategoriaAtivo" class="form-check-label">Ativo</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="crudFormTipo" class="d-none">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control form-control-sm" id="crudTipoNome" maxlength="80">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Categoria</label>
+                    <select class="form-select form-select-sm" id="crudTipoCategoria"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Periodicidade</label>
+                    <select class="form-select form-select-sm" id="crudTipoPeriodicidade"></select>
+                  </div>
+                  <div class="col-md-8">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" class="form-control form-control-sm" id="crudTipoDescricao" maxlength="160">
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Versionável</label>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="crudTipoVersionavel" checked></div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Ativo</label>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="crudTipoAtivo" checked></div>
+                  </div>
+                </div>
+              </div>
+              <div id="crudFormRegra" class="d-none">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select form-select-sm" id="crudRegraTipo"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Exigência</label>
+                    <select class="form-select form-select-sm" id="crudRegraExigencia"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Escopo</label>
+                    <select class="form-select form-select-sm" id="crudRegraEscopo">
+                      <option value="entidade">Entidade</option>
+                      <option value="app">App</option>
+                      <option value="filtro">Filtro</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4" id="crudRegraDominioWrap" style="display:none;">
+                    <label class="form-label">Domínio</label>
+                    <select class="form-select form-select-sm" id="crudRegraDominio"></select>
+                    <div class="form-text small">Se vazio, usar fallback app_label legado (não recomendado).</div>
+                  </div>
+                  <div class="col-md-4" id="crudRegraAppLabelWrap" style="display:none;">
+                    <label class="form-label">App (fallback)</label>
+                    <input type="text" class="form-control form-control-sm" id="crudRegraAppLabel" maxlength="50" placeholder="ex: fornecedores">
+                    <div class="form-text small">Use somente se não houver domínio configurado.</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Nível Aplicação</label>
+                    <select class="form-select form-select-sm" id="crudRegraNivel">
+                      <option value="entidade">Entidade (direto)</option>
+                      <option value="subentidades">Subentidades</option>
+                    </select>
+                  </div>
+                  <div class="col-md-8">
+                    <label class="form-label">Observações</label>
+                    <input type="text" class="form-control form-control-sm" id="crudRegraObs" maxlength="160">
+                  </div>
+                  <div class="col-12">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="crudRegraAtivo" checked>
+                      <label for="crudRegraAtivo" class="form-check-label">Ativo</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer py-2">
+              <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-primary btn-sm" id="btnCrudSave"><i class="fas fa-save me-1"></i><span id="crudSaveLabel">Adicionar</span></button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(modalEl);
+    }
+    const bsModal = window.bootstrap && modalEl ? new bootstrap.Modal(modalEl,{backdrop:true,keyboard:true,focus:true}) : null;
+    const els = {
+      error: modalEl.querySelector('#modalSetupCrudError'),
+      title: modalEl.querySelector('#modalSetupCrudLabel'),
+      saveBtn: modalEl.querySelector('#btnCrudSave'),
+      saveLabel: modalEl.querySelector('#crudSaveLabel'),
+      cat:{ nome:'#crudCategoriaNome', desc:'#crudCategoriaDescricao', ativo:'#crudCategoriaAtivo', root:'#crudFormCategoria' },
+      tipo:{ nome:'#crudTipoNome', cat:'#crudTipoCategoria', periodicidade:'#crudTipoPeriodicidade', desc:'#crudTipoDescricao', versionavel:'#crudTipoVersionavel', ativo:'#crudTipoAtivo', root:'#crudFormTipo' },
+  regra:{ tipo:'#crudRegraTipo', exigencia:'#crudRegraExigencia', escopo:'#crudRegraEscopo', dominio:'#crudRegraDominio', dominioWrap:'#crudRegraDominioWrap', appLabel:'#crudRegraAppLabel', appLabelWrap:'#crudRegraAppLabelWrap', nivel:'#crudRegraNivel', obs:'#crudRegraObs', ativo:'#crudRegraAtivo', root:'#crudFormRegra' }
+    };
+    function q(sel){ return modalEl.querySelector(sel); }
+    function showOnly(entity){ ['#crudFormCategoria','#crudFormTipo','#crudFormRegra'].forEach(id=>{ const d=modalEl.querySelector(id); if(d) d.classList.add('d-none'); });
+      const map={categoria:els.cat.root, tipo:els.tipo.root, regra:els.regra.root}; const r=modalEl.querySelector(map[entity]); if(r) r.classList.remove('d-none'); }
+    function setError(msg){ if(!els.error) return; if(!msg){ els.error.classList.add('d-none'); els.error.textContent=''; } else { els.error.textContent=msg; els.error.classList.remove('d-none'); } }
+    function fillSelectPeriodicidade(){ const sel=q(els.tipo.periodicidade); if(!sel) return; sel.innerHTML=''; (appRef.periodicidades||[]).forEach(p=>{ const o=document.createElement('option'); o.value=p[0]; o.textContent=p[1]; sel.appendChild(o); }); }
+  function fillSelectExigencia(){ const sel=q(els.regra.exigencia); if(!sel) return; sel.innerHTML=''; (appRef.exigencias||[]).forEach(e=>{ const o=document.createElement('option'); o.value=e[0]; o.textContent=e[1]; sel.appendChild(o); }); }
+  function fillSelectDominio(){ const sel=q(els.regra.dominio); if(!sel) return; sel.innerHTML='<option value="">(Nenhum)</option>'; (window.__DOMINIOS__||[]).forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.nome+' ['+d.app_label+']'; o.dataset.slug=d.slug; sel.appendChild(o); }); }
+    function fillSelectCategoria(){ const sel=q(els.tipo.cat); if(!sel) return; sel.innerHTML='<option value="" disabled selected>Selecione...</option>'; if(appRef.cats.length){ const og=document.createElement('optgroup'); og.label='Novas'; appRef.cats.forEach(c=>{ const o=document.createElement('option'); o.value=c.temp_id; o.textContent='(novo) '+(c.nome||'Sem nome'); og.appendChild(o); }); sel.appendChild(og); }
+      if(appRef.categoriasExistentes.length){ const og2=document.createElement('optgroup'); og2.label='Existentes'; appRef.categoriasExistentes.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.nome; og2.appendChild(o); }); sel.appendChild(og2); }}
+    function fillSelectTipo(){ const sel=q(els.regra.tipo); if(!sel) return; sel.innerHTML='<option value="" disabled selected>Selecione...</option>'; if(appRef.tipos.length){ const og=document.createElement('optgroup'); og.label='Novos'; appRef.tipos.forEach(t=>{ const o=document.createElement('option'); o.value=t.temp_id; o.textContent='(novo) '+(t.nome||'Sem nome'); og.appendChild(o); }); sel.appendChild(og); }
+      if(appRef.tiposExistentes.length){ const og2=document.createElement('optgroup'); og2.label='Existentes'; appRef.tiposExistentes.forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=t.nome; og2.appendChild(o); }); sel.appendChild(og2); }}
+    function focusFirst(){ setTimeout(()=>{ try{ modalEl.querySelector('input,select,textarea')?.focus(); }catch(_){} },80); }
+    let ctx={ entity:null, mode:'create', index:null, item:null };
+    function open(entity, item, index){ ctx.entity=entity; ctx.mode=item?'edit':'create'; ctx.index=index; ctx.item=item||null; setError(''); if(els.title) els.title.textContent=(ctx.mode==='create'?'Adicionar ':'Editar ')+ (entity==='categoria'?'Categoria':entity==='tipo'?'Tipo':'Regra'); if(els.saveLabel) els.saveLabel.textContent= ctx.mode==='create'?'Adicionar':'Salvar'; showOnly(entity);
+      if(entity==='categoria'){ const nome=q(els.cat.nome), desc=q(els.cat.desc), ativo=q(els.cat.ativo); nome.value=item?item.nome||'':''; desc.value=item?item.descricao||'':''; ativo.checked=item?!!item.ativo:true; }
+      if(entity==='tipo'){ fillSelectCategoria(); fillSelectPeriodicidade(); const nome=q(els.tipo.nome), cat=q(els.tipo.cat), per=q(els.tipo.periodicidade), desc=q(els.tipo.desc), ver=q(els.tipo.versionavel), ativo=q(els.tipo.ativo); nome.value=item?item.nome||'':''; desc.value=item?item.descricao||'':''; ver.checked=item?!!item.versionavel:true; ativo.checked=item?!!item.ativo:true; per.value=item?item.periodicidade:'unico'; if(item){ cat.value=item.categoria_ref||''; }
+      }
+  if(entity==='regra'){ fillSelectTipo(); fillSelectExigencia(); fillSelectDominio(); const tipo=q(els.regra.tipo), exi=q(els.regra.exigencia), esc=q(els.regra.escopo), dom=q(els.regra.dominio), niv=q(els.regra.nivel), obs=q(els.regra.obs), ativo=q(els.regra.ativo), appLabel=q(els.regra.appLabel); tipo.value=item?item.tipo_ref||'':''; exi.value=item?item.exigencia||'obrigatorio':'obrigatorio'; esc.value=item?item.escopo||'entidade':'entidade'; niv.value=item?item.nivel_aplicacao||'entidade':'entidade'; obs.value=item?item.observacoes||'':''; ativo.checked=item?!!item.ativo:true; if(item && item.dominio_id){ dom.value=item.dominio_id; } if(appLabel){ appLabel.value = item && item.app_label && !item.dominio_id ? item.app_label : ''; } toggleDominioVisibility(); }
+      if(bsModal) bsModal.show(); else { modalEl.classList.add('show'); modalEl.style.display='block'; modalEl.removeAttribute('aria-hidden'); modalEl.setAttribute('aria-modal','true'); document.body.classList.add('modal-open'); }
+      focusFirst();
+    }
+    function close(){ if(bsModal) bsModal.hide(); else { modalEl.classList.remove('show'); modalEl.style.display='none'; modalEl.setAttribute('aria-hidden','true'); modalEl.removeAttribute('aria-modal'); document.body.classList.remove('modal-open'); } }
+    function validate(obj){
+      if(ctx.entity==='categoria'){
+        if(!obj.nome){ setError('Informe o nome da categoria.'); return false; }
+      }
+      if(ctx.entity==='tipo'){
+        if(!obj.nome){ setError('Informe o nome do tipo.'); return false; }
+        if(!obj.categoria_ref){ setError('Selecione uma categoria.'); return false; }
+      }
+      if(ctx.entity==='regra'){
+        if(!obj.tipo_ref){ setError('Selecione um tipo.'); return false; }
+        if(['app','filtro'].includes(obj.escopo)){
+          if(!obj.dominio_id && !obj.app_label){ setError('Selecione um domínio ou informe um app (fallback).'); return false; }
+          if(obj.app_label && !/^[a-z][a-z0-9_]*$/.test(obj.app_label)){ setError('App inválido. Use letras minúsculas, números e _.'); return false; }
+        }
+      }
+      setError(''); return true; }
+    function collect(){
+      if(ctx.entity==='categoria'){
+        return { temp_id: ctx.mode==='create'? appRef.uid('cat_') : (ctx.item?ctx.item.temp_id:appRef.uid('cat_')), nome:q(els.cat.nome).value.trim(), descricao:q(els.cat.desc).value.trim(), ativo:q(els.cat.ativo).checked };
+      }
+      if(ctx.entity==='tipo'){
+        return { temp_id: ctx.mode==='create'? appRef.uid('tipo_') : (ctx.item?ctx.item.temp_id:appRef.uid('tipo_')), nome:q(els.tipo.nome).value.trim(), descricao:q(els.tipo.desc).value.trim(), categoria_ref:q(els.tipo.cat).value, periodicidade:q(els.tipo.periodicidade).value, ativo:q(els.tipo.ativo).checked, versionavel:q(els.tipo.versionavel).checked };
+      }
+      if(ctx.entity==='regra'){
+        const esc=q(els.regra.escopo).value;
+        const domId=q(els.regra.dominio).value;
+        const appLb=q(els.regra.appLabel)?q(els.regra.appLabel).value.trim():'';
+        const base={ tipo_ref:q(els.regra.tipo).value, exigencia:q(els.regra.exigencia).value, escopo:esc, nivel_aplicacao:q(els.regra.nivel).value, observacoes:q(els.regra.obs).value.trim(), ativo:q(els.regra.ativo).checked };
+        if(['app','filtro'].includes(esc)){
+          if(domId){ base.dominio_id=parseInt(domId,10); }
+          if(!domId && appLb){ base.app_label=appLb; }
+        }
+        return base;
+      }
+      return {};
+    }
+    function toggleDominioVisibility(){
+      const escSel=q(els.regra.escopo);
+      const domWrap=q(els.regra.dominioWrap);
+      const appWrap=q(els.regra.appLabelWrap);
+      const appInput=q(els.regra.appLabel);
+      if(!escSel||!domWrap||!appWrap) return;
+      const show=['app','filtro'].includes(escSel.value);
+      domWrap.style.display=show?'block':'none';
+      appWrap.style.display=show?'block':'none';
+      if(!show && appInput){ appInput.value=''; }
+    }
+    const escSelInit = modalEl.querySelector(els.regra.escopo);
+    if(escSelInit){ escSelInit.addEventListener('change', toggleDominioVisibility); }
+    if(els.saveBtn){ els.saveBtn.addEventListener('click', function(){ const obj=collect(); if(!validate(obj)) return; if(ctx.entity==='categoria'){ if(ctx.mode==='create'){ appRef.cats.push(obj); } else { const it=appRef.cats.find(c=>c.temp_id===obj.temp_id); if(it) Object.assign(it,obj); } }
+      else if(ctx.entity==='tipo'){ if(ctx.mode==='create'){ appRef.tipos.push(obj); } else { const it=appRef.tipos.find(t=>t.temp_id===obj.temp_id); if(it) Object.assign(it,obj); } }
+      else if(ctx.entity==='regra'){ if(ctx.mode==='create'){ appRef.regras.push(obj); } else if(ctx.index!==null){ appRef.regras.splice(ctx.index,1,obj); } }
+      close(); try { appRef.modal.triggerEl && appRef.modal.triggerEl.focus(); } catch(_){}
+    }); }
+    if(modalEl && !bsModal){ const dismiss = modalEl.querySelectorAll('[data-bs-dismiss="modal"],.btn-close'); dismiss.forEach(b=>b.addEventListener('click', close)); }
+    window.__setupCrudModal = { open, close };
+  })();
+  
+  }
+  start();
+})();
+</script>
+{% endblock %}
+
+{% block modals %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Compactação específica do setup inteligente sem afetar tabelas globais */
+  #doc-setup-app table.table-compact tbody td, #doc-setup-app table.table-compact thead th { padding: .35rem .5rem !important; }
+  #doc-setup-app table.table-compact input.form-control-sm, #doc-setup-app table.table-compact select.form-select-sm { padding-top: .15rem; padding-bottom: .15rem; }
+  #doc-setup-app table.table-compact tbody tr.table-danger td { background-color: #ffe5e5 !important; }
+</style>
+{% endblock %}

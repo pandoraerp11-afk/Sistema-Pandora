@@ -1,0 +1,275 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}Aceitar Convite - Pandora ERP{% endblock %}
+
+{% block page_title %}Aceitar Convite{% endblock %}
+
+{% block page_subtitle %}
+    Você foi convidado para se juntar ao sistema. Complete seu cadastro abaixo.
+{% endblock %}
+
+{% block form_title %}Finalizar Cadastro{% endblock %}
+
+{% block form_content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-aos="fade-up">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate id="conviteForm">
+                    {% csrf_token %}
+                    
+                    <!-- Informações do Convite -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-envelope-open me-2"></i>
+                                    Convite Recebido
+                                </h6>
+                                <p class="mb-0">
+                                    Você foi convidado por <strong>{{ convite.enviado_por.get_full_name|default:convite.enviado_por.username }}</strong> 
+                                    para se juntar à empresa <strong>{{ convite.tenant.nome }}</strong> como 
+                                    <strong>{{ convite.get_tipo_usuario_display }}</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dados Pessoais -->
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-user me-2"></i>
+                                Seus Dados
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-at text-primary"></i>
+                                    Nome de Usuário
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.username|add_class:"form-control" }}
+                                {% if form.username.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.username.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Digite um nome único para login</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-envelope text-primary"></i>
+                                    E-mail
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.email|add_class:"form-control"|attr:"readonly" }}
+                                {% if form.email.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.email.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">E-mail do convite (não pode ser alterado)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-user text-primary"></i>
+                                    Nome
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.first_name|add_class:"form-control" }}
+                                {% if form.first_name.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.first_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-user text-primary"></i>
+                                    Sobrenome
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.last_name|add_class:"form-control" }}
+                                {% if form.last_name.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.last_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-lock text-primary"></i>
+                                    Senha
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.password1|add_class:"form-control" }}
+                                {% if form.password1.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.password1.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Mínimo 8 caracteres com letras e números</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-lock text-primary"></i>
+                                    Confirmar Senha
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.password2|add_class:"form-control" }}
+                                {% if form.password2.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.password2.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Digite a senha novamente</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                            <i class="fas fa-user-check me-2"></i>Aceitar Convite e Criar Conta
+                        </button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informações do Convite -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Detalhes do Convite
+                    </h6>
+                    
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-building text-primary me-2"></i>
+                            <strong>Empresa:</strong><br>
+                            <span>{{ convite.tenant.nome }}</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-user-tie text-primary me-2"></i>
+                            <strong>Convidado por:</strong><br>
+                            <span>{{ convite.enviado_por.get_full_name|default:convite.enviado_por.username }}</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-user-tag text-primary me-2"></i>
+                            <strong>Tipo de usuário:</strong><br>
+                            <span>{{ convite.get_tipo_usuario_display }}</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-calendar text-primary me-2"></i>
+                            <strong>Convite expira em:</strong><br>
+                            <span>{{ convite.expirado_em|date:"d/m/Y às H:i" }}</span>
+                        </li>
+                    </ul>
+                    
+                    {% if convite.mensagem_personalizada %}
+                    <div class="alert alert-light mt-3">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-comment me-2"></i>
+                            Mensagem Personalizada
+                        </h6>
+                        <p class="mb-0">{{ convite.mensagem_personalizada }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Próximos Passos -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-list-ol me-2"></i>
+                        Próximos Passos
+                    </h6>
+                    
+                    <ol class="list-group list-group-numbered list-group-flush">
+                        <li class="list-group-item border-0 px-0">
+                            <strong>Preencha os dados</strong><br>
+                            <small class="text-muted">Complete as informações solicitadas</small>
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            <strong>Crie sua senha</strong><br>
+                            <small class="text-muted">Use uma senha segura</small>
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            <strong>Finalize o cadastro</strong><br>
+                            <small class="text-muted">Clique em "Aceitar Convite"</small>
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            <strong>Faça login</strong><br>
+                            <small class="text-muted">Acesse o sistema com suas credenciais</small>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('conviteForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Criando Conta...';
+            submitBtn.disabled = true;
+            
+            // Re-enable button after 10 seconds as fallback
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 10000);
+        });
+    }
+});
+</script>
+{% endblock %}

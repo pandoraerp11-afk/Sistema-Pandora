@@ -1,0 +1,363 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static %}
+
+{% block form_title %}Importar Produtos{% endblock %}
+{% block page_title %}Importar Produtos{% endblock %}
+{% block form_subtitle %}Importe produtos em massa através de arquivos CSV ou Excel{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'produtos:produto_list' %}">Produtos</a></li>
+<li class="breadcrumb-item active">Importar</li>
+{% endblock %}
+
+{% block form_action %}{% url 'produtos:produto_import' %}{% endblock %}
+{% block form_method %}post{% endblock %}
+{% block form_enctype %}multipart/form-data{% endblock %}
+{% block form_icon %}fas fa-upload{% endblock %}
+
+{% block form_fields %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="form-section">
+            <h6 class="form-section-title">
+                <i class="fas fa-file-upload"></i>
+                Arquivo para Importação
+            </h6>
+            
+            <div class="form-group">
+                <label for="{{ form.arquivo.id_for_label }}" class="form-label required">
+                    Selecione o arquivo
+                </label>
+                {{ form.arquivo }}
+                {% if form.arquivo.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.arquivo.errors.0 }}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Formatos aceitos: CSV (.csv), Excel (.xls, .xlsx)
+                </small>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h6 class="form-section-title">
+                <i class="fas fa-cogs"></i>
+                Configurações de Importação
+            </h6>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="{{ form.delimitador.id_for_label }}" class="form-label">
+                            Delimitador (apenas para CSV)
+                        </label>
+                        {{ form.delimitador }}
+                        {% if form.delimitador.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.delimitador.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Caractere usado para separar os campos
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="form-check">
+                            {{ form.tem_cabecalho }}
+                            <label class="form-check-label" for="{{ form.tem_cabecalho.id_for_label }}">
+                                O arquivo possui cabeçalho
+                            </label>
+                        </div>
+                        {% if form.tem_cabecalho.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.tem_cabecalho.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Marque se a primeira linha contém os nomes das colunas
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h6 class="form-section-title">
+                <i class="fas fa-table"></i>
+                Formato dos Dados
+            </h6>
+            
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Coluna</th>
+                            <th>Campo</th>
+                            <th>Tipo</th>
+                            <th>Obrigatório</th>
+                            <th>Exemplo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>A / 1</td>
+                            <td>Nome</td>
+                            <td>Texto</td>
+                            <td><i class="fas fa-check text-success"></i></td>
+                            <td>Smartphone Samsung Galaxy A54</td>
+                        </tr>
+                        <tr>
+                            <td>B / 2</td>
+                            <td>Categoria</td>
+                            <td>Texto</td>
+                            <td><i class="fas fa-check text-success"></i></td>
+                            <td>Eletrônicos</td>
+                        </tr>
+                        <tr>
+                            <td>C / 3</td>
+                            <td>Preço</td>
+                            <td>Número</td>
+                            <td><i class="fas fa-check text-success"></i></td>
+                            <td>1299.99</td>
+                        </tr>
+                        <tr>
+                            <td>D / 4</td>
+                            <td>Código</td>
+                            <td>Texto</td>
+                            <td><i class="fas fa-times text-danger"></i></td>
+                            <td>SAMS-A54-128GB</td>
+                        </tr>
+                        <tr>
+                            <td>E / 5</td>
+                            <td>Descrição</td>
+                            <td>Texto</td>
+                            <td><i class="fas fa-times text-danger"></i></td>
+                            <td>Smartphone com 128GB de armazenamento</td>
+                        </tr>
+                        <tr>
+                            <td>F / 6</td>
+                            <td>Estoque</td>
+                            <td>Número</td>
+                            <td><i class="fas fa-times text-danger"></i></td>
+                            <td>25</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Importante:</strong> As três primeiras colunas (Nome, Categoria e Preço) são obrigatórias. 
+                As demais colunas são opcionais.
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="form-sidebar">
+            <div class="sidebar-section">
+                <h6 class="sidebar-title">
+                    <i class="fas fa-download"></i>
+                    Modelos de Arquivo
+                </h6>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary btn-sm" onclick="downloadTemplate('csv')">
+                        <i class="fas fa-file-csv"></i>
+                        Baixar modelo CSV
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm" onclick="downloadTemplate('excel')">
+                        <i class="fas fa-file-excel"></i>
+                        Baixar modelo Excel
+                    </a>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h6 class="sidebar-title">
+                    <i class="fas fa-lightbulb"></i>
+                    Dicas de Importação
+                </h6>
+                <ul class="sidebar-list">
+                    <li>Use nomes únicos para cada produto</li>
+                    <li>Categorias inexistentes serão criadas automaticamente</li>
+                    <li>Preços devem usar ponto (.) como separador decimal</li>
+                    <li>Códigos duplicados serão ignorados</li>
+                    <li>Verifique a formatação antes de importar</li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <h6 class="sidebar-title">
+                    <i class="fas fa-shield-alt"></i>
+                    Segurança
+                </h6>
+                <ul class="sidebar-list">
+                    <li>Faça backup antes de importar</li>
+                    <li>Teste com poucos produtos primeiro</li>
+                    <li>Verifique os dados após importação</li>
+                    <li>Produtos duplicados serão ignorados</li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <h6 class="sidebar-title">
+                    <i class="fas fa-question-circle"></i>
+                    Precisa de Ajuda?
+                </h6>
+                <p class="sidebar-text">
+                    Em caso de dúvidas sobre a importação, consulte nossa documentação ou entre em contato com o suporte.
+                </p>
+                <a href="#" class="btn btn-outline-info btn-sm">
+                    <i class="fas fa-book"></i>
+                    Ver Documentação
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block form_actions %}
+<div class="form-actions">
+    <div class="d-flex justify-content-between">
+        <div>
+            <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Voltar
+            </a>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" onclick="previewFile()">
+                <i class="fas fa-eye"></i>
+                Visualizar
+            </button>
+            <button type="submit" class="btn btn-primary btn-modern">
+                <i class="fas fa-upload"></i>
+                Importar Produtos
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Detectar tipo de arquivo e ajustar configurações
+    const fileInput = document.getElementById('{{ form.arquivo.id_for_label }}');
+    const delimitadorInput = document.getElementById('{{ form.delimitador.id_for_label }}');
+    
+    fileInput.addEventListener('change', function() {
+        const fileName = this.files[0]?.name || '';
+        const isCSV = fileName.toLowerCase().endsWith('.csv');
+        
+        // Habilitar/desabilitar campo delimitador
+        delimitadorInput.disabled = !isCSV;
+        
+        if (isCSV) {
+            delimitadorInput.value = ',';
+        } else {
+            delimitadorInput.value = '';
+        }
+    });
+    
+    // Validação do formulário
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            e.preventDefault();
+            alert('Por favor, selecione um arquivo para importar.');
+            fileInput.focus();
+            return false;
+        }
+        
+        // Verificar extensão do arquivo
+        const validExtensions = ['.csv', '.xls', '.xlsx'];
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        
+        if (!validExtensions.includes(fileExtension)) {
+            e.preventDefault();
+            alert('Formato de arquivo não suportado. Use CSV (.csv) ou Excel (.xls, .xlsx).');
+            fileInput.focus();
+            return false;
+        }
+        
+        // Confirmar importação
+        const confirmed = confirm(
+            `Você está prestes a importar dados do arquivo "${file.name}".\n\n` +
+            'Esta ação pode criar novos produtos e categorias.\n' +
+            'Tem certeza que deseja continuar?'
+        );
+        
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar loading
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
+    });
+});
+
+function downloadTemplate(type) {
+    // Criar dados do template
+    const data = [
+        ['Nome', 'Categoria', 'Preço', 'Código', 'Descrição', 'Estoque'],
+        ['Smartphone Samsung Galaxy A54', 'Eletrônicos', '1299.99', 'SAMS-A54-128GB', 'Smartphone com 128GB de armazenamento', '25'],
+        ['Notebook Dell Inspiron 15', 'Informática', '2199.99', 'DELL-INSP-15', 'Notebook Dell com Intel Core i5', '10'],
+        ['Mouse Logitech MX Master', 'Acessórios', '299.99', 'LOGI-MX-MASTER', 'Mouse sem fio ergonômico', '50']
+    ];
+    
+    if (type === 'csv') {
+        // Gerar CSV
+        const csv = data.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'modelo_produtos.csv';
+        link.click();
+    } else if (type === 'excel') {
+        // Para Excel, seria necessário uma biblioteca como xlsx
+        // Por enquanto, vamos simular com CSV
+        alert('Funcionalidade de template Excel será implementada em breve. Use o template CSV por enquanto.');
+    }
+}
+
+function previewFile() {
+    const fileInput = document.getElementById('{{ form.arquivo.id_for_label }}');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Por favor, selecione um arquivo primeiro.');
+        return;
+    }
+    
+    if (file.name.toLowerCase().endsWith('.csv')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const csv = e.target.result;
+            const lines = csv.split('\n').slice(0, 5); // Mostrar apenas 5 linhas
+            
+            let preview = 'Prévia do arquivo (primeiras 5 linhas):\n\n';
+            lines.forEach((line, index) => {
+                preview += `${index + 1}: ${line}\n`;
+            });
+            
+            alert(preview);
+        };
+        reader.readAsText(file);
+    } else {
+        alert('Prévia disponível apenas para arquivos CSV.');
+    }
+}
+</script>
+{% endblock %}

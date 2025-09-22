@@ -1,0 +1,480 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Lista de Produtos{% endblock %}
+
+{% block page_title %}Gestão de Produtos{% endblock %}
+
+{% block page_subtitle %}Listagem completa com busca avançada e filtros{% endblock %}
+
+{% block page_icon %}fas fa-boxes{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'produtos:produtos_home' %}">Produtos</a></li>
+<li class="breadcrumb-item active">Lista</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2 align-items-center">
+    <div class="btn-group">
+    {% if perms_ui.can_add|default:perms.can_add|default:True %}
+        <a href="{% url 'produtos:produto_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Novo Produto
+        </a>
+        {% endif %}
+        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+            <span class="visually-hidden">Toggle Dropdown</span>
+        </button>
+        <ul class="dropdown-menu">
+            {% if perms_ui_categoria.can_add|default:perms.can_add|default:True %}
+            <li><a class="dropdown-item" href="{% url 'produtos:categoria_create' %}">
+                <i class="fas fa-layer-group me-2"></i> Nova Categoria
+            </a></li>
+            {% endif %}
+            <li><a class="dropdown-item" href="{% url 'produtos:produto_import' %}">
+                <i class="fas fa-upload me-2"></i> Importar Produtos
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'produtos:produto_export_excel' %}?{{ current_filters }}">
+                <i class="fas fa-file-excel me-2"></i> Exportar Excel
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'produtos:produto_export_csv' %}?{{ current_filters }}">
+                <i class="fas fa-file-csv me-2"></i> Exportar CSV
+            </a></li>
+        </ul>
+    </div>
+    
+    {% if perms_ui_categoria.can_view|default:perms.can_view|default:True %}
+    <a href="{% url 'produtos:categoria_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-layer-group me-1"></i> Categorias
+    </a>
+    {% endif %}
+    
+    <button class="btn btn-outline-secondary" onclick="toggleAdvancedFilters()">
+        <i class="fas fa-filter"></i>
+    </button>
+</div>
+{% endblock %}
+
+{% block search_filters %}
+<!-- Busca Rápida -->
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="input-group">
+            <input type="text" class="form-control" id="searchInput" name="busca" 
+                   placeholder="Buscar por nome, código ou descrição..." 
+                   value="{{ request.GET.busca }}" autocomplete="off">
+            <button class="btn btn-outline-secondary" type="button" onclick="searchProducts()">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="col-md-2">
+        <select class="form-select" name="categoria" onchange="filterProducts()">
+            <option value="">Todas as categorias</option>
+            {% for categoria in categorias %}
+                <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:"s" %}selected{% endif %}>
+                    {{ categoria.nome }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <select class="form-select" name="ativo" onchange="filterProducts()">
+            <option value="">Todos</option>
+            <option value="1" {% if request.GET.ativo == "1" %}selected{% endif %}>Ativos</option>
+            <option value="0" {% if request.GET.ativo == "0" %}selected{% endif %}>Inativos</option>
+        </select>
+    </div>
+    
+    <div class="col-md-2">
+        <select class="form-select" name="ordenar" onchange="filterProducts()">
+            <option value="">Mais recentes</option>
+            <option value="nome" {% if request.GET.ordenar == "nome" %}selected{% endif %}>Nome A-Z</option>
+            <option value="preco_asc" {% if request.GET.ordenar == "preco_asc" %}selected{% endif %}>Menor preço</option>
+            <option value="preco_desc" {% if request.GET.ordenar == "preco_desc" %}selected{% endif %}>Maior preço</option>
+            <option value="estoque" {% if request.GET.ordenar == "estoque" %}selected{% endif %}>Menor estoque</option>
+        </select>
+    </div>
+</div>
+
+<!-- Filtros Avançados (Ocultos por padrão) -->
+<div id="advancedFilters" class="card border-light bg-light p-3 mb-3 d-none">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Estoque</label>
+            <select class="form-select" name="estoque" onchange="filterProducts()">
+                <option value="">Qualquer estoque</option>
+                <option value="baixo" {% if request.GET.estoque == "baixo" %}selected{% endif %}>Estoque baixo</option>
+                <option value="zerado" {% if request.GET.estoque == "zerado" %}selected{% endif %}>Sem estoque</option>
+                <option value="alto" {% if request.GET.estoque == "alto" %}selected{% endif %}>Estoque alto</option>
+            </select>
+        </div>
+        
+        <div class="col-md-3">
+            <label class="form-label">Preço Mínimo</label>
+            <input type="number" class="form-control" name="preco_min" step="0.01" 
+                   placeholder="0,00" value="{{ request.GET.preco_min }}" onchange="filterProducts()">
+        </div>
+        
+        <div class="col-md-3">
+            <label class="form-label">Preço Máximo</label>
+            <input type="number" class="form-control" name="preco_max" step="0.01" 
+                   placeholder="0,00" value="{{ request.GET.preco_max }}" onchange="filterProducts()">
+        </div>
+        
+        <div class="col-md-3">
+            <label class="form-label">Destaque</label>
+            <select class="form-select" name="destaque" onchange="filterProducts()">
+                <option value="">Todos</option>
+                <option value="1" {% if request.GET.destaque == "1" %}selected{% endif %}>Em destaque</option>
+            </select>
+        </div>
+        
+        <div class="col-12">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                <i class="fas fa-times me-1"></i> Limpar Filtros
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block table_content %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th width="60">
+                    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleAllSelect()">
+                </th>
+                <th width="80">Imagem</th>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Preço</th>
+                <th>Estoque</th>
+                <th>Status</th>
+                <th width="160" class="text-center">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for produto in produtos %}
+            <tr data-produto-id="{{ produto.id }}">
+                <td>
+                    <input type="checkbox" class="form-check-input row-select" value="{{ produto.id }}">
+                </td>
+                
+                <td>
+                    {% if produto.imagem_principal %}
+                        <img src="{{ produto.imagem_principal.url }}" alt="{{ produto.nome }}" 
+                             class="rounded object-fit-cover" width="50" height="50">
+                    {% else %}
+                        <i class="fas fa-box text-muted"></i>
+                    {% endif %}
+                </td>
+                
+                <td>
+                    <div class="min-w-0">
+                        <a href="{% url 'produtos:produto_detail' produto.id %}" class="fw-semibold text-decoration-none">{{ produto.nome }}</a>
+                        <div class="text-muted small text-truncate">
+                            {% if produto.codigo %}Código: {{ produto.codigo }}{% endif %}
+                        </div>
+                    </div>
+                </td>
+                
+                <td>
+                    <span class="badge bg-light text-dark">{{ produto.categoria.nome }}</span>
+                </td>
+                
+                <td>
+                    R$ {{ produto.preco_unitario }}
+                </td>
+                
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-semibold">{{ produto.estoque_atual }}</span>
+                        {% if produto.estoque_atual|default:0 <= 0 %}
+                            <span class="badge bg-danger-subtle text-danger">Sem estoque</span>
+                        {% elif produto.estoque_minimo and produto.estoque_atual <= produto.estoque_minimo %}
+                            <span class="badge bg-warning-subtle text-warning">Baixo</span>
+                        {% elif produto.estoque_maximo and produto.estoque_atual >= produto.estoque_maximo %}
+                            <span class="badge bg-info-subtle text-info">Alto</span>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <td>
+                    <div class="d-flex flex-column align-items-start gap-1">
+                        <span class="badge {% if produto.ativo %}bg-success-subtle text-success{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                            {% if produto.ativo %}Ativo{% else %}Inativo{% endif %}
+                        </span>
+                        {% if produto.destaque %}
+                        <span class="badge bg-warning-subtle text-warning">
+                            <i class="fas fa-star me-1"></i> Destaque
+                        </span>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <td>
+                    <div class="d-flex justify-content-center gap-1">
+                        <a href="{% url 'produtos:produto_detail' produto.id %}" class="btn btn-outline-secondary btn-action-sm" title="Ver">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                        <a href="{% url 'produtos:produto_update' produto.id %}" class="btn btn-outline-secondary btn-action-sm" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                        {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+                        <a href="{% url 'produtos:produto_delete' produto.id %}" class="btn btn-outline-danger btn-action-sm" title="Excluir" onclick="return confirm('Confirma a exclusão deste produto?');">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                        {% endif %}
+                        <button type="button" class="btn btn-outline-warning btn-action-sm" title="Alternar destaque" onclick="toggleDestaque({{ produto.id }})">
+                            <i class="fas fa-star"></i>
+                        </button>
+                        <div class="form-check form-switch ms-1" title="Ativo?">
+                            <input class="form-check-input" type="checkbox" {% if produto.ativo %}checked{% endif %} onchange="toggleProdutoAtivo({{ produto.id }}, this)">
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="text-muted">
+                        <i class="fas fa-search fa-3x mb-3"></i>
+                        <h5>Nenhum produto encontrado</h5>
+                        <p>Tente ajustar os filtros{% if perms_ui.can_add|default:perms.can_add|default:True %} ou <a href="{% url 'produtos:produto_create' %}">cadastre um novo produto</a>{% endif %}.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block pagination_info %}
+<!-- Informações da Paginação -->
+{% if is_paginated %}
+<div class="d-flex justify-content-between align-items-center">
+    <div class="text-muted">
+        Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} produtos
+    </div>
+    
+    <nav>
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if current_filters %}{{ current_filters }}&{% endif %}page=1">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% if current_filters %}{{ current_filters }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if current_filters %}{{ current_filters }}&{% endif %}page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if current_filters %}{{ current_filters }}&{% endif %}page={{ page_obj.next_page_number }}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% if current_filters %}{{ current_filters }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Função para buscar produtos
+function searchProducts() {
+    const searchTerm = document.getElementById('searchInput').value;
+    const url = new URL(window.location);
+    
+    if (searchTerm.trim()) {
+        url.searchParams.set('busca', searchTerm);
+    } else {
+        url.searchParams.delete('busca');
+    }
+    
+    url.searchParams.delete('page'); // Reset pagination
+    window.location.href = url.toString();
+}
+
+// Função para filtrar produtos
+function filterProducts() {
+    const url = new URL(window.location);
+    
+    // Coletar todos os filtros
+    const filters = ['categoria', 'ativo', 'ordenar', 'estoque', 'preco_min', 'preco_max', 'destaque'];
+    
+    filters.forEach(filter => {
+        const element = document.querySelector(`[name="${filter}"]`);
+        if (element && element.value) {
+            url.searchParams.set(filter, element.value);
+        } else {
+            url.searchParams.delete(filter);
+        }
+    });
+    
+    url.searchParams.delete('page'); // Reset pagination
+    window.location.href = url.toString();
+}
+
+// Função para limpar filtros
+function clearFilters() {
+    const url = new URL(window.location);
+    const filters = ['busca', 'categoria', 'ativo', 'ordenar', 'estoque', 'preco_min', 'preco_max', 'destaque', 'page'];
+    
+    filters.forEach(filter => {
+        url.searchParams.delete(filter);
+    });
+    
+    window.location.href = url.toString();
+}
+
+// Função para mostrar/ocultar filtros avançados
+function toggleAdvancedFilters() {
+    const filters = document.getElementById('advancedFilters');
+    if (filters) {
+        filters.classList.toggle('d-none');
+    }
+}
+
+// Função para toggle de produto ativo via AJAX
+function toggleProdutoAtivo(produtoId, checkbox) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                      document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
+    
+    fetch(`/produtos/ajax/produto/${produtoId}/toggle-ativo/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Atualizar status visual
+            const row = checkbox.closest('tr');
+            const statusText = row.querySelector('small');
+            if (statusText) statusText.textContent = data.ativo ? 'Ativo' : 'Inativo';
+            
+            // Mostrar notificação
+            showToast(data.message, 'success');
+        } else {
+            // Reverter checkbox em caso de erro
+            checkbox.checked = !checkbox.checked;
+            showToast(data.message || 'Erro ao atualizar status', 'error');
+        }
+    })
+    .catch(() => {
+        // Reverter checkbox em caso de erro
+        checkbox.checked = !checkbox.checked;
+        showToast('Erro de conexão', 'error');
+    });
+}
+
+// Função para toggle de destaque
+function toggleDestaque(produtoId) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                      document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
+    
+    fetch(`/produtos/ajax/produto/${produtoId}/toggle-destaque/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Recarregar página para atualizar visual
+            location.reload();
+        } else {
+            showToast(data.message || 'Erro ao atualizar destaque', 'error');
+        }
+    })
+    .catch(() => {
+        showToast('Erro de conexão', 'error');
+    });
+}
+
+// Função para selecionar todos
+function toggleAllSelect() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.row-select');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+// Função para mostrar toast (assumindo que existe no sistema)
+function showToast(message, type) {
+    console.log(`${type}: ${message}`);
+}
+
+// Busca ao pressionar Enter
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchProducts();
+        }
+    });
+}
+
+// Auto-filtro com debounce para campos de preço
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+const debouncedFilter = debounce(filterProducts, 500);
+
+document.querySelectorAll('[name="preco_min"], [name="preco_max"]').forEach(input => {
+    input.addEventListener('input', debouncedFilter);
+});
+</script>
+{% endblock %}

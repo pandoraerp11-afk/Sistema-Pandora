@@ -1,0 +1,106 @@
+{% comment %}
+COMPONENTE: Seção de Endereço
+Reutilizável para: clientes, fornecedores, funcionários, empresas, etc.
+
+COMO USAR:
+{% include "components/sections/endereco.html" with form_prefix="endereco" title="Endereço Principal" %}
+{% endcomment %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-map-marker-alt me-2"></i>
+            {{ title|default:"Endereço" }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="id_{{ form_prefix|default:"" }}cep" class="form-label">CEP</label>
+                <input type="text" 
+                       class="form-control cep-mask" 
+                       name="{{ form_prefix|default:"" }}cep"
+                       id="id_{{ form_prefix|default:"" }}cep"
+                       data-cep-lookup="true">
+            </div>
+            
+            <div class="col-md-7">
+                <label for="id_{{ form_prefix|default:"" }}logradouro" class="form-label">Logradouro</label>
+                <input type="text" 
+                       class="form-control" 
+                       name="{{ form_prefix|default:"" }}logradouro"
+                       id="id_{{ form_prefix|default:"" }}logradouro">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="id_{{ form_prefix|default:"" }}numero" class="form-label">Número</label>
+                <input type="text" 
+                       class="form-control" 
+                       name="{{ form_prefix|default:"" }}numero"
+                       id="id_{{ form_prefix|default:"" }}numero">
+            </div>
+        </div>
+        
+        <div class="row g-3 mt-2">
+            <div class="col-md-4">
+                <label for="id_{{ form_prefix|default:"" }}complemento" class="form-label">Complemento</label>
+                <input type="text" 
+                       class="form-control" 
+                       name="{{ form_prefix|default:"" }}complemento"
+                       id="id_{{ form_prefix|default:"" }}complemento">
+            </div>
+            
+            <div class="col-md-4">
+                <label for="id_{{ form_prefix|default:"" }}bairro" class="form-label">Bairro</label>
+                <input type="text" 
+                       class="form-control" 
+                       name="{{ form_prefix|default:"" }}bairro"
+                       id="id_{{ form_prefix|default:"" }}bairro">
+            </div>
+            
+            <div class="col-md-3">
+                <label for="id_{{ form_prefix|default:"" }}cidade" class="form-label">Cidade</label>
+                <input type="text" 
+                       class="form-control" 
+                       name="{{ form_prefix|default:"" }}cidade"
+                       id="id_{{ form_prefix|default:"" }}cidade">
+            </div>
+            
+            <div class="col-md-1">
+                <label for="id_{{ form_prefix|default:"" }}uf" class="form-label">UF</label>
+                <select class="form-select" 
+                        name="{{ form_prefix|default:"" }}uf"
+                        id="id_{{ form_prefix|default:"" }}uf">
+                    <option value="">UF</option>
+                    <option value="AC">AC</option>
+                    <option value="AL">AL</option>
+                    <option value="AP">AP</option>
+                    <option value="AM">AM</option>
+                    <option value="BA">BA</option>
+                    <option value="CE">CE</option>
+                    <option value="DF">DF</option>
+                    <option value="ES">ES</option>
+                    <option value="GO">GO</option>
+                    <option value="MA">MA</option>
+                    <option value="MT">MT</option>
+                    <option value="MS">MS</option>
+                    <option value="MG">MG</option>
+                    <option value="PA">PA</option>
+                    <option value="PB">PB</option>
+                    <option value="PR">PR</option>
+                    <option value="PE">PE</option>
+                    <option value="PI">PI</option>
+                    <option value="RJ">RJ</option>
+                    <option value="RN">RN</option>
+                    <option value="RS">RS</option>
+                    <option value="RO">RO</option>
+                    <option value="RR">RR</option>
+                    <option value="SC">SC</option>
+                    <option value="SP">SP</option>
+                    <option value="SE">SE</option>
+                    <option value="TO">TO</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>

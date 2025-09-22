@@ -1,0 +1,164 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Estoque - Itens{% endblock %}
+{% block page_title %}Controle de Estoque{% endblock %}
+{% block page_subtitle %}Gerencie itens e níveis (fase de modernização) {% endblock %}
+{% block page_icon %}ph-duotone ph-package{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'estoque:estoque_home' %}">Estoque</a></li>
+<li class="breadcrumb-item active">Itens</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" type="button" onclick="toggleAdvancedSearch()" title="Busca Avançada"><i class="ph-duotone ph-magnifying-glass"></i></button>
+    <a href="{% url 'estoque:movimento_add' %}" class="btn btn-outline-success"><i class="ph-duotone ph-arrows-clockwise"></i> Movimentar</a>
+    {% if perms_ui.can_add|default:perms.can_add|default:True %}
+    <button class="btn btn-primary" disabled title="Cadastro modernizado em desenvolvimento"><i class="ph-duotone ph-plus"></i> Novo Item</button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block search_filters %}
+<div id="advanced-search" class="card border-0 shadow-sm mb-3 d-none">
+    <div class="card-body">
+        <form method="get" action="">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Produto</label>
+                    <input type="text" name="produto" class="form-control" value="{{ request.GET.produto }}" placeholder="Nome ou código">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Categoria</label>
+                    <select name="categoria" class="form-select">
+                        <option value="">Todas</option>
+                        {% for categoria in categorias %}
+                        <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:"s" %}selected{% endif %}>{{ categoria.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status_estoque" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="normal" {% if request.GET.status_estoque == 'normal' %}selected{% endif %}>Normal</option>
+                        <option value="baixo" {% if request.GET.status_estoque == 'baixo' %}selected{% endif %}>Baixo</option>
+                        <option value="critico" {% if request.GET.status_estoque == 'critico' %}selected{% endif %}>Crítico</option>
+                        <option value="zerado" {% if request.GET.status_estoque == 'zerado' %}selected{% endif %}>Zerado</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Localização</label>
+                    <input type="text" name="localizacao" class="form-control" value="{{ request.GET.localizacao }}" placeholder="Ex: A-01-3">
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i> Buscar</button>
+                    <a href="?" class="btn btn-outline-secondary"><i class="fas fa-times me-1"></i> Limpar</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block list_summary %}
+<div class="row g-3 mb-3">
+    <div class="col-sm-6 col-lg-3"><div class="stat-card small h-100 d-flex align-items-center gap-3"><div class="stat-icon bg-primary-subtle text-primary"><i class="ph-duotone ph-package"></i></div><div><div class="stat-value">{{ total_itens|default:itens_estoque|length }}</div><div class="stat-label">Total Itens</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="stat-card small h-100 d-flex align-items-center gap-3"><div class="stat-icon bg-success-subtle text-success"><i class="ph-duotone ph-check-circle"></i></div><div><div class="stat-value">{{ estoque_normal }}</div><div class="stat-label">Normal</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="stat-card small h-100 d-flex align-items-center gap-3"><div class="stat-icon bg-warning-subtle text-warning"><i class="ph-duotone ph-warning"></i></div><div><div class="stat-value">{{ estoque_baixo }}</div><div class="stat-label">Baixo</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="stat-card small h-100 d-flex align-items-center gap-3"><div class="stat-icon bg-danger-subtle text-danger"><i class="ph-duotone ph-x-circle"></i></div><div><div class="stat-value">{{ estoque_critico }}</div><div class="stat-label">Crítico/Zerado</div></div></div></div>
+</div>
+{% endblock %}
+
+{% block table_content %}
+<div class="table-responsive">
+    <table class="table modern-table">
+        <thead>
+            <tr>
+                <th><div class="table-checkbox"><input type="checkbox" id="select-all"><label for="select-all"></label></div></th>
+                <th>Produto</th><th>Categoria</th><th>Quantidade</th><th>Estoque Mín.</th><th>Localização</th><th>Última Movimentação</th><th>Status</th><th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in itens_estoque %}
+            <tr>
+                <td><div class="table-checkbox"><input type="checkbox" id="select-{{ item.id }}" value="{{ item.id }}"><label for="select-{{ item.id }}"></label></div></td>
+                <td>
+                    <div class="product-cell">
+                        <div class="product-avatar">
+                            {% if item.produto.imagem %}<img src="{{ item.produto.imagem.url }}" alt="{{ item.produto.nome }}">{% else %}<div class="avatar-placeholder"><i class="ph-duotone ph-package"></i></div>{% endif %}
+                        </div>
+                        <div class="product-info">
+                            <span class="product-name">{{ item.produto.nome }}</span>
+                            <span class="product-detail">{{ item.produto.codigo|default:"Sem código" }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="text-muted">{{ item.produto.categoria.nome|default:"Sem categoria" }}</span></td>
+                <td><div class="quantity-cell"><span class="quantity-number">{{ item.quantidade }}</span><span class="quantity-unit">{{ item.produto.unidade|default:"un" }}</span></div></td>
+                <td><span class="text-muted">{{ item.estoque_minimo|default:"Não definido" }}</span></td>
+                <td><span class="text-muted">{{ item.localizacao|default:"Não informado" }}</span></td>
+                <td><span class="text-muted">{{ item.ultima_movimentacao|date:"d/m/Y H:i"|default:"Nunca" }}</span></td>
+                <td>
+                    {% if item.quantidade <= 0 %}<span class="badge badge-danger"><i class="ph-duotone ph-x-circle"></i> Zerado</span>
+                    {% elif item.estoque_minimo and item.quantidade <= item.estoque_minimo %}<span class="badge badge-warning"><i class="ph-duotone ph-warning"></i> Baixo</span>
+                    {% elif item.estoque_minimo and item.quantidade <= item.estoque_minimo|add:10 %}<span class="badge badge-info"><i class="ph-duotone ph-info"></i> Atenção</span>
+                    {% else %}<span class="badge badge-success"><i class="ph-duotone ph-check-circle"></i> Normal</span>{% endif %}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{% url 'estoque:item_detail' item.id %}" class="btn btn-sm btn-outline-primary" title="Visualizar" aria-label="Visualizar item"><i class="ph-duotone ph-eye" aria-hidden="true"></i></a>
+                        <a href="{% url 'estoque:movimento_add' %}?produto={{ item.produto.id }}" class="btn btn-sm btn-outline-success" title="Movimentar"><i class="ph-duotone ph-arrows-clockwise"></i></a>
+                        {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                        <button type="button" class="btn btn-sm btn-outline-warning" title="Editar" disabled><i class="ph-duotone ph-pencil"></i></button>
+                        {% endif %}
+                        {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir" disabled><i class="ph-duotone ph-trash"></i></button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="9" class="text-center py-4">
+                    <div class="empty-state">
+                        <i class="ph-duotone ph-package"></i>
+                        <h3>Nenhum item no estoque</h3>
+                        <p>Não há itens cadastrados no estoque ou que correspondam aos critérios de busca.</p>
+                        {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                        <button class="btn btn-primary" disabled><i class="ph-duotone ph-plus"></i> Cadastrar Primeiro Item</button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block pagination_info %}
+{% if is_paginated %}
+<div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
+    <span>Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}</span>
+    <span>Página {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    window.toggleAdvancedSearch = function(){ const p=document.getElementById('advanced-search'); if(p){p.classList.toggle('d-none');}}
+    const selectAll=document.getElementById('select-all');
+    const checkboxes=document.querySelectorAll('input[type="checkbox"][value]');
+    const bulkActions=document.getElementById('bulk-actions');
+    const bulkCount=document.querySelector('.bulk-selected-count');
+    function updateBulk(){const c=[...checkboxes].filter(cb=>cb.checked).length; if(bulkCount){bulkCount.textContent=`${c} item${c!==1?'ns':''} selecionado${c!==1?'s':''}`;} if(bulkActions){bulkActions.style.display=c>0?'block':'none';} if(selectAll){selectAll.checked=c===checkboxes.length; selectAll.indeterminate=c>0&&c<checkboxes.length;}}
+    selectAll?.addEventListener('change',function(){checkboxes.forEach(cb=>cb.checked=this.checked);updateBulk();});
+    checkboxes.forEach(cb=>cb.addEventListener('change',updateBulk));
+});
+</script>
+{% endblock %}

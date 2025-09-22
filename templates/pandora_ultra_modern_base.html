@@ -1,0 +1,556 @@
+{% load static %}
+{% load core_tags %}
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Pandora ERP - Sistema de Gestão Empresarial">
+    <meta name="author" content="Pandora Team">
+    
+    <title>{% block title %}Pandora ERP{% endblock %}</title>
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'dist/img/favicon/apple-touch-icon.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'dist/img/favicon/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'dist/img/favicon/favicon-16x16.png' %}">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <link href="{% static 'dist/css/pandora-ultra-modern.css' %}" rel="stylesheet">
+    <link href="{% static 'css/wizard_enhanced.css' %}" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="pandora-app{% block body_classes %}{% endblock %}" data-sidebar-collapse="false">
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <img src="{% static 'dist/img/logo.png' %}" alt="Pandora ERP" class="loading-logo-img">
+            </div>
+            <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+            <div class="loading-text">Inicializando sistema...</div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <aside class="app-sidebar" id="app-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <img src="{% static 'dist/img/favicon/favicon-32x32.png' %}" alt="Pandora ERP" class="sidebar-logo" width="32" height="32">
+                    <span class="sidebar-brand-text">Pandora ERP</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <nav class="sidebar-nav">
+                    {% load menu_tags %}
+                    {% render_sidebar_menu %}
+                    <ul class="nav flex-column mt-3">
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="{% url 'documentos:documentos_home' %}">
+                                <i class="fas fa-file-alt me-2"></i>
+                                <span>Gestão de Documentos</span>
+                            </a>
+                        </li>
+                        <!-- ITEM TEMPORÁRIO - Portal do Cliente -->
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="{% url 'portal_cliente:dashboard' %}" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; border-radius: 8px; margin: 0.25rem;">
+                                <i class="fas fa-user-circle me-2"></i>
+                                <span>🧪 Portal Cliente (TESTE)</span>
+                                <span class="badge bg-light text-success ms-auto">NOVO</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                
+                <div class="sidebar-footer">
+                    <div class="system-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-microchip"></i>
+                            <span>CPU: <span id="cpu-usage">--</span>%</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-memory"></i>
+                            <span>Mem: <span id="memory-usage">--</span>%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="app-main">
+            <header class="app-header">
+                <div class="header-left">
+                    <button class="mobile-sidebar-toggle d-lg-none" id="mobile-sidebar-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <nav aria-label="breadcrumb" class="header-breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{% url 'dashboard' %}">
+                                    <i class="fas fa-home"></i>
+                                    <span class="d-none d-md-inline">Home</span>
+                                </a>
+                            </li>
+                            
+                            {% if breadcrumbs_list %}
+                                {% for crumb in breadcrumbs_list %}
+                                <li class="breadcrumb-item {% if forloop.last %}active{% endif %}" {% if forloop.last %}aria-current="page"{% endif %}>
+                                    {% if not forloop.last and crumb.url %}
+                                        <a href="{{ crumb.url }}">{{ crumb.title }}</a>
+                                    {% else %}
+                                        {{ crumb.title }}
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            {% endif %}
+
+                            {% block breadcrumb %}{% endblock %}
+                        </ol>
+                    </nav>
+                </div>
+
+                <div class="header-center">
+                    <div class="global-search">
+                        <div class="search-input-group">
+                            <input type="text" class="form-control" id="global-search" placeholder="Buscar em todo sistema..." autocomplete="off">
+                            <button class="search-btn" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="search-results" id="search-results"></div>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" title="Adicionar Cliente" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                            <i class="fas fa-user-plus"></i>
+                        </button>
+                        <button class="quick-action-btn" title="Novo Orçamento" data-bs-toggle="modal" data-bs-target="#quickOrcamentoModal">
+                            <i class="fas fa-file-plus"></i>
+                        </button>
+                        <button class="quick-action-btn" title="Calculadora" id="calculator-toggle">
+                            <i class="fas fa-calculator"></i>
+                        </button>
+                        <!-- BOTÃO TEMPORÁRIO - Portal do Cliente -->
+                        <a href="{% url 'portal_cliente:dashboard' %}" class="quick-action-btn" title="Portal do Cliente (TESTE)" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                    </div>
+
+                    <div class="notifications-dropdown dropdown">
+                        <button class="notifications-btn" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="notification-count">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end notifications-menu">
+                            <div class="notifications-header">
+                                <h6>Notificações</h6>
+                                <button class="mark-all-read">Marcar como lidas</button>
+                            </div>
+                            <div class="notifications-list" id="notifications-list">
+                                </div>
+                            <div class="notifications-footer">
+                                <a href="#" class="view-all">Ver todas</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="theme-toggle" id="theme-toggle" title="Alternar tema">
+                        <i class="theme-icon-light fas fa-sun"></i>
+                        <i class="theme-icon-dark fas fa-moon"></i>
+                    </button>
+
+                    <div class="user-menu dropdown">
+                        <button class="user-menu-btn" data-bs-toggle="dropdown">
+                            {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="{{ user.get_full_name }}" class="user-avatar-small">
+                            {% else %}
+                                <div class="user-avatar-small">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            {% endif %}
+                            <span class="user-name d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end user-dropdown">
+                            <li class="user-info-item">
+                                <div class="user-details">
+                                    <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                                    <div class="user-email">{{ user.email }}</div>
+                                    <!-- DEBUG TEMPORÁRIO -->
+                                    <div class="text-warning small">
+                                        <strong>DEBUG:</strong> 
+                                        Superuser: {{ user.is_superuser|yesno:"Sim,Não" }} | 
+                                        Staff: {{ user.is_staff|yesno:"Sim,Não" }}
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'user_management:meu_perfil' %}"><i class="fas fa-user"></i> Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="{% url 'user_management:change_password' %}"><i class="fas fa-key"></i> Alterar Senha</a></li>
+                            <li><a class="dropdown-item" href="/ajuda/"><i class="fas fa-question-circle"></i> Ajuda</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'core:logout' %}"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <div class="app-content">
+                {# Page header removido para design minimalista #}
+
+                <!-- Messages Block (render como alert + como toast) -->
+                {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        {% if not 'success' in message.tags %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="content-area">
+                    {% block content %}{% endblock %}
+                </div>
+
+                <!-- Page Footer Block -->
+                {% block page_footer %}{% endblock %}
+
+            </div>
+        </main>
+    </div>
+
+    <div class="floating-calculator" id="floating-calculator">
+        <div class="calculator-header">
+            <span>Calculadora</span>
+            <button class="close-calculator">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="calculator-body">
+            <input type="text" class="calculator-display" readonly id="calculator-display" value="0">
+            <div class="calculator-buttons">
+                <button class="calc-btn operator" data-action="clear">C</button>
+                <button class="calc-btn operator" data-action="delete">⌫</button>
+                <button class="calc-btn operator" data-action="percent">%</button>
+                <button class="calc-btn operator" data-action="divide">÷</button>
+                
+                <button class="calc-btn" data-number="7">7</button>
+                <button class="calc-btn" data-number="8">8</button>
+                <button class="calc-btn" data-number="9">9</button>
+                <button class="calc-btn operator" data-action="multiply">×</button>
+                
+                <button class="calc-btn" data-number="4">4</button>
+                <button class="calc-btn" data-number="5">5</button>
+                <button class="calc-btn" data-number="6">6</button>
+                <button class="calc-btn operator" data-action="subtract">-</button>
+                
+                <button class="calc-btn" data-number="1">1</button>
+                <button class="calc-btn" data-number="2">2</button>
+                <button class="calc-btn" data-number="3">3</button>
+                <button class="calc-btn operator" data-action="add">+</button>
+                
+                <button class="calc-btn zero" data-number="0">0</button>
+                <button class="calc-btn" data-action="decimal">.</button>
+                <button class="calc-btn equals" data-action="calculate">=</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
+
+    {% block modals %}{% endblock %}
+
+    {# Partial global de utilidades de notificações (toast/spinner/helpers) #}
+    {% include 'partials/_notification_utils.html' %}
+
+    {# ANÁLISE: A biblioteca bootstrap-table depende do jQuery. #}
+    {# CORREÇÃO: Adicionar o jQuery (via CDN) e garantir que ele seja carregado ANTES do Bootstrap e do Bootstrap Table. #}
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- InputMask - necessário para wizard_enhanced.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
+    
+    <!-- Flatpickr - necessário para wizard_enhanced.js -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+    
+    <script src="{% static 'dist/js/pandora-ultra-modern.js' %}"></script>
+    <script src="{% static 'js/wizard_enhanced.js' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize AOS
+            AOS.init({
+                duration: 600,
+                easing: 'ease-out-cubic',
+                once: true,
+                offset: 50
+            });
+
+            // Initialize Pandora App
+            if (window.Pandora) {
+                console.log('[PandoraBase] Sistema inicializado corretamente via pandora-ultra-modern.js');
+
+                /**
+                 * CORREÇÃO: Função global para padronizar a confirmação de exclusão em todo o sistema.
+                 * @param {string} url - A URL para a qual redirecionar após a confirmação.
+                 * @param {string} [itemName='este item'] - O nome do item a ser excluído para exibição na mensagem.
+                 */
+                window.Pandora.confirmDelete = function(event, url, itemName = 'este item') {
+                    event.preventDefault(); // Previne a navegação imediata do link
+                    
+                    Swal.fire({
+                        title: 'Você tem certeza?',
+                        text: `Esta ação não pode ser desfeita e irá excluir permanentemente ${itemName}.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Sim, excluir!',
+                        cancelButtonText: 'Cancelar',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = url;
+                        }
+                    });
+                }
+
+            } else {
+                // Fallback caso o script principal falhe
+                if (!window.Pandora) {
+                    console.error('[PandoraBase] Falha crítica: PandoraUltraModern não pôde ser inicializado.');
+                }
+            }
+        });
+    </script>
+
+    <script>
+        // Converte mensagens de sucesso do Django em toasts amigáveis
+        document.addEventListener('DOMContentLoaded', function(){
+            try {
+                {% if messages %}
+                    {% for message in messages %}
+                        {% if 'success' in message.tags %}
+                            if (window.PandoraNotif && typeof window.PandoraNotif.toast === 'function') {
+                                window.PandoraNotif.toast('\u200B{{ message|escapejs }}', 'success');
+                            }
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            } catch(e) { console.debug('toast render skip', e); }
+        });
+    </script>
+
+    <script>
+        // --- Notificações em Tempo Real (incremental) ---
+        (function(){
+            if (!('WebSocket' in window)) return;
+            const countEl = document.getElementById('notification-count');
+            const listEl = document.getElementById('notifications-list');
+            const markAllBtn = document.querySelector('.notifications-header .mark-all-read');
+            const viewAllLink = document.querySelector('.notifications-footer .view-all');
+            let ws; let reconnectAttempts = 0; const MAX_RETRY=5;
+
+            function log(msg){ console.debug('[NotifWS]', msg); }
+            function connect(){
+                try {
+                    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                    ws = new WebSocket(`${proto}://${window.location.host}/ws/notifications/`);
+                    ws.onopen = ()=>{ log('conectado'); reconnectAttempts=0; };
+                    ws.onclose = ()=>{ if(reconnectAttempts<MAX_RETRY){ setTimeout(connect, 1000*(++reconnectAttempts)); } };
+                    ws.onerror = ()=>{ try{ws.close();}catch(e){} };
+                    ws.onmessage = (evt)=>{
+                        try { const data = JSON.parse(evt.data); handleMessage(data); } catch(e){ log('erro parse'); }
+                    };
+                } catch(e){ log(e); }
+            }
+            function handleMessage(payload){
+                switch(payload.type){
+                    case 'notifications_snapshot':
+                        updateCount(payload.unread_count);
+                        renderList(payload.notifications, true);
+                        break;
+                    case 'notifications.update': // signal
+                    case 'notifications_update': // consumer broadcast
+                        if (payload.unread_count !== undefined) updateCount(payload.unread_count);
+                        if (payload.event === 'notification_created') {
+                            fetchRecent();
+                        }
+                        if (payload.event && payload.event.startsWith('marked_read')) {
+                            fetchRecent();
+                        }
+                        break;
+                    case 'notification': // legado individual
+                        prependItem(mapLegacy(payload.data));
+                        break;
+                    default:
+                        break;
+                }
+            }
+            function mapLegacy(item){ return item; }
+            function updateCount(v){ if(countEl) countEl.textContent = v; }
+            function renderList(items, replace){ if(!listEl) return; if(replace) listEl.innerHTML=''; items.forEach(prependItem); }
+            function prependItem(item){
+                if(!listEl) return;
+                const div = document.createElement('div');
+                div.className='notification-item';
+                div.dataset.id=item.id;
+                div.innerHTML = `\n <div class="d-flex align-items-start">\n  <div class="me-2"><i class="fas fa-bell text-${item.tipo||'info'}"></i></div>\n  <div class="flex-grow-1">\n    <div class="fw-semibold small mb-1">${escapeHtml(item.titulo||'')}</div>\n    <div class="text-muted small">${escapeHtml(item.mensagem||'')}</div>\n    <div class="text-end mt-1">\n      <button class="btn btn-sm btn-outline-success btn-notif-read" data-id="${item.id}"><i class="fas fa-check"></i></button>\n      ${item.url_acao?`<a class="btn btn-sm btn-outline-primary" href="${item.url_acao}"><i class="fas fa-arrow-right"></i></a>`:''}\n    </div>\n  </div>\n </div>`;
+                listEl.prepend(div);
+            }
+            function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+            function fetchRecent(){
+                // Fallback AJAX para sincronizar lista (usa endpoint existente api/recent se disponível)
+                fetch('/notifications/api/recent/').then(r=> r.ok?r.json():null).then(json=>{
+                    if(!json||!json.notifications) return; if(listEl) listEl.innerHTML=''; json.notifications.forEach(n=> prependItem(n));
+                }).catch(()=>{});
+            }
+            function markAll(){
+                const ids=[...listEl.querySelectorAll('.notification-item')].map(n=>n.dataset.id);
+                if(ws && ws.readyState===1){ ws.send(JSON.stringify({type:'mark_read_bulk', ids: ids})); }
+            }
+            document.addEventListener('click', (e)=>{
+                const btn = e.target.closest('.btn-notif-read');
+                if(btn){ const id=btn.dataset.id; if(ws && ws.readyState===1){ ws.send(JSON.stringify({type:'mark_read', notification_id: parseInt(id)})); } }
+            });
+            if(markAllBtn){ markAllBtn.addEventListener('click', (e)=>{ e.preventDefault(); markAll(); }); }
+            if(viewAllLink){ viewAllLink.setAttribute('href','/notifications/'); }
+            connect();
+        })();
+        // --- Fim Notificações ---
+    </script>
+
+    <script>
+        // --- Notificações em Tempo Real (incremental) ---
+        (function(){
+            if (!('WebSocket' in window)) return;
+            const countEl = document.getElementById('notification-count');
+            const listEl = document.getElementById('notifications-list');
+            const markAllBtn = document.querySelector('.notifications-header .mark-all-read');
+            const viewAllLink = document.querySelector('.notifications-footer .view-all');
+            let ws; let reconnectAttempts = 0; const MAX_RETRY=5;
+
+            function log(msg){ console.debug('[NotifWS]', msg); }
+            function connect(){
+                try {
+                    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                    ws = new WebSocket(`${proto}://${window.location.host}/ws/notifications/`);
+                    ws.onopen = ()=>{ log('conectado'); reconnectAttempts=0; };
+                    ws.onclose = ()=>{ if(reconnectAttempts<MAX_RETRY){ setTimeout(connect, 1000*(++reconnectAttempts)); } };
+                    ws.onerror = ()=>{ try{ws.close();}catch(e){} };
+                    ws.onmessage = (evt)=>{
+                        try { const data = JSON.parse(evt.data); handleMessage(data); } catch(e){ log('erro parse'); }
+                    };
+                } catch(e){ log(e); }
+            }
+            function handleMessage(payload){
+                switch(payload.type){
+                    case 'notifications_snapshot':
+                        updateCount(payload.unread_count);
+                        renderList(payload.notifications, true);
+                        break;
+                    case 'notifications.update': // signal
+                    case 'notifications_update': // consumer broadcast
+                        if (payload.unread_count !== undefined) updateCount(payload.unread_count);
+                        if (payload.event === 'notification_created') {
+                            fetchRecent();
+                        }
+                        if (payload.event && payload.event.startsWith('marked_read')) {
+                            fetchRecent();
+                        }
+                        break;
+                    case 'notification': // legado individual
+                        prependItem(mapLegacy(payload.data));
+                        break;
+                    default:
+                        break;
+                }
+            }
+            function mapLegacy(item){ return item; }
+            function updateCount(v){ if(countEl) countEl.textContent = v; }
+            function renderList(items, replace){ if(!listEl) return; if(replace) listEl.innerHTML=''; items.forEach(prependItem); }
+            function prependItem(item){
+                if(!listEl) return;
+                const div = document.createElement('div');
+                div.className='notification-item';
+                div.dataset.id=item.id;
+                div.innerHTML = `\n <div class="d-flex align-items-start">\n  <div class="me-2"><i class="fas fa-bell text-${item.tipo||'info'}"></i></div>\n  <div class="flex-grow-1">\n    <div class="fw-semibold small mb-1">${escapeHtml(item.titulo||'')}</div>\n    <div class="text-muted small">${escapeHtml(item.mensagem||'')}</div>\n    <div class="text-end mt-1">\n      <button class="btn btn-sm btn-outline-success btn-notif-read" data-id="${item.id}"><i class="fas fa-check"></i></button>\n      ${item.url_acao?`<a class="btn btn-sm btn-outline-primary" href="${item.url_acao}"><i class="fas fa-arrow-right"></i></a>`:''}\n    </div>\n  </div>\n </div>`;
+                listEl.prepend(div);
+            }
+            function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+            function fetchRecent(){
+                // Fallback AJAX para sincronizar lista (usa endpoint existente api/recent se disponível)
+                fetch('/notifications/api/recent/').then(r=> r.ok?r.json():null).then(json=>{
+                    if(!json||!json.notifications) return; if(listEl) listEl.innerHTML=''; json.notifications.forEach(n=> prependItem(n));
+                }).catch(()=>{});
+            }
+            function markAll(){
+                const ids=[...listEl.querySelectorAll('.notification-item')].map(n=>n.dataset.id);
+                if(ws && ws.readyState===1){ ws.send(JSON.stringify({type:'mark_read_bulk', ids: ids})); }
+            }
+            document.addEventListener('click', (e)=>{
+                const btn = e.target.closest('.btn-notif-read');
+                if(btn){ const id=btn.dataset.id; if(ws && ws.readyState===1){ ws.send(JSON.stringify({type:'mark_read', notification_id: parseInt(id)})); } }
+            });
+            if(markAllBtn){ markAllBtn.addEventListener('click', (e)=>{ e.preventDefault(); markAll(); }); }
+            if(viewAllLink){ viewAllLink.setAttribute('href','/notifications/'); }
+            connect();
+        })();
+        // --- Fim Notificações ---
+    </script>
+
+    <script>
+        // Extensão: toast automático ao receber nova notificação via WebSocket
+        (function(){
+            if(!window.PandoraNotif) return; // partial garante
+            if(!window.__NotifToastHookInstalled){
+                window.__NotifToastHookInstalled = true;
+                if(typeof prependItem === 'function'){
+                    const originalPrependItem = prependItem;
+                    prependItem = function(item){
+                        const menuOpen = document.querySelector('.notifications-dropdown.show');
+                        originalPrependItem(item);
+                        if(!menuOpen){
+                            PandoraNotif.toast((item.titulo||'Notificação')+ '<br>'+ (item.mensagem||''),'success',6000);
+                        }
+                    }
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

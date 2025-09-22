@@ -1,0 +1,172 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{# IDENTIFICAÇÃO DO FUNCIONÁRIO - Layout espelhado do wizard de Clientes (Pessoa Física) #}
+{% block step_content %}
+
+<!-- Alerta informativo (mesmo padrão) -->
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-id-card text-info me-3" style="font-size:1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-info">Identificação do Funcionário</h6>
+      <small class="text-muted">Preencha os dados básicos de identificação pessoal e documentos</small>
+    </div>
+  </div>
+</div>
+
+<!-- Seção: Dados Pessoais -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-user wizard-icon"></i>Dados Pessoais</h5>
+  <!-- Linha 1: Nome (6), CPF (3), RG (3) -->
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.nome_completo field_size='lg' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.cpf field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.rg field_size='sm' hide_help_text=True %}
+  </div>
+  <!-- Linha 2: Nascimento (3), Sexo (3), Estado Civil (3), Nacionalidade (3) -->
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.data_nascimento field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.sexo field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.estado_civil field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.nacionalidade field_size='sm' hide_help_text=True %}
+  </div>
+  <!-- Linha 3: Naturalidade (6), Órgão Emissor RG (3), Data Emissão RG (3) -->
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.naturalidade field_size='lg' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.rg_orgao_emissor field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.rg_data_emissao field_size='sm' hide_help_text=True %}
+  </div>
+</div>
+
+<!-- Seção: Filiação & Formação -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-user-friends wizard-icon"></i>Filiação & Formação</h5>
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.nome_mae field_size='lg' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.nome_pai field_size='lg' hide_help_text=True %}
+  </div>
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.profissao field_size='lg' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.escolaridade field_size='lg' hide_help_text=True %}
+  </div>
+</div>
+
+<!-- Seção: Documentos Trabalhistas -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-clipboard-check wizard-icon"></i>Documentos Trabalhistas</h5>
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.pis field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.ctps field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.titulo_eleitor field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.reservista field_size='sm' hide_help_text=True %}
+  </div>
+</div>
+
+<!-- Seção: Dependentes -->
+<div class="wizard-section">
+  <div class="d-flex align-items-center justify-content-between">
+    <h5 class="wizard-section-title mb-0"><i class="fas fa-users wizard-icon"></i>Dependentes</h5>
+    <button type="button" class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" id="btnAddDependente" data-bs-toggle="modal" data-bs-target="#modalDependente" data-bs-toggle="tooltip" data-bs-placement="left" title="Adicionar dependente" aria-label="Adicionar dependente" style="width:2rem;height:2rem;">
+      <i class="fas fa-plus"></i>
+    </button>
+  </div>
+  {% if forms.dependentes.dependentes_json %}
+    {% render_field forms.dependentes.dependentes_json class+="dependentes-json-field" style="display:none" %}
+  {% else %}
+    <input type="hidden" name="dependentes-dependentes_json" class="dependentes-json-field" value="[]" />
+  {% endif %}
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle" id="tabela-dependentes">
+      <thead class="table-light"><tr><th>Nome</th><th>CPF</th><th>Nascimento</th><th>Tipo</th><th>IR</th><th>SF</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <small class="text-muted">Gerencie dependentes usados em IR e salário família.</small>
+</div>
+
+<!-- Modal Dependente -->
+<div class="modal fade" id="modalDependente" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2"><h6 class="modal-title"><i class="fas fa-user-plus me-2"></i>Novo Dependente</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label small mb-0">Nome</label><input type="text" id="dep_nome" class="form-control form-control-sm" /></div>
+        <div class="row g-2 mb-2">
+          <div class="col-6"><label class="form-label small mb-0">CPF</label><input type="text" id="dep_cpf" class="form-control form-control-sm" /></div>
+          <div class="col-6"><label class="form-label small mb-0">Nascimento</label><input type="date" id="dep_nasc" class="form-control form-control-sm" /></div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label small mb-0">Tipo</label>
+            <select id="dep_tipo" class="form-select form-select-sm">
+              <option value="FILHO">Filho(a)</option>
+              <option value="CONJUGE">Cônjuge</option>
+              <option value="PAI">Pai</option>
+              <option value="MAE">Mãe</option>
+              <option value="OUTRO">Outro</option>
+            </select>
+          </div>
+          <div class="col-3 d-flex align-items-center">
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="dep_ir" checked><label class="form-check-label small" for="dep_ir">IR</label></div>
+          </div>
+          <div class="col-3 d-flex align-items-center">
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="dep_sf" checked><label class="form-check-label small" for="dep_sf">SF</label></div>
+          </div>
+        </div>
+        <div class="alert alert-light border small py-2" id="dep_info" style="display:none"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btnSalvarDependente">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Máscaras equivalentes (até futura unificação com máscaras globais do sistema)
+function maskValue(val, pattern){ let i=0; const v=val.replace(/\D/g,''); return pattern.replace(/#/g, _=> v[i++]||''); }
+function applyMask(id, pattern){ const el=document.getElementById(id); if(!el) return; el.addEventListener('input',()=>{ el.value=maskValue(el.value, pattern); }); }
+document.addEventListener('DOMContentLoaded', ()=> {
+  [
+    ['id_main_cpf','###.###.###-##'],
+    ['id_main_pis','###.#####.##-#'],
+    ['id_main_titulo_eleitor','############'],
+    ['id_main_reservista','############'],
+    ['id_main_ctps','###########'],
+    ['id_main_rg','####################']
+  ].forEach(([id,pattern])=>applyMask(id,pattern));
+
+  // Dependentes
+  const depField = document.querySelector('.dependentes-json-field');
+  let dependentes = [];
+  try { if(depField && depField.value) dependentes = JSON.parse(depField.value); } catch(e){ dependentes=[]; }
+  const tbody = document.querySelector('#tabela-dependentes tbody');
+  function sync(){ if(depField) depField.value = JSON.stringify(dependentes); }
+  function badge(v){return v?'<span class="badge bg-success">Sim</span>':'<span class="badge bg-secondary">Não</span>';}
+  function render(){ if(!tbody) return; tbody.innerHTML=''; if(!dependentes.length){ const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=7; td.className='text-muted text-center py-3'; td.textContent='Nenhum dependente adicionado.'; tr.appendChild(td); tbody.appendChild(tr); sync(); return;} dependentes.forEach((d,i)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${d.nome}</td><td>${d.cpf||''}</td><td>${d.data_nascimento||''}</td><td>${d.tipo}</td><td>${badge(d.ir)}</td><td>${badge(d.salario_familia)}</td><td class='text-end'><button type='button' class='btn btn-xs btn-outline-danger dep-rem' data-i='${i}'><i class='fas fa-trash'></i></button></td>`; tbody.appendChild(tr); }); sync(); }
+  try { if (window.bootstrap && typeof bootstrap.Tooltip === 'function') { document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el)); } } catch(_){ }
+  render();
+  document.addEventListener('click', e=>{ const btn=e.target.closest('.dep-rem'); if(btn){ const i=parseInt(btn.dataset.i); dependentes.splice(i,1); render(); }});
+  document.getElementById('btnSalvarDependente')?.addEventListener('click', ()=>{
+    const nome = document.getElementById('dep_nome').value.trim();
+    const cpf = document.getElementById('dep_cpf').value.trim();
+    const nasc = document.getElementById('dep_nasc').value;
+    const tipo = document.getElementById('dep_tipo').value;
+    const ir = document.getElementById('dep_ir').checked;
+    const sf = document.getElementById('dep_sf').checked;
+    if(!nome){ alert('Informe o nome'); return; }
+    if(!nasc){ alert('Informe a data de nascimento'); return; }
+    dependentes.push({nome, cpf, data_nascimento:nasc, tipo, ir, salario_familia:sf});
+    document.getElementById('dep_nome').value=''; document.getElementById('dep_cpf').value=''; document.getElementById('dep_nasc').value='';
+    render();
+    const modalEl=document.getElementById('modalDependente');
+    if(window.bootstrap){ const m=bootstrap.Modal.getInstance(modalEl); m?.hide(); }
+  });
+});
+</script>
+{% endblock %}

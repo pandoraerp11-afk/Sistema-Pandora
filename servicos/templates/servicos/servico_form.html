@@ -1,0 +1,569 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static i18n widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}{% trans "Editar Serviço" %}{% else %}{% trans "Novo Serviço" %}{% endif %}{% endblock %}
+{% block page_title %}{% if form.instance.pk %}{% trans "Editar Serviço" %}{% else %}{% trans "Cadastrar Serviço" %}{% endif %}{% endblock %}
+{% block page_subtitle %}{{ form.instance.nome_servico|default:_('Informe os dados do serviço') }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'plugins/select2/css/select2.min.css' %}">
+{% endblock %}
+
+{% block form_main %}
+  <form id="main-form" method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% block form_content %}
+    <div class="card shadow-sm mb-4" data-aos="fade-up">
+        <div class="card-header card-header-compact">
+            <h4 class="card-title mb-0">
+                <i class="fas fa-concierge-bell me-1"></i>
+                {% trans "Dados do Serviço" %}
+            </h4>
+        </div>
+        <div class="card-body card-body-compact">
+            {% include 'servicos/partials/servico_form_tab_dados_principais.html' %}
+        </div>
+    </div>
+
+    <div id="clientes-wrapper" class="card shadow-sm mb-4 d-none" data-aos="fade-up">
+        <div class="card-header card-header-compact d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-users me-1"></i>{% trans "Clientes" %}</h5>
+            <span class="badge bg-primary">OFERTADO</span>
+        </div>
+        <div class="card-body card-body-compact">
+            {% include 'servicos/partials/servico_form_tab_clientes.html' %}
+        </div>
+    </div>
+
+    <div id="fornecedores-wrapper" class="card shadow-sm mb-4 d-none" data-aos="fade-up">
+        <div class="card-header card-header-compact d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-truck me-1"></i>{% trans "Fornecedores" %}</h5>
+            <span class="badge bg-warning text-dark">RECEBIDO</span>
+        </div>
+        <div class="card-body card-body-compact">
+            {% include 'servicos/partials/servico_form_tab_fornecedores.html' %}
+        </div>
+    </div>
+
+    {% if form.instance.pk %}
+    <div class="card shadow-sm mb-4" data-aos="fade-up">
+        <div class="card-header card-header-compact">
+            <h5 class="mb-0"><i class="fas fa-images me-1"></i>{% trans "Imagens" %}</h5>
+        </div>
+        <div class="card-body card-body-compact">
+            {% include 'servicos/partials/servico_form_tab_imagens.html' %}
+        </div>
+    </div>
+    <div class="card shadow-sm mb-4" data-aos="fade-up">
+        <div class="card-header card-header-compact">
+            <h5 class="mb-0"><i class="fas fa-folder-open me-1"></i>{% trans "Documentos" %}</h5>
+        </div>
+        <div class="card-body card-body-compact">
+            {% include 'servicos/partials/servico_form_tab_documentos.html' %}
+        </div>
+    </div>
+    {% endif %}
+    {% endblock %}
+
+    {# Template para adicionar linhas no formset de fornecedores #}
+    <script type="text/html" id="fornecedor-form-template">
+        <div class="border rounded p-3 mb-3 position-relative fornecedor-row" id="fornecedores-row-__prefix__">
+            {{ fornecedores_formset.management_form }}
+            {% for hidden_field in fornecedores_formset.empty_form.hidden_fields %}{{ hidden_field }}{% endfor %}
+            <button type="button" class="btn btn-sm btn-danger remove-form-row position-absolute top-0 end-0 mt-2 me-2"><i class="fas fa-times"></i></button>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="id_fornecedores-__prefix__-fornecedor">{% trans "Fornecedor" %}</label>
+                    {% render_field fornecedores_formset.empty_form.fornecedor class="form-control" %}
+                </div>
+                <div class="col-md-3">
+                    <label for="id_fornecedores-__prefix__-preco_base_fornecedor">{% trans "Preço Base" %}</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        {% render_field fornecedores_formset.empty_form.preco_base_fornecedor class="form-control" %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="id_fornecedores-__prefix__-regra_cobranca_fornecedor">{% trans "Regra de Cobrança" %}</label>
+                    {% render_field fornecedores_formset.empty_form.regra_cobranca_fornecedor class="form-control" %}
+                </div>
+                <div class="col-md-3">
+                    <label for="id_fornecedores-__prefix__-codigo_fornecedor">{% trans "Cód. Fornecedor" %}</label>
+                    {% render_field fornecedores_formset.empty_form.codigo_fornecedor class="form-control" %}
+                </div>
+            </div>
+            <div class="d-none">{{ fornecedores_formset.empty_form.DELETE }}</div>
+        </div>
+  </script>
+  <div class="card shadow-sm mb-4">
+    <div class="card-body py-3 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+      <div class="text-muted small">
+        {% if form.instance.pk %}Editando serviço: <strong>{{ form.instance }}</strong>{% else %}Novo serviço{% endif %}
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'servicos:servico_ofertado_list' %}" class="btn btn-light">Cancelar</a>
+        <button type="submit" name="action" value="save_continue" class="btn btn-warning" title="Salvar e continuar editando">
+          <i class="fas fa-edit me-1"></i>Salvar & Continuar
+        </button>
+        <button type="submit" name="action" value="save_new" class="btn btn-secondary" title="Salvar e adicionar novo">
+          <i class="fas fa-plus me-1"></i>Salvar & Novo
+        </button>
+        <button type="submit" class="btn btn-success" title="Salvar">
+          <i class="fas fa-check me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block modals %}
+{{ block.super }}
+<!-- Modal Categoria (já existente) -->
+<div class="modal fade" id="modalCategoriaRapida" tabindex="-1" aria-labelledby="modalCategoriaRapidaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCategoriaRapidaLabel"><i class="fas fa-tags me-2"></i>Nova Categoria</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-categoria-rapida" novalidate>
+          <div class="mb-3">
+            <label class="form-label" for="id_categoria_rapida_nome">Nome</label>
+            <input type="text" id="id_categoria_rapida_nome" class="form-control" required maxlength="120" placeholder="Ex: Manutenção" />
+            <div class="invalid-feedback">Informe um nome.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="id_categoria_rapida_descricao">Descrição (Opcional)</label>
+            <textarea id="id_categoria_rapida_descricao" class="form-control" rows="2" placeholder="Resumo"></textarea>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="id_categoria_rapida_ativo" checked>
+            <label class="form-check-label" for="id_categoria_rapida_ativo">Ativo</label>
+          </div>
+          <div id="categoria-rapida-alert" class="alert alert-danger py-2 px-3 d-none small"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-salvar-categoria-rapida">
+          <i class="fas fa-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal Regra de Cobrança Rápida -->
+<div class="modal fade" id="modalRegraCobrancaRapida" tabindex="-1" aria-labelledby="modalRegraCobrancaRapidaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalRegraCobrancaRapidaLabel"><i class="fas fa-calculator me-2"></i>Nova Regra de Cobrança</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-regra-cobranca-rapida" novalidate>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="id_regra_nome">Nome da Regra</label>
+              <input type="text" id="id_regra_nome" class="form-control" required placeholder="Ex: Valor Fixo" maxlength="100">
+              <div class="invalid-feedback">Informe um nome.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="id_regra_tipo_calculo">Tipo de Cálculo</label>
+              <select id="id_regra_tipo_calculo" class="form-select" required>
+                <option value="fixo">Valor Fixo</option>
+                <option value="unidade" selected>Por Unidade</option>
+                <option value="personalizado">Fórmula Personalizada</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="id_regra_descricao">Descrição</label>
+              <textarea id="id_regra_descricao" class="form-control" rows="2" placeholder="Opcional"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="id_regra_unidade_medida">Unidade de Medida</label>
+              <select id="id_regra_unidade_medida" class="form-select" required></select>
+              <div class="invalid-feedback">Selecione.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="id_regra_valor_base">Valor Base</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                <input type="number" step="0.01" min="0" id="id_regra_valor_base" class="form-control" required value="0">
+              </div>
+              <div class="invalid-feedback">Informe valor.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="id_regra_valor_minimo">Valor Mínimo (Opcional)</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                <input type="number" step="0.01" min="0" id="id_regra_valor_minimo" class="form-control" value="0">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="id_regra_incremento">Incremento Padrão</label>
+              <input type="number" step="0.01" min="0" id="id_regra_incremento" class="form-control" value="1" required>
+              <div class="invalid-feedback">Informe incremento.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="id_regra_taxa_adicional">Taxa Adicional (%)</label>
+              <input type="number" step="0.01" min="0" id="id_regra_taxa_adicional" class="form-control" value="0">
+            </div>
+            <div class="col-md-12 d-none" id="formula-wrapper">
+              <label class="form-label" for="id_regra_formula">Fórmula Personalizada</label>
+              <textarea id="id_regra_formula" class="form-control" rows="2" placeholder="Use Q para quantidade. Ex: (Q * valor_base) + (Q/10 * taxa_adicional)"></textarea>
+              <small class="text-muted">Apenas quando Tipo de Cálculo = Fórmula Personalizada.</small>
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input" id="id_regra_ativo" checked>
+                <label class="form-check-label" for="id_regra_ativo">Ativo</label>
+              </div>
+            </div>
+          </div>
+          <div id="regra-cobranca-alert" class="alert alert-danger py-2 px-3 d-none small mt-3"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-salvar-regra-cobranca"><i class="fas fa-save me-1"></i>Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+  </form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
+<script>
+$(function() {
+    $('.select2').select2({ theme:'bootstrap-5', language:'pt-BR', width:'100%' });
+
+    // Garante grid 8/4 como produto_form adicionando col-lg-8 na primeira coluna principal
+    const mainCol = document.querySelector('.form-container form > .row > .col-12:not(.col-lg-4)');
+    if(mainCol && !mainCol.classList.contains('col-lg-8')) { mainCol.classList.add('col-lg-8'); }
+
+    const tipoServicoSelect = $('#id_tipo_servico');
+    const clientesWrapper = $('#clientes-wrapper');
+    const fornecedoresWrapper = $('#fornecedores-wrapper');
+
+    function atualizarVisibilidade() {
+        const tipo = tipoServicoSelect.val();
+        if (tipo === 'RECEBIDO') {
+            fornecedoresWrapper.removeClass('d-none');
+            clientesWrapper.addClass('d-none');
+        } else { // OFERTADO
+            clientesWrapper.removeClass('d-none');
+            fornecedoresWrapper.addClass('d-none');
+        }
+    }
+    atualizarVisibilidade();
+    tipoServicoSelect.on('change', atualizarVisibilidade);
+    if ({{ form.instance.pk|yesno:"true,false" }}) { tipoServicoSelect.prop('disabled', true); }
+
+    function addFormsetRow(prefix) {
+        const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+        const idx = parseInt(totalForms.value);
+        const template = document.getElementById('fornecedor-form-template').innerHTML.replace(/__prefix__/g, idx);
+        $(`#${prefix}-list`).append(template);
+        totalForms.value = idx + 1;
+        $(`#id_${prefix}-${idx}-fornecedor`).select2({ theme:'bootstrap-5', language:'pt-BR', width:'100%' });
+        $(`#id_${prefix}-${idx}-regra_cobranca_fornecedor`).select2({ theme:'bootstrap-5', language:'pt-BR', width:'100%' });
+    }
+    $('#add-fornecedor-row').on('click', () => addFormsetRow('fornecedores'));
+    $(document).on('click','.remove-form-row',function(){ const row=$(this).closest('.fornecedor-row'); row.find('input[type="checkbox"][name$="-DELETE"]').prop('checked',true); row.hide(); });
+
+    // RESUMO DINÂMICO
+    function updateResumo(){
+        $('#resumo-nome').text($('#id_nome_servico').val()||'-');
+        $('#resumo-tipo').text($('#id_tipo_servico option:selected').text()||'-');
+        $('#resumo-categoria').text($('#id_categoria option:selected').text()||'-');
+        const preco = $('#id_preco_base').val();
+        $('#resumo-preco').text(preco? ('R$ '+preco):'-');
+        const ativo = $('#id_ativo').is(':checked');
+        $('#badge-status').toggleClass('bg-success bg-danger');
+        $('#badge-status').removeClass(ativo? 'bg-danger':'bg-success').addClass(ativo?'bg-success':'bg-danger').text(ativo?'Ativo':'Inativo');
+    }
+    $('#id_nome_servico,#id_preco_base').on('input',updateResumo);
+    $('#id_tipo_servico,#id_categoria,#id_ativo').on('change',updateResumo);
+    updateResumo();
+
+  // Toggle clínico
+  const isClinicalInput = document.getElementById('id_is_clinical');
+  const blocoClinico = document.getElementById('bloco-clinico');
+  function toggleClinico(){
+    if(!isClinicalInput || !blocoClinico) return;
+    if(isClinicalInput.checked){ blocoClinico.classList.remove('d-none'); }
+    else { blocoClinico.classList.add('d-none'); }
+  }
+  if(isClinicalInput){
+    isClinicalInput.addEventListener('change', toggleClinico);
+    toggleClinico();
+  }
+  // Validação básica antes de submit se clínico
+  const mainForm = document.getElementById('main-form');
+  if(mainForm){
+    mainForm.addEventListener('submit', function(e){
+      if(isClinicalInput && isClinicalInput.checked){
+        const durField = document.getElementById('id_clinico-duracao_estimada');
+        if(durField && !durField.value){
+          e.preventDefault();
+          durField.classList.add('is-invalid');
+          const fb = document.createElement('div');
+          fb.className='invalid-feedback d-block';
+          fb.innerText='Informe a duração estimada.';
+          if(!durField.parentNode.querySelector('.invalid-feedback')) durField.parentNode.appendChild(fb);
+          durField.focus();
+        }
+      }
+    });
+  }
+});
+</script>
+<script>
+// Criação rápida de categoria (modal global) com fallback robusto semelhante ao wizard endereço
+(function(){
+  document.addEventListener('DOMContentLoaded', function(){
+    const modalEl = document.getElementById('modalCategoriaRapida');
+    if(!modalEl) return; // segurança
+    const nomeInput = document.getElementById('id_categoria_rapida_nome');
+    const descInput = document.getElementById('id_categoria_rapida_descricao');
+    const ativoInput = document.getElementById('id_categoria_rapida_ativo');
+    const alertBox = document.getElementById('categoria-rapida-alert');
+    const saveBtn = document.getElementById('btn-salvar-categoria-rapida');
+    const selectCategoria = document.getElementById('id_categoria');
+    let bsModal = null;
+    let manualBackdrop = null;
+
+    function ensureInstance(){
+      if(window.bootstrap && !bsModal){
+        try { bsModal = bootstrap.Modal.getOrCreateInstance(modalEl, {backdrop:true, keyboard:true}); } catch(_) {}
+      }
+    }
+
+    function removeManualBackdrop(){
+      if(manualBackdrop){ try { manualBackdrop.remove(); } catch(_) {} manualBackdrop = null; }
+      document.body.classList.remove('modal-open');
+    }
+
+    function showFallback(){
+      modalEl.classList.add('show');
+      modalEl.style.display='block';
+      modalEl.removeAttribute('aria-hidden');
+      modalEl.setAttribute('aria-modal','true');
+      if(!manualBackdrop){
+        manualBackdrop = document.createElement('div');
+        manualBackdrop.className='modal-backdrop fade show';
+        manualBackdrop.addEventListener('click', hideModal);
+        document.body.appendChild(manualBackdrop);
+      }
+      document.body.classList.add('modal-open');
+    }
+
+    function hideFallback(){
+      modalEl.classList.remove('show');
+      modalEl.style.display='none';
+      modalEl.setAttribute('aria-hidden','true');
+      modalEl.removeAttribute('aria-modal');
+      removeManualBackdrop();
+    }
+
+    function showModal(){
+      ensureInstance();
+      if(bsModal){ bsModal.show(); }
+      else { showFallback(); }
+    }
+    function hideModal(){
+      if(bsModal){ bsModal.hide(); setTimeout(()=>cleanupBackdrops(),400); }
+      else { hideFallback(); }
+    }
+
+    function cleanupBackdrops(){
+      // Remove possíveis backdrops órfãos
+      document.querySelectorAll('.modal-backdrop').forEach(b=>{ if(!modalEl.classList.contains('show')) b.remove(); });
+      if(!document.querySelector('.modal.show')) document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }
+
+    function resetForm(){
+      if(nomeInput){ nomeInput.value=''; nomeInput.classList.remove('is-invalid'); }
+      if(descInput) descInput.value='';
+      if(ativoInput) ativoInput.checked=true;
+      if(alertBox){ alertBox.classList.add('d-none'); alertBox.textContent=''; }
+    }
+
+    // Escuta abertura via botão (delegated por já existir no HTML inline)
+    modalEl.addEventListener('show.bs.modal', resetForm);
+    // Fallback: se for aberto sem bootstrap (por atributo), reset manual ao clicar no trigger
+    document.querySelectorAll('[data-bs-target="#modalCategoriaRapida"]').forEach(btn=>{
+      btn.addEventListener('click', function(){ if(!window.bootstrap) { resetForm(); showModal(); } });
+    });
+
+    function setError(msg){ if(!alertBox) return; alertBox.textContent = msg||''; alertBox.classList.toggle('d-none', !msg); }
+
+    async function criarCategoria(){
+      setError('');
+      if(!selectCategoria || !nomeInput) return;
+      const nome = nomeInput.value.trim();
+      if(!nome){ nomeInput.classList.add('is-invalid'); return; } else nomeInput.classList.remove('is-invalid');
+      saveBtn.disabled=true; const oldLabel=saveBtn.innerHTML; saveBtn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Salvando';
+      try {
+        const csrf = (document.querySelector('input[name=csrfmiddlewaretoken]')||{}).value;
+        const resp = await fetch('{% url "servicos:categoria_create_ajax" %}', {
+          method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+          body: JSON.stringify({nome:nome, descricao: (descInput?descInput.value:''), ativo: !!(ativoInput && ativoInput.checked)})
+        });
+        const data = await resp.json().catch(()=>({success:false,error:'Resposta inválida'}));
+        if(!resp.ok || !data.success){ setError(data.error || ('Erro '+resp.status)); }
+        else {
+          // Evita duplicado se já existir opção com mesmo id
+          let opt = [...selectCategoria.options].find(o=>String(o.value)===String(data.id));
+          if(!opt){ opt=document.createElement('option'); opt.value=data.id; opt.textContent=data.nome; selectCategoria.appendChild(opt); }
+          opt.selected=true;
+          selectCategoria.dispatchEvent(new Event('change'));
+          hideModal();
+        }
+      } catch(e){ setError(e.message || 'Falha inesperada'); }
+      finally { saveBtn.disabled=false; saveBtn.innerHTML=oldLabel; }
+    }
+    if(saveBtn) saveBtn.addEventListener('click', criarCategoria);
+    if(nomeInput) nomeInput.addEventListener('keypress', e=>{ if(e.key==='Enter'){ e.preventDefault(); criarCategoria(); }});
+
+    // Fallback ESC
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ cleanupBackdrops(); } });
+    // Ao esconder, limpar resíduos
+    modalEl.addEventListener('hidden.bs.modal', ()=>{ cleanupBackdrops(); resetForm(); });
+  });
+})();
+</script>
+<script>
+// Quick create Regra de Cobrança
+(function(){
+  document.addEventListener('DOMContentLoaded', function(){
+    const modalEl = document.getElementById('modalRegraCobrancaRapida');
+    if(!modalEl) return;
+    const ids = (id)=>document.getElementById(id);
+    const nome = ids('id_regra_nome');
+    const tipo = ids('id_regra_tipo_calculo');
+    const desc = ids('id_regra_descricao');
+    const und = ids('id_regra_unidade_medida');
+    const vbase = ids('id_regra_valor_base');
+    const vmin = ids('id_regra_valor_minimo');
+    const incr = ids('id_regra_incremento');
+    const taxa = ids('id_regra_taxa_adicional');
+    const formula = ids('id_regra_formula');
+    const ativo = ids('id_regra_ativo');
+    const formulaWrapper = document.getElementById('formula-wrapper');
+    const alertBox = document.getElementById('regra-cobranca-alert');
+    const saveBtn = document.getElementById('btn-salvar-regra-cobranca');
+    const selectRegra = document.getElementById('id_regra_cobranca');
+    // Preencher unidades de medida via endpoint
+    async function carregarUnidades(){
+      if(!und) return;
+      if(und.options.length>0) return; // já carregado
+      try {
+        const resp = await fetch('{% url "servicos:unidades_medida_options" %}');
+        const data = await resp.json();
+        (data.results||[]).forEach(item=>{
+          const opt=document.createElement('option');
+          opt.value=item.id; opt.textContent=item.text; und.appendChild(opt);
+        });
+      } catch(_) {}
+    }
+    carregarUnidades();
+
+    function toggleFormula(){
+      if(tipo.value==='personalizado') formulaWrapper.classList.remove('d-none'); else formulaWrapper.classList.add('d-none');
+    }
+    tipo.addEventListener('change', toggleFormula); toggleFormula();
+
+    function setError(msg){ if(!alertBox) return; alertBox.textContent=msg||''; alertBox.classList.toggle('d-none', !msg); }
+    function reset(){ [nome,desc,vbase,vmin,incr,taxa,formula].forEach(i=>{ if(i) i.value = (i===vbase||i===incr)?'0': (i===vmin||i===taxa)?'0':''); }); vbase.value='0'; incr.value='1'; vmin.value='0'; taxa.value='0'; if(ativo) ativo.checked=true; setError(''); nome?.classList.remove('is-invalid'); }
+    modalEl.addEventListener('show.bs.modal', reset);
+
+    async function criarRegra(){
+      setError('');
+      if(!nome.value.trim()){ nome.classList.add('is-invalid'); return; } else nome.classList.remove('is-invalid');
+      if(!selectRegra){ setError('Select de regras não encontrado.'); return; }
+      saveBtn.disabled=true; const old=saveBtn.innerHTML; saveBtn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Salvando';
+      try {
+        const csrf=(document.querySelector('input[name=csrfmiddlewaretoken]')||{}).value;
+        const payload={
+          nome: nome.value.trim(),
+          descricao: desc.value.trim(),
+          unidade_medida: und.value||null,
+          valor_base: vbase.value||'0',
+            valor_minimo: vmin.value||'0',
+            incremento: incr.value||'1',
+            taxa_adicional: taxa.value||'0',
+            tipo_calculo: tipo.value,
+            formula_personalizada: formula.value.trim(),
+            ativo: !!(ativo && ativo.checked)
+        };
+        const resp = await fetch('{% url "servicos:regra_cobranca_create_ajax" %}', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body: JSON.stringify(payload)});
+        const data = await resp.json().catch(()=>({success:false,error:'Resposta inválida'}));
+        if(!resp.ok || !data.success) setError(data.error || ('Erro '+resp.status)); else {
+          let opt=[...selectRegra.options].find(o=>String(o.value)===String(data.id));
+          if(!opt){ opt=document.createElement('option'); opt.value=data.id; opt.textContent=data.nome; selectRegra.appendChild(opt); }
+          opt.selected=true; selectRegra.dispatchEvent(new Event('change'));
+          const modalInst = window.bootstrap? bootstrap.Modal.getInstance(modalEl): null; if(modalInst) modalInst.hide();
+        }
+      } catch(e){ setError(e.message||'Falha inesperada'); }
+      finally { saveBtn.disabled=false; saveBtn.innerHTML=old; }
+    }
+    saveBtn.addEventListener('click', criarRegra);
+    nome.addEventListener('keypress', e=>{ if(e.key==='Enter'){ e.preventDefault(); criarRegra(); }});
+  });
+})();
+</script>
+{% endblock %}
+
+{% block form_sidebar %}
+<div class="sidebar-widgets">
+    <div class="card shadow-sm mb-3" data-aos="fade-left" data-aos-delay="60">
+        <div class="card-header card-header-compact bg-secondary text-white py-2">
+            <h6 class="mb-0 text-uppercase small fw-bold"><i class="fas fa-eye me-1"></i>Resumo</h6>
+        </div>
+        <div class="card-body card-body-compact small py-2">
+            <div class="text-uppercase text-muted small mb-1">Nome</div>
+            <div class="fw-semibold mb-2" id="resumo-nome">-</div>
+            <div class="text-uppercase text-muted small mb-1">Tipo</div>
+            <div class="mb-2" id="resumo-tipo">-</div>
+            <div class="text-uppercase text-muted small mb-1">Categoria</div>
+            <div class="mb-2" id="resumo-categoria">-</div>
+            <div class="text-uppercase text-muted small mb-1">Preço Base</div>
+            <div class="mb-2" id="resumo-preco">-</div>
+            <span class="badge bg-secondary" id="badge-status">-</span>
+        </div>
+    </div>
+    <div class="card shadow-sm mb-3" data-aos="fade-left" data-aos-delay="90">
+        <div class="card-header card-header-compact py-2">
+            <h6 class="mb-0 text-uppercase small fw-bold"><i class="fas fa-toggle-on me-1"></i>Status</h6>
+        </div>
+        <div class="card-body card-body-compact py-3">
+            <div class="form-check form-switch">
+                {% render_field form.ativo class="form-check-input" %}
+                <label class="form-check-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+            </div>
+            {% for error in form.ativo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+    </div>
+    {% if form.descricao_curta %}
+    <div class="card shadow-sm mb-3" data-aos="fade-left" data-aos-delay="120">
+        <div class="card-header card-header-compact bg-info text-white py-2">
+            <h6 class="mb-0 text-uppercase small fw-bold"><i class="fas fa-lightbulb me-1"></i>Dicas</h6>
+        </div>
+        <div class="card-body card-body-compact small py-2">
+            <ul class="list-unstyled mb-0">
+                <li class="mb-1"><i class="fas fa-check text-success me-1"></i>Defina claramente tipo e categoria.</li>
+                <li class="mb-1"><i class="fas fa-check text-success me-1"></i>Use descrição curta objetiva.</li>
+                <li class="mb-1"><i class="fas fa-check text-success me-1"></i>Preço base é referência (contratado).</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

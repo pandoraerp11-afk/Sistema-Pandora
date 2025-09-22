@@ -1,0 +1,25 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-2 text-gray-800">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Foto de Evolução</h1>
+    <p class="mb-4">Preencha os dados da foto de evolução.</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Formulário de Foto de Evolução</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a href="{% url 'prontuarios:fotos_evolucao_list' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

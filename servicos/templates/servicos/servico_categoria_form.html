@@ -1,0 +1,71 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static i18n widget_tweaks %}
+
+{% block title %}{% if object %}{% trans "Editar Categoria" %}{% else %}{% trans "Nova Categoria de Serviço" %}{% endif %}{% endblock %}
+{% block page_title %}{% if object %}{% trans "Editar Categoria" %}{% else %}{% trans "Adicionar Categoria" %}{% endif %}{% endblock %}
+{% block page_subtitle %}{{ object.nome|default:_('Informe os dados da categoria') }}{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{% if object %}{% trans "Editar Categoria" %}{% else %}{% trans "Adicionar Nova Categoria" %}{% endif %}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Início" %}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'servicos:categoria_list' %}">{% trans "Categorias" %}</a></li>
+                    <li class="breadcrumb-item active">{% if object %}{{ object.nome }}{% else %}{% trans "Nova" %}{% endif %}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block form_main %}
+    {% block form_content %}
+    <div class="card card-primary card-outline" data-aos="fade-up">
+        <div class="card-header">
+            <h3 class="card-title">{% trans "Dados da Categoria" %}</h3>
+        </div>
+        <div class="card-body">
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}</label>
+                    {% render_field form.nome class+="form-control" placeholder=form.nome.label %}
+                    {% for error in form.nome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.slug.id_for_label }}" class="form-label">{{ form.slug.label }}</label>
+                    {% render_field form.slug class+="form-control" %}
+                    <small class="form-text text-muted">{{ form.slug.help_text }}</small>
+                    {% for error in form.slug.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <label for="{{ form.descricao.id_for_label }}" class="form-label">{{ form.descricao.label }}</label>
+                    {% render_field form.descricao class+="form-control" rows="4" %}
+                    {% for error in form.descricao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        {% render_field form.ativo class+="form-check-input" %}
+                        <label class="form-check-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+            <a href="{% url 'servicos:categoria_list' %}" class="btn btn-secondary btn-sm">{% trans "Cancelar" %}</a>
+            <button type="submit" form="main-form" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i> {% trans "Salvar" %}</button>
+        </div>
+    </div>
+    {% endblock %}
+{% endblock %}

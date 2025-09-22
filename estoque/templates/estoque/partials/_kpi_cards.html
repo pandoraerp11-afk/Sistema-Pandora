@@ -1,0 +1,95 @@
+{# Partial para cards de KPI #}
+{% load i18n %}
+
+<div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+    <div class="col-lg-3 col-md-6">
+        {% include 'estoque/partials/_stat_card.html' with icon='cubes' title='Produtos em Estoque' value=kpis.total_produtos|default:0 color='primary' %}
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        {% include 'estoque/partials/_stat_card.html' with icon='dollar-sign' title='Valor Total' value=kpis.valor_total|floatformat:2|default:'0,00' prefix='R$ ' color='success' %}
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        {% include 'estoque/partials/_stat_card.html' with icon='exclamation-triangle' title='Estoque Baixo' value=kpis.produtos_baixo_estoque|default:0 color='warning' %}
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        {% include 'estoque/partials/_stat_card.html' with icon='hand-holding' title='Reservas Ativas' value=kpis.reservas_ativas|default:0 color='info' %}
+    </div>
+</div>
+
+{# Segunda linha de KPIs #}
+<div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="150">
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="mini-stat-card bg-gradient-success text-white">
+            <div class="mini-stat-icon">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="mini-stat-content">
+                <h4>{{ kpis.entradas_mes|default:0 }}</h4>
+                <p>Entradas do Mês</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="mini-stat-card bg-gradient-danger text-white">
+            <div class="mini-stat-icon">
+                <i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="mini-stat-content">
+                <h4>{{ kpis.saidas_mes|default:0 }}</h4>
+                <p>Saídas do Mês</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="mini-stat-card bg-gradient-info text-white">
+            <div class="mini-stat-icon">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
+            <div class="mini-stat-content">
+                <h4>{{ kpis.transferencias_mes|default:0 }}</h4>
+                <p>Transferências</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="mini-stat-card bg-gradient-warning text-white">
+            <div class="mini-stat-icon">
+                <i class="fas fa-shipping-fast"></i>
+            </div>
+            <div class="mini-stat-content">
+                <h4>{{ kpis.picking_pendentes|default:0 }}</h4>
+                <p>Picking Pendentes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="mini-stat-card bg-gradient-secondary text-white">
+            <div class="mini-stat-icon">
+                <i class="fas fa-warehouse"></i>
+            </div>
+            <div class="mini-stat-content">
+                <h4>{{ kpis.depositos_ativos|default:0 }}</h4>
+                <p>Depósitos</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="mini-stat-card bg-gradient-dark text-white">
+            <div class="mini-stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="mini-stat-content">
+                <h4>{{ kpis.giro_medio|floatformat:1|default:'0.0' }}</h4>
+                <p>Giro Médio</p>
+            </div>
+        </div>
+    </div>
+</div>

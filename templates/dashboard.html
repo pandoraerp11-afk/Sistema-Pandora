@@ -1,0 +1,195 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+{% load humanize %}
+
+{% block dashboard_title %}🏢 Dashboard do Sistema{% endblock %}
+{% block dashboard_subtitle %}
+    {% if tenant %}
+        Visão geral da empresa {{ tenant.nome_razao_social }}
+    {% else %}
+        Visão geral global do sistema - Superusuário
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item active" aria-current="page">{% trans "Dashboard" %}</li>
+{% endblock breadcrumbs %}
+
+{% block dashboard_widgets %}
+    {% if tenant %}
+        <!-- Widgets de Visão Geral da Empresa -->
+        <div class="grid-stack-item" gs-w="3" gs-h="2" gs-id="empresa_info">
+            <div class="grid-stack-item-content">
+                <div class="widget widget-metric">
+                    <div class="metric-card h-100">
+                        <div class="metric-icon bg-primary"><i class="fas fa-building"></i></div>
+                        <h3 class="metric-value">{{ tenant.nome_razao_social|truncatechars:20 }}</h3>
+                        <p class="metric-label">Empresa Ativa</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Widget para Superusuário sem empresa -->
+        <div class="grid-stack-item" gs-w="3" gs-h="2" gs-id="superuser_info">
+            <div class="grid-stack-item-content">
+                <div class="widget widget-metric">
+                    <div class="metric-card h-100">
+                        <div class="metric-icon bg-warning"><i class="fas fa-crown"></i></div>
+                        <h3 class="metric-value">Superusuário</h3>
+                        <p class="metric-label">Acesso Global</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Acesso Rápido aos Módulos -->
+    <div class="grid-stack-item" gs-w="12" gs-h="6" gs-id="modulos_rapidos">
+        <div class="grid-stack-item-content">
+            <div class="widget">
+                <div class="widget-header">
+                    <h5 class="widget-title"><i class="fas fa-th-large me-2"></i>Acesso Rápido aos Módulos</h5>
+                </div>
+                <div class="widget-body">
+                    <div class="row g-3">
+                        <!-- Módulos Principais -->
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-users fs-1 mb-2"></i>
+                                <span>Clientes</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-success w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-building fs-1 mb-2"></i>
+                                <span>Obras</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-warning w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-chart-line fs-1 mb-2"></i>
+                                <span>Financeiro</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-info w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-warehouse fs-1 mb-2"></i>
+                                <span>Estoque</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-id-badge fs-1 mb-2"></i>
+                                <span>Funcionários</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-danger w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-truck fs-1 mb-2"></i>
+                                <span>Fornecedores</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-dark w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-box-open fs-1 mb-2"></i>
+                                <span>Produtos</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="#" class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center">
+                                <i class="fas fa-calculator fs-1 mb-2"></i>
+                                <span>Orçamentos</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget de Informações da Empresa -->
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-id="empresa_detalhes">
+        <div class="grid-stack-item-content">
+            <div class="widget">
+                <div class="widget-header">
+                    <h5 class="widget-title">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% if tenant %}Informações da Empresa{% else %}Acesso Superusuário{% endif %}
+                    </h5>
+                </div>
+                <div class="widget-body">
+                    <div class="row">
+                        <div class="col-12">
+                            {% if tenant %}
+                                <p><strong>Razão Social:</strong> {{ tenant.nome_razao_social }}</p>
+                                <p><strong>Tipo:</strong> {{ tenant.get_tipo_display }}</p>
+                                <p><strong>Status:</strong> 
+                                    <span class="badge bg-{% if tenant.status == 'active' %}success{% else %}warning{% endif %}">
+                                        {{ tenant.get_status_display }}
+                                    </span>
+                                </p>
+                                {% if tenant.cnpj %}
+                                <p><strong>CNPJ:</strong> {{ tenant.cnpj }}</p>
+                                {% endif %}
+                                {% if tenant.cpf %}
+                                <p><strong>CPF:</strong> {{ tenant.cpf }}</p>
+                                {% endif %}
+                            {% else %}
+                                <p><strong>Usuário:</strong> {{ user.get_full_name|default:user.username }}</p>
+                                <p><strong>Nível:</strong> <span class="badge bg-warning">Superusuário</span></p>
+                                <p><strong>Acesso:</strong> Global a todo o sistema</p>
+                                <hr>
+                                <p><i class="fas fa-info-circle text-info"></i> Você pode acessar qualquer empresa ou gerenciar o sistema globalmente.</p>
+                                <a href="{% url 'core:core_home' %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-crown me-1"></i>Dashboard do Módulo CORE
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget de Ações Rápidas -->
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-id="acoes_rapidas">
+        <div class="grid-stack-item-content">
+            <div class="widget">
+                <div class="widget-header">
+                    <h5 class="widget-title"><i class="fas fa-bolt me-2"></i>Ações Rápidas</h5>
+                </div>
+                <div class="widget-body">
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Novo Cliente
+                        </a>
+                        <a href="#" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Nova Obra
+                        </a>
+                        <a href="#" class="btn btn-warning">
+                            <i class="fas fa-plus me-2"></i>Novo Orçamento
+                        </a>
+                        <a href="#" class="btn btn-info">
+                            <i class="fas fa-plus me-2"></i>Novo Produto
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block dashboard_extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Inicializa o GridStack
+    const grid = GridStack.init({
+        cellHeight: 80,
+        margin: 15,
+        disableResize: true,
+        disableDrag: false,
+    });
+});
+</script>
+{% endblock %}

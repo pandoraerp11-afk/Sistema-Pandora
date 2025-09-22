@@ -1,0 +1,606 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Problemas de Código - Agente de IA{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'ai_auditor:dashboard' %}">Agente de IA</a></li>
+        <li class="breadcrumb-item active">Problemas de Código</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .issue-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .issue-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .issue-severity {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        border-radius: 16px 0 0 16px;
+    }
+    
+    .severity-critical { background: #dc2626; }
+    .severity-high { background: #ea580c; }
+    .severity-medium { background: #d97706; }
+    .severity-low { background: #65a30d; }
+    
+    .issue-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        padding-left: 16px;
+    }
+    
+    .issue-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 8px;
+    }
+    
+    .issue-meta {
+        display: flex;
+        gap: 16px;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .issue-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .issue-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-severity {
+        color: white;
+    }
+    
+    .badge-critical { background: #dc2626; }
+    .badge-high { background: #ea580c; }
+    .badge-medium { background: #d97706; }
+    .badge-low { background: #65a30d; }
+    
+    .badge-type {
+        background: #e5e7eb;
+        color: #6b7280;
+    }
+    
+    .badge-security { background: #fef2f2; color: #dc2626; }
+    .badge-performance { background: #fef3c7; color: #d97706; }
+    .badge-quality { background: #f0f9ff; color: #0284c7; }
+    .badge-documentation { background: #f0fdf4; color: #16a34a; }
+    .badge-testing { background: #fdf4ff; color: #a21caf; }
+    .badge-style { background: #f8fafc; color: #475569; }
+    .badge-complexity { background: #fee2e2; color: #dc2626; }
+    .badge-duplication { background: #fef3c7; color: #ca8a04; }
+    
+    .badge-status {
+        font-weight: 600;
+    }
+    
+    .status-open { background: #fee2e2; color: #dc2626; }
+    .status-in_progress { background: #fef3c7; color: #d97706; }
+    .status-fixed { background: #dcfce7; color: #16a34a; }
+    .status-ignored { background: #f3f4f6; color: #6b7280; }
+    .status-false_positive { background: #e5e7eb; color: #374151; }
+    
+    .issue-description {
+        color: #4b5563;
+        line-height: 1.6;
+        margin-bottom: 16px;
+        padding-left: 16px;
+    }
+    
+    .issue-recommendation {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        margin-left: 16px;
+        margin-right: 16px;
+    }
+    
+    .issue-recommendation h6 {
+        color: #0284c7;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .issue-recommendation p {
+        color: #0369a1;
+        margin: 0;
+    }
+    
+    .code-snippet {
+        background: #1f2937;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 16px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+    }
+    
+    .code-snippet pre {
+        color: #e5e7eb;
+        margin: 0;
+        white-space: pre-wrap;
+    }
+    
+    .code-snippet .line-number {
+        color: #6b7280;
+        margin-right: 16px;
+        user-select: none;
+    }
+    
+    .suggested-fix {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 16px;
+    }
+    
+    .suggested-fix h6 {
+        color: #16a34a;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .suggested-fix pre {
+        background: #dcfce7;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 0;
+        color: #166534;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+    }
+    
+    .issue-actions {
+        display: flex;
+        gap: 8px;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+    
+    .btn-issue {
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-issue-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-issue-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-issue-success {
+        background: #10b981;
+        color: white;
+    }
+    
+    .btn-issue-success:hover {
+        background: #059669;
+        color: white;
+    }
+    
+    .btn-issue-secondary {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+    
+    .btn-issue-secondary:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    
+    .auto-fixable {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: #10b981;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .file-path {
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.875rem;
+        color: #6b7280;
+        background: #f9fafb;
+        padding: 4px 8px;
+        border-radius: 6px;
+        margin-right: 8px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        color: #d1d5db;
+    }
+    
+    .stats-bar {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+        border: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-around;
+        text-align: center;
+    }
+    
+    .stat-item {
+        flex: 1;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block filter_form %}
+<div class="row g-3">
+    <div class="col-md-3">
+        <input type="text" class="form-control" name="search" placeholder="Buscar problemas..." value="{{ request.GET.search }}">
+    </div>
+    <div class="col-md-2">
+        <select name="severity" class="form-select">
+            <option value="">Severidade</option>
+            <option value="critical" {% if request.GET.severity == 'critical' %}selected{% endif %}>Crítico</option>
+            <option value="high" {% if request.GET.severity == 'high' %}selected{% endif %}>Alto</option>
+            <option value="medium" {% if request.GET.severity == 'medium' %}selected{% endif %}>Médio</option>
+            <option value="low" {% if request.GET.severity == 'low' %}selected{% endif %}>Baixo</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="issue_type" class="form-select">
+            <option value="">Tipo</option>
+            <option value="security" {% if request.GET.issue_type == 'security' %}selected{% endif %}>Segurança</option>
+            <option value="performance" {% if request.GET.issue_type == 'performance' %}selected{% endif %}>Performance</option>
+            <option value="quality" {% if request.GET.issue_type == 'quality' %}selected{% endif %}>Qualidade</option>
+            <option value="testing" {% if request.GET.issue_type == 'testing' %}selected{% endif %}>Testes</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="status" class="form-select">
+            <option value="">Status</option>
+            <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Aberto</option>
+            <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>Em Andamento</option>
+            <option value="fixed" {% if request.GET.status == 'fixed' %}selected{% endif %}>Corrigido</option>
+            <option value="ignored" {% if request.GET.status == 'ignored' %}selected{% endif %}>Ignorado</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="app_name" class="form-select">
+            <option value="">Aplicação</option>
+            {% for app in apps %}
+            <option value="{{ app }}" {% if request.GET.app_name == app %}selected{% endif %}>{{ app }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-1">
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-search"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block action_buttons %}
+<a href="{% url 'ai_auditor:execute_audit' %}" class="btn btn-primary">
+    <i class="fas fa-play"></i>
+    Nova Auditoria
+</a>
+<a href="{% url 'ai_auditor:dashboard' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-chart-line"></i>
+    Dashboard
+</a>
+{% endblock %}
+
+{% block content_list %}
+<!-- Estatísticas -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <div class="stat-number">{{ total_issues|default:0 }}</div>
+        <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">{{ critical_count|default:0 }}</div>
+        <div class="stat-label">Críticos</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">{{ open_count|default:0 }}</div>
+        <div class="stat-label">Abertos</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">{{ fixed_count|default:0 }}</div>
+        <div class="stat-label">Corrigidos</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">{{ auto_fixable_count|default:0 }}</div>
+        <div class="stat-label">Auto-corrigíveis</div>
+    </div>
+</div>
+
+{% if items %}
+    {% for issue in items %}
+    <div class="issue-card">
+        <div class="issue-severity severity-{{ issue.severity }}"></div>
+        
+        {% if issue.auto_fixable %}
+        <div class="auto-fixable">
+            <i class="fas fa-magic"></i>
+            Auto-corrigível
+        </div>
+        {% endif %}
+        
+        <div class="issue-header">
+            <div>
+                <div class="issue-title">{{ issue.title }}</div>
+                <div class="issue-meta">
+                    <span>
+                        <i class="fas fa-folder"></i>
+                        {{ issue.app_name }}
+                    </span>
+                    <span>
+                        <i class="fas fa-file-code"></i>
+                        <span class="file-path">{{ issue.file_path }}</span>
+                    </span>
+                    {% if issue.line_number %}
+                    <span>
+                        <i class="fas fa-hashtag"></i>
+                        Linha {{ issue.line_number }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="issue-badges">
+                <span class="badge badge-severity badge-{{ issue.severity }}">
+                    {{ issue.get_severity_display }}
+                </span>
+                <span class="badge badge-type badge-{{ issue.issue_type }}">
+                    {{ issue.get_issue_type_display }}
+                </span>
+                <span class="badge badge-status status-{{ issue.status }}">
+                    {{ issue.get_status_display }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="issue-description">
+            {{ issue.description }}
+        </div>
+        
+        {% if issue.recommendation %}
+        <div class="issue-recommendation">
+            <h6>
+                <i class="fas fa-lightbulb"></i>
+                Recomendação
+            </h6>
+            <p>{{ issue.recommendation }}</p>
+        </div>
+        {% endif %}
+        
+        {% if issue.code_snippet %}
+        <div class="code-snippet">
+            <pre>{{ issue.code_snippet }}</pre>
+        </div>
+        {% endif %}
+        
+        {% if issue.suggested_fix %}
+        <div class="suggested-fix">
+            <h6>
+                <i class="fas fa-wrench"></i>
+                Correção Sugerida
+            </h6>
+            <pre>{{ issue.suggested_fix }}</pre>
+        </div>
+        {% endif %}
+        
+        <div class="issue-actions">
+            {% if issue.status == 'open' %}
+            <button class="btn-issue btn-issue-primary" onclick="markInProgress({{ issue.id }})">
+                <i class="fas fa-play"></i>
+                Marcar em Andamento
+            </button>
+            {% endif %}
+            
+            {% if issue.auto_fixable and issue.status != 'fixed' %}
+            <button class="btn-issue btn-issue-success" onclick="applyFix({{ issue.id }})">
+                <i class="fas fa-magic"></i>
+                Aplicar Correção
+            </button>
+            {% endif %}
+            
+            {% if issue.status != 'fixed' %}
+            <button class="btn-issue btn-issue-success" onclick="markFixed({{ issue.id }})">
+                <i class="fas fa-check"></i>
+                Marcar como Corrigido
+            </button>
+            {% endif %}
+            
+            {% if issue.status != 'ignored' %}
+            <button class="btn-issue btn-issue-secondary" onclick="markIgnored({{ issue.id }})">
+                <i class="fas fa-times"></i>
+                Ignorar
+            </button>
+            {% endif %}
+            
+            <button class="btn-issue btn-issue-secondary" onclick="markFalsePositive({{ issue.id }})">
+                <i class="fas fa-flag"></i>
+                Falso Positivo
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <i class="fas fa-check-circle"></i>
+        <h4>Nenhum problema encontrado</h4>
+        <p>Parabéns! Não há problemas de código para exibir.</p>
+        <a href="{% url 'ai_auditor:execute_audit' %}" class="btn btn-primary">
+            <i class="fas fa-play"></i>
+            Executar Nova Auditoria
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+function markInProgress(issueId) {
+    updateIssueStatus(issueId, 'in_progress');
+}
+
+function markFixed(issueId) {
+    updateIssueStatus(issueId, 'fixed');
+}
+
+function markIgnored(issueId) {
+    updateIssueStatus(issueId, 'ignored');
+}
+
+function markFalsePositive(issueId) {
+    updateIssueStatus(issueId, 'false_positive');
+}
+
+function updateIssueStatus(issueId, status) {
+    fetch(`/ai_auditor/issues/${issueId}/status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao atualizar status: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao atualizar status');
+    });
+}
+
+function applyFix(issueId) {
+    if (confirm('Tem certeza que deseja aplicar a correção automática?')) {
+        fetch(`/ai_auditor/issues/${issueId}/apply-fix/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Correção aplicada com sucesso!');
+                location.reload();
+            } else {
+                alert('Erro ao aplicar correção: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao aplicar correção');
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Destacar problemas críticos
+    const criticalIssues = document.querySelectorAll('.severity-critical');
+    criticalIssues.forEach(issue => {
+        issue.closest('.issue-card').style.borderLeftColor = '#dc2626';
+        issue.closest('.issue-card').style.borderLeftWidth = '4px';
+    });
+    
+    // Adicionar tooltips
+    const badges = document.querySelectorAll('.badge');
+    badges.forEach(badge => {
+        badge.setAttribute('title', badge.textContent);
+    });
+});
+</script>
+{% endblock %}

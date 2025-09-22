@@ -1,0 +1,455 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Alertas do Sistema - Admin Pandora{% endblock %}
+
+{% block page_title %}Alertas do Sistema{% endblock %}
+{% block page_subtitle %}Monitore e gerencie alertas de segurança e performance{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item">
+    <a href="{% url 'administration:admin_home' %}" class="text-decoration-none">
+        <i class="fas fa-tachometer-alt me-1"></i>Admin Home
+    </a>
+</li>
+<li class="breadcrumb-item active">Alertas</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2 align-items-center">
+    <!-- Filtros rápidos -->
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="all">
+            <i class="fas fa-list me-1"></i>Todos
+        </button>
+        <button type="button" class="btn btn-outline-warning btn-sm" data-filter="open">
+            <i class="fas fa-exclamation-circle me-1"></i>Abertos
+        </button>
+        <button type="button" class="btn btn-outline-success btn-sm" data-filter="resolved">
+            <i class="fas fa-check-circle me-1"></i>Resolvidos
+        </button>
+    </div>
+
+    <!-- Botão Novo Alerta -->
+    {% if request.user.is_superuser %}
+    <a href="{% url 'administration:alert_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-2"></i>Novo Alerta
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block filters %}
+<div class="row g-3">
+    <div class="col-md-3">
+        <div class="form-floating">
+            <select class="form-select" id="severity-filter">
+                <option value="">Todas as severidades</option>
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+                <option value="critical">Crítica</option>
+            </select>
+            <label>Severidade</label>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="form-floating">
+            <select class="form-select" id="tenant-filter">
+                <option value="">Todas as empresas</option>
+                {% for tenant in tenants %}
+                <option value="{{ tenant.id }}">{{ tenant.name }}</option>
+                {% endfor %}
+            </select>
+            <label>Empresa</label>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="form-floating">
+            <input type="date" class="form-control" id="date-from">
+            <label>Data inicial</label>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="form-floating">
+            <input type="date" class="form-control" id="date-to">
+            <label>Data final</label>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block table_headers %}
+<th class="sortable" data-sort="severity">
+    <i class="fas fa-thermometer-half me-1"></i>Severidade
+</th>
+<th class="sortable" data-sort="title">
+    <i class="fas fa-tag me-1"></i>Título
+</th>
+<th class="sortable" data-sort="tenant">
+    <i class="fas fa-building me-1"></i>Empresa
+</th>
+<th class="sortable" data-sort="status">
+    <i class="fas fa-circle me-1"></i>Status
+</th>
+<th class="sortable" data-sort="assigned_to">
+    <i class="fas fa-user me-1"></i>Responsável
+</th>
+<th class="sortable" data-sort="created_at">
+    <i class="fas fa-clock me-1"></i>Criado em
+</th>
+<th class="text-center">
+    <i class="fas fa-tools me-1"></i>Ações
+</th>
+{% endblock %}
+
+{% block table_body %}
+{% for alert in alerts %}
+<tr class="table-row-hover" data-alert-id="{{ alert.id }}" data-severity="{{ alert.severity }}" data-status="{{ alert.status }}">
+    <td>
+        {% if alert.severity == 'critical' %}
+            <span class="badge bg-danger">
+                <i class="fas fa-exclamation-triangle me-1"></i>Crítica
+            </span>
+        {% elif alert.severity == 'high' %}
+            <span class="badge bg-warning">
+                <i class="fas fa-exclamation-circle me-1"></i>Alta
+            </span>
+        {% elif alert.severity == 'medium' %}
+            <span class="badge bg-info">
+                <i class="fas fa-info-circle me-1"></i>Média
+            </span>
+        {% else %}
+            <span class="badge bg-success">
+                <i class="fas fa-check-circle me-1"></i>Baixa
+            </span>
+        {% endif %}
+    </td>
+    
+    <td>
+        <div class="d-flex align-items-center">
+            <div>
+                <div class="fw-semibold">{{ alert.title|truncatechars:40 }}</div>
+                {% if alert.alert_type %}
+                    <small class="text-muted">
+                        <i class="fas fa-layer-group me-1"></i>{{ alert.alert_type }}
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    
+    <td>
+        {% if alert.tenant %}
+            <div class="d-flex align-items-center">
+                <i class="fas fa-building text-muted me-2"></i>
+                <span>{{ alert.tenant.name }}</span>
+            </div>
+        {% else %}
+            <span class="badge bg-secondary">
+                <i class="fas fa-globe me-1"></i>Global
+            </span>
+        {% endif %}
+    </td>
+    
+    <td>
+        {% if alert.status == 'resolved' %}
+            <span class="badge bg-success">
+                <i class="fas fa-check-circle me-1"></i>Resolvido
+            </span>
+        {% elif alert.status == 'acknowledged' %}
+            <span class="badge bg-warning">
+                <i class="fas fa-eye me-1"></i>Reconhecido
+            </span>
+        {% else %}
+            <span class="badge bg-danger">
+                <i class="fas fa-exclamation-circle me-1"></i>Aberto
+            </span>
+        {% endif %}
+    </td>
+    
+    <td>
+        {% if alert.assigned_to %}
+            <div class="d-flex align-items-center">
+                <div class="avatar-sm me-2">
+                    <img src="{% if alert.assigned_to.perfilusuarioestendido.avatar %}{{ alert.assigned_to.perfilusuarioestendido.avatar.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" 
+                         alt="{{ alert.assigned_to.get_full_name }}" class="rounded-circle" width="24" height="24">
+                </div>
+                <span>{{ alert.assigned_to.get_full_name|default:alert.assigned_to.username }}</span>
+            </div>
+        {% else %}
+            <span class="text-muted">
+                <i class="fas fa-user-slash me-1"></i>Não atribuído
+            </span>
+        {% endif %}
+    </td>
+    
+    <td>
+        <div class="d-flex flex-column">
+            <span>{{ alert.created_at|date:"d/m/Y" }}</span>
+            <small class="text-muted">{{ alert.created_at|time:"H:i" }}</small>
+        </div>
+    </td>
+    
+    <td class="text-center">
+        <div class="btn-group btn-group-sm" role="group">
+            <!-- Visualizar -->
+            <button type="button" class="btn btn-outline-info" 
+                    data-bs-toggle="modal" data-bs-target="#alertModal" 
+                    data-alert-id="{{ alert.id }}" title="Visualizar detalhes">
+                <i class="fas fa-eye"></i>
+            </button>
+            
+            {% if request.user.is_superuser %}
+            <!-- Editar -->
+            <a href="{% url 'administration:alert_update' alert.pk %}" 
+               class="btn btn-outline-primary" title="Editar">
+                <i class="fas fa-edit"></i>
+            </a>
+            
+            <!-- Ações rápidas -->
+            {% if alert.status == 'open' %}
+                <button type="button" class="btn btn-outline-warning" 
+                        onclick="acknowledgeAlert({{ alert.id }})" title="Reconhecer">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" class="btn btn-outline-success" 
+                        onclick="resolveAlert({{ alert.id }})" title="Resolver">
+                    <i class="fas fa-check"></i>
+                </button>
+            {% endif %}
+            
+            <!-- Excluir -->
+            <button type="button" class="btn btn-outline-danger" 
+                    onclick="deleteAlert({{ alert.id }})" title="Excluir">
+                <i class="fas fa-trash"></i>
+            </button>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="text-center py-5">
+        <div class="empty-state">
+            <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhum alerta encontrado</h5>
+            <p class="text-muted">Não há alertas correspondentes aos filtros selecionados.</p>
+            {% if request.user.is_superuser %}
+            <a href="{% url 'administration:alert_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Criar Primeiro Alerta
+            </a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block extra_modals %}
+<!-- Modal de Detalhes do Alerta -->
+<div class="modal fade" id="alertModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Detalhes do Alerta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="alertModalBody">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtros em tempo real
+    const severityFilter = document.getElementById('severity-filter');
+    const tenantFilter = document.getElementById('tenant-filter');
+    const dateFromFilter = document.getElementById('date-from');
+    const dateToFilter = document.getElementById('date-to');
+    
+    function applyFilters() {
+        const rows = document.querySelectorAll('tbody tr[data-alert-id]');
+        const severity = severityFilter.value;
+        const tenant = tenantFilter.value;
+        const dateFrom = dateFromFilter.value;
+        const dateTo = dateToFilter.value;
+        
+        rows.forEach(row => {
+            let show = true;
+            
+            // Filtro de severidade
+            if (severity && row.dataset.severity !== severity) {
+                show = false;
+            }
+            
+            // Aplicar outros filtros...
+            
+            row.style.display = show ? '' : 'none';
+        });
+        
+        updateEmptyState();
+    }
+    
+    // Event listeners para filtros
+    [severityFilter, tenantFilter, dateFromFilter, dateToFilter].forEach(filter => {
+        filter.addEventListener('change', applyFilters);
+    });
+    
+    // Filtros rápidos
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            const rows = document.querySelectorAll('tbody tr[data-alert-id]');
+            
+            // Remover active de todos os botões
+            document.querySelectorAll('[data-filter]').forEach(b => {
+                b.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            rows.forEach(row => {
+                let show = true;
+                
+                if (filter === 'open' && row.dataset.status !== 'open') {
+                    show = false;
+                } else if (filter === 'resolved' && row.dataset.status !== 'resolved') {
+                    show = false;
+                }
+                
+                row.style.display = show ? '' : 'none';
+            });
+            
+            updateEmptyState();
+        });
+    });
+    
+    function updateEmptyState() {
+        const visibleRows = document.querySelectorAll('tbody tr[data-alert-id]:not([style*="none"])');
+        const emptyRow = document.querySelector('tbody tr:not([data-alert-id])');
+        
+        if (visibleRows.length === 0 && !emptyRow) {
+            // Mostrar mensagem de vazio se necessário
+        }
+    }
+});
+
+// Carregamento de detalhes do alerta via AJAX
+document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-bs-target="#alertModal"]')) {
+        const button = e.target.closest('[data-bs-target="#alertModal"]');
+        const alertId = button.dataset.alertId;
+        
+        fetch(`/admin-panel/api/alerts/${alertId}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('alertModalBody').innerHTML = `
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Título</label>
+                            <p class="form-control-plaintext">${data.title}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Severidade</label>
+                            <span class="badge bg-${data.severity === 'critical' ? 'danger' : data.severity === 'high' ? 'warning' : 'info'}">${data.severity}</span>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <p class="form-control-plaintext">${data.description}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <span class="badge bg-${data.status === 'resolved' ? 'success' : data.status === 'acknowledged' ? 'warning' : 'danger'}">${data.status}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Criado em</label>
+                            <p class="form-control-plaintext">${new Date(data.created_at).toLocaleString('pt-BR')}</p>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('alertModalBody').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Erro ao carregar detalhes do alerta.
+                    </div>
+                `;
+            });
+    }
+});
+
+// Ações rápidas
+function acknowledgeAlert(alertId) {
+    if (confirm('Deseja reconhecer este alerta?')) {
+        fetch(`/admin-panel/api/alerts/${alertId}/acknowledge/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao reconhecer alerta');
+            }
+        });
+    }
+}
+
+function resolveAlert(alertId) {
+    if (confirm('Deseja marcar este alerta como resolvido?')) {
+        fetch(`/admin-panel/api/alerts/${alertId}/resolve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao resolver alerta');
+            }
+        });
+    }
+}
+
+function deleteAlert(alertId) {
+    if (confirm('Deseja excluir este alerta? Esta ação não pode ser desfeita.')) {
+        fetch(`/admin-panel/api/alerts/${alertId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erro ao excluir alerta');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

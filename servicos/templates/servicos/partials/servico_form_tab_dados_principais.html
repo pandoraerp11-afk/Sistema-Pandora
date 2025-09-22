@@ -1,0 +1,153 @@
+{% load i18n widget_tweaks %}
+
+{# row para o Tipo de Serviço e Nome do Serviço #}
+<div class="row g-3">
+    <div class="col-md-4">
+        <label for="{{ form.tipo_servico.id_for_label }}" class="form-label">{{ form.tipo_servico.label }}</label>
+        {% render_field form.tipo_servico class="form-control" %}
+        {% for error in form.tipo_servico.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="col-md-8">
+        <label for="{{ form.nome_servico.id_for_label }}" class="form-label">{{ form.nome_servico.label }}</label>
+        {% render_field form.nome_servico class+="form-control" placeholder=form.nome_servico.label %}
+        {% for error in form.nome_servico.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+</div>
+
+{# Toggle clínico #}
+<div class="row g-3 mt-1">
+    <div class="col-md-4">
+        <label for="{{ form.is_clinical.id_for_label }}" class="form-label">{{ form.is_clinical.label }}</label>
+        <div class="form-check form-switch">
+                {% render_field form.is_clinical class="form-check-input" %}
+                <label class="form-check-label" for="{{ form.is_clinical.id_for_label }}">{% trans "Sim, este serviço é clínico" %}</label>
+        </div>
+        {% for error in form.is_clinical.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+</div>
+
+{# row para Categoria e Preço Base #}
+<div class="row g-3">
+    <div class="col-md-6">
+        <label for="{{ form.categoria.id_for_label }}" class="form-label">{{ form.categoria.label }}</label>
+        <div class="field-inline-add d-flex align-items-stretch gap-2">
+            <div class="flex-grow-1">
+                {% render_field form.categoria class="form-select" %}
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-inline-add" data-bs-toggle="modal" data-bs-target="#modalCategoriaRapida" title="Nova Categoria" aria-label="Nova Categoria">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        {% for error in form.categoria.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="col-md-6" id="preco-base-group">
+        <label for="{{ form.preco_base.id_for_label }}" class="form-label">{{ form.preco_base.label }}</label>
+        <div class="input-group">
+            <span class="input-group-text">R$</span>
+            {% render_field form.preco_base class="form-control" %}
+        </div>
+        <small class="form-text text-muted">{{ form.preco_base.help_text }}</small>
+        {% for error in form.preco_base.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+</div>
+
+{# row para a Regra de Cobrança (para Serviços Ofertados) #}
+<div class="mt-3" id="regra-cobranca-group">
+    <label for="{{ form.regra_cobranca.id_for_label }}" class="form-label">{{ form.regra_cobranca.label }}</label>
+    <div class="field-inline-add d-flex align-items-stretch gap-2">
+        <div class="flex-grow-1">
+            {% render_field form.regra_cobranca class="form-select" %}
+        </div>
+        <button type="button" class="btn btn-outline-primary btn-inline-add" data-bs-toggle="modal" data-bs-target="#modalRegraCobrancaRapida" title="Nova Regra de Cobrança" aria-label="Nova Regra de Cobrança">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+    <small class="form-text text-muted">{{ form.regra_cobranca.help_text }}</small>
+    {% for error in form.regra_cobranca.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+</div>
+
+{# row para a Descrição Curta #}
+<div class="mt-3">
+    <label for="{{ form.descricao_curta.id_for_label }}" class="form-label">{{ form.descricao_curta.label }}</label>
+    {% render_field form.descricao_curta class="form-control" rows="3" %}
+    {% for error in form.descricao_curta.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+</div>
+
+{# Switch 'Ativo' movido para o sidebar (ver servico_form.html) #}
+
+{# Modal movido para bloco global 'modals' no template pai para evitar conflitos de stacking. JS transferido para bloco extra_js principal. #}
+<style>
+/* Padronização inline mínima (pode mover para CSS global se preferir) */
+.field-inline-add .form-select { min-height: 100%; }
+.field-inline-add .btn-inline-add { min-width: 44px; display:flex; align-items:center; justify-content:center; }
+@media (max-width: 575.98px){ .field-inline-add { flex-wrap: nowrap; } }
+</style>
+
+{# Bloco clínico condicional #}
+<div id="bloco-clinico" class="mt-4 border rounded p-3 d-none">
+    <h5 class="mb-3"><i class="fas fa-user-md me-1"></i>{% trans "Perfil Clínico" %}</h5>
+    {% if clinico_form %}
+        {# Erros não-campo (non_field_errors) #}
+        {% if clinico_form.non_field_errors %}
+            <div class="alert alert-danger py-2 small">
+                <ul class="mb-0">
+                    {% for e in clinico_form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label" for="id_clinico-duracao_estimada">{{ clinico_form.duracao_estimada.label }}</label>
+            {% render_field clinico_form.duracao_estimada class="form-control" %}
+            {% for error in clinico_form.duracao_estimada.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="id_clinico-intervalo_minimo_sessoes">{{ clinico_form.intervalo_minimo_sessoes.label }}</label>
+            {% render_field clinico_form.intervalo_minimo_sessoes class="form-control" %}
+            {% for error in clinico_form.intervalo_minimo_sessoes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="id_clinico-requisitos_pre_procedimento">{{ clinico_form.requisitos_pre_procedimento.label }}</label>
+            {% render_field clinico_form.requisitos_pre_procedimento class="form-control" %}
+                        {% for error in clinico_form.requisitos_pre_procedimento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+    </div>
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <label class="form-label" for="id_clinico-contraindicacoes">{{ clinico_form.contraindicacoes.label }}</label>
+            {% render_field clinico_form.contraindicacoes class="form-control" %}
+                        {% for error in clinico_form.contraindicacoes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="id_clinico-cuidados_pos_procedimento">{{ clinico_form.cuidados_pos_procedimento.label }}</label>
+            {% render_field clinico_form.cuidados_pos_procedimento class="form-control" %}
+                        {% for error in clinico_form.cuidados_pos_procedimento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+    </div>
+    <div class="row g-3 mt-2">
+        <div class="col-md-4">
+            <div class="form-check form-switch">
+                {% render_field clinico_form.requer_anamnese class="form-check-input" %}
+                <label class="form-check-label" for="id_clinico-requer_anamnese">{{ clinico_form.requer_anamnese.label }}</label>
+            </div>
+                        {% for error in clinico_form.requer_anamnese.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+            <div class="form-check form-switch">
+                {% render_field clinico_form.requer_termo_consentimento class="form-check-input" %}
+                <label class="form-check-label" for="id_clinico-requer_termo_consentimento">{{ clinico_form.requer_termo_consentimento.label }}</label>
+            </div>
+                        {% for error in clinico_form.requer_termo_consentimento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+            <div class="form-check form-switch">
+                {% render_field clinico_form.permite_fotos_evolucao class="form-check-input" %}
+                <label class="form-check-label" for="id_clinico-permite_fotos_evolucao">{{ clinico_form.permite_fotos_evolucao.label }}</label>
+            </div>
+                        {% for error in clinico_form.permite_fotos_evolucao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+    </div>
+    {% else %}
+        <div class="alert alert-warning small mb-0">{% trans "Formulário clínico indisponível." %}</div>
+    {% endif %}
+</div>

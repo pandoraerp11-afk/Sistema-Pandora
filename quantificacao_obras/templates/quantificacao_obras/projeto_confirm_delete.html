@@ -1,0 +1,530 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Excluir Projeto - {{ object.nome }} - Pandora ERP{% endblock %}
+{% block page_title %}Excluir Projeto{% endblock %}
+{% block page_subtitle %}Confirme a exclusão do projeto {{ object.nome }}{% endblock %}
+{% block page_icon %}fas fa-trash{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'quantificacao_obras:projeto_list' %}">Quantificação de Obras</a></li>
+<li class="breadcrumb-item"><a href="{% url 'quantificacao_obras:projeto_detail' object.pk %}">{{ object.nome }}</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .delete-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+    
+    .delete-header {
+        background: linear-gradient(135deg, var(--danger-color), #c92a2a);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+    }
+    
+    .delete-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+    
+    .delete-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .delete-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+    }
+    
+    .delete-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .delete-subtitle {
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+    
+    .delete-body {
+        padding: 2rem;
+    }
+    
+    .project-info {
+        background: var(--background-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .project-info-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .project-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: var(--primary-bg);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .project-details {
+        flex: 1;
+    }
+    
+    .project-name {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .project-meta {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .project-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    .warning-section {
+        background: var(--warning-bg);
+        border: 1px solid var(--warning-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .warning-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--warning-color);
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .warning-content {
+        color: var(--text-primary);
+    }
+    
+    .warning-list {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+    }
+    
+    .warning-list li {
+        margin-bottom: 0.5rem;
+        color: var(--text-muted);
+    }
+    
+    .confirmation-section {
+        background: var(--card-bg);
+        border: 2px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .confirmation-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .confirmation-checkbox input[type="checkbox"] {
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid var(--border-color);
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .confirmation-checkbox label {
+        font-weight: 500;
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+    
+    .confirmation-input {
+        margin-top: 1rem;
+    }
+    
+    .confirmation-input label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .confirmation-input input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+    
+    .confirmation-input input:focus {
+        outline: none;
+        border-color: var(--danger-color);
+    }
+    
+    .confirmation-help {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+    
+    .delete-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+    
+    .btn-delete {
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-delete:hover:not(:disabled) {
+        background: #c92a2a;
+        transform: translateY(-1px);
+    }
+    
+    .btn-delete:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .btn-cancel {
+        background: var(--secondary-color);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-cancel:hover {
+        background: var(--hover-bg);
+        transform: translateY(-1px);
+    }
+    
+    .delete-animation {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .delete-spinner {
+        width: 3rem;
+        height: 3rem;
+        border: 3px solid var(--border-color);
+        border-top: 3px solid var(--danger-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="delete-container fade-in">
+        <div class="delete-card">
+            <!-- Header -->
+            <div class="delete-header">
+                <div class="delete-header-content">
+                    <i class="fas fa-exclamation-triangle delete-icon"></i>
+                    <h2 class="delete-title">Excluir Projeto</h2>
+                    <p class="delete-subtitle">Esta ação não pode ser desfeita</p>
+                </div>
+            </div>
+            
+            <!-- Body -->
+            <div class="delete-body">
+                <!-- Project Information -->
+                <div class="project-info">
+                    <div class="project-info-header">
+                        <div class="project-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="project-details">
+                            <div class="project-name">{{ object.nome }}</div>
+                            <div class="project-meta">
+                                Criado em {{ object.created_at|date:"d/m/Y" }}
+                                {% if object.responsavel %}
+                                    • Responsável: {{ object.responsavel.get_full_name }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if object.descricao %}
+                    <div class="mb-3">
+                        <p class="text-muted">{{ object.descricao }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="project-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ object.itens_quantificacao.count }}</div>
+                            <div class="stat-label">Itens</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">R$ {{ object.valor_total|floatformat:2|default:"0,00" }}</div>
+                            <div class="stat-label">Valor Total</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ object.anexos_quantificacao.count }}</div>
+                            <div class="stat-label">Anexos</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Warning Section -->
+                <div class="warning-section">
+                    <div class="warning-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Atenção: Dados que serão perdidos
+                    </div>
+                    <div class="warning-content">
+                        <p>Ao excluir este projeto, os seguintes dados serão <strong>permanentemente removidos</strong>:</p>
+                        <ul class="warning-list">
+                            <li>Todas as informações do projeto</li>
+                            <li>{{ object.itens_quantificacao.count }} itens de quantificação</li>
+                            <li>{{ object.anexos_quantificacao.count }} arquivos anexados</li>
+                            <li>Histórico de alterações</li>
+                            <li>Relatórios gerados</li>
+                        </ul>
+                        <p><strong>Esta ação não pode ser desfeita!</strong></p>
+                    </div>
+                </div>
+                
+                <!-- Confirmation Section -->
+                <form method="post" id="deleteForm">
+                    {% csrf_token %}
+                    <div class="confirmation-section">
+                        <div class="confirmation-checkbox">
+                            <input type="checkbox" id="confirmDelete" name="confirm_delete" required>
+                            <label for="confirmDelete">
+                                Eu entendo que esta ação é irreversível e desejo prosseguir com a exclusão
+                            </label>
+                        </div>
+                        
+                        <div class="confirmation-input">
+                            <label for="confirmName">
+                                Para confirmar, digite o nome do projeto: <strong>{{ object.nome }}</strong>
+                            </label>
+                            <input type="text" id="confirmName" name="confirm_name" placeholder="Digite o nome do projeto" required>
+                            <div class="confirmation-help">
+                                Digite exatamente: {{ object.nome }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="delete-actions">
+                        <a href="{% url 'quantificacao_obras:projeto_detail' object.pk %}" class="btn-cancel">
+                            <i class="fas fa-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn-delete" id="deleteButton" disabled>
+                            <i class="fas fa-trash"></i> Excluir Projeto
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Delete Animation -->
+                <div class="delete-animation" id="deleteAnimation">
+                    <div class="delete-spinner"></div>
+                    <p>Excluindo projeto...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirmDelete');
+    const confirmNameInput = document.getElementById('confirmName');
+    const deleteButton = document.getElementById('deleteButton');
+    const deleteForm = document.getElementById('deleteForm');
+    const deleteAnimation = document.getElementById('deleteAnimation');
+    const projectName = "{{ object.nome }}";
+    
+    // Função para verificar se pode habilitar o botão
+    function checkConfirmation() {
+        const isCheckboxChecked = confirmCheckbox.checked;
+        const isNameCorrect = confirmNameInput.value.trim() === projectName;
+        
+        deleteButton.disabled = !(isCheckboxChecked && isNameCorrect);
+    }
+    
+    // Event listeners
+    confirmCheckbox.addEventListener('change', checkConfirmation);
+    confirmNameInput.addEventListener('input', checkConfirmation);
+    
+    // Validação adicional no nome
+    confirmNameInput.addEventListener('input', function() {
+        const isCorrect = this.value.trim() === projectName;
+        
+        if (this.value.trim() && !isCorrect) {
+            this.style.borderColor = 'var(--danger-color)';
+        } else if (isCorrect) {
+            this.style.borderColor = 'var(--success-color)';
+        } else {
+            this.style.borderColor = 'var(--border-color)';
+        }
+    });
+    
+    // Submissão do formulário
+    deleteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Última confirmação
+        if (confirm('Tem certeza absoluta que deseja excluir este projeto? Esta ação não pode ser desfeita!')) {
+            // Mostrar animação de carregamento
+            deleteAnimation.style.display = 'block';
+            document.querySelector('.delete-body').style.display = 'none';
+            
+            // Simular delay para mostrar animação
+            setTimeout(() => {
+                this.submit();
+            }, 2000);
+        }
+    });
+    
+    // Prevenir fechamento acidental da página
+    window.addEventListener('beforeunload', function(e) {
+        const confirmValue = confirmNameInput.value.trim();
+        if (confirmValue && confirmValue === projectName) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    
+    // Foco automático no primeiro campo
+    setTimeout(() => {
+        confirmCheckbox.focus();
+    }, 500);
+    
+    // Adicionar efeito de shake se tentar enviar sem confirmação
+    deleteButton.addEventListener('click', function(e) {
+        if (this.disabled) {
+            e.preventDefault();
+            this.style.animation = 'shake 0.5s';
+            setTimeout(() => {
+                this.style.animation = '';
+            }, 500);
+        }
+    });
+    
+    // Atalhos de teclado
+    document.addEventListener('keydown', function(e) {
+        // ESC para cancelar
+        if (e.key === 'Escape') {
+            window.location.href = "{% url 'quantificacao_obras:projeto_detail' object.pk %}";
+        }
+        
+        // Ctrl + Enter para confirmar (se habilitado)
+        if (e.ctrlKey && e.key === 'Enter' && !deleteButton.disabled) {
+            deleteForm.dispatchEvent(new Event('submit'));
+        }
+    });
+});
+
+// Animação de shake
+const shakeCSS = `
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+`;
+
+// Adicionar CSS da animação
+const style = document.createElement('style');
+style.textContent = shakeCSS;
+document.head.appendChild(style);
+</script>
+{% endblock %}

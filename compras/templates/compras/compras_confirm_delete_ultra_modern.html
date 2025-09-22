@@ -1,0 +1,329 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}Excluir Compra{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dist/css/pandora-ultra-modern.css' %}">
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+    
+    .delete-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(220, 53, 69, 0.15);
+        overflow: hidden;
+        border: 2px solid #f8d7da;
+    }
+    
+    .delete-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .delete-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 2rem;
+    }
+    
+    .delete-body {
+        padding: 2rem;
+    }
+    
+    .compra-info {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .info-value {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .warning-list {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .warning-list h6 {
+        color: #856404;
+        margin-bottom: 0.5rem;
+    }
+    
+    .warning-list ul {
+        margin-bottom: 0;
+        color: #856404;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    
+    .btn-delete {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    
+    .btn-delete:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        color: white;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-pendente { background-color: #fff3cd; color: #856404; }
+    .status-aprovado { background-color: #d1ecf1; color: #0c5460; }
+    .status-em_transito { background-color: #cce5ff; color: #004085; }
+    .status-entregue { background-color: #d4edda; color: #155724; }
+    .status-cancelado { background-color: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i></a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'compras:compras_list' %}">Compras</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'compras:compras_detail' compra.pk %}">#{{ compra.numero }}</a></li>
+                        <li class="breadcrumb-item active">Excluir</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="delete-container">
+            <div class="delete-card">
+                <div class="delete-header">
+                    <div class="delete-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="mb-2">Confirmar Exclusão</h3>
+                    <p class="mb-0">Esta ação não pode ser desfeita</p>
+                </div>
+                
+                <div class="delete-body">
+                    <div class="text-center mb-4">
+                        <h5 class="text-danger">Tem certeza que deseja excluir esta compra?</h5>
+                        <p class="text-muted">
+                            Todos os dados relacionados à compra serão permanentemente removidos do sistema.
+                        </p>
+                    </div>
+                    
+                    <!-- Informações da Compra -->
+                    <div class="compra-info">
+                        <h6 class="text-danger mb-3">
+                            <i class="fas fa-shopping-cart me-2"></i>Dados da Compra
+                        </h6>
+                        
+                        <div class="info-item">
+                            <span class="info-label">Número:</span>
+                            <span class="info-value fw-bold">#{{ compra.numero }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">Fornecedor:</span>
+                            <span class="info-value">{{ compra.fornecedor.nome }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">Obra:</span>
+                            <span class="info-value">{{ compra.obra.nome }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">Data do Pedido:</span>
+                            <span class="info-value">{{ compra.data_pedido|date:"d/m/Y" }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">Valor Total:</span>
+                            <span class="info-value fw-bold text-primary">R$ {{ compra.valor_total|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">Status:</span>
+                            <span class="status-badge status-{{ compra.status }}">
+                                {{ compra.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Avisos -->
+                    {% if compra.status == 'entregue' or compra.status == 'em_transito' %}
+                    <div class="warning-list">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Atenção</h6>
+                        <ul>
+                            {% if compra.status == 'entregue' %}
+                                <li>Esta compra já foi entregue. A exclusão pode afetar relatórios financeiros.</li>
+                            {% endif %}
+                            {% if compra.status == 'em_transito' %}
+                                <li>Esta compra está em trânsito. Verifique se a exclusão não afetará a entrega.</li>
+                            {% endif %}
+                            <li>Todos os dados relacionados serão perdidos permanentemente.</li>
+                            <li>Esta ação não pode ser desfeita.</li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Importante:</strong> Esta ação removerá permanentemente todos os dados da compra do sistema.
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Botões de Ação -->
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        <div class="action-buttons">
+                            <a href="{% url 'compras:compras_detail' compra.pk %}" class="btn btn-cancel">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-delete" id="confirmDelete">
+                                <i class="fas fa-trash me-2"></i>Confirmar Exclusão
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Confirmação adicional antes de excluir
+    $('#deleteForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const compraNumero = '{{ compra.numero }}';
+        const compraStatus = '{{ compra.status }}';
+        
+        let warningText = `Você está prestes a excluir a compra #${compraNumero}.`;
+        
+        if (compraStatus === 'entregue') {
+            warningText += '\n\nEsta compra já foi entregue. A exclusão pode afetar relatórios financeiros.';
+        } else if (compraStatus === 'em_transito') {
+            warningText += '\n\nEsta compra está em trânsito. Verifique se a exclusão não afetará a entrega.';
+        }
+        
+        warningText += '\n\nEsta ação não pode ser desfeita!';
+        
+        Swal.fire({
+            title: 'Última Confirmação',
+            text: warningText,
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'SIM, EXCLUIR DEFINITIVAMENTE',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true,
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Excluindo...',
+                    text: 'Aguarde enquanto a compra é excluída.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Submeter o formulário
+                this.submit();
+            }
+        });
+    });
+    
+    // Adicionar efeito hover nos botões
+    $('.btn-delete').hover(
+        function() {
+            $(this).html('<i class="fas fa-trash me-2"></i>⚠️ EXCLUIR PERMANENTEMENTE');
+        },
+        function() {
+            $(this).html('<i class="fas fa-trash me-2"></i>Confirmar Exclusão');
+        }
+    );
+});
+</script>
+{% endblock %}

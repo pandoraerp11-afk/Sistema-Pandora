@@ -1,0 +1,640 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: var(--surface-color);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .form-grid {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .form-grid-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .form-grid-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .form-group label.required::after {
+        content: " *";
+        color: var(--danger-color);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: var(--surface-color);
+        color: var(--text-primary);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .form-control:invalid {
+        border-color: var(--danger-color);
+    }
+
+    .form-control.is-invalid {
+        border-color: var(--danger-color);
+        background: rgba(var(--danger-rgb), 0.05);
+    }
+
+    .invalid-feedback {
+        display: block;
+        color: var(--danger-color);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    .file-upload-area {
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background: var(--surface-color);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .file-upload-area:hover {
+        border-color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.05);
+    }
+
+    .file-upload-area.dragover {
+        border-color: var(--primary-color);
+        background: rgba(var(--primary-rgb), 0.1);
+    }
+
+    .file-upload-icon {
+        font-size: 3rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .file-upload-text {
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .file-upload-subtext {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .file-upload-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .date-range-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .date-range-separator {
+        text-align: center;
+        padding: 0 1rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .duration-calculator {
+        background: var(--accent-light);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        border: 1px solid var(--accent-color);
+    }
+
+    .duration-result {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--accent-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .duration-details {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .preview-section {
+        background: var(--surface-color);
+        border-radius: 12px;
+        padding: 2rem;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .preview-card {
+        background: var(--background-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+    }
+
+    .preview-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .preview-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .preview-description {
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .form-grid-2,
+        .form-grid-3 {
+            grid-template-columns: 1fr;
+        }
+
+        .date-range-container {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="fas fa-graduation-cap"></i>
+            {{ page_title }}
+        </h1>
+        <div class="breadcrumb">
+            <a href="{% url 'treinamento:treinamento_list' %}">Treinamentos</a>
+            <i class="fas fa-chevron-right"></i>
+            <span>{{ page_title }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="content-area">
+    <div class="form-container">
+        <form method="post" enctype="multipart/form-data" id="training-form">
+            {% csrf_token %}
+            
+            <!-- Seção Principal -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Informações Básicas
+                </h2>
+                
+                <div class="form-group">
+                    <label for="{{ form.titulo.id_for_label }}" class="required">{{ form.titulo.label }}</label>
+                    {{ form.titulo }}
+                    {% if form.titulo.help_text %}
+                    <div class="form-text">{{ form.titulo.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.titulo.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
+                    {{ form.descricao }}
+                    {% if form.descricao.help_text %}
+                    <div class="form-text">{{ form.descricao.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.descricao.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.instrutor.id_for_label }}">{{ form.instrutor.label }}</label>
+                    {{ form.instrutor }}
+                    {% if form.instrutor.help_text %}
+                    <div class="form-text">{{ form.instrutor.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.instrutor.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Seção de Datas e Duração -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    Cronograma
+                </h2>
+                
+                <div class="date-range-container">
+                    <div class="form-group">
+                        <label for="{{ form.data_inicio.id_for_label }}" class="required">{{ form.data_inicio.label }}</label>
+                        {{ form.data_inicio }}
+                        {% if form.data_inicio.help_text %}
+                        <div class="form-text">{{ form.data_inicio.help_text }}</div>
+                        {% endif %}
+                        {% for error in form.data_inicio.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.data_fim.id_for_label }}" class="required">{{ form.data_fim.label }}</label>
+                        {{ form.data_fim }}
+                        {% if form.data_fim.help_text %}
+                        <div class="form-text">{{ form.data_fim.help_text }}</div>
+                        {% endif %}
+                        {% for error in form.data_fim.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.carga_horaria.id_for_label }}" class="required">{{ form.carga_horaria.label }}</label>
+                    {{ form.carga_horaria }}
+                    {% if form.carga_horaria.help_text %}
+                    <div class="form-text">{{ form.carga_horaria.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.carga_horaria.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="duration-calculator" id="duration-calculator" style="display: none;">
+                    <div class="duration-result" id="duration-result"></div>
+                    <div class="duration-details" id="duration-details"></div>
+                </div>
+            </div>
+
+            <!-- Seção de Local e Material -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Local e Material
+                </h2>
+                
+                <div class="form-group">
+                    <label for="{{ form.local.id_for_label }}" class="required">{{ form.local.label }}</label>
+                    {{ form.local }}
+                    {% if form.local.help_text %}
+                    <div class="form-text">{{ form.local.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.local.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.material.id_for_label }}">{{ form.material.label }}</label>
+                    <div class="file-upload-area" id="file-upload-area">
+                        <div class="file-upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="file-upload-text">Clique para selecionar ou arraste o arquivo aqui</div>
+                        <div class="file-upload-subtext">Tipos permitidos: PDF, DOC, DOCX, PPT, PPTX (máx. 10MB)</div>
+                        {{ form.material }}
+                    </div>
+                    {% if form.material.help_text %}
+                    <div class="form-text">{{ form.material.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.material.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Seção de Pré-visualização -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <i class="fas fa-eye"></i>
+                    Pré-visualização
+                </h2>
+                
+                <div class="preview-section">
+                    <div class="preview-card">
+                        <div class="preview-title" id="preview-title">Título do Treinamento</div>
+                        <div class="preview-meta">
+                            <span id="preview-instructor">Instrutor não informado</span>
+                            <span id="preview-duration">0 horas</span>
+                            <span id="preview-location">Local não informado</span>
+                        </div>
+                        <div class="preview-description" id="preview-description">Descrição do treinamento...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações do Formulário -->
+            <div class="form-actions">
+                <a href="{% url 'treinamento:treinamento_list' %}" class="btn btn-outline">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </a>
+                <button type="button" class="btn btn-outline" onclick="resetForm()">
+                    <i class="fas fa-undo"></i>
+                    Limpar
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Salvar Treinamento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Referencias dos elementos
+    const form = document.getElementById('training-form');
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const fileInput = document.querySelector('input[type="file"]');
+    const startDateInput = document.querySelector('input[name="data_inicio"]');
+    const endDateInput = document.querySelector('input[name="data_fim"]');
+    const durationInput = document.querySelector('input[name="carga_horaria"]');
+    const durationCalculator = document.getElementById('duration-calculator');
+    
+    // Configurar classes CSS para os campos
+    document.querySelectorAll('input, select, textarea').forEach(field => {
+        field.classList.add('form-control');
+        
+        // Adicionar validação visual
+        field.addEventListener('invalid', function() {
+            this.classList.add('is-invalid');
+        });
+        
+        field.addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    });
+    
+    // Upload de arquivo com drag & drop
+    if (fileUploadArea && fileInput) {
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileUploadDisplay(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                updateFileUploadDisplay(this.files[0]);
+            }
+        });
+    }
+    
+    // Calculadora de duração
+    function calculateDuration() {
+        if (startDateInput.value && endDateInput.value) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            const diffTime = Math.abs(endDate - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            if (diffDays > 0) {
+                durationCalculator.style.display = 'block';
+                document.getElementById('duration-result').textContent = 
+                    `Duração: ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+                document.getElementById('duration-details').textContent = 
+                    `De ${formatDate(startDate)} até ${formatDate(endDate)}`;
+            } else {
+                durationCalculator.style.display = 'none';
+            }
+        }
+    }
+    
+    if (startDateInput && endDateInput) {
+        startDateInput.addEventListener('change', calculateDuration);
+        endDateInput.addEventListener('change', calculateDuration);
+    }
+    
+    // Pré-visualização em tempo real
+    function updatePreview() {
+        const titleField = document.querySelector('input[name="titulo"]');
+        const instructorField = document.querySelector('select[name="instrutor"]');
+        const durationField = document.querySelector('input[name="carga_horaria"]');
+        const locationField = document.querySelector('input[name="local"]');
+        const descriptionField = document.querySelector('textarea[name="descricao"]');
+        
+        if (titleField) {
+            document.getElementById('preview-title').textContent = 
+                titleField.value || 'Título do Treinamento';
+        }
+        
+        if (instructorField) {
+            const selectedOption = instructorField.options[instructorField.selectedIndex];
+            document.getElementById('preview-instructor').textContent = 
+                selectedOption.text || 'Instrutor não informado';
+        }
+        
+        if (durationField) {
+            document.getElementById('preview-duration').textContent = 
+                (durationField.value || '0') + ' horas';
+        }
+        
+        if (locationField) {
+            document.getElementById('preview-location').textContent = 
+                locationField.value || 'Local não informado';
+        }
+        
+        if (descriptionField) {
+            document.getElementById('preview-description').textContent = 
+                descriptionField.value || 'Descrição do treinamento...';
+        }
+    }
+    
+    // Atualizar pré-visualização em tempo real
+    document.querySelectorAll('input, select, textarea').forEach(field => {
+        field.addEventListener('input', updatePreview);
+        field.addEventListener('change', updatePreview);
+    });
+    
+    // Carregar pré-visualização inicial
+    updatePreview();
+    calculateDuration();
+});
+
+function updateFileUploadDisplay(file) {
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const icon = fileUploadArea.querySelector('.file-upload-icon i');
+    const text = fileUploadArea.querySelector('.file-upload-text');
+    const subtext = fileUploadArea.querySelector('.file-upload-subtext');
+    
+    icon.className = 'fas fa-file-alt';
+    text.textContent = file.name;
+    subtext.textContent = `Arquivo selecionado: ${formatFileSize(file.size)}`;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatDate(date) {
+    return date.toLocaleDateString('pt-BR');
+}
+
+function resetForm() {
+    if (confirm('Tem certeza que deseja limpar todos os campos?')) {
+        document.getElementById('training-form').reset();
+        
+        // Resetar upload de arquivo
+        const fileUploadArea = document.getElementById('file-upload-area');
+        const icon = fileUploadArea.querySelector('.file-upload-icon i');
+        const text = fileUploadArea.querySelector('.file-upload-text');
+        const subtext = fileUploadArea.querySelector('.file-upload-subtext');
+        
+        icon.className = 'fas fa-cloud-upload-alt';
+        text.textContent = 'Clique para selecionar ou arraste o arquivo aqui';
+        subtext.textContent = 'Tipos permitidos: PDF, DOC, DOCX, PPT, PPTX (máx. 10MB)';
+        
+        // Resetar calculadora de duração
+        document.getElementById('duration-calculator').style.display = 'none';
+        
+        // Resetar pré-visualização
+        document.getElementById('preview-title').textContent = 'Título do Treinamento';
+        document.getElementById('preview-instructor').textContent = 'Instrutor não informado';
+        document.getElementById('preview-duration').textContent = '0 horas';
+        document.getElementById('preview-location').textContent = 'Local não informado';
+        document.getElementById('preview-description').textContent = 'Descrição do treinamento...';
+    }
+}
+
+// Validação do formulário
+document.getElementById('training-form').addEventListener('submit', function(e) {
+    const requiredFields = this.querySelectorAll('input[required], select[required], textarea[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
+    }
+});
+
+// Auto-save (salvar rascunho a cada 30 segundos)
+let autoSaveInterval;
+function startAutoSave() {
+    autoSaveInterval = setInterval(function() {
+        const formData = new FormData(document.getElementById('training-form'));
+        // Aqui você pode implementar o salvamento automático
+        console.log('Auto-save executado');
+    }, 30000);
+}
+
+function stopAutoSave() {
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+    }
+}
+
+// Iniciar auto-save quando a página carregar
+document.addEventListener('DOMContentLoaded', startAutoSave);
+window.addEventListener('beforeunload', stopAutoSave);
+</script>
+{% endblock %}

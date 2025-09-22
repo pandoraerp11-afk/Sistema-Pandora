@@ -1,0 +1,337 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}
+    {% if conta %}Editar Conta a Pagar - {{ conta.descricao }}{% else %}Nova Conta a Pagar{% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if conta %}Editar Conta a Pagar{% else %}Nova Conta a Pagar{% endif %}
+{% endblock %}
+{% block page_subtitle %}
+    {% if conta %}{{ conta.descricao }}{% else %}Adicionar nova conta a pagar{% endif %}
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:financeiro_list' %}">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:conta_pagar_list' %}">Contas a Pagar</a></li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {% if conta %}Editar{% else %}Nova{% endif %}
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="page-actions">
+    <a href="{% url 'financeiro:conta_pagar_list' %}" 
+       class="btn btn-outline-secondary btn-modern">
+        <i class="fas fa-arrow-left"></i>
+        Voltar à Lista
+    </a>
+    {% if conta %}
+    <a href="{% url 'financeiro:conta_pagar_detail' conta.pk %}" 
+       class="btn btn-outline-primary btn-modern">
+        <i class="fas fa-eye"></i>
+        Visualizar
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10 col-12">
+        <div class="card card-modern">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-receipt me-2"></i>
+                    <div>
+                        <h5 class="card-title mb-0">
+                            {% if conta %}Editar Conta a Pagar{% else %}Nova Conta a Pagar{% endif %}
+                        </h5>
+                        <small class="opacity-75">
+                            {% if conta %}Atualize as informações da conta{% else %}Preencha as informações da nova conta{% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate class="needs-validation">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>Erro no formulário:</strong>
+                                <ul class="mb-0">
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- Descrição -->
+                        <div class="col-md-12">
+                            <label for="{{ form.descricao.id_for_label }}" class="form-label required">
+                                <i class="fas fa-file-alt me-1"></i>
+                                {{ form.descricao.label }}
+                            </label>
+                            {{ form.descricao }}
+                            {% if form.descricao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.descricao.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.descricao.help_text %}
+                                <div class="form-text">{{ form.descricao.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Fornecedor -->
+                        <div class="col-md-6">
+                            <label for="{{ form.fornecedor.id_for_label }}" class="form-label required">
+                                <i class="fas fa-building me-1"></i>
+                                {{ form.fornecedor.label }}
+                            </label>
+                            {{ form.fornecedor }}
+                            {% if form.fornecedor.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.fornecedor.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.fornecedor.help_text %}
+                                <div class="form-text">{{ form.fornecedor.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Valor -->
+                        <div class="col-md-6">
+                            <label for="{{ form.valor.id_for_label }}" class="form-label required">
+                                <i class="fas fa-dollar-sign me-1"></i>
+                                {{ form.valor.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                {{ form.valor }}
+                            </div>
+                            {% if form.valor.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.valor.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.valor.help_text %}
+                                <div class="form-text">{{ form.valor.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Data de Vencimento -->
+                        <div class="col-md-6">
+                            <label for="{{ form.data_vencimento.id_for_label }}" class="form-label required">
+                                <i class="fas fa-calendar-event me-1"></i>
+                                {{ form.data_vencimento.label }}
+                            </label>
+                            {{ form.data_vencimento }}
+                            {% if form.data_vencimento.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.data_vencimento.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.data_vencimento.help_text %}
+                                <div class="form-text">{{ form.data_vencimento.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Data de Pagamento -->
+                        <div class="col-md-6">
+                            <label for="{{ form.data_pagamento.id_for_label }}" class="form-label">
+                                <i class="fas fa-calendar-check me-1"></i>
+                                {{ form.data_pagamento.label }}
+                            </label>
+                            {{ form.data_pagamento }}
+                            {% if form.data_pagamento.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.data_pagamento.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.data_pagamento.help_text %}
+                                <div class="form-text">{{ form.data_pagamento.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-6">
+                            <label for="{{ form.status.id_for_label }}" class="form-label required">
+                                <i class="fas fa-flag me-1"></i>
+                                {{ form.status.label }}
+                            </label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.status.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.status.help_text %}
+                                <div class="form-text">{{ form.status.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="col-md-12">
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                                <i class="fas fa-comment-alt me-1"></i>
+                                {{ form.observacoes.label }}
+                            </label>
+                            {{ form.observacoes }}
+                            {% if form.observacoes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.observacoes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.observacoes.help_text %}
+                                <div class="form-text">{{ form.observacoes.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a href="{% url 'financeiro:conta_pagar_list' %}" 
+                           class="btn btn-outline-secondary btn-modern">
+                            <i class="fas fa-times-lg me-1"></i>
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-modern">
+                            <i class="fas fa-check me-1"></i>
+                            {% if conta %}Atualizar Conta{% else %}Salvar Conta{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card-modern {
+    border: none;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    border-radius: 0.75rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid #e1e5e9;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.1);
+}
+
+.form-label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.btn-modern {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.invalid-feedback {
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validação de formulário em tempo real
+    const form = document.querySelector('.needs-validation');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.checkValidity()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    });
+    
+    // Máscara para valor monetário
+    const valorInput = document.querySelector('#{{ form.valor.id_for_label }}');
+    if (valorInput) {
+        valorInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2);
+            value = value.replace('.', ',');
+            value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+            e.target.value = value;
+        });
+    }
+    
+    // Auto-submit ao salvar com Ctrl+S
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            form.querySelector('button[type="submit"]').click();
+        }
+    });
+});
+</script>
+{% endblock %}

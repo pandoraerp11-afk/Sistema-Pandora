@@ -1,0 +1,158 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Apropriações | Pandora ERP{% endblock %}
+
+{% block page_title %}Apropriações{% endblock %}
+{% block page_subtitle %}Gestão de apropriações de obras{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+    
+    .status-ativo {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .status-inativo {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .table-actions {
+        white-space: nowrap;
+    }
+    
+    .table-actions .btn {
+        margin-right: 0.25rem;
+    }
+    
+    .obra-info {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    
+    .data-destaque {
+        font-weight: bold;
+        color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block table_headers %}
+<th style="width: 60px">#</th>
+<th>Descrição</th>
+<th>Obra</th>
+<th>Data</th>
+<th>Responsável</th>
+<th style="width: 120px">Ações</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for item in items %}
+<tr>
+    <td>{{ item.pk }}</td>
+    <td>
+        <strong>{{ item.descricao }}</strong>
+        {% if item.observacoes %}
+            <br><small class="text-muted">{{ item.observacoes|truncatewords:10 }}</small>
+        {% endif %}
+    </td>
+    <td>
+        <span class="font-weight-bold">{{ item.obra.nome|default:"N/A" }}</span>
+        {% if item.obra.cliente %}
+            <br><small class="obra-info">Cliente: {{ item.obra.cliente.nome }}</small>
+        {% endif %}
+    </td>
+    <td>
+        <span class="data-destaque">{{ item.data|date:"d/m/Y" }}</span>
+        <br><small class="text-muted">{{ item.data|date:"l" }}</small>
+    </td>
+    <td>
+        {% if item.responsavel %}
+            <i class="fas fa-user"></i> {{ item.responsavel.nome }}
+        {% else %}
+            <span class="text-muted">Não definido</span>
+        {% endif %}
+    </td>
+    <td class="table-actions">
+        <a href="{% url 'apropriacao:apropriacao_detail' item.pk %}" 
+           class="btn btn-info btn-sm" 
+           title="Visualizar">
+            <i class="fas fa-eye"></i>
+        </a>
+        <a href="{% url 'apropriacao:apropriacao_update' item.pk %}" 
+           class="btn btn-warning btn-sm" 
+           title="Editar">
+            <i class="fas fa-edit"></i>
+        </a>
+        <a href="{% url 'apropriacao:apropriacao_delete' item.pk %}" 
+           class="btn btn-danger btn-sm delete-btn" 
+           title="Excluir">
+            <i class="fas fa-trash"></i>
+        </a>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="text-center py-4">
+        <div class="empty-state">
+            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhuma apropriação encontrada</h5>
+            <p class="text-muted">Comece criando sua primeira apropriação.</p>
+            <a href="{% url 'apropriacao:apropriacao_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nova Apropriação
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block add_button_url %}{% url 'apropriacao:apropriacao_create' %}{% endblock %}
+{% block add_button_text %}Nova Apropriação{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    // Configurar modal de exclusão
+    $('.delete-btn').on('click', function(e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+        var row = $(this).closest('tr');
+        var descricao = row.find('td:nth-child(2) strong').text();
+        
+        Swal.fire({
+            title: 'Confirmar Exclusão',
+            text: `Tem certeza que deseja excluir a apropriação "${descricao}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+    
+    // Tooltip para botões de ação
+    $('[title]').tooltip();
+});
+</script>
+{% endblock %}
+

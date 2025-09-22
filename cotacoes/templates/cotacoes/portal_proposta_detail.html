@@ -1,0 +1,29 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% block title %}Proposta {{ proposta.id }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <a href="{% url 'cotacoes:portal-propostas' %}" class="btn btn-link">&larr; Voltar</a>
+  <h2>Proposta - {{ proposta.cotacao.codigo }} - {{ proposta.cotacao.titulo }}</h2>
+  <p>Status: <strong>{{ proposta.get_status_display }}</strong></p>
+  <p>Validade: {{ proposta.validade_proposta|date:'d/m/Y' }}</p>
+
+  <h5>Itens</h5>
+  <table class="table table-sm">
+    <thead><tr><th>Item</th><th>Preço Unitário</th><th>Prazo (dias)</th><th>Total</th></tr></thead>
+    <tbody>
+      {% for item in proposta.itens.all %}
+        <tr>
+          <td>{{ item.item_cotacao.descricao }}</td>
+          <td>{{ item.preco_unitario|default:'-' }}</td>
+          <td>{{ item.prazo_entrega_dias|default:'-' }}</td>
+          <td>{{ item.total_item|default:'-' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if proposta.status == 'rascunho' and proposta.cotacao.is_aberta %}
+    <a href="{% url 'cotacoes:portal-proposta-edit' proposta.pk %}" class="btn btn-primary">Editar</a>
+    <a href="{% url 'cotacoes:portal-proposta-enviar' proposta.pk %}" class="btn btn-success">Enviar</a>
+  {% endif %}
+</div>
+{% endblock %}

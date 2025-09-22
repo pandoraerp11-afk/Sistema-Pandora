@@ -1,0 +1,409 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Sessões Ativas - Pandora ERP{% endblock %}
+
+{% block page_title %}Sessões Ativas{% endblock %}
+{% block page_subtitle %}Monitoramento de sessões de usuários conectados{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="btn-group" role="group">
+        <button type="button" id="btn-encerrar-todas" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Encerra todas as SUAS sessões" data-action="encerrar-todas-sessoes" data-url="{% if request.user.is_authenticated %}{% url 'user_management:sessao_encerrar_todas' request.user.pk %}{% endif %}">
+                <i class="fas fa-power-off"></i>
+                <span class="d-none d-md-inline">Encerrar Todas</span>
+        </button>
+        <button type="button" class="btn btn-outline-warning" id="btn-encerrar-selecionadas" data-action="encerrar-sessoes-selecionadas" data-url="{% url 'user_management:sessao_encerrar_multiplas' %}" disabled>
+                <i class="fas fa-list-check"></i>
+                <span class="d-none d-lg-inline">Encerrar Selecionadas</span>
+                <span class="badge bg-warning text-dark ms-1" id="count-selected" style="display:none;">0</span>
+        </button>
+    </div>
+    <button type="button" class="btn btn-outline-secondary" onclick="refreshSessions()" data-bs-toggle="tooltip" title="Recarregar lista">
+            <i class="fas fa-sync-alt"></i>
+    </button>
+    <div class="vr d-none d-md-block"></div>
+    <div class="text-muted small" id="session-stats">
+            <i class="fas fa-circle text-success me-1"></i><span id="stat-ativas">{{ sessoes|length }}</span> ativas
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">Sessões Ativas</h5>
+                            <small class="text-muted">Total: <span id="total-sessions">{{ sessoes|length }}</span> sessões ativas</small>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <input type="search" class="form-control form-control-sm" placeholder="Busca usuário/IP/UA" id="search-input">
+                            <select class="form-select form-select-sm" id="filter-status" style="width:auto;">
+                                <option value="">Status</option>
+                                <option value="ativo">Ativo</option>
+                                <option value="inativo">Inativo</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="filter-risk" style="width:auto;">
+                                <option value="">Risco</option>
+                                <option value="novo_ip">Novo IP</option>
+                                <option value="inativo_longo">Inativo Longo</option>
+                                <option value="multi_ip">Multi IP</option>
+                                <option value="geo_variacao">Geo Variação</option>
+                            </select>
+                            <input type="date" class="form-control form-control-sm" id="filter-data-inicio" title="Início (criada >=)">
+                            <input type="date" class="form-control form-control-sm" id="filter-data-fim" title="Fim (criada <=)">
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-clear-filters" title="Limpar filtros">Limpar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0" id="sessions-table">
+                            <thead class="table-light">
+                                <tr>
+                                                                        <th style="width:34px;">
+                                                                            <input type="checkbox" id="select-all-sessions" class="form-check-input" />
+                                                                        </th>
+                                    <th>Usuário</th>
+                                    <th>IP</th>
+                                    <th>User Agent</th>
+                                    <th>Início da Sessão</th>
+                                    <th>Última Atividade</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessoes %}
+                                                                <tr data-session-id="{{ session.id }}" data-session-key="{{ session.session_key }}" data-status="{% if session.ativa %}ativo{% else %}inativo{% endif %}" data-risks="" data-created="{{ session.criada_em|date:'c' }}">
+                                                                        <td>
+                                                                            <input type="checkbox" class="form-check-input session-select" value="{{ session.id }}" />
+                                                                        </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar me-2">
+                                                {% if session.user.avatar %}
+                                                <img src="{{ session.user.avatar.url }}" alt="{{ session.user.get_full_name }}" class="rounded-circle" width="32" height="32">
+                                                {% else %}
+                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px;">
+                                                    {{ session.user.first_name|first|upper }}{{ session.user.last_name|first|upper }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ session.user.get_full_name|default:session.user.username }}</div>
+                                                <small class="text-muted">{{ session.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                                                        <td>
+                                                                                {% if session.ip_address %}
+                                                                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="Endereço IP">{{ session.ip_address }}</span>
+                                                                                {% else %}
+                                                                                    <span class="text-muted small">—</span>
+                                                                                {% endif %}
+                                                                        </td>
+                                    <td>
+                                        <small class="text-muted" title="{{ session.user_agent }}">
+                                            {{ session.user_agent|truncatechars:30 }}
+                                        </small>
+                                    </td>
+                                    <td><span class="small" data-bs-toggle="tooltip" title="{{ session.criada_em|date:'d/m/Y H:i:s' }}">{{ session.criada_em|date:"d/m/Y H:i" }}</span></td>
+                                    <td>
+                                        <span class="text-success small" data-bs-toggle="tooltip" title="{{ session.ultima_atividade|date:'d/m/Y H:i:s' }}">{{ session.ultima_atividade|timesince }} atrás</span>
+                                    </td>
+                                    <td>
+                                                                                {% if session.ativa %}
+                                                                                    <span class="badge bg-success" data-bs-toggle="tooltip" title="Sessão ativa">
+                                                                                        <i class="fas fa-circle me-1"></i>Ativo
+                                                                                    </span>
+                                                                                {% else %}
+                                                                                    <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Sessão inativa">
+                                                                                        <i class="fas fa-circle-notch me-1"></i>Inativo
+                                                                                    </span>
+                                                                                {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info" data-action="detalhe-sessao" data-url="{% url 'user_management:sessao_detalhe' session.pk %}" title="Detalhes">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" data-action="encerrar-sessao" data-url="{% url 'user_management:sessao_encerrar' session.pk %}" title="Encerrar">
+                                                <i class="fas fa-power-off"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-clock-history" style="font-size: 48px;"></i>
+                                            <p class="mt-2 mb-0">Nenhuma sessão ativa encontrada</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes da Sessão -->
+<div class="modal fade" id="sessionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalhes da Sessão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="session-details-content">
+                <!-- Conteúdo carregado via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-danger" onclick="revokeCurrentSession()">Revogar Sessão</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'user_management/user_actions.js' %}"></script>
+<script>
+// Removido reload completo; fallback polling leve opcional
+let manualAbort = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const search = document.getElementById('search-input');
+    const rows = () => Array.from(document.querySelectorAll('#sessions-table tbody tr[data-session-id]'));
+    const selectAll = document.getElementById('select-all-sessions');
+    const bulkBtn = document.getElementById('btn-encerrar-selecionadas');
+    const countBadge = document.getElementById('count-selected');
+
+    const statusSel = document.getElementById('filter-status');
+    const riskSel = document.getElementById('filter-risk');
+    const dIni = document.getElementById('filter-data-inicio');
+    const dFim = document.getElementById('filter-data-fim');
+    const clearBtn = document.getElementById('btn-clear-filters');
+
+    function applyFilters(){
+        const txt = (search.value||'').toLowerCase();
+        const status = statusSel.value;
+        const risk = riskSel.value;
+        const di = dIni.value ? new Date(dIni.value+'T00:00:00') : null;
+        const df = dFim.value ? new Date(dFim.value+'T23:59:59') : null;
+        rows().forEach(r => {
+            let show = true;
+            if (txt && !r.textContent.toLowerCase().includes(txt)) show = false;
+            if (show && status && r.dataset.status !== status) show = false;
+            if (show && risk) {
+                const risks = (r.dataset.risks||'').split(',').filter(Boolean);
+                if (!risks.includes(risk)) show = false;
+            }
+            if (show && (di || df)) {
+                const created = new Date(r.dataset.created);
+                if (di && created < di) show = false;
+                if (df && created > df) show = false;
+            }
+            r.style.display = show ? '' : 'none';
+        });
+        updateSelectionState();
+    }
+
+    [search, statusSel, riskSel, dIni, dFim].forEach(el => el && el.addEventListener('input', applyFilters));
+    clearBtn?.addEventListener('click', e => { e.preventDefault(); [search,statusSel,riskSel,dIni,dFim].forEach(el=>{ if(el.tagName==='SELECT') el.value=''; else el.value='';}); applyFilters(); });
+
+    function updateSelectionState(){
+        const selected = rows().flatMap(r => Array.from(r.querySelectorAll('.session-select:checked')).map(inp => inp.value));
+        const count = selected.length;
+        bulkBtn.disabled = count === 0;
+        countBadge.textContent = count;
+        countBadge.style.display = count ? 'inline-block' : 'none';
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            rows().forEach(r => { const cb = r.querySelector('.session-select'); if (cb && !cb.disabled && r.style.display !== 'none') cb.checked = selectAll.checked; });
+            updateSelectionState();
+        });
+    }
+    document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('session-select')) updateSelectionState();
+    });
+
+    if (bulkBtn) {
+        bulkBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const ids = rows().filter(r => r.querySelector('.session-select:checked')).map(r => r.dataset.sessionId);
+            if (!ids.length) return;
+            if (!confirm(`Encerrar ${ids.length} sessão(ões)?`)) return;
+            fetch(bulkBtn.dataset.url, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '' },
+                body: JSON.stringify({ ids })
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'ok') { window.dispatchEvent(new CustomEvent('user:sessionsTerminatedAll', { detail: { encerradas: data.encerradas } })); (data.ids||ids).forEach(id=>{ const tr=document.querySelector(`tr[data-session-id="${id}"]`); if(tr) tr.remove(); }); updateSelectionState(); }
+                else alert(data.detail || 'Erro ao encerrar sessões');
+            }).catch(err => alert(err.message||'Falha na requisição'));
+        });
+    }
+
+    // Inicializar tooltips bootstrap se disponíveis
+    if (window.bootstrap?.Tooltip) {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+    }
+
+    // WebSocket tempo real (auto fallback se falhar)
+    const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/sessions/';
+    let ws; let wsAttempts = 0; let wsClosed = false; let pollIntervalId=null;
+    function startWebSocket(){
+        try {
+            ws = new WebSocket(wsUrl);
+            ws.addEventListener('open', () => { wsAttempts=0; console.log('WS sessões conectado'); if (pollIntervalId){ clearInterval(pollIntervalId); pollIntervalId=null; } });
+            ws.addEventListener('message', ev => { try { const msg = JSON.parse(ev.data); handleRealtimeMessage(msg); } catch(e){} });
+            ws.addEventListener('close', () => { if (wsClosed) return; console.log('WS sessões fechado'); scheduleReconnect(); });
+            ws.addEventListener('error', () => { ws.close(); });
+        } catch(e) { console.warn('WS sessões indisponível', e); scheduleReconnect(); }
+    }
+    function scheduleReconnect(){
+        wsAttempts += 1;
+        if (wsAttempts > 5){ activatePollingFallback(); return; }
+        const delay = Math.min(30000, 1000 * Math.pow(2, wsAttempts));
+        setTimeout(startWebSocket, delay);
+    }
+    function activatePollingFallback(){
+        if (pollIntervalId) return;
+        console.log('Ativando fallback polling sessões');
+        pollIntervalId = setInterval(()=> loadPage(true), 30000);
+    }
+    startWebSocket();
+
+    function handleRealtimeMessage(msg){
+        if (msg.type === 'sessions_snapshot') {
+            if (!document.querySelector('#sessions-table tbody tr[data-session-id]')) {
+                msg.sessions.forEach(addOrUpdateRow);
+            } else {
+                // Atualiza existentes
+                msg.sessions.forEach(addOrUpdateRow);
+            }
+        } else if (msg.type === 'session_update') {
+            addOrUpdateRow(msg.session);
+            // Propagar para camada global de notificações
+            document.dispatchEvent(new CustomEvent('sessions:realtimeUpdate', { detail: { event: msg.event, session: msg.session }}));
+        }
+    }
+
+    function riskBadges(risks){
+        if (!risks || !risks.length) return '';
+        return risks.map(r => {
+            if (r==='novo_ip') return '<span class="badge bg-warning text-dark ms-1" title="Novo IP detectado">Novo IP</span>';
+            if (r==='inativo_longo') return '<span class="badge bg-danger ms-1" title="Sessão inativa há muito tempo">Inativo</span>';
+            if (r==='multi_ip') return '<span class="badge bg-info ms-1" title="Múltiplos IPs simultâneos">Multi-IP</span>';
+            if (r==='geo_variacao') return '<span class="badge bg-secondary ms-1" title="Variação geográfica">Geo</span>';
+            return '';
+        }).join('');
+    }
+
+    function addOrUpdateRow(s){
+        if(!s) return;
+        const tbody = document.querySelector('#sessions-table tbody');
+        let tr = tbody.querySelector(`tr[data-session-id="${s.id}"]`);
+        const html = `
+            <td><input type="checkbox" class="form-check-input session-select" value="${s.id}" /></td>
+            <td><div class="fw-bold">${s.user}</div><small class="text-muted">${s.email||''}</small></td>
+            <td>${s.ip_address ? `<span class=\"badge bg-info\">${s.ip_address}</span>` : '<span class=\"text-muted small\">—</span>'}</td>
+            <td><small class="text-muted" title="${s.user_agent||''}">${(s.user_agent||'').slice(0,30)}</small></td>
+            <td><span class="small" title="${s.criada_em}">${s.criada_em.substring(0,16).replace('T',' ')}</span></td>
+            <td><span class="text-success small" title="${s.ultima_atividade}">${s.ultima_atividade.substring(0,16).replace('T',' ')}</span></td>
+            <td>${s.ativa ? '<span class="badge bg-success"><i class="fas fa-circle me-1"></i>Ativo</span>' : '<span class="badge bg-secondary">Inativo</span>'}${riskBadges(s.risks)}</td>
+            <td class="text-end"><div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-info" data-action="detalhe-sessao" data-url="/user-management/sessoes/${s.id}/detalhe/" title="Detalhes"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-outline-danger" data-action="encerrar-sessao" data-url="/user-management/sessoes/${s.id}/encerrar/" title="Encerrar"><i class="fas fa-power-off"></i></button>
+            </div></td>`;
+        if (!tr) {
+            tr = document.createElement('tr');
+            tr.dataset.sessionId = s.id;
+            tr.dataset.status = s.ativa ? 'ativo' : 'inativo';
+            tr.dataset.risks = (s.risks||[]).join(',');
+            tr.dataset.created = s.criada_em;
+            tr.innerHTML = html;
+            tbody.prepend(tr);
+        } else {
+            tr.innerHTML = html;
+            tr.dataset.status = s.ativa ? 'ativo' : 'inativo';
+            tr.dataset.risks = (s.risks||[]).join(',');
+            tr.dataset.created = s.criada_em;
+        }
+        // Rewire buttons
+        tr.querySelectorAll('[data-action="encerrar-sessao"]').forEach(btn => {
+            btn.addEventListener('click', e => { e.preventDefault(); import('/static/user_management/user_actions.js').then(m=>m.initUserManagementActions()); });
+        });
+        tr.querySelectorAll('[data-action="detalhe-sessao"]').forEach(btn => {
+            btn.addEventListener('click', e => { e.preventDefault(); import('/static/user_management/user_actions.js').then(m=>m.initUserManagementActions()); });
+        });
+        applyFilters();
+    }
+
+    // Paginação / Carregamento incremental via API
+    let apiPage = 1;
+    const pageSize = 25;
+    let loading = false;
+    let apiHasNext = true;
+    const tbody = document.querySelector('#sessions-table tbody');
+
+    async function loadPage(reset=false){
+        if (loading) return;
+        if (reset){ apiPage = 1; apiHasNext = true; tbody.querySelectorAll('tr').forEach(tr=>tr.remove()); }
+        if (!apiHasNext) return;
+        loading = true;
+        const params = new URLSearchParams();
+        params.set('page', apiPage);
+        params.set('page_size', pageSize);
+        const txt = search.value.trim(); if (txt) params.set('q', txt);
+        const st = statusSel.value; if (st) params.set('status', st);
+        const rk = riskSel.value; if (rk) params.set('risk', rk);
+        if (dIni.value) params.set('created_from', dIni.value);
+        if (dFim.value) params.set('created_to', dFim.value);
+        try {
+            const resp = await fetch('/user-management/api/sessoes/?'+params.toString(), { headers: { 'X-Requested-With':'XMLHttpRequest' } });
+            const data = await resp.json();
+            if (data.status === 'ok') {
+                data.sessions.forEach(addOrUpdateRow);
+                apiHasNext = data.has_next;
+                apiPage += 1;
+                document.getElementById('total-sessions').textContent = data.total;
+            }
+        } catch(e) { console.warn('Falha API sessões', e); }
+        finally { loading = false; }
+    }
+
+    // Infinite scroll (quando chegar perto fim)
+    const scrollContainer = document.querySelector('.card-body');
+    if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', () => {
+            const threshold = scrollContainer.scrollHeight - scrollContainer.clientHeight - 120;
+            if (scrollContainer.scrollTop >= threshold) {
+                loadPage();
+            }
+        });
+    }
+
+    // Recarregar dados ao alterar filtros (reset)
+    [search,statusSel,riskSel,dIni,dFim].forEach(el => el && el.addEventListener('change', () => loadPage(true)));
+    clearBtn?.addEventListener('click', () => loadPage(true));
+
+    // Carga inicial via API (substitui HTML estático após primeira página)
+    loadPage(true);
+});
+</script>
+{% endblock %}

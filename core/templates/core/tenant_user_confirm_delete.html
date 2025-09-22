@@ -1,0 +1,563 @@
+{% extends "pandora_delete_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Excluir {{ object.user.get_full_name|default:object.user.username }} - Pandora ERP{% endblock %}
+
+{% block delete_title %}Confirmar Exclusão{% endblock %}
+{% block delete_subtitle %}Esta ação não pode ser desfeita{% endblock %}
+{% block delete_icon %}fas fa-exclamation-triangle{% endblock %}
+
+{% block delete_object_info %}
+<div class="alert alert-warning mb-4">
+    <h5 class="alert-heading">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Você está prestes a excluir:
+    </h5>
+    <div class="d-flex align-items-center">
+        <div class="user-avatar me-3">
+            {% if object.user.first_name %}
+                {{ object.user.first_name|first|upper }}
+            {% else %}
+                {{ object.user.username|first|upper }}
+            {% endif %}
+        </div>
+        <div>
+            <h6 class="mb-1">
+                {% if object.user.get_full_name %}
+                    {{ object.user.get_full_name }}
+                {% else %}
+                    {{ object.user.username }}
+                {% endif %}
+            </h6>
+            {% if object.user.email %}
+                <small class="text-muted">{{ object.user.email }}</small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="detail-item">
+            <span class="detail-label">
+                <i class="fas fa-user-tag me-1"></i> Função:
+            </span>
+            <span class="detail-value">
+                {% if object.role %}
+                    {{ object.role.name }}
+                {% else %}
+                    <span class="text-muted">Sem função definida</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="detail-item">
+            <span class="detail-label">
+                <i class="fas fa-building me-1"></i> Departamento:
+            </span>
+            <span class="detail-value">
+                {% if object.department %}
+                    {{ object.department.name }}
+                {% else %}
+                    <span class="text-muted">Sem departamento</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="detail-item">
+            <span class="detail-label">
+                <i class="fas fa-shield-alt me-1"></i> Administrador:
+            </span>
+            <span class="detail-value">
+                {% if object.is_tenant_admin %}
+                    <span class="badge bg-success">Sim</span>
+                {% else %}
+                    <span class="badge bg-secondary">Não</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="detail-item">
+            <span class="detail-label">
+                <i class="fas fa-calendar me-1"></i> Vinculado em:
+            </span>
+            <span class="detail-value">
+                {{ object.created_at|date:"d/m/Y H:i" }}
+            </span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block delete_warnings %}
+<div class="alert alert-danger">
+    <h6><i class="fas fa-exclamation-circle me-2"></i> Consequências da exclusão:</h6>
+    <ul class="mb-0">
+        <li>O usuário perderá o acesso a esta empresa</li>
+        <li>Todas as permissões e configurações serão removidas</li>
+        <li>O histórico de atividades será mantido para auditoria</li>
+        <li>Esta ação não exclui a conta do usuário do sistema</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block delete_form %}
+<form method="post">
+    {% csrf_token %}
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'core:tenant_user_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Cancelar
+        </a>
+        
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-2"></i> Sim, Excluir
+        </button>
+    </div>
+</form>
+{% endblock %}
+    font-size: 1.8rem;
+}
+
+.delete-header p {
+    position: relative;
+    z-index: 1;
+    margin: 1rem 0 0;
+    opacity: 0.9;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.user-info {
+    padding: 2rem;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.user-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0 auto 1rem;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.warning-list {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.warning-list h6 {
+    color: #856404;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.warning-list ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #856404;
+}
+
+.warning-list li {
+    margin-bottom: 0.5rem;
+}
+
+.action-section {
+    padding: 2rem;
+    background: #f8f9fa;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    border: none;
+    padding: 12px 30px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-danger::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.6s;
+}
+
+.btn-danger:hover::before {
+    left: 100%;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    border-radius: 12px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.detail-value {
+    color: #6c757d;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .delete-header {
+        padding: 1.5rem;
+    }
+    
+    .user-info {
+        padding: 1.5rem;
+    }
+    
+    .action-section {
+        padding: 1.5rem;
+    }
+    
+    .delete-icon {
+        font-size: 3rem;
+    }
+    
+    .delete-header h1 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                            <i class="fas fa-home"></i> Início
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'core:tenant_user_list' %}" class="text-decoration-none">
+                            <i class="fas fa-users"></i> Usuários
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <i class="fas fa-trash"></i> Excluir Usuário
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Delete Confirmation Card -->
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="delete-card">
+                <!-- Header -->
+                <div class="delete-header">
+                    <div class="delete-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1>Confirmar Exclusão</h1>
+                    <p>Esta ação não pode ser desfeita</p>
+                </div>
+
+                <!-- User Information -->
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {% if object.user.first_name %}
+                            {{ object.user.first_name|first|upper }}
+                        {% else %}
+                            {{ object.user.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <h4 class="mb-2">
+                        {% if object.user.get_full_name %}
+                            {{ object.user.get_full_name }}
+                        {% else %}
+                            {{ object.user.username }}
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted mb-0">{{ object.user.email }}</p>
+
+                    <!-- User Details -->
+                    <div class="mt-3">
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-user-tag me-1"></i> Função:
+                            </span>
+                            <span class="detail-value">
+                                {% if object.role %}
+                                    {{ object.role.name }}
+                                {% else %}
+                                    <span class="text-muted">Sem função definida</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-building me-1"></i> Departamento:
+                            </span>
+                            <span class="detail-value">
+                                {% if object.department %}
+                                    {{ object.department.name }}
+                                {% else %}
+                                    <span class="text-muted">Sem departamento</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-shield-alt me-1"></i> Administrador:
+                            </span>
+                            <span class="detail-value">
+                                {% if object.is_tenant_admin %}
+                                    <span class="badge bg-success">Sim</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Não</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-calendar me-1"></i> Vinculado em:
+                            </span>
+                            <span class="detail-value">
+                                {{ object.created_at|date:"d/m/Y H:i" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Information -->
+                <div class="user-info">
+                    <div class="warning-list">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i> Consequências da exclusão:</h6>
+                        <ul>
+                            <li>O usuário perderá o acesso a esta empresa</li>
+                            <li>Todas as permissões e configurações serão removidas</li>
+                            <li>O histórico de atividades será mantido para auditoria</li>
+                            <li>Esta ação não exclui a conta do usuário do sistema</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-section">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <a href="{% url 'core:tenant_user_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Cancelar
+                        </a>
+                        <form method="post" id="deleteForm">
+                            {% csrf_token %}
+                            <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                                <i class="fas fa-trash me-2"></i> Confirmar Exclusão
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmação Final
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-times text-danger fs-1"></i>
+                    </div>
+                    <h6 class="mb-3">Tem certeza que deseja excluir este usuário?</h6>
+                    <p class="text-muted">
+                        Digite <strong>"CONFIRMAR"</strong> para prosseguir:
+                    </p>
+                    <input type="text" id="confirmationInput" class="form-control text-center" 
+                           placeholder="Digite CONFIRMAR" maxlength="9">
+                    <div id="confirmationError" class="text-danger mt-2 d-none">
+                        Por favor, digite "CONFIRMAR" exatamente como mostrado.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="finalConfirmBtn" disabled onclick="executeDelete()">
+                    <i class="fas fa-trash me-2"></i> Excluir Usuário
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let confirmModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar modal
+    confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    
+    // Controle do input de confirmação
+    const confirmationInput = document.getElementById('confirmationInput');
+    const finalConfirmBtn = document.getElementById('finalConfirmBtn');
+    const confirmationError = document.getElementById('confirmationError');
+    
+    confirmationInput.addEventListener('input', function() {
+        const value = this.value.toUpperCase();
+        const isValid = value === 'CONFIRMAR';
+        
+        finalConfirmBtn.disabled = !isValid;
+        
+        if (value.length > 0 && !isValid) {
+            confirmationError.classList.remove('d-none');
+        } else {
+            confirmationError.classList.add('d-none');
+        }
+        
+        // Atualizar estilo do botão
+        if (isValid) {
+            finalConfirmBtn.classList.remove('btn-outline-danger');
+            finalConfirmBtn.classList.add('btn-danger');
+        } else {
+            finalConfirmBtn.classList.remove('btn-danger');
+            finalConfirmBtn.classList.add('btn-outline-danger');
+        }
+    });
+    
+    // Reset modal quando fechar
+    document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function() {
+        confirmationInput.value = '';
+        finalConfirmBtn.disabled = true;
+        confirmationError.classList.add('d-none');
+        finalConfirmBtn.classList.remove('btn-danger');
+        finalConfirmBtn.classList.add('btn-outline-danger');
+    });
+});
+
+function confirmDelete() {
+    confirmModal.show();
+    
+    // Focar no input após a animação do modal
+    setTimeout(() => {
+        document.getElementById('confirmationInput').focus();
+    }, 300);
+}
+
+function executeDelete() {
+    const finalConfirmBtn = document.getElementById('finalConfirmBtn');
+    const originalText = finalConfirmBtn.innerHTML;
+    
+    // Animação de loading
+    finalConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Excluindo...';
+    finalConfirmBtn.disabled = true;
+    
+    // Fechar modal
+    confirmModal.hide();
+    
+    // Executar exclusão após delay
+    setTimeout(() => {
+        document.getElementById('deleteForm').submit();
+    }, 1000);
+}
+
+// Atalhos de teclado
+document.addEventListener('keydown', function(e) {
+    // ESC para fechar modal
+    if (e.key === 'Escape' && confirmModal._isShown) {
+        confirmModal.hide();
+    }
+    
+    // Enter no input de confirmação
+    if (e.key === 'Enter' && document.getElementById('confirmationInput') === document.activeElement) {
+        const finalConfirmBtn = document.getElementById('finalConfirmBtn');
+        if (!finalConfirmBtn.disabled) {
+            executeDelete();
+        }
+    }
+});
+</script>
+{% endblock %}
+<script> let confirmModal; document.addEventListener('DOMContentLoaded', function() { // Inicializar modal confirmModal = new bootstrap.Modal(document.getElementById('confirmModal')); // Controle do input de confirmação const confirmationInput = document.getElementById('confirmationInput'); const finalConfirmBtn = document.getElementById('finalConfirmBtn'); const confirmationError = document.getElementById('confirmationError'); confirmationInput.addEventListener('input', function() { const value = this.value.toUpperCase(); const isValid = value === 'CONFIRMAR'; finalConfirmBtn.disabled = !isValid; if (value.length > 0 && !isValid) { confirmationError.classList.remove('d-none'); } else { confirmationError.classList.add('d-none'); } // Atualizar estilo do botão if (isValid) { finalConfirmBtn.classList.remove('btn-outline-danger'); finalConfirmBtn.classList.add('btn-danger'); } else { finalConfirmBtn.classList.remove('btn-danger'); finalConfirmBtn.classList.add('btn-outline-danger'); } }); // Reset modal quando fechar document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function() { confirmationInput.value = ''; finalConfirmBtn.disabled = true; confirmationError.classList.add('d-none'); finalConfirmBtn.classList.remove('btn-danger'); finalConfirmBtn.classList.add('btn-outline-danger'); }); // Animações animateCard(); }); function confirmDelete() { confirmModal.show(); // Focar no input após a animação do modal setTimeout(() => { document.getElementById('confirmationInput').focus(); }, 300); } function executeDelete() { const finalConfirmBtn = document.getElementById('finalConfirmBtn'); const originalText = finalConfirmBtn.innerHTML; // Animação de loading finalConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Excluindo...'; finalConfirmBtn.disabled = true; // Fechar modal confirmModal.hide(); // Mostrar feedback visual na página showDeletionProgress(); // Executar exclusão após delay setTimeout(() => { document.getElementById('deleteForm').submit(); }, 1500); } function showDeletionProgress() { const deleteCard = document.querySelector('.delete-card'); const deleteHeader = document.querySelector('.delete-header'); // Adicionar overlay de loading const overlay = document.createElement('div'); overlay.style.cssText = ` position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; border-radius: 20px; `; overlay.innerHTML = ` <div class="text-center"><div class="mb-3"><i class="fas fa-spinner fa-spin" class="fs-1"></i></div><h5>Processando exclusão...</h5><p class="mb-0">Aguarde um momento</p></div> `; deleteCard.style.position = 'relative'; deleteCard.appendChild(overlay); } function animateCard() { const deleteCard = document.querySelector('.delete-card'); // Animação de entrada deleteCard.style.opacity = '0'; deleteCard.style.transform = 'scale(0.9) translateY(30px)'; deleteCard.style.transition = 'all 0.6s ease'; setTimeout(() => { deleteCard.style.opacity = '1'; deleteCard.style.transform = 'scale(1) translateY(0)'; }, 100); // Animar elementos internos const elements = deleteCard.querySelectorAll('.user-info, .action-section'); elements.forEach((element, index) => { element.style.opacity = '0'; element.style.transform = 'translateY(20px)'; element.style.transition = `all 0.6s ease ${(index + 1) * 0.2}s`; setTimeout(() => { element.style.opacity = '1'; element.style.transform = 'translateY(0)'; }, 300); }); } // Prevenir envio acidental do formulário document.getElementById('deleteForm').addEventListener('submit', function(e) { e.preventDefault(); confirmDelete(); }); // Atalhos de teclado document.addEventListener('keydown', function(e) { // ESC para fechar modal if (e.key === 'Escape' && confirmModal._isShown) { confirmModal.hide(); } // Enter no input de confirmação if (e.key === 'Enter' && document.getElementById('confirmationInput') === document.activeElement) { const finalConfirmBtn = document.getElementById('finalConfirmBtn'); if (!finalConfirmBtn.disabled) { executeDelete(); } } });
+</script>

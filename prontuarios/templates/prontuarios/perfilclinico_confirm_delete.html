@@ -1,0 +1,13 @@
+{% extends 'pandora_home_ultra_modern.html' %}
+{% block home_title %}Excluir Perfil Clínico{% endblock %}
+{% block home_subtitle %}Esta ação não pode ser desfeita{% endblock %}
+{% block home_content %}
+<form method="post">
+  {% csrf_token %}
+  <p>Tem certeza que deseja excluir o perfil clínico de <strong>{{ object.cliente.nome_display }}</strong>?</p>
+  <div class="d-flex gap-2">
+    <a href="{% url 'prontuarios:perfils_clinicos_detail' object.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+  </div>
+</form>
+{% endblock %}

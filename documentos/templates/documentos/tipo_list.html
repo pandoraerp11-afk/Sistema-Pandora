@@ -1,0 +1,51 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Tipos de Documento" %}{% endblock %}
+{% block page_title %}{% trans "Tipos de Documento" %}{% endblock %}
+{% block page_subtitle %}{% trans "Visualize e gerencie os tipos de documentos parametrizados." %}{% endblock %}
+
+{% block list_content %}
+<div class="card card-ultra-modern mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><i class="fas fa-file-alt me-2"></i> {% trans "Tipos de Documento" %}</h5>
+  {% if perms_ui.can_add|default:perms.can_add|default:True %}
+    <a href="{% url 'documentos:tipo_create' %}" class="btn btn-success float-end">
+      <i class="fas fa-plus"></i> {% trans "Novo Tipo" %}
+    </a>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>{% trans "Nome" %}</th>
+          <th>{% trans "Categoria" %}</th>
+          <th>{% trans "Periodicidade" %}</th>
+          <th>{% trans "Versionável" %}</th>
+          <th>{% trans "Ativo" %}</th>
+          <th class="text-end">{% trans "Ações" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tipo in tipos %}
+        <tr>
+          <td>{{ tipo.nome }}</td>
+          <td>{{ tipo.categoria.nome }}</td>
+          <td>{{ tipo.get_periodicidade_display }}</td>
+          <td>{% if tipo.versionavel %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-danger">Não</span>{% endif %}</td>
+          <td>{% if tipo.ativo %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-danger">Não</span>{% endif %}</td>
+          <td class="text-end">
+            {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+            <a href="{% url 'documentos:tipo_edit' tipo.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted">{% trans "Nenhum tipo cadastrado." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

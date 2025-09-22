@@ -1,0 +1,205 @@
+{% load widget_tweaks %}
+{% load core_tags %}
+{# Partial geral para seleção de módulos do sistema #}
+{# Usado em: telas de configuração e wizard; template legacy tenant_form.html removido. #}
+
+<!-- Título da seção de módulos -->
+<div class="mt-4 mb-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <h6 class="text-muted border-bottom pb-2 mb-0" style="flex-grow: 1; margin-right: 15px;">
+            <i class="fas fa-puzzle-piece me-2"></i>Módulos do Sistema
+            <small class="text-muted fw-normal ms-2">(Clique na seta para gerenciar módulos)</small>
+        </h6>
+        <button type="button" class="btn btn-outline-primary btn-sm toggle-modules" data-target="modulesSection">
+            <i class="fas fa-chevron-down"></i>
+        </button>
+    </div>
+</div>
+
+<div class="modules-selection-container collapse" id="modulesSection">
+    <div class="alert alert-info mb-3">
+        <i class="fas fa-info-circle me-2"></i>
+        Selecione os módulos que estarão disponíveis para esta empresa. Você pode alterar essa configuração a qualquer momento.
+    </div>
+
+    {% if module_categories %}
+        <div class="row">
+            {% for category, category_info in module_categories.items %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="card-title mb-0">
+                                <i class="{{ category_info.icon }} me-2"></i>
+                                {{ category_info.name }}
+                            </h6>
+                            <small class="text-muted">{{ category_info.description }}</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for module_key, module_info in available_modules.items %}
+                                    {% if module_info.category == category %}
+                                        <div class="col-12 mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       name="enabled_modules" 
+                                                       value="{{ module_key }}" 
+                                                       id="module_{{ module_key }}"
+                                                       {% if module_key in selected_modules %}checked{% endif %}>
+                                                <label class="form-check-label d-flex align-items-center" for="module_{{ module_key }}">
+                                                    <span class="me-2">
+                                                        {% if module_icons and module_key in module_icons %}
+                                                            <i class="{{ module_icons|lookup:module_key|lookup:'icon' }} {{ module_icons|lookup:module_key|lookup:'color' }}"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-cube text-primary"></i>
+                                                        {% endif %}
+                                                    </span>
+                                                    <div>
+                                                        <strong>{{ module_info.name }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">{{ module_info.description }}</small>
+                                                        {% if module_info.premium %}
+                                                            <span class="badge bg-warning text-dark ms-2">Premium</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Fallback case: lista simples se não houver categorias -->
+        <div class="row">
+            {% for module_key, module_info in available_modules.items %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       name="enabled_modules" 
+                                       value="{{ module_key }}" 
+                                       id="module_{{ module_key }}"
+                                       {% if module_key in selected_modules %}checked{% endif %}>
+                                <label class="form-check-label" for="module_{{ module_key }}">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">
+                                            {% if module_icons and module_key in module_icons %}
+                                                <i class="{{ module_icons|lookup:module_key|lookup:'icon' }} {{ module_icons|lookup:module_key|lookup:'color' }}"></i>
+                                            {% else %}
+                                                <i class="fas fa-cube text-primary"></i>
+                                            {% endif %}
+                                        </span>
+                                        <div>
+                                            <strong>{{ module_info.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ module_info.description }}</small>
+                                            {% if module_info.premium %}
+                                                <span class="badge bg-warning text-dark ms-2">Premium</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Ações rápidas -->
+    <div class="mt-3">
+        <button type="button" class="btn btn-sm btn-outline-primary me-2" id="select-all-modules">
+            <i class="fas fa-check-square me-1"></i> Selecionar Todos
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="deselect-all-modules">
+            <i class="fas fa-square me-1"></i> Desmarcar Todos
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-info" id="select-essential-modules">
+            <i class="fas fa-star me-1"></i> Apenas Essenciais
+        </button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Botão selecionar todos
+    document.getElementById('select-all-modules')?.addEventListener('click', function() {
+        document.querySelectorAll('input[name="enabled_modules"]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+    });
+
+    // Botão desmarcar todos
+    document.getElementById('deselect-all-modules')?.addEventListener('click', function() {
+        document.querySelectorAll('input[name="enabled_modules"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    });
+
+    // Botão selecionar essenciais
+    document.getElementById('select-essential-modules')?.addEventListener('click', function() {
+        // Módulos considerados essenciais
+        const essentialModules = ['clientes', 'fornecedores', 'produtos', 'servicos', 'funcionarios', 'compras', 'financeiro', 'estoque', 'agenda', 'user_management', 'relatorios'];
+        
+        document.querySelectorAll('input[name="enabled_modules"]').forEach(checkbox => {
+            checkbox.checked = essentialModules.includes(checkbox.value);
+        });
+    });
+
+    // Sistema de toggle para módulos
+    const toggleButton = document.querySelector('.toggle-modules');
+    const modulesSection = document.getElementById('modulesSection');
+    
+    if (toggleButton && modulesSection) {
+        toggleButton.addEventListener('click', function() {
+            const isVisible = modulesSection.classList.contains('show');
+            const icon = this.querySelector('i');
+            
+            if (isVisible) {
+                modulesSection.classList.remove('show');
+                icon.className = 'fas fa-chevron-down';
+            } else {
+                modulesSection.classList.add('show');
+                icon.className = 'fas fa-chevron-up';
+                updateModulesCount(); // Atualizar contador quando abrir
+            }
+        });
+    }
+    
+    // Função para atualizar contador de módulos
+    function updateModulesCount() {
+        const countElement = document.getElementById('modulesCount');
+        
+        if (countElement) {
+            const selectedModules = document.querySelectorAll('input[name="enabled_modules"]:checked');
+            const count = selectedModules.length;
+            
+            if (count === 0) {
+                countElement.textContent = 'Clique na seta para gerenciar módulos';
+            } else if (count === 1) {
+                countElement.textContent = '1 módulo selecionado';
+            } else {
+                countElement.textContent = `${count} módulos selecionados`;
+            }
+        }
+    }
+    
+    // Atualizar contador quando checkboxes mudarem
+    document.querySelectorAll('input[name="enabled_modules"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateModulesCount);
+    });
+    
+    // Atualizar contador inicial
+    updateModulesCount();
+
+    console.log('[ModulesSelection] JavaScript initialized');
+});
+</script>

@@ -1,0 +1,735 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Formulários Dinâmicos - Pandora ERP{% endblock %}
+{% block page_title %}Formulários Dinâmicos{% endblock %}
+{% block page_subtitle %}Crie e gerencie formulários personalizados{% endblock %}
+{% block page_icon %}fas fa-wpforms{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Formulários Dinâmicos</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+    }
+    
+    .form-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border-color: var(--primary-color);
+    }
+    
+    .form-card-header {
+        background: var(--background-secondary);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .form-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .status-rascunho {
+        background: rgba(108, 117, 125, 0.1);
+        color: var(--text-muted);
+    }
+    
+    .status-ativo {
+        background: rgba(25, 135, 84, 0.1);
+        color: var(--success-color);
+    }
+    
+    .status-inativo {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger-color);
+    }
+    
+    .status-arquivado {
+        background: rgba(108, 117, 125, 0.1);
+        color: var(--text-muted);
+    }
+    
+    .form-card-body {
+        padding: 1.5rem;
+    }
+    
+    .form-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-description {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-stats {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .form-stat-icon {
+        color: var(--primary-color);
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+    
+    .metric-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .quick-action {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .quick-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border-color: var(--primary-color);
+        color: inherit;
+        text-decoration: none;
+    }
+    
+    .quick-action-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .quick-action-content {
+        flex: 1;
+    }
+    
+    .quick-action-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .quick-action-description {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+    
+    .form-template-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .form-template-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border-color: var(--primary-color);
+    }
+    
+    .template-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        margin: 0 auto 1rem;
+    }
+    
+    .template-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .template-description {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+    
+    .template-fields {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    
+    .view-toggle {
+        display: flex;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 4px;
+    }
+    
+    .view-toggle button {
+        background: none;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+    }
+    
+    .view-toggle button.active {
+        background: var(--primary-color);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Métricas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_forms|default:0 }}</div>
+                <div class="metric-label">Total de Formulários</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ forms_ativos|default:0 }}</div>
+                <div class="metric-label">Formulários Ativos</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_responses|default:0 }}</div>
+                <div class="metric-label">Respostas Recebidas</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ templates_count|default:0 }}</div>
+                <div class="metric-label">Templates Disponíveis</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="quick-actions">
+        <a href="{% url 'formularios_dinamicos:form_create' %}" class="quick-action">
+            <div class="quick-action-icon" style="background: var(--primary-color);">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="quick-action-content">
+                <div class="quick-action-title">Criar Formulário</div>
+                <div class="quick-action-description">Crie um novo formulário do zero</div>
+            </div>
+        </a>
+        
+        <a href="{% url 'formularios_dinamicos:template_list' %}" class="quick-action">
+            <div class="quick-action-icon" style="background: var(--success-color);">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="quick-action-content">
+                <div class="quick-action-title">Usar Template</div>
+                <div class="quick-action-description">Comece com um template pronto</div>
+            </div>
+        </a>
+        
+        <a href="{% url 'formularios_dinamicos:resposta_list' %}" class="quick-action">
+            <div class="quick-action-icon" style="background: var(--info-color);">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="quick-action-content">
+                <div class="quick-action-title">Ver Respostas</div>
+                <div class="quick-action-description">Analise as respostas recebidas</div>
+            </div>
+        </a>
+        
+        <a href="{% url 'formularios_dinamicos:campo_list' %}" class="quick-action">
+            <div class="quick-action-icon" style="background: var(--warning-color);">
+                <i class="fas fa-cogs"></i>
+            </div>
+            <div class="quick-action-content">
+                <div class="quick-action-title">Gerenciar Campos</div>
+                <div class="quick-action-description">Configure tipos de campos</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Filtros e Controles -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Buscar formulários..." id="searchInput">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Todos os Status</option>
+                        <option value="rascunho">Rascunho</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="arquivado">Arquivado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="view-toggle">
+                        <button type="button" class="active" data-view="grid">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button type="button" data-view="list">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 text-end">
+                    <div class="btn-group">
+                        <a href="{% url 'formularios_dinamicos:form_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Novo Formulário
+                        </a>
+                        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                            <span class="visually-hidden">Toggle Dropdown</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'formularios_dinamicos:template_list' %}">
+                                <i class="fas fa-file-alt"></i> Criar com Template
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="importForm()">
+                                <i class="fas fa-file-import"></i> Importar Formulário
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportForms()">
+                                <i class="fas fa-file-export"></i> Exportar Formulários
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid View -->
+    <div id="gridView" class="row">
+        {% for form in object_list %}
+        <div class="col-lg-4 col-md-6 mb-4 form-item" data-name="{{ form.nome|lower }}" data-status="{{ form.status }}">
+            <div class="form-card h-100">
+                <div class="form-card-header">
+                    <span class="form-status status-{{ form.status }}">
+                        {% if form.status == 'rascunho' %}
+                            <i class="fas fa-file-alt"></i> Rascunho
+                        {% elif form.status == 'ativo' %}
+                            <i class="fas fa-check-circle"></i> Ativo
+                        {% elif form.status == 'inativo' %}
+                            <i class="fas fa-times-circle"></i> Inativo
+                        {% elif form.status == 'arquivado' %}
+                            <i class="fas fa-archive"></i> Arquivado
+                        {% endif %}
+                    </span>
+                    <div class="dropdown">
+                        <button class="btn btn-link btn-sm" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'formularios_dinamicos:form_detail' form.pk %}">
+                                <i class="fas fa-eye"></i> Visualizar
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'formularios_dinamicos:form_update' form.pk %}">
+                                <i class="fas fa-edit"></i> Editar
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'formularios_dinamicos:form_render' form.pk %}" target="_blank">
+                                <i class="fas fa-external-link-alt"></i> Preview
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="duplicateForm({{ form.pk }})">
+                                <i class="fas fa-copy"></i> Duplicar
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportForm({{ form.pk }})">
+                                <i class="fas fa-download"></i> Exportar
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'formularios_dinamicos:form_delete' form.pk %}">
+                                <i class="fas fa-trash"></i> Excluir
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="form-card-body">
+                    <h5 class="form-title">{{ form.nome }}</h5>
+                    {% if form.descricao %}
+                    <p class="form-description">{{ form.descricao|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <div class="form-stats">
+                        <div class="form-stat">
+                            <i class="fas fa-list-ul form-stat-icon"></i>
+                            <span>{{ form.campos.count }} campos</span>
+                        </div>
+                        <div class="form-stat">
+                            <i class="fas fa-reply form-stat-icon"></i>
+                            <span>{{ form.respostas.count }} respostas</span>
+                        </div>
+                        <div class="form-stat">
+                            <i class="fas fa-calendar form-stat-icon"></i>
+                            <span>{{ form.created_at|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <a href="{% url 'formularios_dinamicos:form_detail' form.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        <a href="{% url 'formularios_dinamicos:form_update' form.pk %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        <a href="{% url 'formularios_dinamicos:form_render' form.pk %}" class="btn btn-sm btn-outline-success" target="_blank">
+                            <i class="fas fa-external-link-alt"></i> Preview
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-wpforms fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Nenhum formulário encontrado</h4>
+                <p class="text-muted">Comece criando seu primeiro formulário dinâmico.</p>
+                <div class="mt-4">
+                    <a href="{% url 'formularios_dinamicos:form_create' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-plus"></i> Criar Formulário
+                    </a>
+                    <a href="{% url 'formularios_dinamicos:template_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-file-alt"></i> Usar Template
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Table View -->
+    <div id="tableView" class="d-none">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Formulário</th>
+                            <th>Status</th>
+                            <th>Campos</th>
+                            <th>Respostas</th>
+                            <th>Criado em</th>
+                            <th>Última Atualização</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in object_list %}
+                        <tr class="form-item" data-name="{{ form.nome|lower }}" data-status="{{ form.status }}">
+                            <td>
+                                <div>
+                                    <strong>{{ form.nome }}</strong>
+                                    {% if form.descricao %}
+                                        <br><small class="text-muted">{{ form.descricao|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="form-status status-{{ form.status }}">
+                                    {% if form.status == 'rascunho' %}
+                                        <i class="fas fa-file-alt"></i> Rascunho
+                                    {% elif form.status == 'ativo' %}
+                                        <i class="fas fa-check-circle"></i> Ativo
+                                    {% elif form.status == 'inativo' %}
+                                        <i class="fas fa-times-circle"></i> Inativo
+                                    {% elif form.status == 'arquivado' %}
+                                        <i class="fas fa-archive"></i> Arquivado
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ form.campos.count }} campos</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ form.respostas.count }} respostas</span>
+                            </td>
+                            <td>{{ form.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>{{ form.updated_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'formularios_dinamicos:form_detail' form.pk %}" class="btn btn-sm btn-outline-primary" title="Visualizar">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'formularios_dinamicos:form_update' form.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'formularios_dinamicos:form_render' form.pk %}" class="btn btn-sm btn-outline-success" title="Preview" target="_blank">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <a href="{% url 'formularios_dinamicos:form_delete' form.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="fas fa-wpforms fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">Nenhum formulário encontrado</h4>
+                                <p class="text-muted">Comece criando seu primeiro formulário dinâmico.</p>
+                                <div class="mt-4">
+                                    <a href="{% url 'formularios_dinamicos:form_create' %}" class="btn btn-primary me-2">
+                                        <i class="fas fa-plus"></i> Criar Formulário
+                                    </a>
+                                    <a href="{% url 'formularios_dinamicos:template_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-file-alt"></i> Usar Template
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Section -->
+    {% if templates %}
+    <div class="mt-5">
+        <h4 class="mb-4">Templates Disponíveis</h4>
+        <div class="row">
+            {% for template in templates %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                <div class="form-template-card" onclick="useTemplate({{ template.id }})">
+                    <div class="template-icon" style="background: {{ template.color|default:'var(--primary-color)' }};">
+                        <i class="{{ template.icon|default:'fas fa-file-alt' }}"></i>
+                    </div>
+                    <div class="template-title">{{ template.nome }}</div>
+                    <div class="template-description">{{ template.descricao|truncatechars:60 }}</div>
+                    <div class="template-fields">{{ template.campos.count }} campos</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Paginação -->
+    {% if is_paginated %}
+    <nav aria-label="Paginação" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">Primeira</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Busca em tempo real
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const formItems = document.querySelectorAll('.form-item');
+    
+    function filterForms() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        
+        formItems.forEach(item => {
+            const name = item.getAttribute('data-name');
+            const status = item.getAttribute('data-status');
+            
+            const matchesSearch = name.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            
+            if (matchesSearch && matchesStatus) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterForms);
+    statusFilter.addEventListener('change', filterForms);
+    
+    // Alternância entre visualizações
+    const viewToggleButtons = document.querySelectorAll('.view-toggle button');
+    const gridView = document.getElementById('gridView');
+    const tableView = document.getElementById('tableView');
+    
+    viewToggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const view = this.getAttribute('data-view');
+            
+            viewToggleButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            if (view === 'grid') {
+                gridView.classList.remove('d-none');
+                tableView.classList.add('d-none');
+            } else {
+                gridView.classList.add('d-none');
+                tableView.classList.remove('d-none');
+            }
+        });
+    });
+    
+    // Salvar preferência de visualização
+    const savedView = localStorage.getItem('forms_view');
+    if (savedView) {
+        const button = document.querySelector(`[data-view="${savedView}"]`);
+        if (button) {
+            button.click();
+        }
+    }
+    
+    viewToggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            localStorage.setItem('forms_view', this.getAttribute('data-view'));
+        });
+    });
+});
+
+function useTemplate(templateId) {
+    window.location.href = `/formularios-dinamicos/form/create/?template=${templateId}`;
+}
+
+function duplicateForm(formId) {
+    if (confirm('Tem certeza que deseja duplicar este formulário?')) {
+        // Implementar duplicação
+        alert('Funcionalidade em desenvolvimento: Duplicar Formulário');
+    }
+}
+
+function exportForm(formId) {
+    // Implementar exportação
+    alert('Funcionalidade em desenvolvimento: Exportar Formulário');
+}
+
+function exportForms() {
+    // Implementar exportação em lote
+    alert('Funcionalidade em desenvolvimento: Exportar Formulários');
+}
+
+function importForm() {
+    // Implementar importação
+    alert('Funcionalidade em desenvolvimento: Importar Formulário');
+}
+</script>
+{% endblock %}

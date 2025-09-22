@@ -1,0 +1,147 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n humanize %}
+
+{% block title %}🩺 Módulo Prontuários - Pandora ERP{% endblock %}
+{% block home_icon %}<i class="fas fa-notes-medical me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Módulo Prontuários{% endblock %}
+{% block home_subtitle %}{% trans "Gestão clínica: clientes, serviços clínicos, atendimentos e evolução" %}{% endblock %}
+
+{% block home_stats %}
+<div class="mb-5">
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-chart-bar me-2 text-primary"></i>{% trans "Visão Geral Clínica" %}
+    </h2>
+    <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-primary text-white mx-auto mb-3"><i class="fas fa-user-injured"></i></div>
+                    <h3 class="display-6 fw-bold text-primary mb-1" id="statClientes">--</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Clientes" %}</p>
+                    <small class="text-muted">{% trans "Cadastrados" %}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-success text-white mx-auto mb-3"><i class="fas fa-stethoscope"></i></div>
+                    <h3 class="display-6 fw-bold text-success mb-1" id="statAtendimentos">--</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Atendimentos (30d)" %}</p>
+                    <small class="text-muted">{% trans "Últimos 30 dias" %}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-warning text-white mx-auto mb-3"><i class="fas fa-syringe"></i></div>
+                    <h3 class="display-6 fw-bold text-warning mb-1" id="statServicos">--</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Serviços Clínicos" %}</p>
+                    <small class="text-muted">{% trans "Catalogados" %}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-info text-white mx-auto mb-3"><i class="fas fa-camera"></i></div>
+                    <h3 class="display-6 fw-bold text-info mb-1" id="statFotos">--</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Fotos Evolução" %}</p>
+                    <small class="text-muted">{% trans "Registradas" %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_actions %}
+<div class="mb-5">
+    <h2 class="section-title" data-aos="fade-up"><i class="fas fa-bolt me-2 text-primary"></i>{% trans "Ações Rápidas" %}</h2>
+    <div class="row g-4" data-aos="fade-up" data-aos-delay="150">
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="200">
+            <a href="{% url 'clientes:clientes_list' %}" class="text-decoration-none">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3"><i class="fas fa-users"></i></div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Clientes" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Gerir cadastro (Wizard)" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'clientes:clientes_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>{% trans "Novo" %}</a>
+                            <a href="{% url 'clientes:clientes_list' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-list me-1"></i>{% trans "Listar" %}</a>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="250">
+            <!-- Lista de procedimentos removida: use o módulo Serviços -->
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-warning text-white mx-auto mb-3"><i class="fas fa-syringe"></i></div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Serviços" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Catálogo" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <!-- Botão de novo procedimento removido -->
+                            <span class="btn btn-outline-warning btn-sm disabled"><i class="fas fa-list me-1"></i>{% trans "Listar" %}</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="300">
+            <a href="{% url 'prontuarios:atendimentos_list' %}" class="text-decoration-none">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-success text-white mx-auto mb-3"><i class="fas fa-stethoscope"></i></div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Atendimentos" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Registro de sessões" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'prontuarios:atendimentos_create' %}" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>{% trans "Novo" %}</a>
+                            <span class="btn btn-outline-success btn-sm disabled"><i class="fas fa-list me-1"></i>{% trans "Listar" %}</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="350">
+            <a href="{% url 'prontuarios:fotos_evolucao_list' %}" class="text-decoration-none">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-info text-white mx-auto mb-3"><i class="fas fa-camera"></i></div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Fotos Evolução" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Acompanhamento visual" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'prontuarios:fotos_evolucao_create' %}" class="btn btn-info btn-sm text-white"><i class="fas fa-plus me-1"></i>{% trans "Nova" %}</a>
+                            <span class="btn btn-outline-info btn-sm disabled"><i class="fas fa-list me-1"></i>{% trans "Listar" %}</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="mb-5">
+    <h2 class="section-title" data-aos="fade-up"><i class="fas fa-route me-2 text-primary"></i>{% trans "Roadmap do Módulo" %}</h2>
+    <ul class="list-unstyled small ms-1" data-aos="fade-up" data-aos-delay="100">
+        <li class="mb-1"><i class="fas fa-check text-success me-2"></i>{% trans "Padronização inicial de URLs" %}</li>
+        <li class="mb-1"><i class="fas fa-spinner fa-spin text-warning me-2"></i>{% trans "Fase 0: Segurança & Templates Anamnese" %}</li>
+    <li class="mb-1"><i class="fas fa-circle text-muted me-2"></i>{% trans "Atualização: Serviços Clínicos / Atendimento" %}</li>
+        <li class="mb-1"><i class="fas fa-circle text-muted me-2"></i>{% trans "Quick-Create e Select2" %}</li>
+    <li class="mb-1"><i class="fas fa-circle text-muted me-2"></i>{% trans "Auto-save Cliente" %}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block home_extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Placeholder (substituir com fetch real)
+    ['statClientes','statAtendimentos','statServicos','statFotos'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.textContent='—';
+    });
+});
+</script>
+{% endblock %}

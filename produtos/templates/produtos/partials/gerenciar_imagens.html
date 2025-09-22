@@ -1,0 +1,41 @@
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">Adicionar Nova Imagem</h5>
+    </div>
+    <div class="card-body">
+        <form action="{% url 'produtos:produto_imagem_add' produto_id=object.pk %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="form-group col-md-6">{{ imagem_form.imagem.label_tag }}{{ imagem_form.imagem }}</div>
+                <div class="form-group col-md-4">{{ imagem_form.titulo.label_tag }}{{ imagem_form.titulo }}</div>
+                <div class="form-group col-md-2">{{ imagem_form.ordem.label_tag }}{{ imagem_form.ordem }}</div>
+            </div>
+            <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Adicionar Imagem</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header"><h5 class="card-title">Imagens Existentes</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <tbody>
+                {% for imagem in imagens_existentes %}
+                <tr>
+                    <td><a href="{{ imagem.imagem.url }}" data-lightbox="produto-galeria" data-title="{{ imagem.titulo }}"><img src="{{ imagem.imagem.url }}" height="50"></a></td>
+                    <td>{{ imagem.titulo|default:"Sem título" }}</td>
+                    <td>Ordem: {{ imagem.ordem }}</td>
+                    <td>
+                        <form action="{% url 'produtos:produto_imagem_delete' imagem.pk %}" method="post" onsubmit="return confirmarExclusao(this);">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-xs"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">Nenhuma imagem adicional cadastrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

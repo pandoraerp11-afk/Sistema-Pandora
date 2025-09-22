@@ -1,0 +1,338 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal Cliente - Novo Agendamento{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
+<style>
+.slot-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.slot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.slot-card.selected {
+    border-color: #0d6efd;
+    background-color: #e7f3ff;
+}
+.loading-spinner {
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-calendar-plus me-2"></i>Novo Agendamento</h2>
+            <p class="text-muted">Selecione serviço, profissional e horário disponível</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'portal_cliente:agendamentos_lista' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <form method="post" id="agendamentoForm">
+        {% csrf_token %}
+        
+    <!-- Seleção de Serviço -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>1. Selecione o Serviço</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for servico in servicos %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 servico-card" data-servico-id="{{ servico.id }}">
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="servico_id" 
+                                                                                               value="{{ servico.id }}" id="serv_{{ servico.id }}">
+                                                                                        <label class="form-check-label w-100" for="serv_{{ servico.id }}">
+                                                                                            <h6 class="mb-2">{{ servico.nome }}</h6>
+                                                                                            {% if servico.descricao %}
+                                                                                                <p class="text-muted small mb-2">{{ servico.descricao|truncatechars:100 }}</p>
+                                                {% endif %}
+                                                <div class="d-flex justify-content-between text-muted small">
+                                                    {% if servico.duracao_estimada %}
+                                                                                                            <span><i class="fas fa-clock me-1"></i>{{ servico.duracao_estimada }}</span>
+                                                    {% endif %}
+                                                    {% if servico.valor %}
+                                                                                                            <span><i class="fas fa-dollar-sign me-1"></i>R$ {{ servico.valor }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros de Busca -->
+        <div class="row mb-4" id="filtrosSection" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>2. Filtros de Busca (Opcional)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Data Início</label>
+                                <input type="date" class="form-control" id="dataInicio" 
+                                       min="{{ 'now'|date:'Y-m-d' }}" 
+                                       max="{{ 'now'|date:'Y-m-d'|add_days:60 }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Data Fim</label>
+                                <input type="date" class="form-control" id="dataFim" 
+                                       min="{{ 'now'|date:'Y-m-d' }}" 
+                                       max="{{ 'now'|date:'Y-m-d'|add_days:60 }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Profissional Preferido</label>
+                                <select class="form-select" id="profissionalFiltro">
+                                    <option value="">Qualquer profissional</option>
+                                    {% for profissional in profissionais %}
+                                        <option value="{{ profissional.id }}">{{ profissional.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-primary" onclick="buscarSlots()">
+                                <i class="fas fa-search me-2"></i>Buscar Horários Disponíveis
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slots Disponíveis -->
+        <div class="row mb-4" id="slotsSection" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>3. Selecione o Horário</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="loading-spinner text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2">Buscando horários disponíveis...</p>
+                        </div>
+                        <div id="slotsContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="row mb-4" id="observacoesSection" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-comment me-2"></i>4. Observações (Opcional)</h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control" name="observacoes" rows="3" 
+                                  placeholder="Descreva alguma preferência, restrição ou informação adicional..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="row" id="botoesSection" style="display: none;">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <button type="submit" class="btn btn-success btn-lg me-3">
+                            <i class="fas fa-check me-2"></i>Confirmar Agendamento
+                        </button>
+                        <a href="{% url 'portal_cliente:agendamentos_lista' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" name="slot_id" id="slotSelecionado">
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let servicoSelecionado = null;
+let slotSelecionado = null;
+
+// Seleção de serviço
+document.querySelectorAll('input[name="servico_id"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+    servicoSelecionado = this.value;
+        document.getElementById('filtrosSection').style.display = 'block';
+        
+        // Limpar seleções anteriores
+        document.getElementById('slotsSection').style.display = 'none';
+        document.getElementById('observacoesSection').style.display = 'none';
+        document.getElementById('botoesSection').style.display = 'none';
+        slotSelecionado = null;
+        document.getElementById('slotSelecionado').value = '';
+        
+        // Buscar automaticamente com filtros padrão
+        buscarSlots();
+    });
+});
+
+// Buscar slots disponíveis
+function buscarSlots() {
+    if (!servicoSelecionado) {
+        alert('Selecione um serviço primeiro');
+        return;
+    }
+    
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim = document.getElementById('dataFim').value;
+    const profissionalId = document.getElementById('profissionalFiltro').value;
+    
+    // Mostrar loading
+    document.getElementById('slotsSection').style.display = 'block';
+    document.querySelector('.loading-spinner').style.display = 'block';
+    document.getElementById('slotsContainer').innerHTML = '';
+    
+    // Construir URL com parâmetros
+    const params = new URLSearchParams();
+    if (dataInicio) params.append('data_inicio', dataInicio);
+    if (dataFim) params.append('data_fim', dataFim);
+    if (profissionalId) params.append('profissional_id', profissionalId);
+    params.append('servico_id', servicoSelecionado);
+    
+    fetch(`{% url 'portal_cliente:slots_disponiveis_ajax' %}?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('.loading-spinner').style.display = 'none';
+            
+            if (data.success) {
+                renderSlots(data.slots);
+            } else {
+                document.getElementById('slotsContainer').innerHTML = 
+                    `<div class="alert alert-danger">Erro: ${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            document.querySelector('.loading-spinner').style.display = 'none';
+            document.getElementById('slotsContainer').innerHTML = 
+                `<div class="alert alert-danger">Erro ao buscar horários: ${error.message}</div>`;
+        });
+}
+
+// Renderizar slots
+function renderSlots(slots) {
+    const container = document.getElementById('slotsContainer');
+    
+    if (slots.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum horário disponível</h5>
+                <p class="text-muted">Tente ajustar os filtros ou escolher outro período.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Agrupar slots por data
+    const slotsPorData = {};
+    slots.forEach(slot => {
+        const data = slot.horario_display.split(' às ')[0];
+        if (!slotsPorData[data]) slotsPorData[data] = [];
+        slotsPorData[data].push(slot);
+    });
+    
+    let html = '';
+    Object.keys(slotsPorData).forEach(data => {
+        html += `<h6 class="mt-4 mb-3"><i class="fas fa-calendar me-2"></i>${data}</h6>`;
+        html += '<div class="row g-2">';
+        
+        slotsPorData[data].forEach(slot => {
+            const horario = slot.horario_display.split(' às ')[1];
+            html += `
+                <div class="col-md-3 col-lg-2 mb-2">
+                    <div class="card slot-card" onclick="selecionarSlot(${slot.id}, this)">
+                        <div class="card-body p-2 text-center">
+                            <div class="fw-bold">${horario}</div>
+                            <small class="text-muted">${slot.profissional}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+// Selecionar slot
+function selecionarSlot(slotId, elemento) {
+    // Remover seleção anterior
+    document.querySelectorAll('.slot-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Selecionar novo slot
+    elemento.classList.add('selected');
+    slotSelecionado = slotId;
+    document.getElementById('slotSelecionado').value = slotId;
+    
+    // Mostrar próximas seções
+    document.getElementById('observacoesSection').style.display = 'block';
+    document.getElementById('botoesSection').style.display = 'block';
+}
+
+// Validação do formulário
+document.getElementById('agendamentoForm').addEventListener('submit', function(e) {
+    if (!servicoSelecionado) {
+        e.preventDefault();
+        alert('Selecione um serviço');
+        return;
+    }
+    
+    if (!slotSelecionado) {
+        e.preventDefault();
+        alert('Selecione um horário');
+        return;
+    }
+});
+
+// Configurar datas padrão (próximos 15 dias)
+document.addEventListener('DOMContentLoaded', function() {
+    const hoje = new Date();
+    const em15Dias = new Date();
+    em15Dias.setDate(hoje.getDate() + 15);
+    
+    document.getElementById('dataInicio').value = hoje.toISOString().split('T')[0];
+    document.getElementById('dataFim').value = em15Dias.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}

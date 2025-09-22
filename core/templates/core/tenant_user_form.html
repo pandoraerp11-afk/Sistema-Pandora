@@ -1,0 +1,785 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}
+{% if object %}Editar Usuário{% else %}Novo Usuário{% endif %} - Pandora ERP
+{% endblock %}
+
+{% block page_title %}
+{% if object %}Editar Usuário{% else %}Novo Usuário{% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+{% if object %}
+    Atualize as informações do usuário {{ object.user.get_full_name|default:object.user.username }}
+{% else %}
+    Preencha os dados para vincular um novo usuário
+{% endif %}
+{% endblock %}
+
+{% block form_title %}Informações do Usuário{% endblock %}
+
+{% block form_content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-aos="fade-up">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-body">
+                    <form method="post" novalidate id="userForm">
+                    {% csrf_token %}
+                    
+                    <!-- Seleção de Usuário -->
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-user me-2"></i>
+                                Usuário
+                            </h5>
+                        </div>
+                        
+                        {% if not object %}
+                        <!-- Opção: Criar Novo ou Vincular Existente -->
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="user_option" id="create_new" value="create" checked>
+                                        <label class="form-check-label fw-bold" for="create_new">
+                                            <i class="fas fa-user-plus text-success me-2"></i>
+                                            Criar Novo Usuário
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Cadastre um novo usuário no sistema</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="user_option" id="link_existing" value="link">
+                                        <label class="form-check-label fw-bold" for="link_existing">
+                                            <i class="fas fa-link text-primary me-2"></i>
+                                            Vincular Usuário Existente
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Vincule um usuário já cadastrado</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos para Criar Novo Usuário -->
+                        <div id="create_user_fields" class="col-12">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-at text-primary"></i>
+                                            Nome de Usuário
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" name="username" class="form-control" placeholder="nome_usuario" required>
+                                        <div class="form-text">Digite um nome único para login</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-envelope text-primary"></i>
+                                            E-mail
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="email" name="email" class="form-control" placeholder="usuario@exemplo.com" required>
+                                        <div class="form-text">Endereço de e-mail válido</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-user text-primary"></i>
+                                            Nome
+                                        </label>
+                                        <input type="text" name="first_name" class="form-control" placeholder="Primeiro nome">
+                                        <div class="form-text">Primeiro nome do usuário</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-user text-primary"></i>
+                                            Sobrenome
+                                        </label>
+                                        <input type="text" name="last_name" class="form-control" placeholder="Sobrenome">
+                                        <div class="form-text">Sobrenome do usuário</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-lock text-primary"></i>
+                                            Senha
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="password" name="password1" class="form-control" placeholder="Digite a senha" required>
+                                        <div class="form-text">Mínimo 8 caracteres com letras e números</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-lock text-primary"></i>
+                                            Confirmar Senha
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="password" name="password2" class="form-control" placeholder="Confirme a senha" required>
+                                        <div class="form-text">Digite a senha novamente</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="form-check d-flex align-items-center">
+                                            <input type="checkbox" name="is_active" class="form-check-input me-2" checked>
+                                            <label class="form-check-label">
+                                                <i class="fas fa-toggle-on text-success me-1"></i>
+                                                Usuário Ativo
+                                            </label>
+                                        </div>
+                                        <div class="form-text">Usuário pode fazer login no sistema</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campo para Vincular Usuário Existente -->
+                        <div id="link_user_fields" class="col-12" style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-search text-primary"></i>
+                                    E-mail ou Nome de Usuário
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.email_or_username|add_class:"form-control" }}
+                                {% if form.email_or_username.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.email_or_username.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Digite o e-mail ou nome de usuário do usuário que deseja vincular
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Editando vinculação do usuário: <strong>{{ object.user.get_full_name|default:object.user.username }}</strong>
+                                ({{ object.user.email }})
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Configurações da Empresa -->
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-building me-2"></i>
+                                Configurações da Empresa
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.role.id_for_label }}" class="form-label">
+                                    <i class="fas fa-user-tag text-primary"></i>
+                                    Função
+                                </label>
+                                {{ form.role|add_class:"form-select" }}
+                                {% if form.role.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.role.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Função/cargo na empresa
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.department.id_for_label }}" class="form-label">
+                                    <i class="fas fa-sitemap text-primary"></i>
+                                    Departamento
+                                </label>
+                                {{ form.department|add_class:"form-select" }}
+                                {% if form.department.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.department.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Departamento de lotação
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="form-check d-flex align-items-center">
+                                    {{ form.is_tenant_admin|add_class:"form-check-input me-2" }}
+                                    <label class="form-check-label" for="{{ form.is_tenant_admin.id_for_label }}">
+                                        <i class="fas fa-shield-alt text-primary me-1"></i>
+                                        Administrador da Empresa
+                                    </label>
+                                </div>
+                                {% if form.is_tenant_admin.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.is_tenant_admin.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Administradores têm acesso total às configurações
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status da Vinculação -->
+                    {% if object %}
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Informações Adicionais
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert alert-success">
+                                <i class="fas fa-user-check me-2"></i>
+                                <strong>Usuário Vinculado:</strong> {{ object.user.get_full_name|default:object.user.username }}<br>
+                                <small class="text-muted">
+                                    <i class="fas fa-envelope me-1"></i>{{ object.user.email }}<br>
+                                    <i class="fas fa-calendar me-1"></i>Vinculado em: {{ object.created_at|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <a href="{% url 'core:tenant_user_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-eye me-2"></i>
+                        Preview da Vinculação
+                    </h6>
+                    
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle fs-5" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold" id="previewName">
+                                        {% if object %}{{ object.user.get_full_name|default:object.user.username }}{% else %}Usuário{% endif %}
+                                    </div>
+                                    <div class="text-muted small" id="previewEmail">
+                                        {% if object %}{{ object.user.email }}{% else %}Digite o email ou username{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-muted small mb-2" id="previewRole">
+                                <i class="fas fa-user-tag me-1"></i>
+                                {% if object and object.role %}{{ object.role.name }}{% else %}Função não definida{% endif %}
+                            </div>
+                            
+                            <div class="text-muted small mb-2" id="previewDepartment">
+                                <i class="fas fa-sitemap me-1"></i>
+                                {% if object and object.department %}{{ object.department.name }}{% else %}Departamento não definido{% endif %}
+                            </div>
+                            
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="fw-bold" id="previewAdmin">
+                                            {% if object %}
+                                                {% if object.is_tenant_admin %}
+                                                    <span class="badge bg-warning">Admin</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Usuário</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary">Usuário</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">Tipo</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fw-bold">
+                                            {% if object %}
+                                                {% if object.user.is_active %}
+                                                    <span class="badge bg-success">Ativo</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Inativo</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-success">Ativo</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">Status</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tips -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Dicas
+                    </h6>
+                    
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Digite o email ou username de um usuário já cadastrado</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Defina a função e departamento do usuário</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Marque como admin para acesso total</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>A vinculação permite acesso aos módulos da empresa</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Recent Users -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-clock me-2"></i>
+                        Últimas Vinculações
+                    </h6>
+                    
+                    <div class="list-group list-group-flush">
+                        {% if recent_tenant_users %}
+                            {% for tenant_user in recent_tenant_users %}
+                                <div class="list-group-item px-0 py-2 border-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-2">
+                                            <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle" style="width: 30px; height: 30px; font-size: 12px;">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold small">{{ tenant_user.user.get_full_name|default:tenant_user.user.username }}</div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-envelope me-1"></i>{{ tenant_user.user.email }}
+                                                {% if tenant_user.role %}
+                                                    <span class="mx-1">•</span>
+                                                    <i class="fas fa-user-tag me-1"></i>{{ tenant_user.role.name }}
+                                                {% endif %}
+                                            </div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-calendar me-1"></i>{{ tenant_user.created_at|date:"d/m/Y H:i" }}
+                                            </div>
+                                        </div>
+                                        {% if tenant_user.is_tenant_admin %}
+                                            <span class="badge bg-warning small">Admin</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-muted small text-center py-3">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Nenhuma vinculação encontrada
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'core:tenant_user_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i>
+                            Ver Todos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.form-group.focused {
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.is-valid {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.1rem rgba(25, 135, 84, 0.15) !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.1rem rgba(220, 53, 69, 0.15) !important;
+}
+
+.card[data-aos] {
+    transition: transform 0.2s ease;
+}
+
+.card[data-aos]:hover {
+    transform: translateY(-2px);
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.alert {
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form validation and preview
+    initializeFormValidation();
+    initializePreview();
+    initializeUserModeToggle();
+});
+
+function initializeUserModeToggle() {
+    const createRadio = document.getElementById('create_new');
+    const linkRadio = document.getElementById('link_existing');
+    const createFields = document.getElementById('create_user_fields');
+    const linkFields = document.getElementById('link_user_fields');
+    
+    if (createRadio && linkRadio && createFields && linkFields) {
+        createRadio.addEventListener('change', function() {
+            if (this.checked) {
+                createFields.style.display = 'block';
+                linkFields.style.display = 'none';
+                
+                // Make create fields required
+                createFields.querySelectorAll('input[required]').forEach(field => {
+                    field.required = true;
+                });
+                
+                // Make link field not required
+                const linkField = linkFields.querySelector('input');
+                if (linkField) linkField.required = false;
+                
+                updatePreview();
+            }
+        });
+        
+        linkRadio.addEventListener('change', function() {
+            if (this.checked) {
+                createFields.style.display = 'none';
+                linkFields.style.display = 'block';
+                
+                // Make create fields not required
+                createFields.querySelectorAll('input[required]').forEach(field => {
+                    field.required = false;
+                });
+                
+                // Make link field required
+                const linkField = linkFields.querySelector('input');
+                if (linkField) linkField.required = true;
+                
+                updatePreview();
+            }
+        });
+    }
+}
+
+function initializeFormValidation() {
+    const form = document.getElementById('userForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+            submitBtn.disabled = true;
+            
+            // Re-enable button after 5 seconds as fallback
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+    }
+    
+    // Real-time validation for form fields
+    const emailOrUsernameField = document.getElementById('{{ form.email_or_username.id_for_label }}');
+    const roleField = document.getElementById('{{ form.role.id_for_label }}');
+    const departmentField = document.getElementById('{{ form.department.id_for_label }}');
+    const adminCheckbox = document.getElementById('{{ form.is_tenant_admin.id_for_label }}');
+    
+    // New user fields
+    const usernameField = document.querySelector('input[name="username"]');
+    const emailField = document.querySelector('input[name="email"]');
+    const firstNameField = document.querySelector('input[name="first_name"]');
+    const lastNameField = document.querySelector('input[name="last_name"]');
+    const password1Field = document.querySelector('input[name="password1"]');
+    const password2Field = document.querySelector('input[name="password2"]');
+    
+    // Add event listeners for existing fields
+    if (emailOrUsernameField) {
+        emailOrUsernameField.addEventListener('input', function() {
+            validateField(this);
+            updatePreview();
+        });
+        
+        emailOrUsernameField.addEventListener('focus', function() {
+            this.parentNode.classList.add('focused');
+        });
+        emailOrUsernameField.addEventListener('blur', function() {
+            this.parentNode.classList.remove('focused');
+        });
+    }
+    
+    // Add event listeners for new user fields
+    [usernameField, emailField, firstNameField, lastNameField, password1Field, password2Field].forEach(field => {
+        if (field) {
+            field.addEventListener('input', function() {
+                validateField(this);
+                updatePreview();
+            });
+            
+            field.addEventListener('focus', function() {
+                this.parentNode.classList.add('focused');
+            });
+            field.addEventListener('blur', function() {
+                this.parentNode.classList.remove('focused');
+            });
+        }
+    });
+    
+    if (roleField) {
+        roleField.addEventListener('change', updatePreview);
+    }
+    
+    if (departmentField) {
+        departmentField.addEventListener('change', updatePreview);
+    }
+    
+    if (adminCheckbox) {
+        adminCheckbox.addEventListener('change', updatePreview);
+    }
+}
+
+function validateField(field) {
+    const value = field.value.trim();
+    const fieldName = field.name;
+    let isValid = true;
+    let message = '';
+    
+    // Remove previous error
+    let errorDiv = field.parentNode.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+    
+    // Field-specific validation
+    if (fieldName.includes('email_or_username') && value) {
+        if (value.length < 3) {
+            isValid = false;
+            message = 'Digite pelo menos 3 caracteres';
+        } else if (value.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            isValid = false;
+            message = 'E-mail inválido';
+        }
+    } else if (fieldName === 'username' && value) {
+        if (value.length < 3) {
+            isValid = false;
+            message = 'Username deve ter pelo menos 3 caracteres';
+        } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+            isValid = false;
+            message = 'Apenas letras, números e underscore';
+        }
+    } else if (fieldName === 'email' && value) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            isValid = false;
+            message = 'E-mail inválido';
+        }
+    } else if (fieldName === 'password1' && value) {
+        if (value.length < 8) {
+            isValid = false;
+            message = 'Senha deve ter pelo menos 8 caracteres';
+        }
+    } else if (fieldName === 'password2' && value) {
+        const password1 = document.querySelector('input[name="password1"]');
+        if (password1 && value !== password1.value) {
+            isValid = false;
+            message = 'Senhas não coincidem';
+        }
+    }
+    
+    // Update field classes
+    if (!isValid) {
+        field.classList.add('is-invalid');
+        field.classList.remove('is-valid');
+        
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message text-danger small mt-1';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
+        field.parentNode.appendChild(errorDiv);
+    } else if (value.length > 0) {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+    } else {
+        field.classList.remove('is-invalid', 'is-valid');
+    }
+    
+    return isValid;
+}
+
+function initializePreview() {
+    updatePreview();
+}
+
+function updatePreview() {
+    // Get mode
+    const createMode = document.getElementById('create_new');
+    const isCreateMode = createMode ? createMode.checked : false;
+    
+    // Get fields based on mode
+    let usernameValue = '';
+    let emailValue = '';
+    let nameValue = '';
+    
+    if (isCreateMode) {
+        const usernameField = document.querySelector('input[name="username"]');
+        const emailField = document.querySelector('input[name="email"]');
+        const firstNameField = document.querySelector('input[name="first_name"]');
+        const lastNameField = document.querySelector('input[name="last_name"]');
+        
+        usernameValue = usernameField ? usernameField.value.trim() : '';
+        emailValue = emailField ? emailField.value.trim() : '';
+        
+        const firstName = firstNameField ? firstNameField.value.trim() : '';
+        const lastName = lastNameField ? lastNameField.value.trim() : '';
+        nameValue = `${firstName} ${lastName}`.trim() || usernameValue;
+    } else {
+        const emailOrUsernameField = document.getElementById('{{ form.email_or_username.id_for_label }}');
+        const value = emailOrUsernameField ? emailOrUsernameField.value.trim() : '';
+        
+        if (value.includes('@')) {
+            emailValue = value;
+            usernameValue = value.split('@')[0];
+        } else {
+            usernameValue = value;
+            emailValue = value;
+        }
+        nameValue = usernameValue;
+    }
+    
+    // Update preview elements
+    const previewName = document.getElementById('previewName');
+    const previewEmail = document.getElementById('previewEmail');
+    
+    if (previewName) {
+        previewName.textContent = nameValue || 'Usuário';
+    }
+    
+    if (previewEmail) {
+        previewEmail.textContent = emailValue || (isCreateMode ? 'Digite os dados do usuário' : 'Digite o email ou username');
+    }
+    
+    // Update other fields
+    const roleField = document.getElementById('{{ form.role.id_for_label }}');
+    const departmentField = document.getElementById('{{ form.department.id_for_label }}');
+    const adminCheckbox = document.getElementById('{{ form.is_tenant_admin.id_for_label }}');
+    
+    const previewRole = document.getElementById('previewRole');
+    const previewDepartment = document.getElementById('previewDepartment');
+    const previewAdmin = document.getElementById('previewAdmin');
+    
+    // Update role
+    if (previewRole && roleField) {
+        const selectedOption = roleField.options[roleField.selectedIndex];
+        const roleText = selectedOption && selectedOption.value ? selectedOption.text : 'Função não definida';
+        previewRole.innerHTML = `<i class="fas fa-user-tag me-1"></i>${roleText}`;
+    }
+    
+    // Update department  
+    if (previewDepartment && departmentField) {
+        const selectedOption = departmentField.options[departmentField.selectedIndex];
+        const deptText = selectedOption && selectedOption.value ? selectedOption.text : 'Departamento não definido';
+        previewDepartment.innerHTML = `<i class="fas fa-sitemap me-1"></i>${deptText}`;
+    }
+    
+    // Update admin status
+    if (previewAdmin && adminCheckbox) {
+        if (adminCheckbox.checked) {
+            previewAdmin.innerHTML = '<span class="badge bg-warning">Admin</span>';
+        } else {
+            previewAdmin.innerHTML = '<span class="badge bg-secondary">Usuário</span>';
+        }
+    }
+}
+</script>
+{% endblock %}

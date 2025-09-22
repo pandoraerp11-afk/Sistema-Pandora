@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Agenda do dia</title>
+  </head>
+  <body>
+    <h2>Agenda do dia - {{ tenant.name }}</h2>
+    <p>Olá {{ usuario.first_name|default:usuario.username }},</p>
+    <p>Estes são seus compromissos de {{ data_referencia|date:"d/m/Y" }}:</p>
+    <ul>
+      {% for ev in eventos %}
+        <li>
+          <strong>{{ ev.titulo }}</strong>
+          - {{ ev.data_inicio|date:"H:i" }}{% if ev.data_fim %} às {{ ev.data_fim|date:"H:i" }}{% endif %}
+          {% if ev.local %}- Local: {{ ev.local }}{% endif %}
+        </li>
+      {% empty %}
+        <li>Sem eventos para hoje.</li>
+      {% endfor %}
+    </ul>
+    <p>Bom trabalho!</p>
+  </body>
+</html>

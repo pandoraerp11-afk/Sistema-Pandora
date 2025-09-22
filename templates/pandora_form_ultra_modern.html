@@ -1,0 +1,566 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% load core_tags %}
+{% load core_filters %}
+
+{% block body_classes %} form-page{% endblock %}
+
+{% block title %}{% if object %}Editar {% else %}Adicionar {% endif %}{{ model_name }} - Pandora ERP{% endblock %}
+
+{% block page_title %}{% if object %}Editar {{ model_name }}{% else %}Adicionar {{ model_name }}{% endif %}{% endblock %}
+
+{% block page_subtitle %}{% if object %}{{ object|truncatechars:50 }}{% else %}Configure os dados da empresa{% endif %}{% endblock %}
+
+{% block page_center %}
+    {% if form_sections|length > 1 %}
+        <div class="wizard-progress-container">
+            <div class="wizard-progress">
+                <div class="progress-steps">
+                    <div class="progress-line"></div>
+                    <div class="progress-line-active" style="width: 0%;"></div>
+                    {% for section in form_sections %}
+                    <div class="step {% if forloop.first %}active{% else %}pending{% endif %}">
+                        <a href="#" class="step-circle-link {% if forloop.first %}active{% else %}pending{% endif %}"
+                           data-step-index="{{ forloop.counter0 }}"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="top"
+                           title="Ir para: {{ section.title }}">
+                            {% if forloop.first %}
+                                1
+                            {% else %}
+                                {{ forloop.counter }}
+                            {% endif %}
+                        </a>
+                        <div class="step-label">{{ section.title }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2 align-items-center">
+    <!-- Botão Voltar removido conforme solicitação -->
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="form-container" data-aos="fade-up">
+    {% if form_sections %}
+    <form id="main-form" method="{{ form_method|default:'post' }}" enctype="{{ form_enctype|default:'multipart/form-data' }}" class="needs-validation wizard-form" novalidate action="{{ form_action|default:'#' }}">
+        {% csrf_token %}
+        <div class="row">
+            <!-- Main Form Content -->
+            <div class="col-12 {% if sidebar_widgets or form_tips or recent_items or preview %}col-lg-8{% endif %}">
+                <!-- Form Sections -->
+                    {% for section in form_sections %}
+                    <div class="form-section card mb-4" id="form-section-{{ forloop.counter0 }}" data-section-index="{{ forloop.counter0 }}" {% if not forloop.first %}style="display: none;"{% endif %}>
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="{{ section.icon|default:'fas fa-form' }}"></i>
+                                {{ section.title }}
+                            </h5>
+                            {% if section.description %}
+                            <p class="card-subtitle text-muted mt-1 mb-0">{{ section.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            {% if section.template_data %}
+                                <!-- Nova abordagem: incluir partials diretamente com dados -->
+                                {% with section.template_data as data %}
+                                    {% include 'partials/forms/identificacao_fields.html' with form=data.form form_pj=data.form_pj form_pf=data.form_pf %}
+                                    {% include 'partials/forms/endereco_principal.html' with principal_form=data.principal_form adicional_formset=data.adicional_formset %}
+                                    {% include 'partials/forms/contatos_formset.html' with contatos_formset=data.contatos_formset %}
+                                    {% include 'partials/forms/documentos_formset.html' with documentos_formset=data.documentos_formset %}
+                                    {% include 'partials/forms/modules_selection.html' with form=data.module_form available_modules=data.available_modules module_icons=data.module_icons module_categories=data.module_categories selected_modules=data.selected_modules %}
+                                    {% if data.admins_formset %}
+                                        {% include 'core/partials/admins_formset.html' with admins_formset=data.admins_formset %}
+                                    {% endif %}
+                                    {# Incluir configurações específicas do sistema #}
+                                    {% include 'core/partials/system_configuration.html' with form=data.form %}
+                                {% endwith %}
+                            {% elif section.content %}
+                                {{ section.content|safe }}
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Seção sem conteúdo definido: {{ section.id|default:'N/A' }}
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Navigation buttons for each section -->
+                            <div class="wizard-navigation mt-4">
+                                <div class="nav-left">
+                                    {% if not forloop.first %}
+                                        <button type="button" class="btn-ghost" data-action="prev-section" title="Seção anterior">
+                                            <i class="fas fa-chevron-left me-2"></i>Anterior
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn-ghost" disabled>
+                                            <i class="fas fa-chevron-left me-2"></i>Anterior
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                <div class="nav-center">
+                                    <span class="step-indicator">Passo {{ forloop.counter }} de {{ form_sections|length }}</span>
+                                </div>
+                                <div class="nav-right">
+                                    {% if not forloop.last %}
+                                        <button type="button" class="btn-modern btn-primary" data-action="next-section" title="Próxima seção">
+                                            Próximo<i class="fas fa-chevron-right ms-2"></i>
+                                        </button>
+                                    {% else %}
+                                        <div class="btn-group">
+                                            <button type="submit" form="main-form" class="btn-modern btn-success" title="Salvar">
+                                                <i class="fas fa-check me-2"></i>Salvar
+                                            </button>
+                                            <button type="button" class="btn-modern btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" title="Opções de salvamento">
+                                                <span class="visually-hidden">Opções de salvamento</span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                <li><a class="dropdown-item" href="#" onclick="saveAndContinue()">
+                                                    <i class="fas fa-edit fa-sm me-2"></i> Salvar e Continuar Editando
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="saveAndNew()">
+                                                    <i class="fas fa-plus fa-sm me-2"></i> Salvar e Adicionar Novo
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="saveAndList()">
+                                                    <i class="fas fa-list fa-sm me-2"></i> Salvar e Voltar à Lista
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+            </div>
+
+            <!-- Sidebar Widgets -->
+            {% if sidebar_widgets %}
+            <div class="col-12 col-lg-4">
+                <div class="sidebar-widgets">
+                    {% for widget in sidebar_widgets %}
+                    <div class="widget card mb-4">
+                        <div class="card-header">
+                            <h4 class="card-title">
+                                <i class="{{ widget.icon|default:'fas fa-cube' }}"></i>
+                                {{ widget.title }}
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            {% if widget.template %}
+                                {% include widget.template %}
+                            {% else %}
+                                {{ widget.content|safe }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            {% if form_tips or recent_items or preview %}
+            <div class="col-12 col-lg-4">
+                {% if preview %}
+                    {% include 'partials/widgets/preview_card.html' with title=preview.title subtitle=preview.subtitle text=preview.text description=preview.description items=preview.items metrics=preview.metrics icon_class=preview.icon_class extra_inner_template=preview.extra_inner_template %}
+                {% endif %}
+                {% if form_tips %}
+                <div class="card shadow-sm mb-3" data-aos="fade-up" data-aos-delay="150">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Dicas</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            {% for tip in form_tips %}
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i><small>{{ tip }}</small></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+                {% if recent_items %}
+                <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>{{ recent_title|default:'Últimos Cadastros' }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            {% for it in recent_items %}
+                            <div class="list-group-item border-0 px-0 py-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold small">{{ it.name|default:it }}</div>
+                                        {% if it.created_at %}
+                                        <div class="text-muted" style="font-size: 11px;">{{ it.created_at|timesince }} atrás</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center text-muted small">Nenhum registro ainda</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+        <!-- Auto-save indicator -->
+        <div class="auto-save-indicator" id="auto-save-indicator" style="display: none;">
+            <i class="fas fa-cloud-check"></i>
+            <span>Salvo automaticamente</span>
+        </div>
+    </form>
+    {% else %}
+        <form id="main-form" method="{{ form_method|default:'post' }}" enctype="{{ form_enctype|default:'multipart/form-data' }}" class="needs-validation" novalidate action="{{ form_action|default:'#' }}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-12 {% if sidebar_widgets or form_tips or recent_items or preview %}col-lg-8{% endif %}">
+                    {% block form_main %}
+                        {% block form_content %}
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header card-header-compact">
+                                <h4 class="card-title mb-0">
+                                    <i class="{{ form_icon|default:'fas fa-file-alt' }}"></i>
+                                    {{ form_title|default:page_title|default:'Informações' }}
+                                </h4>
+                                {% if form_subtitle or page_subtitle %}
+                                <small class="card-subtitle text-muted">{{ form_subtitle|default:page_subtitle }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="card-body card-body-compact">
+                                <div class="row g-3">
+                                    {% for field in form %}
+                                        {% if field.is_hidden %}
+                                            {{ field }}
+                                        {% else %}
+                                            {% with wstr=field.field.widget|stringformat:'s'|lower wtype=field.field.widget.input_type|default:'' %}
+                                                {% if 'textarea' in wstr %}
+                                                    {% include 'core/wizard/wizard_field.html' with field=field field_size='xl' %}
+                                                {% elif wtype == 'checkbox' or wtype == 'radio' %}
+                                                    {% include 'core/wizard/wizard_field.html' with field=field field_size='sm' %}
+                                                {% elif 'select' in wstr %}
+                                                    {% include 'core/wizard/wizard_field.html' with field=field field_size='lg' %}
+                                                {% elif wtype == 'number' or wtype == 'date' %}
+                                                    {% include 'core/wizard/wizard_field.html' with field=field field_size='sm' %}
+                                                {% else %}
+                                                    {% include 'core/wizard/wizard_field.html' with field=field field_size='lg' %}
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-secondary btn-sm" title="Atualizar" onclick="location.reload()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button type="submit" form="main-form" class="btn btn-primary btn-sm" title="Salvar">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endblock %}
+                    {% endblock %}
+                </div>
+                <!-- Sidebar Widgets -->
+                <div class="col-12 col-lg-4">
+                    {% block form_sidebar %}
+                        {% if sidebar_widgets %}
+                        <div class="sidebar-widgets">
+                            {% for widget in sidebar_widgets %}
+                            <div class="widget card mb-4">
+                                <div class="card-header">
+                                    <h4 class="card-title">
+                                        <i class="{{ widget.icon|default:'fas fa-cube' }}"></i>
+                                        {{ widget.title }}
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    {% if widget.template %}
+                                        {% include widget.template %}
+                                    {% else %}
+                                        {{ widget.content|safe }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% elif form_tips or recent_items or preview %}
+                        {% if preview %}
+                            {% include 'partials/widgets/preview_card.html' with title=preview.title subtitle=preview.subtitle text=preview.text description=preview.description items=preview.items metrics=preview.metrics icon_class=preview.icon_class extra_inner_template=preview.extra_inner_template %}
+                        {% endif %}
+                        {% if form_tips %}
+                        <div class="card shadow-sm mb-3" data-aos="fade-up" data-aos-delay="150">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Dicas</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    {% for tip in form_tips %}
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i><small>{{ tip }}</small></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if recent_items %}
+                        <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>{{ recent_title|default:'Últimos Cadastros' }}</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    {% for it in recent_items %}
+                                    <div class="list-group-item border-0 px-0 py-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold small">{{ it.name|default:it }}</div>
+                                                {% if it.created_at %}
+                                                <div class="text-muted" style="font-size: 11px;">{{ it.created_at|timesince }} atrás</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="text-center text-muted small">Nenhum registro ainda</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    {% endblock %}
+                </div>
+            </div>
+            {# Ações inferiores removidas: ações ficam no cabeçalho do card #}
+            <!-- Auto-save indicator -->
+            <div class="auto-save-indicator" id="auto-save-indicator" style="display: none;">
+                <i class="fas fa-cloud-check"></i>
+                <span>Salvo automaticamente</span>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_footer %}
+    <!-- Seu rodapé aqui -->
+{% endblock %}
+
+{% block modals %}
+<!-- Delete Confirmation Modal -->
+{% if object and can_delete %}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir este {{ model_name|lower }}?</p>
+                <div class="alert alert-warning">
+                    <strong>{{ object }}</strong>
+                </div>
+                <p class="text-muted">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="{{ delete_url }}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+// NAVEGAÇÃO DE FORMULÁRIOS - SOLUÇÃO DEFINITIVA
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Form Template] Inicializando navegação...');
+    
+    // Variáveis de controle
+    let currentSectionIndex = 0;
+    const sections = document.querySelectorAll('.form-section');
+    const steps = document.querySelectorAll('.progress-steps .step');
+    const stepLinks = document.querySelectorAll('.progress-steps .step a.step-circle-link');
+    const progressLineActive = document.querySelector('.progress-steps .progress-line-active');
+    
+    if (sections.length === 0) {
+        console.log('[Form Template] Nenhuma seção encontrada.');
+        return;
+    }
+    
+    console.log('[Form Template] Seções encontradas:', sections.length);
+    console.log('[Form Template] Indicadores encontrados:', steps.length);
+    
+    // Debug: Mostrar conteúdo de cada seção
+    sections.forEach((section, index) => {
+        const cardBody = section.querySelector('.card-body');
+        console.log(`[Form Template] Debug Seção ${index + 1}:`, {
+            id: section.id,
+            hasCardBody: !!cardBody,
+            cardBodyContent: cardBody ? cardBody.innerHTML.substring(0, 200) + '...' : 'N/A',
+            isEmpty: cardBody ? cardBody.innerHTML.trim().length === 0 : true
+        });
+    });
+    
+    // Função para atualizar visibilidade
+    function updateSectionVisibility() {
+        sections.forEach((section, index) => {
+            section.style.display = index === currentSectionIndex ? 'block' : 'none';
+            console.log(`[Form Template] Seção ${index + 1}:`, {
+                element: section,
+                visible: index === currentSectionIndex,
+                innerHTML: section.innerHTML.length + ' chars',
+                hasContent: section.querySelector('.card-body') !== null
+            });
+        });
+        
+        steps.forEach((step, index) => {
+            const link = step.querySelector('a.step-circle-link');
+            const isActive = index === currentSectionIndex;
+            const isCompleted = index < currentSectionIndex;
+            step.classList.toggle('active', isActive);
+            step.classList.toggle('completed', isCompleted);
+            step.classList.toggle('pending', !isActive && !isCompleted);
+            if (link) {
+                link.classList.toggle('active', isActive);
+                link.classList.toggle('completed', isCompleted);
+                link.classList.toggle('pending', !isActive && !isCompleted);
+                link.innerHTML = isCompleted ? '<i class="fas fa-check"></i>' : (index + 1);
+            }
+        });
+        if (progressLineActive && sections.length > 1) {
+            const percentage = (currentSectionIndex) / (sections.length - 1) * 100;
+            progressLineActive.style.width = percentage + '%';
+        }
+        
+        // Atualizar botões
+        const prevBtns = document.querySelectorAll('[data-action="prev-section"]');
+        const nextBtns = document.querySelectorAll('[data-action="next-section"]');
+        
+        prevBtns.forEach(btn => {
+            btn.style.display = currentSectionIndex > 0 ? 'inline-block' : 'none';
+        });
+        
+        nextBtns.forEach(btn => {
+            btn.style.display = currentSectionIndex < sections.length - 1 ? 'inline-block' : 'none';
+        });
+        
+        console.log('[Form Template] Seção ativa:', currentSectionIndex + 1);
+    }
+    
+    // Função para ir para seção específica
+    function goToSection(targetIndex) {
+        if (targetIndex >= 0 && targetIndex < sections.length) {
+            currentSectionIndex = targetIndex;
+            updateSectionVisibility();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return true;
+        }
+        return false;
+    }
+    
+    // Event listeners para botões de navegação
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="next-section"]')) {
+            e.preventDefault();
+            if (currentSectionIndex < sections.length - 1) {
+                goToSection(currentSectionIndex + 1);
+            }
+        }
+        
+        if (e.target.closest('[data-action="prev-section"]')) {
+            e.preventDefault();
+            if (currentSectionIndex > 0) {
+                goToSection(currentSectionIndex - 1);
+            }
+        }
+    });
+    
+    // Event listeners para indicadores de progresso (wizard style)
+    stepLinks.forEach((link) => {
+        const index = parseInt(link.getAttribute('data-step-index') ?? '0', 10);
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('[Form Template] Clique no indicador:', index + 1);
+            goToSection(index);
+        });
+        link.style.cursor = 'pointer';
+    });
+    
+    // Funções globais de salvamento
+    window.saveAndContinue = function() {
+        const form = document.getElementById('main-form');
+        if (form) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'action';
+            input.value = 'save_continue';
+            form.appendChild(input);
+            form.submit();
+        }
+    };
+    
+    window.saveAndNew = function() {
+        const form = document.getElementById('main-form');
+        if (form) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'action';
+            input.value = 'save_new';
+            form.appendChild(input);
+            form.submit();
+        }
+    };
+    
+    window.saveAndList = function() {
+        const form = document.getElementById('main-form');
+        if (form) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'action';
+            input.value = 'save_list';
+            form.appendChild(input);
+            form.submit();
+        }
+    };
+    
+    window.duplicateRecord = function() {
+        if (confirm('Deseja duplicar este registro?')) {
+            const currentUrl = window.location.href;
+            const duplicateUrl = currentUrl.replace(/\/edit\//, '/duplicate/').replace(/\/update\//, '/duplicate/');
+            window.location.href = duplicateUrl;
+        }
+    };
+    
+    // Inicializar visibilidade
+    updateSectionVisibility();
+    console.log('[Form Template] Navegação configurada com sucesso!');
+});
+</script>
+
+{# Incluir Modal de Confirmação Universal #}
+{% include 'partials/confirm_delete_modal.html' %}
+
+{% endblock %}

@@ -1,0 +1,45 @@
+{% load static %}
+
+<!-- Messages Component - Ultra Modern Design -->
+{% if messages %}
+<div class="messages-container" data-aos="fade-down" data-aos-duration="500">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show message-card" role="alert">
+        <div class="message-content">
+            <div class="message-icon">
+                {% if message.tags == 'success' %}
+                    <i class="fas fa-check-circle"></i>
+                {% elif message.tags == 'error' or message.tags == 'danger' %}
+                    <i class="fas fa-exclamation-triangle"></i>
+                {% elif message.tags == 'warning' %}
+                    <i class="fas fa-exclamation-circle"></i>
+                {% elif message.tags == 'info' %}
+                    <i class="fas fa-info-circle"></i>
+                {% else %}
+                    <i class="fas fa-bell"></i>
+                {% endif %}
+            </div>
+            <div class="message-text">
+                <div class="message-title">
+                    {% if message.tags == 'success' %}
+                        Sucesso!
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        Erro!
+                    {% elif message.tags == 'warning' %}
+                        Atenção!
+                    {% elif message.tags == 'info' %}
+                        Informação
+                    {% else %}
+                        Notificação
+                    {% endif %}
+                </div>
+                <div class="message-body">{{ message|safe }}</div>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

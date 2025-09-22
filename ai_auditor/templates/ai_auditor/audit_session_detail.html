@@ -1,0 +1,535 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Sessão de Auditoria #{{ object.id }} - Agente de IA{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .session-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        padding: 32px;
+        color: white;
+        margin-bottom: 24px;
+    }
+    
+    .session-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    
+    .session-subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .status-badge {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-running {
+        background: rgba(59, 130, 246, 0.2);
+        color: #1e40af;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(16, 185, 129, 0.2);
+        color: #047857;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-failed {
+        background: rgba(239, 68, 68, 0.2);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .status-cancelled {
+        background: rgba(107, 114, 128, 0.2);
+        color: #6b7280;
+        border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .metric-card.files::before { background: #3b82f6; }
+    .metric-card.issues::before { background: #ef4444; }
+    .metric-card.tests::before { background: #10b981; }
+    .metric-card.fixes::before { background: #8b5cf6; }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 8px;
+    }
+    
+    .metric-label {
+        color: #6b7280;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.875rem;
+    }
+    
+    .metric-icon {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    .severity-breakdown {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 24px;
+    }
+    
+    .severity-item {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .severity-item:hover {
+        background: #f9fafb;
+    }
+    
+    .severity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    .severity-critical .severity-icon { background: #dc2626; }
+    .severity-high .severity-icon { background: #ea580c; }
+    .severity-medium .severity-icon { background: #d97706; }
+    .severity-low .severity-icon { background: #65a30d; }
+    
+    .severity-info {
+        flex: 1;
+    }
+    
+    .severity-count {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .severity-label {
+        color: #6b7280;
+        font-weight: 600;
+    }
+    
+    .config-section {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 24px;
+    }
+    
+    .config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+    }
+    
+    .config-item {
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .config-label {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 4px;
+    }
+    
+    .config-value {
+        color: #6b7280;
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+    
+    .timeline {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        padding: 16px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .timeline-item:last-child {
+        border-bottom: none;
+    }
+    
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    .timeline-icon.start { background: #3b82f6; }
+    .timeline-icon.end { background: #10b981; }
+    .timeline-icon.error { background: #ef4444; }
+    
+    .timeline-content {
+        flex: 1;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .timeline-time {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .error-section {
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+    
+    .error-title {
+        color: #dc2626;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    
+    .error-content {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        font-family: monospace;
+        font-size: 0.875rem;
+        color: #1f2937;
+        white-space: pre-wrap;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    
+    .btn-ai {
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-ai-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-ai-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-ai-secondary {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+    
+    .btn-ai-secondary:hover {
+        background: #667eea;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header da Sessão -->
+    <div class="session-header position-relative">
+        <div class="session-title">🔍 Sessão de Auditoria #{{ object.id }}</div>
+        <div class="session-subtitle">
+            Análise automatizada de código executada em {{ object.started_at|date:"d/m/Y" }}
+        </div>
+        <div class="status-badge status-{{ object.status }}">
+            {{ object.get_status_display }}
+        </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="action-buttons">
+        <a href="{% url 'ai_auditor:issue_list' %}?session={{ object.pk }}" class="btn-ai btn-ai-primary">
+            <i class="fas fa-bug"></i>
+            Ver Problemas ({{ object.total_issues }})
+        </a>
+        <a href="{% url 'ai_auditor:session_list' %}" class="btn-ai btn-ai-secondary">
+            <i class="fas fa-list"></i>
+            Todas as Sessões
+        </a>
+        <a href="{% url 'ai_auditor:dashboard' %}" class="btn-ai btn-ai-secondary">
+            <i class="fas fa-chart-line"></i>
+            Dashboard
+        </a>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="metrics-grid">
+        <div class="metric-card files">
+            <div class="metric-icon" style="background: #3b82f6;">
+                <i class="fas fa-file-code"></i>
+            </div>
+            <div class="metric-value">{{ object.total_files_analyzed }}</div>
+            <div class="metric-label">Arquivos Analisados</div>
+        </div>
+        <div class="metric-card issues">
+            <div class="metric-icon" style="background: #ef4444;">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="metric-value">{{ object.total_issues }}</div>
+            <div class="metric-label">Problemas Encontrados</div>
+        </div>
+        <div class="metric-card tests">
+            <div class="metric-icon" style="background: #10b981;">
+                <i class="fas fa-vial"></i>
+            </div>
+            <div class="metric-value">{{ object.tests_generated }}</div>
+            <div class="metric-label">Testes Gerados</div>
+        </div>
+        <div class="metric-card fixes">
+            <div class="metric-icon" style="background: #8b5cf6;">
+                <i class="fas fa-wrench"></i>
+            </div>
+            <div class="metric-value">{{ object.fixes_applied }}</div>
+            <div class="metric-label">Correções Aplicadas</div>
+        </div>
+    </div>
+
+    <!-- Breakdown por Severidade -->
+    <div class="severity-breakdown">
+        <h5 class="mb-3">
+            <i class="fas fa-chart-bar text-primary me-2"></i>
+            Distribuição por Severidade
+        </h5>
+        <div class="severity-item severity-critical">
+            <div class="severity-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="severity-info">
+                <div class="severity-count">{{ object.critical_issues }}</div>
+                <div class="severity-label">Problemas Críticos</div>
+            </div>
+        </div>
+        <div class="severity-item severity-high">
+            <div class="severity-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="severity-info">
+                <div class="severity-count">{{ object.high_issues }}</div>
+                <div class="severity-label">Alta Prioridade</div>
+            </div>
+        </div>
+        <div class="severity-item severity-medium">
+            <div class="severity-icon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="severity-info">
+                <div class="severity-count">{{ object.medium_issues }}</div>
+                <div class="severity-label">Média Prioridade</div>
+            </div>
+        </div>
+        <div class="severity-item severity-low">
+            <div class="severity-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="severity-info">
+                <div class="severity-count">{{ object.low_issues }}</div>
+                <div class="severity-label">Baixa Prioridade</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline da Sessão -->
+    <div class="timeline">
+        <h5 class="mb-3">
+            <i class="fas fa-clock text-primary me-2"></i>
+            Timeline da Auditoria
+        </h5>
+        <div class="timeline-item">
+            <div class="timeline-icon start">
+                <i class="fas fa-play"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">Auditoria Iniciada</div>
+                <div class="timeline-time">{{ object.started_at|date:"d/m/Y H:i:s" }}</div>
+            </div>
+        </div>
+        {% if object.completed_at %}
+        <div class="timeline-item">
+            <div class="timeline-icon end">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">Auditoria Concluída</div>
+                <div class="timeline-time">{{ object.completed_at|date:"d/m/Y H:i:s" }}</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if object.error_message %}
+        <div class="timeline-item">
+            <div class="timeline-icon error">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">Erro Encontrado</div>
+                <div class="timeline-time">Durante a execução</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Configurações da Auditoria -->
+    {% if object.analysis_config %}
+    <div class="config-section">
+        <h5 class="mb-3">
+            <i class="fas fa-cog text-primary me-2"></i>
+            Configurações da Análise
+        </h5>
+        <div class="config-grid">
+            {% for key, value in object.analysis_config.items %}
+            <div class="config-item">
+                <div class="config-label">{{ key|title }}</div>
+                <div class="config-value">{{ value }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Erro (se houver) -->
+    {% if object.error_message %}
+    <div class="error-section">
+        <div class="error-title">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Erro na Execução
+        </div>
+        <div class="error-content">{{ object.error_message }}</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animar números das métricas
+    const metricValues = document.querySelectorAll('.metric-value');
+    metricValues.forEach(element => {
+        const target = parseInt(element.textContent);
+        let current = 0;
+        const increment = target / 30;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            element.textContent = Math.floor(current);
+        }, 50);
+    });
+    
+    // Auto-refresh se a sessão estiver em execução
+    {% if object.status == 'running' %}
+    setTimeout(() => {
+        location.reload();
+    }, 15000); // Atualizar a cada 15 segundos
+    {% endif %}
+});
+</script>
+{% endblock %}

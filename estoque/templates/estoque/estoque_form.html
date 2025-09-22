@@ -1,0 +1,323 @@
+{% extends 'pandora_form_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}{% if object.pk %}Editar Item de Estoque{% else %}Novo Item de Estoque{% endif %}{% endblock %}
+{% block form_title %}{% if object.pk %}Editar Item de Estoque{% else %}Novo Item de Estoque{% endif %}{% endblock %}
+{% block form_subtitle %}{% if object.pk %}Atualize os dados do item{% else %}Preencha as informações do item{% endif %}{% endblock %}
+{% block form_icon %}fas fa-warehouse{% endblock %}
+
+{% block form_actions %}
+<a href="{% url 'estoque:estoque_home' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i> Voltar
+</a>
+<button type="submit" form="estoque-form" class="btn btn-success">
+    <i class="fas fa-save me-2"></i> {{ object.pk|yesno:"Salvar Alterações,Salvar" }}
+</button>
+{% endblock %}
+    }
+    
+    .required-asterisk {
+        color: #dc3545;
+        font-weight: bold;
+        margin-left: 3px;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .estoque-calculator {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 2px dashed #dee2e6;
+    }
+    
+    .calculator-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .calculator-item:last-child {
+        margin-bottom: 0;
+        padding-top: 0.5rem;
+        border-top: 1px solid #dee2e6;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'estoque:estoque_home' %}"><i class="fas fa-home"></i></a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'estoque:estoque_home' %}">Estoque</a></li>
+                        <li class="breadcrumb-item active">{{ object.pk|yesno:"Editar,Novo" }} Item</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title">
+                    <i class="fas fa-warehouse page-icon"></i>
+                    {{ object.pk|yesno:"Editar Item de Estoque,Novo Item de Estoque" }}
+                </h1>
+                <p class="page-subtitle text-muted">
+                    {% if object.pk %}
+                        Atualize as informações do item {{ object.nome_item }}
+                    {% else %}
+                        Cadastre um novo item no estoque
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'estoque:estoque_home' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar ao Estoque
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block form_content %}
+    <form id="estoque-form" method="post" novalidate>
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Informações Básicas</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="form-floating">
+                                {{ form.nome_item }}
+                                <label for="{{ form.nome_item.id_for_label }}">
+                                    Nome do Item<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.nome_item.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nome_item.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Nome descritivo do item no estoque</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.unidade_medida }}
+                                <label for="{{ form.unidade_medida.id_for_label }}">
+                                    Unidade de Medida<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.unidade_medida.errors %}
+                                <div class="invalid-feedback d-block">{{ form.unidade_medida.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mt-3">
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {{ form.descricao }}
+                                <label for="{{ form.descricao.id_for_label }}">Descrição Detalhada</label>
+                            </div>
+                            {% if form.descricao.errors %}
+                                <div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Descrição completa do item, especificações técnicas, etc.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quantidade e Localização -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-boxes me-2"></i>Quantidade e Localização</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                {{ form.quantidade }}
+                                <label for="{{ form.quantidade.id_for_label }}">
+                                    Quantidade Atual<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.quantidade.errors %}
+                                <div class="invalid-feedback d-block">{{ form.quantidade.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                {{ form.estoque_minimo }}
+                                <label for="{{ form.estoque_minimo.id_for_label }}">
+                                    Estoque Mínimo
+                                </label>
+                            </div>
+                            {% if form.estoque_minimo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.estoque_minimo.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Quantidade mínima para alerta</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {{ form.localizacao }}
+                                <label for="{{ form.localizacao.id_for_label }}">
+                                    Localização
+                                </label>
+                            </div>
+                            {% if form.localizacao.errors %}
+                                <div class="invalid-feedback d-block">{{ form.localizacao.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Local físico onde o item está armazenado</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Valores e Obra -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-dollar-sign me-2"></i>Valores e Obra</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.valor_unitario }}
+                                <label for="{{ form.valor_unitario.id_for_label }}">
+                                    Valor Unitário
+                                </label>
+                            </div>
+                            {% if form.valor_unitario.errors %}
+                                <div class="invalid-feedback d-block">{{ form.valor_unitario.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-floating">
+                                {{ form.obra }}
+                                <label for="{{ form.obra.id_for_label }}">
+                                    Obra Relacionada
+                                </label>
+                            </div>
+                            {% if form.obra.errors %}
+                                <div class="invalid-feedback d-block">{{ form.obra.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Obra específica onde este item será usado (opcional)</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Calculadora de Valor Total -->
+                    <div class="estoque-calculator mt-4">
+                        <h6 class="mb-3"><i class="fas fa-calculator me-2"></i>Calculadora de Estoque</h6>
+                        <div class="calculator-item">
+                            <span>Quantidade:</span>
+                            <span id="calc-quantidade">0</span>
+                        </div>
+                        <div class="calculator-item">
+                            <span>Valor Unitário:</span>
+                            <span id="calc-valor-unitario">R$ 0,00</span>
+                        </div>
+                        <div class="calculator-item">
+                            <span>Valor Total do Estoque:</span>
+                            <span id="calc-valor-total" class="text-success">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Máscara para valor
+    $('#id_valor_unitario').mask('000.000.000.000.000,00', {reverse: true});
+    
+    // Atualizar calculadora em tempo real
+    function updateCalculator() {
+        const quantidade = parseFloat($('#id_quantidade').val()) || 0;
+        const valorUnitario = parseFloat($('#id_valor_unitario').val().replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        const valorTotal = quantidade * valorUnitario;
+        
+        $('#calc-quantidade').text(quantidade.toLocaleString('pt-BR'));
+        $('#calc-valor-unitario').text('R$ ' + valorUnitario.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
+        $('#calc-valor-total').text('R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2}));
+        
+        // Alerta para estoque baixo
+        const estoqueMinimo = parseFloat($('#id_estoque_minimo').val()) || 0;
+        if (estoqueMinimo > 0 && quantidade <= estoqueMinimo) {
+            $('#calc-quantidade').addClass('text-danger').removeClass('text-success');
+        } else {
+            $('#calc-quantidade').addClass('text-success').removeClass('text-danger');
+        }
+    }
+    
+    // Eventos para atualizar calculadora
+    $('#id_quantidade, #id_valor_unitario, #id_estoque_minimo').on('input', updateCalculator);
+    
+    // Atualizar calculadora no carregamento
+    updateCalculator();
+    
+    // Validação de estoque mínimo
+    $('#id_estoque_minimo').on('blur', function() {
+        const quantidade = parseFloat($('#id_quantidade').val()) || 0;
+        const estoqueMinimo = parseFloat($(this).val()) || 0;
+        
+        if (estoqueMinimo > quantidade) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Estoque Baixo',
+                text: 'O estoque atual está abaixo do mínimo definido.',
+                confirmButtonColor: '#28a745'
+            });
+        }
+    });
+    
+    // Auto-geração de localização baseada na obra
+    $('#id_obra').on('change', function() {
+        const obraText = $(this).find('option:selected').text();
+        if (obraText && obraText !== '---------' && !$('#id_localizacao').val()) {
+            const localizacao = `Estoque - ${obraText}`;
+            $('#id_localizacao').val(localizacao);
+        }
+    });
+    
+    // Confirmação para valores altos
+    $('form').on('submit', function(e) {
+        const valorTotal = parseFloat($('#calc-valor-total').text().replace(/[^\d,]/g, '').replace(',', '.'));
+        
+        if (valorTotal > 50000) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Valor Alto',
+                text: `O valor total do estoque (R$ ${valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}) é muito alto. Confirma?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, confirmar',
+                cancelButtonText: 'Revisar valores'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $(this).off('submit').submit();
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

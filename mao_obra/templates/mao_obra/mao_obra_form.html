@@ -1,0 +1,225 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Registro de Mão de Obra{% endblock %}
+
+{% block page_title %}{% if object %}Editar{% else %}Novo{% endif %} Registro de Mão de Obra{% endblock %}
+
+{% block page_subtitle %}
+{% if object %}
+Edite o registro de {{ object.funcionario.nome_completo }} em {{ object.obra.nome }}
+{% else %}
+Registre horas trabalhadas na obra
+{% endif %}
+{% endblock %}
+
+{% block page_icon %}fas fa-hard-hat{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'mao_obra:mao_obra_list' %}">Mão de Obra</a></li>
+<li class="breadcrumb-item active">{% if object %}Editar{% else %}Novo{% endif %}</li>
+{% endblock %}
+
+{% block form_action_buttons %}
+<a href="{% url 'mao_obra:mao_obra_list' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i> Voltar
+</a>
+{% if object %}
+<a href="{% url 'mao_obra:mao_obra_detail' object.pk %}" class="btn btn-outline-primary">
+    <i class="fas fa-eye me-2"></i> Visualizar
+</a>
+{% endif %}
+{% endblock %}
+
+{% block form_content %}
+<!-- Seção 1: Informações do Registro -->
+<div class="form-section" id="informacoes-registro">
+    <div class="section-header">
+        <h3><i class="fas fa-info-circle me-2"></i> Informações do Registro</h3>
+        <p>Dados básicos do registro de mão de obra</p>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="{{ form.funcionario.id_for_label }}" class="form-label required">
+                    Funcionário
+                </label>
+                {{ form.funcionario|add_class:"form-select" }}
+                {% if form.funcionario.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.funcionario.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="{{ form.obra.id_for_label }}" class="form-label required">
+                    Obra
+                </label>
+                {{ form.obra|add_class:"form-select" }}
+                {% if form.obra.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.obra.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="{{ form.data.id_for_label }}" class="form-label required">
+                    Data
+                </label>
+                {{ form.data|add_class:"form-control" }}
+                {% if form.data.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.data.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="form-group">
+                <label for="{{ form.atividade.id_for_label }}" class="form-label required">
+                    Atividade
+                </label>
+                {{ form.atividade|add_class:"form-control" }}
+                {% if form.atividade.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.atividade.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção 2: Horas e Valores -->
+<div class="form-section" id="horas-valores">
+    <div class="section-header">
+        <h3><i class="fas fa-calculator me-2"></i> Horas e Valores</h3>
+        <p>Controle de horas trabalhadas e valores</p>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="{{ form.horas_trabalhadas.id_for_label }}" class="form-label required">
+                    Horas Trabalhadas
+                </label>
+                <div class="input-group">
+                    {{ form.horas_trabalhadas|add_class:"form-control" }}
+                    <span class="input-group-text">h</span>
+                </div>
+                {% if form.horas_trabalhadas.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.horas_trabalhadas.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="{{ form.valor_hora.id_for_label }}" class="form-label required">
+                    Valor por Hora
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">R$</span>
+                    {{ form.valor_hora|add_class:"form-control" }}
+                </div>
+                {% if form.valor_hora.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.valor_hora.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label class="form-label">Valor Total</label>
+                <div class="input-group">
+                    <span class="input-group-text">R$</span>
+                    <input type="text" class="form-control" id="valor_total" readonly>
+                </div>
+                <small class="form-text text-muted">Calculado automaticamente</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção 3: Observações -->
+<div class="form-section" id="observacoes">
+    <div class="section-header">
+        <h3><i class="fas fa-comments me-2"></i> Observações</h3>
+        <p>Informações adicionais sobre o trabalho realizado</p>
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+            Observações
+        </label>
+        {{ form.observacoes|add_class:"form-control" }}
+        {% if form.observacoes.errors %}
+        <div class="invalid-feedback d-block">
+            {% for error in form.observacoes.errors %}
+            {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        <small class="form-text text-muted">Descreva detalhes sobre as atividades realizadas</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const horasInput = document.getElementById('{{ form.horas_trabalhadas.id_for_label }}');
+    const valorHoraInput = document.getElementById('{{ form.valor_hora.id_for_label }}');
+    const valorTotalInput = document.getElementById('valor_total');
+    
+    function calcularTotal() {
+        const horas = parseFloat(horasInput.value) || 0;
+        const valorHora = parseFloat(valorHoraInput.value) || 0;
+        const total = horas * valorHora;
+        
+        valorTotalInput.value = total.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+    
+    // Calcular quando os valores mudarem
+    horasInput.addEventListener('input', calcularTotal);
+    valorHoraInput.addEventListener('input', calcularTotal);
+    
+    // Calcular inicialmente se há valores
+    calcularTotal();
+    
+    // Configurar campo de data para hoje se for novo registro
+    {% if not object %}
+    const dataInput = document.getElementById('{{ form.data.id_for_label }}');
+    if (!dataInput.value) {
+        dataInput.value = new Date().toISOString().split('T')[0];
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

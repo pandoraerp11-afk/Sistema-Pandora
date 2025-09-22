@@ -1,0 +1,61 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static humanize agendamento_extras %}
+{% block title %}Disponibilidade #{{ object.id }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="fw-semibold mb-0"><i class="fas fa-user-clock me-2 text-primary"></i>Disponibilidade #{{ object.id }}</h2>
+    <div class="btn-group btn-group-sm">
+      <a href="{% url 'agendamentos:disponibilidade-list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i></a>
+  {# Mantém lógica: superuser, staff ou membro do grupo AGENDAMENTOS_SECRETARIA #}
+  {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}
+        <a href="{% url 'agendamentos:disponibilidade-edit' object.id %}" class="btn btn-outline-primary"><i class="fas fa-edit"></i></a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Dados</div>
+        <div class="card-body small">
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Data</dt><dd class="col-sm-8">{{ object.data|date:'d/m/Y' }}</dd>
+            <dt class="col-sm-4">Profissional</dt><dd class="col-sm-8">{{ object.profissional }}</dd>
+            <dt class="col-sm-4">Janela</dt><dd class="col-sm-8">{{ object.hora_inicio }} - {{ object.hora_fim }}</dd>
+            <dt class="col-sm-4">Slot (min)</dt><dd class="col-sm-8">{{ object.duracao_slot_minutos }}</dd>
+            <dt class="col-sm-4">Cap/Slot</dt><dd class="col-sm-8">{{ object.capacidade_por_slot }}</dd>
+            <dt class="col-sm-4">Recorrente</dt><dd class="col-sm-8">{% if object.recorrente %}Sim{% else %}Não{% endif %}</dd>
+            <dt class="col-sm-4">Regra</dt><dd class="col-sm-8">{{ object.regra_recorrencia|default:'-' }}</dd>
+            <dt class="col-sm-4">Ativo</dt><dd class="col-sm-8">{% if object.ativo %}<span class="badge bg-success">Sim{% else %}<span class="badge bg-secondary">Não{% endif %}</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span>Slots</span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light"><tr><th>Horário</th><th>Capacidade</th><th>Utilizada</th><th></th></tr></thead>
+            <tbody>
+              {% for s in slots %}
+              <tr>
+                <td>{{ s.horario|date:'H:i' }}</td>
+                <td>{{ s.capacidade_total }}</td>
+                <td>{{ s.capacidade_utilizada }}</td>
+                <td class="text-end"><a href="{% url 'agendamentos:slot-detail' s.id %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">Sem slots.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="alert alert-info small">Slots são gerados automaticamente na criação. Para alterações de capacidade, edite a disponibilidade e gere novamente manualmente via API se necessário.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

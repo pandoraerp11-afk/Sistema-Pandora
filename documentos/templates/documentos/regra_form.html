@@ -1,0 +1,45 @@
+{% extends 'pandora_form_ultra_modern.html' %}
+{% load i18n %}
+{% block title %}{% if regra %}{% trans 'Editar Regra de Documento' %}{% else %}{% trans 'Nova Regra de Documento' %}{% endif %}{% endblock %}
+{% block page_title %}{% trans 'Regra de Documento' %}{% endblock %}
+{% block page_subtitle %}{% trans 'Parametrize exigência e periodicidade de um tipo para uma entidade.' %}{% endblock %}
+
+{% block form_body %}
+  <div class="row g-3">
+    {% if entidade_app_label %}<input type="hidden" name="_entidade_app_label" value="{{ entidade_app_label }}">{% endif %}
+    <div class="col-md-6">{{ form.tipo.label_tag }}{{ form.tipo }}</div>
+    <div class="col-md-6">{{ form.nivel_aplicacao.label_tag }}{{ form.nivel_aplicacao }}</div>
+
+    <div class="col-12"><hr class="my-2"><small class="text-muted">Defina o escopo de aplicação da regra</small></div>
+    <div class="col-md-4">{{ form.escopo.label_tag }}{{ form.escopo }}</div>
+    <div class="col-md-4">{{ form.app_label.label_tag }}{{ form.app_label }}
+      <div class="form-text">Ex.: fornecedores{% if app_labels %} — Sugestões: {{ app_labels|join:', ' }}{% endif %}</div>
+    </div>
+    <div class="col-md-4">{{ form.filtro_tipo_fornecimento.label_tag }}{{ form.filtro_tipo_fornecimento }}<div class="form-text">Opcional: para filtrar fornecedores (Produtos/Serviços/Ambos)</div></div>
+
+    {% if not entidade_app_label %}
+    <div class="col-12">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label for="model_hint" class="form-label">Modelo (Hint)</label>
+          <input type="text" name="model_hint" id="model_hint" class="form-control" placeholder="ex.: fornecedor" />
+          <div class="form-text">Opcional: ajuda a resolver o modelo correto em app com vários models.</div>
+        </div>
+        <div class="col-md-4">
+          <label for="entidade_object_id" class="form-label">ID da Entidade</label>
+          <input type="number" name="entidade_object_id" id="entidade_object_id" class="form-control" placeholder="ex.: 123" />
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="col-12"><hr class="my-2"><small class="text-muted">Regras de exigência e periodicidade</small></div>
+    <div class="col-md-3">{{ form.periodicidade_override.label_tag }}{{ form.periodicidade_override }}</div>
+    <div class="col-md-3">{{ form.exigencia.label_tag }}{{ form.exigencia }}</div>
+    <div class="col-md-3">{{ form.validade_dias.label_tag }}{{ form.validade_dias }}</div>
+    <div class="col-md-3">{{ form.data_base.label_tag }}{{ form.data_base }}</div>
+
+    <div class="col-md-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
+    <div class="col-md-3 form-check">{{ form.ativo }} {{ form.ativo.label_tag }}</div>
+  </div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "pandora_ultra_modern_base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="alert alert-warning">Template de Procedimento obsoleto. Gerencie em <a href="{% url 'servicos:servico_list' %}">Serviços</a>.</div>
+    <h1 class="h3 mb-2 text-gray-800">Detalhes do Procedimento (LEGACY)</h1>
+    <p class="mb-4">Informações detalhadas sobre o procedimento.</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">{{ procedimento.nome }}</h6>
+        </div>
+        <div class="card-body">
+            <p><strong>Nome:</strong> {{ procedimento.nome }}</p>
+            <p><strong>Categoria:</strong> {{ procedimento.get_categoria_display }}</p>
+            <p><strong>Descrição:</strong> {{ procedimento.descricao }}</p>
+            <p><strong>Duração Estimada:</strong> {{ procedimento.duracao_estimada }}</p>
+            <p><strong>Valor Base:</strong> {{ procedimento.valor_base }}</p>
+            <p><strong>Requisitos Pré-Procedimento:</strong> {{ procedimento.requisitos_pre_procedimento }}</p>
+            <p><strong>Contraindicações:</strong> {{ procedimento.contraindicacoes }}</p>
+            <p><strong>Cuidados Pós-Procedimento:</strong> {{ procedimento.cuidados_pos_procedimento }}</p>
+            <p><strong>Requer Anamnese:</strong> {{ procedimento.requer_anamnese|yesno:"Sim,Não" }}</p>
+            <p><strong>Requer Termo de Consentimento:</strong> {{ procedimento.requer_termo_consentimento|yesno:"Sim,Não" }}</p>
+            <p><strong>Permite Fotos de Evolução:</strong> {{ procedimento.permite_fotos_evolucao|yesno:"Sim,Não" }}</p>
+            <p><strong>Intervalo Mínimo entre Sessões (dias):</strong> {{ procedimento.intervalo_minimo_sessoes }}</p>
+            <p><strong>Ativo:</strong> {{ procedimento.ativo|yesno:"Sim,Não" }}</p>
+
+            <a href="{% url 'servicos:servico_list' %}" class="btn btn-secondary">Voltar</a>
+            <!-- Ações legacy removidas -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,387 @@
+/* Portal Cliente - Estilos Customizados */
+
+/* Cores do tema */
+:root {
+    --portal-primary: #0d6efd;
+    --portal-success: #198754;
+    --portal-warning: #ffc107;
+    --portal-danger: #dc3545;
+    --portal-info: #0dcaf0;
+    --portal-light: #f8f9fa;
+    --portal-dark: #212529;
+    --portal-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    --portal-shadow-hover: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* Componentes globais */
+.card {
+    border-radius: 12px;
+    box-shadow: var(--portal-shadow);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: var(--portal-shadow-hover);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Layout específico do portal */
+.portal-header {
+    background: linear-gradient(135deg, var(--portal-primary), #4c84ff);
+    color: white;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.stats-card {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: white;
+    box-shadow: var(--portal-shadow);
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--portal-shadow-hover);
+}
+
+.stats-card .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+}
+
+.stats-card .number {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stats-card .label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Cards de agendamento */
+.agendamento-card {
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.agendamento-card.pendente {
+    border-left-color: var(--portal-warning);
+}
+
+.agendamento-card.confirmado {
+    border-left-color: var(--portal-primary);
+}
+
+.agendamento-card.concluido {
+    border-left-color: var(--portal-success);
+}
+
+.agendamento-card.cancelado {
+    border-left-color: var(--portal-danger);
+}
+
+.agendamento-card:hover {
+    transform: translateX(5px);
+    box-shadow: var(--portal-shadow-hover);
+}
+
+/* Serviços (classes .procedimento-* mantidas por compatibilidade com o HTML) */
+.procedimento-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.procedimento-card:hover {
+    border-color: var(--portal-primary);
+    transform: translateY(-2px);
+}
+
+.procedimento-card.selected {
+    border-color: var(--portal-primary);
+    background-color: #e7f3ff;
+}
+
+/* Slots de agendamento */
+.slot-card {
+    cursor: pointer;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.slot-card:hover {
+    border-color: var(--portal-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--portal-shadow);
+}
+
+.slot-card.selected {
+    border-color: var(--portal-primary);
+    background-color: #e7f3ff;
+    color: var(--portal-primary);
+}
+
+.slot-card.unavailable {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Galeria de fotos */
+.foto-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.foto-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--portal-shadow);
+    transition: all 0.3s ease;
+}
+
+.foto-item:hover {
+    transform: scale(1.02);
+    box-shadow: var(--portal-shadow-hover);
+}
+
+.foto-thumbnail {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.foto-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: white;
+    padding: 1rem;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.foto-item:hover .foto-overlay {
+    transform: translateY(0);
+}
+
+/* Histórico de atendimentos */
+.atendimento-item {
+    border-left: 4px solid var(--portal-success);
+    background: #f8fff9;
+    transition: all 0.3s ease;
+}
+
+.atendimento-item:hover {
+    background: #e8f5e8;
+    transform: translateX(5px);
+}
+
+/* Rating de satisfação */
+.rating {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.rating .star {
+    font-size: 1.5rem;
+    color: #ddd;
+    transition: color 0.3s ease;
+}
+
+.rating .star.filled {
+    color: var(--portal-warning);
+}
+
+/* Loading states */
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .foto-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .foto-thumbnail {
+        height: 150px;
+    }
+    
+    .slot-card {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Animações de entrada */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Estados de sucesso/erro */
+.alert {
+    border-radius: 12px;
+    border: none;
+    font-weight: 500;
+}
+
+.alert-success {
+    background-color: #d1edcc;
+    color: #2d5a3d;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Melhorias na tipografia */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: var(--portal-dark);
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* Botões especializados */
+.btn-portal {
+    background: linear-gradient(135deg, var(--portal-primary), #4c84ff);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-portal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+    color: white;
+}
+
+/* Navegação breadcrumb customizada */
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin-bottom: 1.5rem;
+}
+
+.breadcrumb-item a {
+    color: var(--portal-primary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: #0a58ca;
+}
+
+/* Tabelas responsivas */
+.table-responsive {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: var(--portal-light);
+    border: none;
+    font-weight: 600;
+    color: var(--portal-dark);
+}
+
+.table td {
+    border-color: #e9ecef;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Footer customizado */
+.portal-footer {
+    background-color: var(--portal-dark);
+    color: white;
+    padding: 2rem 0;
+    margin-top: 3rem;
+}
+
+.portal-footer a {
+    color: #adb5bd;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.portal-footer a:hover {
+    color: white;
+}

@@ -1,0 +1,441 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Serviços{% endblock %}
+
+{% block page_title %}Serviços{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Serviços</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="ph-duotone ph-wrench"></i>
+            Serviços
+        </h1>
+        <p class="page-subtitle">Gerencie todos os serviços oferecidos pela empresa</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline-primary" onclick="toggleAdvancedSearch()">
+            <i class="ph-duotone ph-magnifying-glass"></i>
+            Busca Avançada
+        </button>
+        <a href="{% url 'servicos:servico_create' %}" class="btn btn-primary">
+            <i class="ph-duotone ph-plus"></i>
+            Novo Serviço
+        </a>
+    </div>
+</div>
+
+<!-- Busca Avançada -->
+<div id="advanced-search" class="advanced-search-panel d-none">
+    <form method="get" action="{% url 'servicos:servico_list' %}">
+        <div class="search-grid">
+            <div class="search-field">
+                <label for="id_nome">Nome do Serviço</label>
+                <input type="text" id="id_nome" name="nome" class="form-control" value="{{ request.GET.nome }}" placeholder="Digite o nome do serviço">
+            </div>
+            <div class="search-field">
+                <label for="id_categoria">Categoria</label>
+                <select id="id_categoria" name="categoria" class="form-control">
+                    <option value="">Todas as categorias</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:"s" %}selected{% endif %}>
+                        {{ categoria.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="search-field">
+                <label for="id_valor_min">Valor Mínimo</label>
+                <input type="number" id="id_valor_min" name="valor_min" class="form-control" value="{{ request.GET.valor_min }}" placeholder="0,00" step="0.01">
+            </div>
+            <div class="search-field">
+                <label for="id_valor_max">Valor Máximo</label>
+                <input type="number" id="id_valor_max" name="valor_max" class="form-control" value="{{ request.GET.valor_max }}" placeholder="0,00" step="0.01">
+            </div>
+            <div class="search-field">
+                <label for="id_status">Status</label>
+                <select id="id_status" name="status" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="ativo" {% if request.GET.status == 'ativo' %}selected{% endif %}>Ativo</option>
+                    <option value="inativo" {% if request.GET.status == 'inativo' %}selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+        </div>
+        <div class="search-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph-duotone ph-magnifying-glass"></i>
+                Buscar
+            </button>
+            <a href="{% url 'servicos:servico_list' %}" class="btn btn-outline-secondary">
+                <i class="ph-duotone ph-x"></i>
+                Limpar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Estatísticas -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="ph-duotone ph-wrench"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ total_servicos }}</h3>
+            <p>Total de Serviços</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="ph-duotone ph-check-circle"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ servicos_ativos }}</h3>
+            <p>Serviços Ativos</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="ph-duotone ph-tag"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ categorias_count }}</h3>
+            <p>Categorias</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="ph-duotone ph-currency-dollar"></i>
+        </div>
+        <div class="stat-content">
+            <h3>R$ {{ valor_medio|floatformat:2 }}</h3>
+            <p>Valor Médio</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Serviços -->
+<div class="data-table-container">
+    <div class="table-header">
+        <div class="table-info">
+            <span class="record-count">{{ servicos|length }} serviço{{ servicos|length|pluralize }}</span>
+        </div>
+        <div class="table-controls">
+            <div class="view-options">
+                <button class="btn btn-sm btn-outline-secondary active" data-view="grid">
+                    <i class="ph-duotone ph-grid-four"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" data-view="list">
+                    <i class="ph-duotone ph-list"></i>
+                </button>
+            </div>
+            <div class="export-options">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+                    <i class="ph-duotone ph-export"></i>
+                    Exportar
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'servicos:servico_export' %}?format=pdf">
+                        <i class="ph-duotone ph-file-pdf"></i>
+                        PDF
+                    </a>
+                    <a class="dropdown-item" href="{% url 'servicos:servico_export' %}?format=excel">
+                        <i class="ph-duotone ph-file-xls"></i>
+                        Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table modern-table">
+            <thead>
+                <tr>
+                    <th>
+                        <div class="table-checkbox">
+                            <input type="checkbox" id="select-all">
+                            <label for="select-all"></label>
+                        </div>
+                    </th>
+                    <th>Serviço</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>Unidade</th>
+                    <th>Duração</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for servico in servicos %}
+                <tr>
+                    <td>
+                        <div class="table-checkbox">
+                            <input type="checkbox" id="select-{{ servico.id }}" value="{{ servico.id }}">
+                            <label for="select-{{ servico.id }}"></label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="service-cell">
+                            <div class="service-icon">
+                                {% if servico.icone %}
+                                <i class="ph-duotone ph-{{ servico.icone }}"></i>
+                                {% else %}
+                                <i class="ph-duotone ph-wrench"></i>
+                                {% endif %}
+                            </div>
+                            <div class="service-info">
+                                <span class="service-name">{{ servico.nome }}</span>
+                                <span class="service-detail">{{ servico.descricao|truncatechars:50 }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="category-badge">{{ servico.categoria.nome|default:"Sem categoria" }}</span>
+                    </td>
+                    <td>
+                        <span class="value-cell">
+                            {% if servico.valor_fixo %}
+                            R$ {{ servico.valor_fixo|floatformat:2 }}
+                            {% else %}
+                            <span class="text-muted">Sob consulta</span>
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ servico.unidade|default:"Serviço" }}</span>
+                    </td>
+                    <td>
+                        <span class="text-muted">
+                            {% if servico.duracao_estimada %}
+                            {{ servico.duracao_estimada }} h
+                            {% else %}
+                            Não informado
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if servico.ativo %}
+                        <span class="badge badge-success">
+                            <i class="ph-duotone ph-check-circle"></i>
+                            Ativo
+                        </span>
+                        {% else %}
+                        <span class="badge badge-secondary">
+                            <i class="ph-duotone ph-pause-circle"></i>
+                            Inativo
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'servicos:servico_detail' servico.slug %}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Visualizar">
+                                <i class="ph-duotone ph-eye"></i>
+                            </a>
+                            <a href="{% url 'servicos:servico_update' servico.slug %}" 
+                               class="btn btn-sm btn-outline-warning" 
+                               title="Editar">
+                                <i class="ph-duotone ph-pencil"></i>
+                            </a>
+                            <a href="{% url 'servicos:servico_duplicate' servico.pk %}" 
+                               class="btn btn-sm btn-outline-info" 
+                               title="Duplicar">
+                                <i class="ph-duotone ph-copy"></i>
+                            </a>
+                            <a href="{% url 'servicos:servico_delete' servico.slug %}" 
+                               class="btn btn-sm btn-outline-danger" 
+                               title="Excluir">
+                                <i class="ph-duotone ph-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <div class="empty-state">
+                            <i class="ph-duotone ph-wrench"></i>
+                            <h3>Nenhum serviço encontrado</h3>
+                            <p>Não há serviços cadastrados ou que correspondam aos critérios de busca.</p>
+                            <a href="{% url 'servicos:servico_create' %}" class="btn btn-primary">
+                                <i class="ph-duotone ph-plus"></i>
+                                Cadastrar Primeiro Serviço
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} serviços
+        </div>
+        <nav class="pagination-nav">
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                <a href="?page=1{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-left"></i>
+                </a>
+                {% endif %}
+                
+                <span class="page-current">
+                    {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-double-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ações em Lote -->
+<div class="bulk-actions d-none" id="bulk-actions">
+    <div class="bulk-actions-content">
+        <span class="bulk-selected-count">0 serviços selecionados</span>
+        <div class="bulk-actions-buttons">
+            <button class="btn btn-outline-secondary" onclick="exportSelected()">
+                <i class="ph-duotone ph-export"></i>
+                Exportar Selecionados
+            </button>
+            <button class="btn btn-outline-warning" onclick="updateStatusSelected()">
+                <i class="ph-duotone ph-pencil"></i>
+                Alterar Status
+            </button>
+            <button class="btn btn-outline-danger" onclick="deleteSelected()">
+                <i class="ph-duotone ph-trash"></i>
+                Excluir Selecionados
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Busca avançada
+    window.toggleAdvancedSearch = function() {
+        const panel = document.getElementById('advanced-search');
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+    };
+
+    // Seleção múltipla
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+    const bulkActions = document.getElementById('bulk-actions');
+    const bulkCount = document.querySelector('.bulk-selected-count');
+
+    selectAll?.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkActions();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkActions);
+    });
+
+    function updateBulkActions() {
+        const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        bulkCount.textContent = `${selectedCount} serviço${selectedCount !== 1 ? 's' : ''} selecionado${selectedCount !== 1 ? 's' : ''}`;
+        bulkActions.style.display = selectedCount > 0 ? 'block' : 'none';
+        
+        if (selectAll) {
+            selectAll.checked = selectedCount === checkboxes.length;
+            selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+        }
+    }
+
+    // Ações em lote
+    window.exportSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "servicos:servico_export" %}';
+        
+        selected.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selected_ids';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    };
+
+    window.updateStatusSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Alterar Status',
+            text: `Deseja alterar o status de ${selected.length} serviço${selected.length !== 1 ? 's' : ''}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, alterar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log('Alterar status:', selected);
+            }
+        });
+    };
+
+    window.deleteSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Excluir Serviços',
+            text: `Tem certeza que deseja excluir ${selected.length} serviço${selected.length !== 1 ? 's' : ''}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, excluir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log('Excluir serviços:', selected);
+            }
+        });
+    };
+});
+</script>
+{% endblock %}

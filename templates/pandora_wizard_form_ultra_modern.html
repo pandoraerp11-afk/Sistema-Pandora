@@ -1,0 +1,211 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ wizard_title|default:"Assistente" }} - Pandora ERP{% endblock %}
+
+{% block page_header %}{% endblock %}
+{% block page_title %}{% endblock %}
+{% block page_subtitle %}{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {# Barra de Progresso adaptativa: usa variáveis do wizard de funcionários (steps_meta) ou fallback para steps_list #}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% with steps_dict=steps_list %}
+            {% if steps_dict %}
+            {% if not progress_percentage %}
+                {% with total=wizard_total_steps|default:steps_dict|length %}
+                    {% widthratio current_step total 100 as computed_pct %}
+                {% endwith %}
+            {% endif %}
+            <div class="wizard-progress-container no-card-strip">
+                <div class="wizard-progress">
+                    <div class="progress-steps">
+                        <div class="progress-line"></div>
+                        <div class="progress-line-active" style="width: {{ progress_percentage|default:'10' }}%;"></div>
+                        {% for step_num, step_info in steps_dict.items %}
+                            <div class="step {% if step_num == current_step %}active{% elif step_num < current_step %}completed{% endif %}">
+                                {% if wizard_goto_step_url_name %}
+                                    <a href="{% url wizard_goto_step_url_name step=step_num %}"
+                                       class="step-circle-link {% if step_num == current_step %}active{% elif step_num < current_step %}completed{% else %}pending{% endif %}"
+                                       title="Ir para: {{ step_info.name }}">
+                                        {% if step_num < current_step %}<i class="fas fa-check"></i>{% else %}{{ step_num }}{% endif %}
+                                    </a>
+                                {% elif is_core_tenant_wizard %}
+                                    {% if editing_tenant %}
+                                        {# Corrigido: evitar mix de args (pk) + kwargs (step) que gera ValueError no reverse #}
+                                        <a href="{% url 'core:wizard_goto_step_edit' pk=editing_tenant.pk step=step_num %}"
+                                           class="step-circle-link {% if step_num == current_step %}active{% elif step_num < current_step %}completed{% else %}pending{% endif %}"
+                                           title="Ir para: {{ step_info.name }}">
+                                            {% if step_num < current_step %}<i class="fas fa-check"></i>{% else %}{{ step_num }}{% endif %}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'core:wizard_goto_step' step=step_num %}"
+                                           class="step-circle-link {% if step_num == current_step %}active{% elif step_num < current_step %}completed{% else %}pending{% endif %}"
+                                           title="Ir para: {{ step_info.name }}">
+                                            {% if step_num < current_step %}<i class="fas fa-check"></i>{% else %}{{ step_num }}{% endif %}
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="step-circle-link {% if step_num == current_step %}active{% elif step_num < current_step %}completed{% else %}pending{% endif %}">
+                                        {% if step_num < current_step %}<i class="fas fa-check"></i>{% else %}{{ step_num }}{% endif %}
+                                    </span>
+                                {% endif %}
+                                <div class="step-label">{{ step_info.name }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-{{ step_icon|default:'user' }} me-2"></i>
+                        {% firstof step_title wizard_title "Assistente" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="wizard-form" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <!-- Removido management_form do wizard (não utilizado) -->
+                        <input type="hidden" name="wizard_step" value="{{ current_step }}">
+                        
+                        {% block step_content %}
+                        <!-- Conteúdo específico do step será inserido aqui -->
+                        {% endblock %}
+                        
+                        <!-- Form Actions Modernizadas -->
+                        <div class="wizard-navigation">
+                            <div class="nav-left">
+                                {% if can_go_prev %}
+                                    <button type="submit" name="wizard_prev" value="prev" class="btn-ghost">
+                                        <i class="fas fa-chevron-left me-2"></i>Anterior
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn-ghost" disabled>
+                                        <i class="fas fa-chevron-left me-2"></i>Anterior
+                                    </button>
+                                {% endif %}
+                            </div>
+                            <div class="nav-center">
+                                <span class="step-indicator">Passo {{ current_step|default:'1' }} de {{ total_steps|default:'7' }}</span>
+                            </div>
+                            <div class="nav-right">
+                                <!-- NOVA FUNCIONALIDADE: Botões para modo edição -->
+                                {% if is_editing %}
+                                    <button type="submit" name="wizard_save_step" value="save" class="btn-modern btn-warning me-2" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="Salvar apenas este passo e continuar editando">
+                                        <i class="fas fa-save me-1"></i>Salvar Step
+                                    </button>
+                                    {% with list_name=wizard_list_url_name|default:'core:tenant_list' %}
+                                    <a href="{% url list_name %}" class="btn-modern btn-secondary me-2"
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Voltar para a lista de empresas">
+                                        <i class="fas fa-list me-1"></i>Ir para Lista
+                                    </a>
+                                    {% endwith %}
+                                {% endif %}
+                                
+                                {% if is_last_step or current_step == wizard_total_steps %}
+                                    <button type="submit" name="wizard_action" value="finish" class="btn-modern btn-success">
+                                        <i class="fas fa-check me-2"></i>Finalizar
+                                    </button>
+                                {% else %}
+                                    <button type="submit" name="wizard_action" value="next" class="btn-modern btn-primary">
+                                        Próximo<i class="fas fa-chevron-right ms-2"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="100">
+                <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            {{ preview_card_title|default:"Preview" }}
+                        </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="avatar-lg mx-auto mb-3">
+                            <i class="fas fa-{{ preview_icon|default:'building' }} fa-2x text-primary" id="preview-icon"></i>
+                        </div>
+                        <h6 class="mb-1" id="preview-nome">{{ preview_name|default:"Novo Registro" }}</h6>
+                        <small class="text-muted" id="preview-subdomain">
+                            {{ preview_subtext|default:"Complete os dados" }}
+                        </small>
+                    </div>
+                    
+                    <div class="info-item mb-2">
+                        <i class="fas fa-user me-2"></i>
+                        <span id="preview-tipo">{{ preview_type_text|default:"Tipo não definido" }}</span>
+                    </div>
+                    <div class="info-item mb-2">
+                        <i class="fas fa-envelope me-2"></i>
+                        <span id="preview-email">{{ preview_email|default:"E-mail não informado" }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        <span id="preview-endereco">{{ preview_location|default:"Endereço não informado" }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <span class="badge bg-secondary" id="preview-categoria">{{ preview_primary_badge|default:"Registro" }}</span>
+                        <span class="badge bg-{{ is_editing|yesno:'info,warning' }}" id="preview-status">{{ preview_secondary_badge }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Dicas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="tip-item mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Preencha todos os campos obrigatórios</small>
+                    </div>
+                    <div class="tip-item mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Defina o tipo de pessoa corretamente</small>
+                    </div>
+                    <div class="tip-item mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Escolha um subdomínio único</small>
+                    </div>
+                    <div class="tip-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Configure os módulos necessários</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

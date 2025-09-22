@@ -1,0 +1,27 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        {{ form|crispy }}
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <a href="{% url 'formularios_dinamicos:form_list' %}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

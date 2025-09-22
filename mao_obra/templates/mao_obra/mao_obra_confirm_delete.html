@@ -1,0 +1,73 @@
+{% extends "pandora_delete_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Excluir Registro de Mão de Obra{% endblock %}
+
+{% block page_title %}Excluir Registro de Mão de Obra{% endblock %}
+
+{% block page_subtitle %}{{ object.funcionario.nome_completo }} - {{ object.data|date:"d/m/Y" }}{% endblock %}
+
+{% block page_icon %}fas fa-trash{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'mao_obra:mao_obra_list' %}">Mão de Obra</a></li>
+<li class="breadcrumb-item"><a href="{% url 'mao_obra:mao_obra_detail' object.pk %}">{{ object.funcionario.nome_completo }}</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block delete_warning_title %}Atenção: Exclusão de Registro de Mão de Obra{% endblock %}
+
+{% block delete_warning_message %}
+<p class="mb-3">Você está prestes a excluir permanentemente o seguinte registro de mão de obra:</p>
+
+<div class="alert alert-warning border-start border-warning border-4 ps-3">
+    <div class="row g-2">
+        <div class="col-md-6">
+            <strong>Funcionário:</strong><br>
+            <span class="text-muted">{{ object.funcionario.nome_completo }}</span>
+        </div>
+        <div class="col-md-6">
+            <strong>Obra:</strong><br>
+            <span class="text-muted">{{ object.obra.nome }}</span>
+        </div>
+        <div class="col-md-6">
+            <strong>Data:</strong><br>
+            <span class="text-muted">{{ object.data|date:"d/m/Y" }}</span>
+        </div>
+        <div class="col-md-6">
+            <strong>Horas:</strong><br>
+            <span class="text-muted">{{ object.horas_trabalhadas }}h</span>
+        </div>
+        <div class="col-12">
+            <strong>Atividade:</strong><br>
+            <span class="text-muted">{{ object.atividade }}</span>
+        </div>
+        <div class="col-md-6">
+            <strong>Valor/Hora:</strong><br>
+            <span class="text-muted">R$ {{ object.valor_hora|floatformat:2 }}</span>
+        </div>
+        <div class="col-md-6">
+            <strong>Valor Total:</strong><br>
+            <span class="text-success fw-bold">R$ {{ object.horas_trabalhadas|mul:object.valor_hora|floatformat:2 }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-danger border-start border-danger border-4 ps-3">
+    <h6 class="alert-heading">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Esta ação é irreversível!
+    </h6>
+    <ul class="mb-0">
+        <li>O registro será removido permanentemente do sistema</li>
+        <li>Os dados de horas trabalhadas serão perdidos</li>
+        <li>Relatórios e estatísticas serão afetados</li>
+        <li>Esta ação não pode ser desfeita</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block cancel_url %}{% url 'mao_obra:mao_obra_detail' object.pk %}{% endblock %}
+
+{% block delete_object_name %}{{ object.funcionario.nome_completo }} - {{ object.data|date:"d/m/Y" }}{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Formulário de Documentos do Cliente -->
+
+    <!-- Alerta Informativo -->
+    <div class="alert alert-warning border-0 mb-4 wizard-alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-file-alt text-warning me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-warning">Documentos do Cliente</h6>
+                <small class="text-muted">Faça upload dos documentos do cliente (opcional)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Documentos Principais -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-id-card wizard-icon"></i>
+            Documentos de Identificação
+        </h5>
+        
+        <div class="row">
+            <!-- RG/CPF -->
+            {% include 'core/wizard/wizard_field.html' with field=form.documento_rg field_size='md' %}
+            
+            <!-- CPF -->
+            {% include 'core/wizard/wizard_field.html' with field=form.documento_cpf field_size='md' %}
+            
+            <!-- CNH -->
+            {% include 'core/wizard/wizard_field.html' with field=form.documento_cnh field_size='md' %}
+            
+            <!-- Passaporte -->
+            {% include 'core/wizard/wizard_field.html' with field=form.documento_passaporte field_size='md' %}
+        </div>
+    </div>
+
+    <!-- Seção: Documentos Empresariais (Para PJ) -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-building wizard-icon"></i>
+            Documentos Empresariais
+        </h5>
+        
+        <div class="row">
+            <!-- Contrato Social -->
+            {% include 'core/wizard/wizard_field.html' with field=form.contrato_social field_size='md' %}
+            
+            <!-- CNPJ -->
+            {% include 'core/wizard/wizard_field.html' with field=form.documento_cnpj field_size='md' %}
+            
+            <!-- Inscrição Estadual -->
+            {% include 'core/wizard/wizard_field.html' with field=form.inscricao_estadual field_size='md' %}
+            
+            <!-- Alvará de Funcionamento -->
+            {% include 'core/wizard/wizard_field.html' with field=form.alvara_funcionamento field_size='md' %}
+        </div>
+    </div>
+
+    <!-- Seção: Documentos Adicionais -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-folder wizard-icon"></i>
+            Documentos Adicionais
+        </h5>
+        
+        <div class="row">
+            <!-- Comprovante de Endereço -->
+            {% include 'core/wizard/wizard_field.html' with field=form.comprovante_endereco field_size='md' %}
+            
+            <!-- Comprovante de Renda -->
+            {% include 'core/wizard/wizard_field.html' with field=form.comprovante_renda field_size='md' %}
+            
+            <!-- Certidões -->
+            {% include 'core/wizard/wizard_field.html' with field=form.certidoes field_size='md' %}
+            
+            <!-- Outros Documentos -->
+            {% include 'core/wizard/wizard_field.html' with field=form.outros_documentos field_size='md' %}
+        </div>
+    </div>
+
+    <!-- Seção: Observações sobre Documentos -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-sticky-note wizard-icon"></i>
+            Observações sobre Documentos
+        </h5>
+        
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=form.observacoes_documentos field_size='xl' %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Funcionalidade para upload de arquivos
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const fileList = this.files;
+            const label = this.parentElement.querySelector('label');
+            
+            if (fileList.length > 0) {
+                const fileName = fileList[0].name;
+                if (label) {
+                    label.innerHTML = `<i class="fas fa-check text-success me-2"></i>${fileName}`;
+                }
+                
+                // Adicionar indicador visual de sucesso
+                this.classList.add('file-uploaded');
+            } else {
+                if (label) {
+                    const originalText = label.getAttribute('data-original-text') || 'Selecionar arquivo';
+                    label.innerHTML = originalText;
+                }
+                this.classList.remove('file-uploaded');
+            }
+        });
+        
+        // Salvar texto original do label
+        const label = input.parentElement.querySelector('label');
+        if (label && !label.getAttribute('data-original-text')) {
+            label.setAttribute('data-original-text', label.textContent);
+        }
+    });
+    
+    // Validação de tipos de arquivo
+    function validateFileType(input, allowedTypes) {
+        const file = input.files[0];
+        if (file) {
+            const fileType = file.type;
+            const fileName = file.name.toLowerCase();
+            
+            const isValidType = allowedTypes.some(type => 
+                fileType.includes(type) || fileName.endsWith(type)
+            );
+            
+            if (!isValidType) {
+                alert('Tipo de arquivo não permitido. Use apenas: ' + allowedTypes.join(', '));
+                input.value = '';
+                return false;
+            }
+            
+            // Validar tamanho do arquivo (máximo 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('Arquivo muito grande. Tamanho máximo: 5MB');
+                input.value = '';
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    // Aplicar validação aos campos de arquivo
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            validateFileType(this, ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']);
+        });
+    });
+    
+    // Preview de imagens
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Criar ou atualizar preview da imagem
+                    let preview = input.parentElement.querySelector('.image-preview');
+                    if (!preview) {
+                        preview = document.createElement('img');
+                        preview.className = 'image-preview mt-2';
+                        preview.style.maxWidth = '200px';
+                        preview.style.maxHeight = '150px';
+                        preview.style.borderRadius = '8px';
+                        preview.style.border = '1px solid #dee2e6';
+                        input.parentElement.appendChild(preview);
+                    }
+                    preview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+});
+</script>
+
+<style>
+/* Estilos para upload de arquivos */
+.file-uploaded {
+    border-color: #198754 !important;
+    background-color: #f8fff9 !important;
+}
+
+.image-preview {
+    display: block;
+    margin-top: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.image-preview:hover {
+    transform: scale(1.05);
+}
+
+.wizard-file {
+    padding: 0.75rem;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.wizard-file:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+.wizard-file:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+{% endblock %}

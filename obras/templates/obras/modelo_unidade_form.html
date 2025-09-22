@@ -1,0 +1,9 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% block title %}Novo Modelo - {{ obra.nome }}{% endblock %}
+{% block page_title %}Novo Modelo de Unidade{% endblock %}
+{% block page_subtitle %}Defina as características da planta/modelo{% endblock %}
+{% block form_content %}
+{% with form_icon='fas fa-layer-group' form_title='Informações do Modelo' form_subtitle='Preencha as características da planta/modelo' save_label='Salvar' %}
+  {% include 'partials/forms/form_renderer.html' %}
+{% endwith %}
+{% endblock %}

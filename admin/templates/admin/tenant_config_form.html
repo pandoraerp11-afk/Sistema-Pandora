@@ -1,0 +1,673 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}
+Configurações da Empresa - {{ current_tenant.name }} - Pandora ERP
+{% endblock %}
+
+{% block page_title %}
+Configurações da Empresa
+{% endblock %}
+
+{% block page_subtitle %}
+Configure os parâmetros e limitações de {{ current_tenant.name }}
+{% endblock %}
+
+{% block form_title %}Configurações da Empresa{% endblock %}
+
+{% block form_content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-aos="fade-up">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-body">
+                    <form method="post" novalidate id="tenantConfigForm">
+                    {% csrf_token %}
+                    
+                    <!-- Limitações de Recursos -->
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Limitações de Recursos
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.max_users.id_for_label }}" class="form-label">
+                                    <i class="fas fa-users text-primary"></i>
+                                    Máximo de Usuários
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.max_users|add_class:"form-control" }}
+                                {% if form.max_users.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.max_users.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Número máximo de usuários ativos
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.max_storage_mb.id_for_label }}" class="form-label">
+                                    <i class="fas fa-hdd text-primary"></i>
+                                    Armazenamento (MB)
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.max_storage_mb|add_class:"form-control" }}
+                                {% if form.max_storage_mb.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.max_storage_mb.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Espaço máximo em megabytes
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.max_api_requests_per_hour.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tachometer-alt text-primary"></i>
+                                    Req. API/hora
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.max_api_requests_per_hour|add_class:"form-control" }}
+                                {% if form.max_api_requests_per_hour.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.max_api_requests_per_hour.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Limite de requisições por hora
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configurações de Segurança -->
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Segurança e Políticas
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="form-check d-flex align-items-center">
+                                    {{ form.require_2fa|add_class:"form-check-input me-2" }}
+                                    <label class="form-check-label" for="{{ form.require_2fa.id_for_label }}">
+                                        <i class="fas fa-mobile-alt text-primary me-1"></i>
+                                        Exigir Autenticação 2FA
+                                    </label>
+                                </div>
+                                {% if form.require_2fa.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.require_2fa.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Obriga todos os usuários a configurar autenticação de dois fatores
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="form-check d-flex align-items-center">
+                                    {{ form.backup_enabled|add_class:"form-check-input me-2" }}
+                                    <label class="form-check-label" for="{{ form.backup_enabled.id_for_label }}">
+                                        <i class="fas fa-cloud-upload-alt text-primary me-1"></i>
+                                        Backup Automático Habilitado
+                                    </label>
+                                </div>
+                                {% if form.backup_enabled.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.backup_enabled.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Realiza backup automático dos dados da empresa
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customização Visual -->
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-palette me-2"></i>
+                                Customização Visual
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="{{ form.custom_branding.id_for_label }}" class="form-label">
+                                    <i class="fas fa-code text-primary"></i>
+                                    Configurações de Marca (JSON)
+                                </label>
+                                {{ form.custom_branding|add_class:"form-control" }}
+                                {% if form.custom_branding.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.custom_branding.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Configurações de personalização visual em formato JSON
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <strong>Exemplo:</strong><br>
+                                        <code>{"logo_url": "https://exemplo.com/logo.png", "primary_color": "#007bff", "company_name": "Minha Empresa"}</code>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informações da Empresa -->
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Informações da Empresa
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-building me-2"></i>
+                                <strong>Empresa:</strong> {{ current_tenant.name }}<br>
+                                <small class="text-muted">
+                                    <i class="fas fa-id-card me-1"></i>Tipo: {{ current_tenant.get_tipo_pessoa_display }}<br>
+                                    {% if current_tenant.cnpj %}
+                                        <i class="fas fa-file-alt me-1"></i>CNPJ: {{ current_tenant.cnpj }}<br>
+                                    {% endif %}
+                                    {% if current_tenant.cpf %}
+                                        <i class="fas fa-file-alt me-1"></i>CPF: {{ current_tenant.cpf }}<br>
+                                    {% endif %}
+                                    <i class="fas fa-calendar me-1"></i>Criada em: {{ current_tenant.created_at|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <a href="{% url 'admin:configurations-page' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save me-2"></i>
+                            Salvar Configurações
+                        </button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-eye me-2"></i>
+                        Resumo das Configurações
+                    </h6>
+                    
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle fs-5" 
+                                         style="width: 50px; height: 50px;">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ current_tenant.name }}</div>
+                                    <div class="text-muted small">{{ current_tenant.get_tipo_pessoa_display }}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Recursos -->
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-primary small mb-2">
+                                    <i class="fas fa-chart-bar me-1"></i>Recursos
+                                </h6>
+                                <div class="row g-2 small">
+                                    <div class="col-4 text-center">
+                                        <div class="fw-bold" id="previewMaxUsers">
+                                            {{ object.max_users|default:"100" }}
+                                        </div>
+                                        <div class="text-muted">Usuários</div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="fw-bold" id="previewStorage">
+                                            {{ object.max_storage_mb|default:"1024" }}MB
+                                        </div>
+                                        <div class="text-muted">Storage</div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="fw-bold" id="previewApiRequests">
+                                            {{ object.max_api_requests_per_hour|default:"1000" }}
+                                        </div>
+                                        <div class="text-muted">Req/h</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Políticas -->
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-primary small mb-2">
+                                    <i class="fas fa-shield-alt me-1"></i>Segurança
+                                </h6>
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge" id="preview2FA">
+                                        {% if object.require_2fa %}
+                                            <span class="badge bg-success">2FA Obrigatório</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">2FA Opcional</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="badge" id="previewBackup">
+                                        {% if object.backup_enabled %}
+                                            <span class="badge bg-success">Backup Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Backup Inativo</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Status da Customização -->
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="text-muted small" id="previewBranding">
+                                    <i class="fas fa-palette me-1"></i>
+                                    {% if object.custom_branding %}
+                                        Marca personalizada configurada
+                                    {% else %}
+                                        Usando marca padrão
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Guia de Recursos -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Guia de Configuração
+                    </h6>
+                    
+                    <div class="accordion accordion-flush" id="guideAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUsers">
+                                    <i class="fas fa-users me-2"></i> Usuários
+                                </button>
+                            </h2>
+                            <div id="collapseUsers" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                <div class="accordion-body small">
+                                    <strong>Recomendações:</strong>
+                                    <ul class="mb-0">
+                                        <li>Pequenas empresas: 10-50 usuários</li>
+                                        <li>Médias empresas: 50-200 usuários</li>
+                                        <li>Grandes empresas: 200+ usuários</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStorage">
+                                    <i class="fas fa-hdd me-2"></i> Armazenamento
+                                </button>
+                            </h2>
+                            <div id="collapseStorage" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                <div class="accordion-body small">
+                                    <strong>Orientações:</strong>
+                                    <ul class="mb-0">
+                                        <li>1GB = 1024MB (básico)</li>
+                                        <li>5GB = 5120MB (médio)</li>
+                                        <li>10GB+ = 10240MB+ (avançado)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAPI">
+                                    <i class="fas fa-tachometer-alt me-2"></i> API
+                                </button>
+                            </h2>
+                            <div id="collapseAPI" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                <div class="accordion-body small">
+                                    <strong>Limites típicos:</strong>
+                                    <ul class="mb-0">
+                                        <li>Uso leve: 1.000 req/h</li>
+                                        <li>Uso moderado: 5.000 req/h</li>
+                                        <li>Uso intenso: 10.000+ req/h</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JSON Validator para Branding -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-code me-2"></i>
+                        Validador de Marca
+                    </h6>
+                    
+                    <div id="brandingStatus" class="alert alert-secondary">
+                        <i class="fas fa-info-circle me-2"></i>
+                        JSON da marca será validado automaticamente
+                    </div>
+                    
+                    <div class="small">
+                        <strong>Propriedades disponíveis:</strong>
+                        <ul class="mt-2 mb-0">
+                            <li><code>logo_url</code>: URL do logo</li>
+                            <li><code>primary_color</code>: Cor primária (#hex)</li>
+                            <li><code>company_name</code>: Nome da empresa</li>
+                            <li><code>theme</code>: Tema (light/dark)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.form-group.focused {
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.is-valid {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.1rem rgba(25, 135, 84, 0.15) !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.1rem rgba(220, 53, 69, 0.15) !important;
+}
+
+.alert {
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFormValidation();
+    initializePreview();
+    initializeBrandingValidator();
+});
+
+function initializeFormValidation() {
+    const form = document.getElementById('tenantConfigForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+            submitBtn.disabled = true;
+            
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+    }
+    
+    // Real-time validation for form fields
+    const maxUsersField = document.getElementById('{{ form.max_users.id_for_label }}');
+    const maxStorageField = document.getElementById('{{ form.max_storage_mb.id_for_label }}');
+    const maxApiField = document.getElementById('{{ form.max_api_requests_per_hour.id_for_label }}');
+    const customBrandingField = document.getElementById('{{ form.custom_branding.id_for_label }}');
+    const require2faField = document.getElementById('{{ form.require_2fa.id_for_label }}');
+    const backupEnabledField = document.getElementById('{{ form.backup_enabled.id_for_label }}');
+    
+    [maxUsersField, maxStorageField, maxApiField, customBrandingField].forEach(field => {
+        if (field) {
+            field.addEventListener('input', function() {
+                validateField(this);
+                updatePreview();
+                if (field === customBrandingField) {
+                    validateBranding();
+                }
+            });
+            
+            field.addEventListener('focus', function() {
+                this.parentNode.classList.add('focused');
+            });
+            field.addEventListener('blur', function() {
+                this.parentNode.classList.remove('focused');
+            });
+        }
+    });
+    
+    [require2faField, backupEnabledField].forEach(field => {
+        if (field) {
+            field.addEventListener('change', updatePreview);
+        }
+    });
+}
+
+function validateField(field) {
+    const value = field.value.trim();
+    let isValid = true;
+    let message = '';
+    
+    // Remove previous error
+    let errorDiv = field.parentNode.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+    
+    if (field.name === 'max_users' && value) {
+        const num = parseInt(value);
+        if (isNaN(num) || num < 1) {
+            isValid = false;
+            message = 'Deve ser um número maior que 0';
+        } else if (num > 10000) {
+            isValid = false;
+            message = 'Máximo de 10.000 usuários';
+        }
+    } else if (field.name === 'max_storage_mb' && value) {
+        const num = parseInt(value);
+        if (isNaN(num) || num < 100) {
+            isValid = false;
+            message = 'Mínimo de 100MB';
+        } else if (num > 100000) {
+            isValid = false;
+            message = 'Máximo de 100GB (100.000MB)';
+        }
+    } else if (field.name === 'max_api_requests_per_hour' && value) {
+        const num = parseInt(value);
+        if (isNaN(num) || num < 100) {
+            isValid = false;
+            message = 'Mínimo de 100 requisições/hora';
+        } else if (num > 1000000) {
+            isValid = false;
+            message = 'Máximo de 1.000.000 requisições/hora';
+        }
+    } else if (field.name === 'custom_branding' && value) {
+        try {
+            JSON.parse(value);
+        } catch (e) {
+            isValid = false;
+            message = 'JSON inválido: ' + e.message;
+        }
+    }
+    
+    // Update field classes
+    if (!isValid) {
+        field.classList.add('is-invalid');
+        field.classList.remove('is-valid');
+        
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message text-danger small mt-1';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
+        field.parentNode.appendChild(errorDiv);
+    } else if (value.length > 0) {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+    } else {
+        field.classList.remove('is-invalid', 'is-valid');
+    }
+    
+    return isValid;
+}
+
+function updatePreview() {
+    const maxUsersField = document.getElementById('{{ form.max_users.id_for_label }}');
+    const maxStorageField = document.getElementById('{{ form.max_storage_mb.id_for_label }}');
+    const maxApiField = document.getElementById('{{ form.max_api_requests_per_hour.id_for_label }}');
+    const customBrandingField = document.getElementById('{{ form.custom_branding.id_for_label }}');
+    const require2faField = document.getElementById('{{ form.require_2fa.id_for_label }}');
+    const backupEnabledField = document.getElementById('{{ form.backup_enabled.id_for_label }}');
+    
+    // Update preview elements
+    const previewMaxUsers = document.getElementById('previewMaxUsers');
+    const previewStorage = document.getElementById('previewStorage');
+    const previewApiRequests = document.getElementById('previewApiRequests');
+    const previewBranding = document.getElementById('previewBranding');
+    const preview2FA = document.getElementById('preview2FA');
+    const previewBackup = document.getElementById('previewBackup');
+    
+    // Update resources
+    if (previewMaxUsers && maxUsersField) {
+        previewMaxUsers.textContent = maxUsersField.value || '100';
+    }
+    
+    if (previewStorage && maxStorageField) {
+        previewStorage.textContent = (maxStorageField.value || '1024') + 'MB';
+    }
+    
+    if (previewApiRequests && maxApiField) {
+        previewApiRequests.textContent = maxApiField.value || '1000';
+    }
+    
+    // Update 2FA status
+    if (preview2FA && require2faField) {
+        if (require2faField.checked) {
+            preview2FA.innerHTML = '<span class="badge bg-success">2FA Obrigatório</span>';
+        } else {
+            preview2FA.innerHTML = '<span class="badge bg-secondary">2FA Opcional</span>';
+        }
+    }
+    
+    // Update backup status
+    if (previewBackup && backupEnabledField) {
+        if (backupEnabledField.checked) {
+            previewBackup.innerHTML = '<span class="badge bg-success">Backup Ativo</span>';
+        } else {
+            previewBackup.innerHTML = '<span class="badge bg-warning">Backup Inativo</span>';
+        }
+    }
+    
+    // Update branding status
+    if (previewBranding && customBrandingField) {
+        const value = customBrandingField.value.trim();
+        if (value) {
+            previewBranding.innerHTML = '<i class="fas fa-palette me-1"></i>Marca personalizada configurada';
+        } else {
+            previewBranding.innerHTML = '<i class="fas fa-palette me-1"></i>Usando marca padrão';
+        }
+    }
+}
+
+function initializeBrandingValidator() {
+    validateBranding();
+}
+
+function validateBranding() {
+    const customBrandingField = document.getElementById('{{ form.custom_branding.id_for_label }}');
+    const brandingStatus = document.getElementById('brandingStatus');
+    
+    if (!customBrandingField || !brandingStatus) return;
+    
+    const value = customBrandingField.value.trim();
+    
+    if (!value) {
+        brandingStatus.className = 'alert alert-secondary';
+        brandingStatus.innerHTML = '<i class="fas fa-info-circle me-2"></i>JSON da marca será validado automaticamente';
+        return;
+    }
+    
+    try {
+        const parsed = JSON.parse(value);
+        const validKeys = ['logo_url', 'primary_color', 'company_name', 'theme'];
+        const foundKeys = Object.keys(parsed).filter(key => validKeys.includes(key));
+        
+        brandingStatus.className = 'alert alert-success';
+        brandingStatus.innerHTML = `<i class="fas fa-check-circle me-2"></i>JSON válido (${foundKeys.length} propriedades reconhecidas)`;
+        
+        if (foundKeys.length === 0) {
+            brandingStatus.className = 'alert alert-warning';
+            brandingStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>JSON válido, mas sem propriedades reconhecidas';
+        }
+    } catch (e) {
+        brandingStatus.className = 'alert alert-danger';
+        brandingStatus.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>JSON inválido: ${e.message}`;
+    }
+}
+</script>
+{% endblock %}

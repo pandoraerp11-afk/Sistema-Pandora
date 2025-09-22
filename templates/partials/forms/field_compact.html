@@ -1,0 +1,63 @@
+{# Template ultra compacto - campos pequenos #}
+{% load widget_tweaks %}
+
+{# Determina tamanho baseado no tipo de campo #}
+{% if field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'radio' %}
+    {% with size_class="col-2" %}
+{% elif 'textarea' in field.field.widget|stringformat:'s'|lower %}
+    {% with size_class="col-12" %}
+{% elif 'select' in field.field.widget|stringformat:'s'|lower %}
+    {% with size_class="col-3" %}
+{% elif field.field.widget.input_type == 'email' or field.field.widget.input_type == 'url' %}
+    {% with size_class="col-4" %}
+{% elif field.field.widget.input_type == 'tel' or field.field.widget.input_type == 'number' %}
+    {% with size_class="col-2" %}
+{% elif field.field.widget.input_type == 'date' or field.field.widget.input_type == 'time' %}
+    {% with size_class="col-2" %}
+{% elif field.field.widget.input_type == 'file' %}
+    {% with size_class="col-4" %}
+{% elif 'cpf' in field.name|lower or 'cnpj' in field.name|lower or 'rg' in field.name|lower %}
+    {% with size_class="col-2" %}
+{% elif 'telefone' in field.name|lower or 'celular' in field.name|lower %}
+    {% with size_class="col-2" %}
+{% elif 'cep' in field.name|lower or 'numero' in field.name|lower %}
+    {% with size_class="col-2" %}
+{% else %}
+    {% if field.label|length > 15 %}
+        {% with size_class="col-4" %}
+    {% else %}
+        {% with size_class="col-3" %}
+    {% endif %}
+{% endif %}
+
+<div class="{{ size_class }} mb-2">
+    <div class="form-group mb-1">
+        {% if field.label %}
+            <label for="{{ field.id_for_label }}" class="form-label small mb-1">
+                {{ field.label }}
+                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+            </label>
+        {% endif %}
+        
+        {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="form-check">
+                {{ field|add_class:"form-check-input form-check-input-sm" }}
+                <label class="form-check-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            </div>
+        {% elif 'textarea' in field.field.widget|stringformat:'s'|lower %}
+            {{ field|add_class:"form-control form-control-sm"|attr:"rows:2" }}
+        {% elif 'select' in field.field.widget|stringformat:'s'|lower %}
+            {{ field|add_class:"form-select form-select-sm" }}
+        {% else %}
+            {{ field|add_class:"form-control form-control-sm" }}
+        {% endif %}
+        
+        {% if field.errors %}
+            <div class="text-danger" style="font-size: 0.7rem;">
+                {% for error in field.errors %}{{ error }}{% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endwith %}

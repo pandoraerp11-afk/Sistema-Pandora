@@ -1,0 +1,378 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %} {% block title %}Acesso Rápido - Pandora ERP{% endblock %} {% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.quick-action-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary, #667eea), var(--color-secondary, #764ba2));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.quick-action-card:hover::before {
+    opacity: 1;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.action-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.quick-action-card:hover .action-icon {
+    transform: scale(1.1);
+}
+
+.action-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #495057;
+}
+
+.action-description {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.action-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-primary, #667eea);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.action-link:hover {
+    color: var(--color-primary, #667eea);
+    text-decoration: none;
+    transform: translateX(5px);
+}
+
+.action-link i {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.action-link:hover i {
+    transform: translateX(5px);
+}
+
+/* Color themes for different sections */
+.admin-section {
+    --color-primary: #667eea;
+    --color-secondary: #764ba2;
+}
+
+.admin-section .action-icon {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.hr-section {
+    --color-primary: #28a745;
+    --color-secondary: #20c997;
+}
+
+.hr-section .action-icon {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.financial-section {
+    --color-primary: #ffc107;
+    --color-secondary: #fd7e14;
+}
+
+.financial-section .action-icon {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.commercial-section {
+    --color-primary: #17a2b8;
+    --color-secondary: #6f42c1;
+}
+
+.commercial-section .action-icon {
+    background: rgba(23, 162, 184, 0.1);
+    color: #17a2b8;
+}
+
+.operational-section {
+    --color-primary: #dc3545;
+    --color-secondary: #e83e8c;
+}
+
+.operational-section .action-icon {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.reports-section {
+    --color-primary: #6f42c1;
+    --color-secondary: #e83e8c;
+}
+
+.reports-section .action-icon {
+    background: rgba(111, 66, 193, 0.1);
+    color: #6f42c1;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-primary, #667eea), transparent);
+    margin-left: 1rem;
+}
+
+.section-title i {
+    color: var(--color-primary, #667eea);
+    margin-right: 1rem;
+}
+
+.search-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.search-input {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
+}
+
+.search-suggestions {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-suggestion {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f3f4;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.search-suggestion:hover {
+    background: #f8f9fa;
+}
+
+.search-suggestion:last-child {
+    border-bottom: none;
+}
+
+.recent-actions {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-top: 2rem;
+}
+
+.recent-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f1f3f4;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.recent-item:hover {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 0 -1rem;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.recent-item:last-child {
+    border-bottom: none;
+}
+
+.recent-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 0.875rem;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.recent-content {
+    flex: 1;
+}
+
+.recent-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.recent-time {
+    color: #6c757d;
+    font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        text-align: center;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        text-align: center;
+        flex-direction: column;
+    }
+    
+    .section-title::after {
+        display: none;
+    }
+    
+    .quick-action-card {
+        margin-bottom: 1.5rem;
+    }
+}
+</style>
+{% endblock %} {% block content %}
+<div class="quick-access-container" data-aos="fade-up"><!-- Page Header --><div class="page-header" data-aos="fade-down"><div class="row align-items-center"><div class="col-md-8"><h1 class="mb-2"><i class="fas fa-tachometer-alt me-3"></i> Acesso Rápido </h1><p class="mb-0 opacity-90"> Acesse rapidamente as principais funcionalidades do sistema {% if tenant %} <br><strong>Empresa:</strong> {{ tenant.nome_fantasia|default:tenant.razao_social }} {% endif %} </p></div><div class="col-md-4 text-end"><div class="d-flex align-items-center justify-content-end"><div class="text-center"><div class="h5 mb-1">{{ "now"|date:"H:i" }}</div><div class="small">{{ "now"|date:"d/m/Y" }}</div></div></div></div></div></div><!-- Search Section --><div class="search-section" data-aos="fade-up"><h5 class="mb-3"><i class="fas fa-search text-primary me-2"></i> Busca Rápida </h5><div class="position-relative"><input type="text" class="form-control search-input" id="quickSearch" placeholder="Digite para buscar módulos, funcionalidades ou páginas..."><div class="search-suggestions" id="searchSuggestions"></div></div></div><!-- Admin Section --> {% if user.is_superuser %} <div class="admin-section mb-5" data-aos="fade-up"><h2 class="section-title"><i class="fas fa-shield-alt"></i> Administração do Sistema </h2><div class="row g-4"><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-building"></i></div><h4 class="action-title">Gerenciar Empresas</h4><p class="action-description"> Cadastre, edite e configure empresas no sistema multi-tenant. </p><a href="{% url 'core:tenant_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-users-crown"></i></div><h4 class="action-title">Usuários Globais</h4><p class="action-description"> Gerencie usuários do sistema e suas permissões globais. </p><a href="{% url 'user_management:usuario_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-cogs"></i></div><h4 class="action-title">Configurações</h4><p class="action-description"> Configure parâmetros globais do sistema e módulos. </p><a href="{% url 'admin:configurations-page' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div></div></div> {% endif %} <!-- Company Management Section --> {% if tenant %} <div class="hr-section mb-5" data-aos="fade-up"><h2 class="section-title"><i class="fas fa-users-cog"></i> Gestão da Empresa </h2><div class="row g-4"><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-user-friends"></i></div><h4 class="action-title">Usuários da Empresa</h4><p class="action-description"> Gerencie usuários vinculados à sua empresa. </p><a href="{% url 'core:tenant_user_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-user-tag"></i></div><h4 class="action-title">Cargos e Permissões</h4><p class="action-description"> Configure cargos e defina permissões para sua equipe. </p><a href="{% url 'core:role_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-sitemap"></i></div><h4 class="action-title">Departamentos</h4><p class="action-description"> Organize sua empresa em departamentos funcionais. </p><a href="{% url 'core:department_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div></div></div><!-- HR Section --><div class="commercial-section mb-5" data-aos="fade-up"><h2 class="section-title"><i class="fas fa-user-friends"></i> Recursos Humanos </h2><div class="row g-4"><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-users"></i></div><h4 class="action-title">Funcionários</h4><p class="action-description"> Cadastre e gerencie informações dos funcionários. </p><a href="{% url 'funcionarios:funcionario_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-calendar-check"></i></div><h4 class="action-title">Controle de Ponto</h4><p class="action-description"> Monitore frequência e horários dos funcionários. </p><a href="{% url 'funcionarios:cartao_ponto_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-umbrella-beach"></i></div><h4 class="action-title">Férias e Folgas</h4><p class="action-description"> Gerencie período de férias e folgas dos funcionários. </p><a href="{% url 'funcionarios:ferias_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div></div></div><!-- Commercial Section --><div class="financial-section mb-5" data-aos="fade-up"><h2 class="section-title"><i class="fas fa-handshake"></i> Área Comercial </h2><div class="row g-4"><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-address-book"></i></div><h4 class="action-title">Clientes</h4><p class="action-description"> Cadastre e gerencie sua base de clientes. </p><a href="{% url 'clientes:clientes_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-truck"></i></div><h4 class="action-title">Fornecedores</h4><p class="action-description"> Mantenha cadastro atualizado de seus fornecedores. </p><a href="{% url 'fornecedores:fornecedores_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div><div class="col-lg-4 col-md-6"><div class="quick-action-card"><div class="action-icon"><i class="fas fa-calculator"></i></div><h4 class="action-title">Orçamentos</h4><p class="action-description"> Crie e gerencie orçamentos para seus clientes. </p><a href="{% url 'orcamentos:orcamentos_list' %}" class="action-link"> Acessar módulo <i class="fas fa-arrow-right"></i></a></div></div></div></div> {% endif %} <!-- Recent Actions --><div class="recent-actions" data-aos="fade-up"><h5 class="mb-4"><i class="fas fa-history text-primary me-2"></i> Ações Recentes </h5><a href="#" class="recent-item"><div class="recent-icon"><i class="fas fa-user-plus"></i></div><div class="recent-content"><div class="recent-title">Usuário cadastrado</div><div class="recent-time">2 horas atrás</div></div></a><a href="#" class="recent-item"><div class="recent-icon"><i class="fas fa-building"></i></div><div class="recent-content"><div class="recent-title">Empresa atualizada</div><div class="recent-time">1 dia atrás</div></div></a><a href="#" class="recent-item"><div class="recent-icon"><i class="fas fa-cog"></i></div><div class="recent-content"><div class="recent-title">Permissões configuradas</div><div class="recent-time">2 dias atrás</div></div></a></div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('quickSearch');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    
+    // Search data
+    const searchData = [
+        { title: 'Gerenciar Empresas', url: '{% url "core:tenant_list" %}', icon: 'fas fa-building' },
+        { title: 'Usuários da Empresa', url: '{% url "core:tenant_user_list" %}', icon: 'fas fa-user-friends' },
+        { title: 'Cargos e Permissões', url: '{% url "core:role_list" %}', icon: 'fas fa-user-tag' },
+        { title: 'Departamentos', url: '{% url "core:department_list" %}', icon: 'fas fa-sitemap' },
+        {% if user.is_superuser %}
+        { title: 'Usuários Globais', url: '{% url "user_management:usuario_list" %}', icon: 'fas fa-users-crown' },
+        {% endif %}
+        { title: 'Dashboard', url: '{% url "dashboard" %}', icon: 'fas fa-tachometer-alt' }
+    ];
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        
+        if (query.length < 2) {
+            searchSuggestions.style.display = 'none';
+            return;
+        }
+
+        const filtered = searchData.filter(item => 
+            item.title.toLowerCase().includes(query)
+        );
+
+        if (filtered.length > 0) {
+            searchSuggestions.innerHTML = filtered.map(item => `
+                <div class="search-suggestion" onclick="window.location.href='${item.url}'">
+                    <i class="${item.icon} me-2"></i> ${item.title}
+                </div>
+            `).join('');
+            searchSuggestions.style.display = 'block';
+        } else {
+            searchSuggestions.style.display = 'none';
+        }
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.style.display = 'none';
+        }
+    });
+
+    // Enter key navigation
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && searchSuggestions.style.display === 'block') {
+            const firstSuggestion = searchSuggestions.querySelector('.search-suggestion');
+            if (firstSuggestion) {
+                firstSuggestion.click();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

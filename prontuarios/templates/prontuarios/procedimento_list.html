@@ -1,0 +1,46 @@
+{% extends "pandora_ultra_modern_base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="alert alert-warning">Lista de Procedimentos obsoleta. Use <a href="{% url 'servicos:servico_list' %}">Serviços Clínicos</a>.</div>
+    <h1 class="h3 mb-2 text-gray-800">Procedimentos (LEGACY)</h1>
+    <p class="mb-4">Lista antiga de procedimentos.</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Procedimentos Cadastrados</h6>
+            <!-- ação legacy removida: criação -->
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Categoria</th>
+                            <th>Duração Estimada</th>
+                            <th>Valor Base</th>
+                            <th>Ativo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for procedimento in procedimentos %}
+                        <tr>
+                            <td>{{ procedimento.nome }}</td>
+                            <td>{{ procedimento.get_categoria_display }}</td>
+                            <td>{{ procedimento.duracao_estimada }}</td>
+                            <td>{{ procedimento.valor_base }}</td>
+                            <td>{{ procedimento.ativo|yesno:"Sim,Não" }}</td>
+                            <td>-</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

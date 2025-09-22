@@ -1,0 +1,29 @@
+{% extends "pandora_ultra_modern_base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-2 text-gray-800">Detalhes do Atendimento</h1>
+    <p class="mb-4">Informações detalhadas sobre o atendimento.</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Atendimento de {{ atendimento.servico.nome_servico }} para {{ atendimento.cliente.nome_razao_social|default:atendimento.cliente.nome_display }}</h6>
+        </div>
+        <div class="card-body">
+            <p><strong>Cliente:</strong> {{ atendimento.cliente.nome_razao_social|default:atendimento.cliente.nome_display }}</p>
+            <p><strong>Serviço:</strong> {{ atendimento.servico.nome_servico }}</p>
+            <p><strong>Profissional:</strong> {{ atendimento.profissional.get_full_name }}</p>
+            <p><strong>Data do Atendimento:</strong> {{ atendimento.data_atendimento|date:"d/m/Y H:i" }}</p>
+            <p><strong>Status:</strong> {{ atendimento.get_status_display }}</p>
+            <p><strong>Valor Cobrado:</strong> {{ atendimento.valor_cobrado }}</p>
+            <p><strong>Observações:</strong> {{ atendimento.observacoes }}</p>
+
+            <a href="{% url 'prontuarios:atendimentos_list' %}" class="btn btn-secondary">Voltar</a>
+            <a href="{% url 'prontuarios:atendimento_update' atendimento.pk %}" class="btn btn-warning">Editar</a>
+            <a href="{% url 'prontuarios:atendimento_delete' atendimento.pk %}" class="btn btn-danger">Excluir</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

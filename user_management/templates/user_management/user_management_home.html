@@ -1,0 +1,285 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block home_icon %}<i class="fas fa-users-cog me-2 text-primary"></i>{% endblock %}
+{% block home_title %}{% trans "Gerenciamento de Usuários" %}{% endblock %}
+{% block home_subtitle %}
+    {% if user.is_superuser %}
+        {% trans "Central de controle GLOBAL para administração de todos os usuários do sistema" %}
+    {% else %}
+        {% trans "Central de controle para administração de usuários, perfis e permissões do sistema" %}
+    {% endif %}
+{% endblock %}
+
+{% block home_stats %}
+<div class="row g-4 mb-5" data-aos="fade-up" data-aos-delay="200">
+    <div class="col-12">
+        <h3 class="section-title">
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            {% if user.is_superuser %}
+                {% trans "Estatísticas Globais do Sistema" %}
+            {% else %}
+                {% trans "Estatísticas do Sistema" %}
+            {% endif %}
+        </h3>
+    </div>
+    
+    <!-- Card Usuários Totais -->
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="300">
+        <div class="stats-card primary">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-primary text-white mx-auto">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h2 class="h3 fw-bold text-dark">{{ total_usuarios|default:"0" }}</h2>
+                <p class="text-muted mb-3">
+                    {% if user.is_superuser %}
+                        {% trans "Usuários Totais (Global)" %}
+                    {% else %}
+                        {% trans "Usuários Totais" %}
+                    {% endif %}
+                </p>
+                <a href="{% url 'user_management:usuario_list' %}" class="action-btn btn-outline-primary">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    {% trans "Gerenciar Usuários" %}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card Usuários Ativos -->
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="400">
+        <div class="stats-card success">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-success text-white mx-auto">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <h2 class="h3 fw-bold text-dark">{{ usuarios_ativos|default:"0" }}</h2>
+                <p class="text-muted mb-3">
+                    {% if user.is_superuser %}
+                        {% trans "Usuários Ativos (Global)" %}
+                    {% else %}
+                        {% trans "Usuários Ativos" %}
+                    {% endif %}
+                </p>
+                <a href="{% url 'user_management:usuario_list' %}?status=ativo" class="action-btn btn-outline-success">
+                    <i class="fas fa-eye me-1"></i>
+                    {% trans "Ver Ativos" %}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card Sessões Ativas -->
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="500">
+        <div class="stats-card info">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-info text-white mx-auto">
+                    <i class="fas fa-laptop"></i>
+                </div>
+                <h2 class="h3 fw-bold text-dark">{{ sessoes_ativas|default:"0" }}</h2>
+                <p class="text-muted mb-3">
+                    {% if user.is_superuser %}
+                        {% trans "Sessões Ativas (Global)" %}
+                    {% else %}
+                        {% trans "Sessões Ativas" %}
+                    {% endif %}
+                </p>
+                <a href="{% url 'user_management:sessao_list' %}" class="action-btn btn-outline-info">
+                    <i class="fas fa-desktop me-1"></i>
+                    {% trans "Monitorar" %}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card Convites Pendentes -->
+    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="600">
+        <div class="stats-card warning">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-warning text-white mx-auto">
+                    <i class="fas fa-envelope-open"></i>
+                </div>
+                <h2 class="h3 fw-bold text-dark">{{ convites_pendentes|default:"0" }}</h2>
+                <p class="text-muted mb-3">
+                    {% if user.is_superuser %}
+                        {% trans "Convites Pendentes (Global)" %}
+                    {% else %}
+                        {% trans "Convites Pendentes" %}
+                    {% endif %}
+                </p>
+                <a href="{% url 'user_management:convite_list' %}" class="action-btn btn-outline-warning">
+                    <i class="fas fa-envelope me-1"></i>
+                    {% trans "Gerenciar" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_actions %}
+<div class="row g-4 mb-5" data-aos="fade-up" data-aos-delay="700">
+    <div class="col-12">
+        <h3 class="section-title">
+            <i class="fas fa-bolt me-2 text-warning"></i>
+            {% trans "Ações Rápidas" %}
+        </h3>
+    </div>
+    
+    <!-- Criar Usuário -->
+    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="800">
+        <div class="quick-action-card" style="--accent-color: #0d6efd;">
+            <div class="card-body text-center">
+                <div class="quick-action-icon bg-primary text-white mx-auto">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">{% trans "Criar Usuário" %}</h5>
+                <p class="text-muted mb-3">{% trans "Adicione um novo usuário ao sistema" %}</p>
+                <a href="{% url 'user_management:usuario_create' %}" class="action-btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>
+                    {% trans "Criar Agora" %}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enviar Convite -->
+    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="900">
+        <div class="quick-action-card" style="--accent-color: #198754;">
+            <div class="card-body text-center">
+                <div class="quick-action-icon bg-success text-white mx-auto">
+                    <i class="fas fa-envelope-open"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">{% trans "Enviar Convite" %}</h5>
+                <p class="text-muted mb-3">{% trans "Convide novos usuários por email" %}</p>
+                <a href="{% url 'user_management:convite_create' %}" class="action-btn btn-success">
+                    <i class="fas fa-paper-plane me-1"></i>
+                    {% trans "Enviar Convite" %}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Meu Perfil -->
+    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="1000">
+        <div class="quick-action-card" style="--accent-color: #0dcaf0;">
+            <div class="card-body text-center">
+                <div class="quick-action-icon bg-info text-white mx-auto">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">{% trans "Meu Perfil" %}</h5>
+                <p class="text-muted mb-3">{% trans "Edite suas informações pessoais" %}</p>
+                <a href="{% url 'user_management:meu_perfil' %}" class="action-btn btn-info">
+                    <i class="fas fa-edit me-1"></i>
+                    {% trans "Editar Perfil" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_content %}
+<div class="row g-4" data-aos="fade-up" data-aos-delay="1100">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-info me-2"></i>
+                    {% trans "Recursos do Módulo" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="fas fa-cogs me-2"></i>
+                            {% trans "Recursos Disponíveis" %}
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Gestão completa de usuários" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Sistema de convites por email" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Controle de sessões ativas" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Logs de atividades detalhados" %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="fas fa-user-shield me-2"></i>
+                            {% trans "Perfil Pessoal" %}
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Edição de avatar/foto" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Alteração de dados pessoais" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Mudança de senha segura" %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                {% trans "Configurações de notificações" %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light border-0 py-3">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-link text-primary me-2"></i>
+                    {% trans "Links Úteis" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'user_management:atividade_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-history me-2"></i>
+                        {% trans "Logs de Atividades" %}
+                    </a>
+                    <a href="{% url 'user_management:permissao_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-key me-2"></i>
+                        {% trans "Permissões" %}
+                    </a>
+                    <a href="{% url 'user_management:permissao_create' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-plus me-2"></i>
+                        {% trans "Nova Permissão" %}
+                    </a>
+                    <a href="{% url 'user_management:change_password' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-lock me-2"></i>
+                        {% trans "Alterar Senha" %}
+                    </a>
+                    <a href="{% url 'user_management:usuario_list' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list me-2"></i>
+                        {% trans "Listar Todos os Usuários" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

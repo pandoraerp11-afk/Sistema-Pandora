@@ -1,0 +1,288 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block page_title %}{{ perfil.user.get_full_name|default:perfil.user.username }}{% endblock %}
+
+{% block page_title_main %}{{ perfil.user.get_full_name|default:perfil.user.username }}{% endblock %}
+{% block page_subtitle %}Detalhes do usuário{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-3 align-items-center">
+    <a href="{% url 'user_management:usuario_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i>
+        <span class="d-none d-md-inline">Voltar</span>
+    </a>
+    
+    <a href="{% url 'user_management:usuario_update' perfil.pk %}" class="btn btn-primary">
+        <i class="fas fa-pencil-alt"></i>
+        <span class="d-none d-md-inline">Editar</span>
+    </a>
+    
+    {% if not perfil.user.is_superuser %}
+    <!-- Funcionalidade de delete será implementada posteriormente -->
+    <button class="btn btn-outline-danger" title="Funcionalidade em desenvolvimento" disabled>
+        <i class="fas fa-trash"></i>
+        <span class="d-none d-md-inline">Excluir</span>
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-lg-4">
+            <!-- Perfil do Usuário -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="avatar mb-3">
+                        {% if perfil.avatar %}
+                        <img src="{{ perfil.avatar.url }}" alt="{{ perfil.user.get_full_name }}" class="rounded-circle" width="80" height="80">
+                        {% else %}
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white mx-auto" style="width: 80px; height: 80px; font-size: 24px;">
+                            {{ perfil.user.first_name|first|upper }}{{ perfil.user.last_name|first|upper }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <h5 class="mb-1">{{ perfil.user.get_full_name|default:perfil.user.username }}</h5>
+                    <p class="text-muted mb-2">@{{ perfil.user.username }}</p>
+                    
+                    <div class="mb-3">
+                        {% if perfil.user.is_active %}
+                        <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inativo</span>
+                        {% endif %}
+                        
+                        {% if perfil.user.is_superuser %}
+                        <span class="badge bg-danger">Superusuário</span>
+                        {% elif perfil.user.is_staff %}
+                        <span class="badge bg-warning">Staff</span>
+                        {% else %}
+                        <span class="badge bg-primary">Usuário</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="sendMessage()">
+                            <i class="fas fa-envelope"></i>
+                            Enviar Mensagem
+                        </button>
+                        {% if reset_password_url %}
+                        <form method="post" action="{{ reset_password_url }}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-outline-warning btn-sm" onclick="return confirm('Tem certeza que deseja redefinir a senha deste usuário?')">
+                            <i class="fas fa-key"></i>
+                            Redefinir Senha
+                            </button>
+                        </form>
+                        {% else %}
+                        <button class="btn btn-outline-warning btn-sm" disabled title="Indisponível neste contexto">
+                            <i class="fas fa-key"></i>
+                            Redefinir Senha
+                        </button>
+                        {% endif %}
+                                            <button class="btn btn-outline-secondary btn-sm" data-action="toggle-2fa" data-url="{% url 'user_management:toggle_2fa' perfil.pk %}">
+                                                <i class="fas fa-shield-alt"></i>
+                                                Alternar 2FA
+                                            </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Informações Rápidas -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Informações Rápidas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Último Acesso:</span>
+                        <span>{% if perfil.user.last_login %}{{ perfil.user.last_login|date:"d/m/Y H:i" }}{% else %}Nunca{% endif %}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Criado em:</span>
+                        <span>{{ perfil.user.date_joined|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">ID:</span>
+                        <span>#{{ perfil.user.pk }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">2FA:</span>
+                        <span data-2fa-status class="badge {% if perfil.autenticacao_dois_fatores %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if perfil.autenticacao_dois_fatores %}2FA Ativo{% else %}2FA Inativo{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-lg-8">
+            <!-- Informações Detalhadas -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Informações Pessoais</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Nome</label>
+                                <p class="mb-0">{{ perfil.user.first_name|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Sobrenome</label>
+                                <p class="mb-0">{{ perfil.user.last_name|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">E-mail</label>
+                                <p class="mb-0">{{ perfil.user.email|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Nome de Usuário</label>
+                                <p class="mb-0">{{ perfil.user.username }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Permissões -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Permissões e Grupos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Grupos</h6>
+                            {% if perfil.user.groups.all|length %}
+                            <ul class="list-unstyled">
+                                {% for group in perfil.user.groups.all %}
+                                <li><span class="badge bg-info">{{ group.name }}</span></li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted">Nenhum grupo atribuído</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Permissões Específicas</h6>
+                            {% if perfil.user.user_permissions.all|length %}
+                            <ul class="list-unstyled">
+                                {% for permission in perfil.user.user_permissions.all %}
+                                <li><small class="badge bg-secondary">{{ permission.name }}</small></li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted">Nenhuma permissão específica</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Atividades Recentes -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Atividades Recentes</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Login no Sistema</h6>
+                                <p class="timeline-description">
+                                    {% if perfil.user.last_login %}
+                                    Último acesso em {{ perfil.user.last_login|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                    Usuário ainda não fez login
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Criação da Conta</h6>
+                                <p class="timeline-description">
+                                    Conta criada em {{ perfil.user.date_joined|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -25px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.timeline-description {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'user_management/user_actions.js' %}"></script>
+<script>
+function sendMessage() {
+    alert('Funcionalidade de envio de mensagem em desenvolvimento');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,523 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Financeiro{% endblock %}
+
+{% block page_title %}Financeiro{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Financeiro</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="ph-duotone ph-currency-dollar"></i>
+            Gestão Financeira
+        </h1>
+        <p class="page-subtitle">Controle de contas a pagar e receber</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline-primary" onclick="toggleAdvancedSearch()">
+            <i class="ph-duotone ph-magnifying-glass"></i>
+            Busca Avançada
+        </button>
+        <a href="{% url 'financeiro:conta_receber_create' %}" class="btn btn-outline-success">
+            <i class="ph-duotone ph-arrow-up"></i>
+            Conta a Receber
+        </a>
+        <a href="{% url 'financeiro:conta_pagar_create' %}" class="btn btn-outline-danger">
+            <i class="ph-duotone ph-arrow-down"></i>
+            Conta a Pagar
+        </a>
+    </div>
+</div>
+
+<!-- Busca Avançada -->
+<div id="advanced-search" class="advanced-search-panel" style="display: none;">
+    <form method="get" action="{% url 'financeiro:financeiro_list' %}">
+        <div class="search-grid">
+            <div class="search-field">
+                <label for="id_tipo">Tipo</label>
+                <select id="id_tipo" name="tipo" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="receber" {% if request.GET.tipo == 'receber' %}selected{% endif %}>Contas a Receber</option>
+                    <option value="pagar" {% if request.GET.tipo == 'pagar' %}selected{% endif %}>Contas a Pagar</option>
+                </select>
+            </div>
+            <div class="search-field">
+                <label for="id_status">Status</label>
+                <select id="id_status" name="status" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                    <option value="pago" {% if request.GET.status == 'pago' %}selected{% endif %}>Pago</option>
+                    <option value="vencido" {% if request.GET.status == 'vencido' %}selected{% endif %}>Vencido</option>
+                    <option value="cancelado" {% if request.GET.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+            <div class="search-field">
+                <label for="id_cliente_fornecedor">Cliente/Fornecedor</label>
+                <input type="text" id="id_cliente_fornecedor" name="cliente_fornecedor" class="form-control" value="{{ request.GET.cliente_fornecedor }}" placeholder="Digite o nome">
+            </div>
+            <div class="search-field">
+                <label for="id_data_inicio">Data Início</label>
+                <input type="date" id="id_data_inicio" name="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+            </div>
+            <div class="search-field">
+                <label for="id_data_fim">Data Fim</label>
+                <input type="date" id="id_data_fim" name="data_fim" class="form-control" value="{{ request.GET.data_fim }}">
+            </div>
+            <div class="search-field">
+                <label for="id_valor_min">Valor Mínimo</label>
+                <input type="number" id="id_valor_min" name="valor_min" class="form-control" value="{{ request.GET.valor_min }}" placeholder="0,00" step="0.01">
+            </div>
+        </div>
+        <div class="search-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph-duotone ph-magnifying-glass"></i>
+                Buscar
+            </button>
+            <a href="{% url 'financeiro:financeiro_list' %}" class="btn btn-outline-secondary">
+                <i class="ph-duotone ph-x"></i>
+                Limpar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Estatísticas -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="ph-duotone ph-arrow-up"></i>
+        </div>
+        <div class="stat-content">
+            <h3>R$ {{ total_receber|floatformat:2 }}</h3>
+            <p>Total a Receber</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon danger">
+            <i class="ph-duotone ph-arrow-down"></i>
+        </div>
+        <div class="stat-content">
+            <h3>R$ {{ total_pagar|floatformat:2 }}</h3>
+            <p>Total a Pagar</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="ph-duotone ph-chart-line"></i>
+        </div>
+        <div class="stat-content">
+            <h3>R$ {{ saldo_atual|floatformat:2 }}</h3>
+            <p>Saldo Atual</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="ph-duotone ph-clock"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ contas_vencidas }}</h3>
+            <p>Contas Vencidas</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela Financeira -->
+<div class="data-table-container">
+    <div class="table-header">
+        <div class="table-info">
+            <span class="record-count">{{ movimentos|length }} movimentação{{ movimentos|length|pluralize:"ões" }}</span>
+        </div>
+        <div class="table-controls">
+            <div class="view-options">
+                <button class="btn btn-sm btn-outline-secondary active" data-view="grid">
+                    <i class="ph-duotone ph-grid-four"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" data-view="list">
+                    <i class="ph-duotone ph-list"></i>
+                </button>
+            </div>
+            <div class="export-options">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+                    <i class="ph-duotone ph-export"></i>
+                    Exportar
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'financeiro:financeiro_export' %}?format=pdf">
+                        <i class="ph-duotone ph-file-pdf"></i>
+                        PDF
+                    </a>
+                    <a class="dropdown-item" href="{% url 'financeiro:financeiro_export' %}?format=excel">
+                        <i class="ph-duotone ph-file-xls"></i>
+                        Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table modern-table">
+            <thead>
+                <tr>
+                    <th>
+                        <div class="table-checkbox">
+                            <input type="checkbox" id="select-all">
+                            <label for="select-all"></label>
+                        </div>
+                    </th>
+                    <th>Tipo</th>
+                    <th>Descrição</th>
+                    <th>Cliente/Fornecedor</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimento in movimentos %}
+                <tr>
+                    <td>
+                        <div class="table-checkbox">
+                            <input type="checkbox" id="select-{{ movimento.id }}" value="{{ movimento.id }}">
+                            <label for="select-{{ movimento.id }}"></label>
+                        </div>
+                    </td>
+                    <td>
+                        {% if movimento.tipo == 'receber' %}
+                        <span class="badge badge-success">
+                            <i class="ph-duotone ph-arrow-up"></i>
+                            A Receber
+                        </span>
+                        {% else %}
+                        <span class="badge badge-danger">
+                            <i class="ph-duotone ph-arrow-down"></i>
+                            A Pagar
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="movement-info">
+                            <span class="movement-title">{{ movimento.descricao }}</span>
+                            <span class="movement-detail">{{ movimento.categoria.nome|default:"Sem categoria" }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="contact-info">
+                            {% if movimento.tipo == 'receber' %}
+                            <span class="contact-name">{{ movimento.cliente.nome }}</span>
+                            <span class="contact-detail">{{ movimento.cliente.email }}</span>
+                            {% else %}
+                            <span class="contact-name">{{ movimento.fornecedor.nome }}</span>
+                            <span class="contact-detail">{{ movimento.fornecedor.email }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="value-cell {% if movimento.tipo == 'receber' %}text-success{% else %}text-danger{% endif %}">
+                            {% if movimento.tipo == 'receber' %}+{% else %}-{% endif %}R$ {{ movimento.valor|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ movimento.data_vencimento|date:"d/m/Y" }}</span>
+                    </td>
+                    <td>
+                        {% if movimento.status == 'pendente' %}
+                        <span class="badge badge-warning">
+                            <i class="ph-duotone ph-clock"></i>
+                            Pendente
+                        </span>
+                        {% elif movimento.status == 'pago' %}
+                        <span class="badge badge-success">
+                            <i class="ph-duotone ph-check-circle"></i>
+                            Pago
+                        </span>
+                        {% elif movimento.status == 'vencido' %}
+                        <span class="badge badge-danger">
+                            <i class="ph-duotone ph-x-circle"></i>
+                            Vencido
+                        </span>
+                        {% elif movimento.status == 'cancelado' %}
+                        <span class="badge badge-secondary">
+                            <i class="ph-duotone ph-minus-circle"></i>
+                            Cancelado
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'financeiro:movimento_detail' movimento.pk %}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Visualizar">
+                                <i class="ph-duotone ph-eye"></i>
+                            </a>
+                            {% if movimento.status == 'pendente' %}
+                            <button class="btn btn-sm btn-outline-success" 
+                                    onclick="markAsPaid({{ movimento.id }})" 
+                                    title="Marcar como Pago">
+                                <i class="ph-duotone ph-check"></i>
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'financeiro:movimento_update' movimento.pk %}" 
+                               class="btn btn-sm btn-outline-warning" 
+                               title="Editar">
+                                <i class="ph-duotone ph-pencil"></i>
+                            </a>
+                            <a href="{% url 'financeiro:movimento_delete' movimento.pk %}" 
+                               class="btn btn-sm btn-outline-danger" 
+                               title="Excluir">
+                                <i class="ph-duotone ph-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <div class="empty-state">
+                            <i class="ph-duotone ph-currency-dollar"></i>
+                            <h3>Nenhuma movimentação encontrada</h3>
+                            <p>Não há movimentações financeiras cadastradas ou que correspondam aos critérios de busca.</p>
+                            <div class="empty-actions">
+                                <a href="{% url 'financeiro:conta_receber_create' %}" class="btn btn-success">
+                                    <i class="ph-duotone ph-arrow-up"></i>
+                                    Conta a Receber
+                                </a>
+                                <a href="{% url 'financeiro:conta_pagar_create' %}" class="btn btn-danger">
+                                    <i class="ph-duotone ph-arrow-down"></i>
+                                    Conta a Pagar
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} movimentações
+        </div>
+        <nav class="pagination-nav">
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                <a href="?page=1{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cliente_fornecedor %}&cliente_fornecedor={{ request.GET.cliente_fornecedor }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cliente_fornecedor %}&cliente_fornecedor={{ request.GET.cliente_fornecedor }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-left"></i>
+                </a>
+                {% endif %}
+                
+                <span class="page-current">
+                    {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cliente_fornecedor %}&cliente_fornecedor={{ request.GET.cliente_fornecedor }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cliente_fornecedor %}&cliente_fornecedor={{ request.GET.cliente_fornecedor }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-double-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ações em Lote -->
+<div class="bulk-actions" id="bulk-actions" style="display: none;">
+    <div class="bulk-actions-content">
+        <span class="bulk-selected-count">0 movimentações selecionadas</span>
+        <div class="bulk-actions-buttons">
+            <button class="btn btn-outline-secondary" onclick="exportSelected()">
+                <i class="ph-duotone ph-export"></i>
+                Exportar Selecionadas
+            </button>
+            <button class="btn btn-outline-success" onclick="markSelectedAsPaid()">
+                <i class="ph-duotone ph-check"></i>
+                Marcar como Pagas
+            </button>
+            <button class="btn btn-outline-warning" onclick="updateStatusSelected()">
+                <i class="ph-duotone ph-pencil"></i>
+                Alterar Status
+            </button>
+            <button class="btn btn-outline-danger" onclick="deleteSelected()">
+                <i class="ph-duotone ph-trash"></i>
+                Excluir Selecionadas
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Busca avançada
+    window.toggleAdvancedSearch = function() {
+        const panel = document.getElementById('advanced-search');
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+    };
+
+    // Seleção múltipla
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+    const bulkActions = document.getElementById('bulk-actions');
+    const bulkCount = document.querySelector('.bulk-selected-count');
+
+    selectAll?.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkActions();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkActions);
+    });
+
+    function updateBulkActions() {
+        const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        bulkCount.textContent = `${selectedCount} movimentação${selectedCount !== 1 ? 'ões' : ''} selecionada${selectedCount !== 1 ? 's' : ''}`;
+        bulkActions.style.display = selectedCount > 0 ? 'block' : 'none';
+        
+        if (selectAll) {
+            selectAll.checked = selectedCount === checkboxes.length;
+            selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+        }
+    }
+
+    // Marcar como pago individual
+    window.markAsPaid = function(movimentoId) {
+        Swal.fire({
+            title: 'Marcar como Pago',
+            text: 'Deseja marcar esta movimentação como paga?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, marcar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Aqui você faria a requisição AJAX para marcar como pago
+                console.log('Marcar como pago:', movimentoId);
+                
+                Swal.fire({
+                    title: 'Sucesso!',
+                    text: 'Movimentação marcada como paga.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    };
+
+    // Ações em lote
+    window.exportSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "financeiro:financeiro_export" %}';
+        
+        selected.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selected_ids';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    };
+
+    window.markSelectedAsPaid = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Marcar como Pagas',
+            text: `Deseja marcar ${selected.length} movimentação${selected.length !== 1 ? 'ões' : ''} como paga${selected.length !== 1 ? 's' : ''}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, marcar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log('Marcar como pagas:', selected);
+            }
+        });
+    };
+
+    window.updateStatusSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Alterar Status',
+            html: `
+                <select id="swal-status" class="swal2-select">
+                    <option value="pendente">Pendente</option>
+                    <option value="pago">Pago</option>
+                    <option value="vencido">Vencido</option>
+                    <option value="cancelado">Cancelado</option>
+                </select>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Alterar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const newStatus = document.getElementById('swal-status').value;
+                console.log('Alterar status:', selected, 'para:', newStatus);
+            }
+        });
+    };
+
+    window.deleteSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Excluir Movimentações',
+            text: `Tem certeza que deseja excluir ${selected.length} movimentação${selected.length !== 1 ? 'ões' : ''}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, excluir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log('Excluir movimentações:', selected);
+            }
+        });
+    };
+});
+</script>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load fornecedores_extras %}
+
+{% block step_content %}
+<div class="alert alert-warning border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-file-alt text-warning me-3" style="font-size: 1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-warning">Documentos do Fornecedor</h6>
+      <small class="text-muted">Envie e versione documentos por tipo e competência (MM/AAAA).</small>
+    </div>
+  </div>
+  {% if not is_editing %}
+  <div class="mt-2 small text-muted">
+    Este passo fica ativo após salvar o fornecedor (modo edição). Conclua o cadastro e retorne para anexar documentos.
+  </div>
+  {% endif %}
+  {% if is_editing %}
+  <div class="mt-2 small text-muted">
+    Dica: Você também pode gerenciar anexos pela tela de detalhe do fornecedor.
+  </div>
+  {% endif %}
+  
+</div>
+
+{% if is_editing %}
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-cloud-upload-alt wizard-icon"></i> Novo Anexo</h5>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-md-4">{{ form.tipo.label_tag }} {{ form.tipo }}</div>
+      <div class="col-md-4">{{ form.arquivo.label_tag }} {{ form.arquivo }}</div>
+      <div class="col-md-2">{{ form.competencia.label_tag }} {{ form.competencia }}</div>
+      <div class="col-md-12">{{ form.observacao.label_tag }} {{ form.observacao }}</div>
+    </div>
+    <div class="d-flex justify-content-end mt-3">
+      <button type="submit" name="wizard_next" class="btn btn-outline-secondary me-2">
+        <i class="fas fa-arrow-right"></i> Adicionar e continuar
+      </button>
+      <button type="submit" name="wizard_finish" class="btn btn-primary">
+        <i class="fas fa-check"></i> Finalizar cadastro
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="wizard-section mt-4">
+  <h5 class="wizard-section-title"><i class="fas fa-clock-rotate-left wizard-icon"></i> Últimas versões por tipo</h5>
+  {% if categorias %}
+    {% for categoria, tipos in categorias.items %}
+      <div class="card mb-3">
+        <div class="card-header bg-light fw-semibold">{{ categoria.nome }}</div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Versão</th>
+                  <th>Competência</th>
+                  <th>Status</th>
+                  <th>Enviado em</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for tipo in tipos %}
+                  {% with rows=historico_por_tipo|get_item:tipo.pk %}
+                  {% if rows %}
+                    {% for v in rows %}
+                      <tr>
+                        <td>{{ tipo.nome }}</td>
+                        <td>v{{ v.versao }}</td>
+                        <td>{{ v.competencia|default:'—' }}</td>
+                        <td>{{ v.get_status_display }}</td>
+                        <td>{{ v.enviado_em|date:"d/m/Y H:i" }}</td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr>
+                      <td>{{ tipo.nome }}</td>
+                      <td colspan="4" class="text-muted">Sem uploads ainda</td>
+                    </tr>
+                  {% endif %}
+                  {% endwith %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-muted">Nenhum tipo de documento configurado para fornecedores.</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="wizard-section">
+  <p class="text-muted">Finalize o cadastro para habilitar o envio de documentos.</p>
+  <div class="d-flex justify-content-end">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" name="wizard_next" class="btn btn-primary">
+        Continuar
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

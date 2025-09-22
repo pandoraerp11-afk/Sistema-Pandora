@@ -1,0 +1,228 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title|default:form_title|default:'Conversa' }}{% endblock %}
+{% block page_subtitle %}{{ page_subtitle|default:'Crie ou edite uma conversa' }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ cancel_url }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar
+    </a>
+{% endblock %}
+
+{% block breadcrumb %}
+    {% if breadcrumbs %}
+    <li class="breadcrumb-item"><a href="{% url 'chat:conversa_list' %}">Chat</a></li>
+    {% for breadcrumb in breadcrumbs %}
+        {% if breadcrumb.active %}
+            <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+        {% else %}
+            <li class="breadcrumb-item">
+                {% if breadcrumb.url %}
+                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+                {% else %}
+                    {{ breadcrumb.title }}
+                {% endif %}
+            </li>
+        {% endif %}
+    {% endfor %}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- Form -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="action-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-comment me-2"></i>{{ form_title }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Erros gerais do form -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <!-- Título -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.titulo.id_for_label }}" class="form-label">
+                                    <i class="fas fa-heading me-2"></i>{{ form.titulo.label }}
+                                    {% if form.titulo.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.titulo }}
+                                {% if form.titulo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.titulo.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.titulo.help_text %}
+                                    <div class="form-text">{{ form.titulo.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Descrição -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.descricao.id_for_label }}" class="form-label">
+                                    <i class="fas fa-align-left me-2"></i>{{ form.descricao.label }}
+                                    {% if form.descricao.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.descricao }}
+                                {% if form.descricao.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.descricao.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.descricao.help_text %}
+                                    <div class="form-text">{{ form.descricao.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Tipo -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tag me-2"></i>{{ form.tipo.label }}
+                                    {% if form.tipo.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.tipo }}
+                                {% if form.tipo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tipo.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.tipo.help_text %}
+                                    <div class="form-text">{{ form.tipo.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Status -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">
+                                    <i class="fas fa-circle me-2"></i>{{ form.status.label }}
+                                    {% if form.status.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.status.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.status.help_text %}
+                                    <div class="form-text">{{ form.status.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Participantes -->
+                            {% if form.participantes %}
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.participantes.id_for_label }}" class="form-label">
+                                    <i class="fas fa-users me-2"></i>{{ form.participantes.label }}
+                                    {% if form.participantes.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.participantes }}
+                                {% if form.participantes.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.participantes.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.participantes.help_text %}
+                                    <div class="form-text">{{ form.participantes.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Configurações adicionais -->
+                            {% if form.privada %}
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.privada }}
+                                    <label class="form-check-label" for="{{ form.privada.id_for_label }}">
+                                        <i class="fas fa-lock me-2"></i>{{ form.privada.label }}
+                                    </label>
+                                </div>
+                                {% if form.privada.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.privada.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.privada.help_text %}
+                                    <div class="form-text">{{ form.privada.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            {% if form.permitir_anexos %}
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.permitir_anexos }}
+                                    <label class="form-check-label" for="{{ form.permitir_anexos.id_for_label }}">
+                                        <i class="fas fa-paperclip me-2"></i>{{ form.permitir_anexos.label }}
+                                    </label>
+                                </div>
+                                {% if form.permitir_anexos.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.permitir_anexos.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.permitir_anexos.help_text %}
+                                    <div class="form-text">{{ form.permitir_anexos.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ cancel_url }}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>{{ submit_text }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add form classes for Bootstrap styling
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to form fields
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(function(input) {
+        if (input.type === 'checkbox') {
+            input.classList.add('form-check-input');
+        } else if (input.tagName === 'SELECT') {
+            input.classList.add('form-select');
+        } else {
+            input.classList.add('form-control');
+        }
+    });
+});
+</script>
+{% endblock %}

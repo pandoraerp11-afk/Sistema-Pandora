@@ -1,0 +1,105 @@
+{# Mini-cards no estilo dos cards de Visão Geral (action-card), reduzidos para caber 3 em uma linha #}
+<div class="row g-2">
+  <div class="col-4">
+    <div class="action-card mini-flag-card h-100 text-center" data-field-id="id_ativo">
+      <div class="card-body p-2">
+        <div class="action-icon bg-gradient-success text-white mx-auto mb-2" style="width: 38px; height: 38px;">
+          <i class="fas fa-check"></i>
+        </div>
+        <div class="small fw-semibold">Ativo</div>
+        <div>
+          <span class="js-status fw-bold text-muted" style="font-size:.85rem;">Não</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="action-card mini-flag-card h-100 text-center" data-field-id="id_destaque">
+      <div class="card-body p-2">
+        <div class="action-icon bg-gradient-warning text-white mx-auto mb-2" style="width: 38px; height: 38px;">
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="small fw-semibold">Destaque</div>
+        <div>
+          <span class="js-status fw-bold text-muted" style="font-size:.85rem;">Não</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="action-card mini-flag-card h-100 text-center" data-field-id="id_controla_estoque">
+      <div class="card-body p-2">
+        <div class="action-icon bg-gradient-primary text-white mx-auto mb-2" style="width: 38px; height: 38px;">
+          <i class="fas fa-boxes"></i>
+        </div>
+        <div class="small fw-semibold">Controle</div>
+        <div>
+          <span class="js-status fw-bold text-muted" style="font-size:.85rem;">Não</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Inputs reais do formulário (mantidos, mas ocultos) #}
+<div class="d-none">
+  {{ form.ativo }}
+  {{ form.destaque }}
+  {{ form.controla_estoque }}
+  {# Labels não são necessários pois usamos os mini-cards como controles #}
+  <label for="id_ativo">Ativo</label>
+  <label for="id_destaque">Produto em destaque</label>
+  <label for="id_controla_estoque">Controla estoque</label>
+  {# Mantido para acessibilidade via for/id #}
+  <span aria-hidden="true"></span>
+  {# fim inputs ocultos #}
+  
+</div>
+
+<script>
+  (function() {
+    function setStatusEl(statusEl, checked) {
+      if (!statusEl) return;
+      statusEl.textContent = checked ? 'Sim' : 'Não';
+      // alterna apenas a cor do texto
+      statusEl.classList.remove('text-success','text-muted');
+      statusEl.classList.add(checked ? 'text-success' : 'text-muted');
+    }
+
+    function syncCard(card) {
+      var fieldId = card.getAttribute('data-field-id');
+      var input = document.getElementById(fieldId);
+      if (!input) return;
+      var checked = !!input.checked;
+      card.classList.toggle('border-primary', checked);
+      card.classList.toggle('shadow-sm', checked);
+      var statusEl = card.querySelector('.js-status');
+      setStatusEl(statusEl, checked);
+    }
+
+    function toggleFromCard(card) {
+      var fieldId = card.getAttribute('data-field-id');
+      var input = document.getElementById(fieldId);
+      if (!input) return;
+      input.checked = !input.checked;
+      // dispare change para possíveis listeners do Django formset/validações
+      var evt = new Event('change', { bubbles: true });
+      input.dispatchEvent(evt);
+  syncCard(card);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.mini-flag-card').forEach(function(card){
+        // estado inicial
+        syncCard(card);
+        // clique para alternar
+        card.addEventListener('click', function(e){
+          e.preventDefault();
+          toggleFromCard(card);
+        });
+      });
+    });
+  })();
+</script>

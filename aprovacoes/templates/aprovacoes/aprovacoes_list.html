@@ -1,0 +1,428 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Aprovações | Pandora ERP{% endblock %}
+
+{% block page_title %}Aprovações{% endblock %}
+{% block page_subtitle %}Sistema de workflow e aprovações{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        display: inline-block;
+        padding: 0.4em 0.8em;
+        font-size: 0.8em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-pendente {
+        background: linear-gradient(135deg, #ffc107, #ffb300);
+        color: #fff;
+        box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+    }
+    
+    .status-aprovado {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: #fff;
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    }
+    
+    .status-rejeitado {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: #fff;
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    }
+    
+    .status-cancelado {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: #fff;
+        box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+    }
+    
+    .priority-badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        font-size: 0.75em;
+        font-weight: 600;
+        border-radius: 10px;
+        margin-left: 0.5rem;
+    }
+    
+    .priority-alta {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .priority-media {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .priority-baixa {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .table-actions {
+        white-space: nowrap;
+    }
+    
+    .table-actions .btn {
+        margin-right: 0.25rem;
+    }
+    
+    .solicitante-info {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    
+    .data-info {
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .aprovador-info {
+        font-size: 0.85em;
+        color: #28a745;
+        font-weight: 500;
+    }
+    
+    .tempo-pendente {
+        font-size: 0.8em;
+        color: #dc3545;
+        font-weight: 500;
+    }
+    
+    .btn-approve {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-approve:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    
+    .btn-reject {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-reject:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+        color: white;
+    }
+    
+    .workflow-indicator {
+        width: 4px;
+        height: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        border-radius: 0 4px 4px 0;
+    }
+    
+    .workflow-pendente {
+        background: #ffc107;
+    }
+    
+    .workflow-aprovado {
+        background: #28a745;
+    }
+    
+    .workflow-rejeitado {
+        background: #dc3545;
+    }
+    
+    .workflow-cancelado {
+        background: #6c757d;
+    }
+    
+    tr {
+        position: relative;
+    }
+    
+    .urgente-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block extra_filters %}
+<div class="col-md-3">
+    <select name="status" class="form-control" onchange="this.form.submit()">
+        <option value="">Todos os Status</option>
+        <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
+        <option value="aprovado" {% if request.GET.status == 'aprovado' %}selected{% endif %}>Aprovado</option>
+        <option value="rejeitado" {% if request.GET.status == 'rejeitado' %}selected{% endif %}>Rejeitado</option>
+        <option value="cancelado" {% if request.GET.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+    </select>
+</div>
+<div class="col-md-3">
+    <select name="responsavel" class="form-control" onchange="this.form.submit()">
+        <option value="">Todos os Solicitantes</option>
+        {% for responsavel in responsaveis %}
+        <option value="{{ responsavel.id }}" {% if request.GET.responsavel|add:0 == responsavel.id %}selected{% endif %}>
+            {{ responsavel.nome }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+{% endblock %}
+
+{% block table_headers %}
+<th style="width: 60px">#</th>
+<th>Solicitação</th>
+<th>Solicitante</th>
+<th>Status</th>
+<th>Datas</th>
+<th>Aprovador</th>
+<th style="width: 150px">Ações</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for item in items %}
+<tr class="{% if item.status == 'pendente' and item.dias_pendente > 3 %}urgente-pulse{% endif %}">
+    <div class="workflow-indicator workflow-{{ item.status }}"></div>
+    <td>{{ item.pk }}</td>
+    <td>
+        <strong>{{ item.descricao }}</strong>
+        {% if item.observacoes %}
+            <br><small class="text-muted">{{ item.observacoes|truncatewords:15 }}</small>
+        {% endif %}
+        {% if item.status == 'pendente' and item.dias_pendente > 3 %}
+            <br><span class="tempo-pendente">
+                <i class="fas fa-clock"></i> Pendente há {{ item.dias_pendente }} dias
+            </span>
+        {% endif %}
+    </td>
+    <td>
+        {% if item.responsavel %}
+            <i class="fas fa-user"></i> {{ item.responsavel.nome }}
+            <br><small class="solicitante-info">{{ item.responsavel.cargo|default:"" }}</small>
+        {% else %}
+            <span class="text-muted">Não definido</span>
+        {% endif %}
+    </td>
+    <td>
+        <span class="status-badge status-{{ item.status }}">
+            {% if item.status == 'pendente' %}
+                <i class="fas fa-clock"></i> {{ item.get_status_display }}
+            {% elif item.status == 'aprovado' %}
+                <i class="fas fa-check"></i> {{ item.get_status_display }}
+            {% elif item.status == 'rejeitado' %}
+                <i class="fas fa-times"></i> {{ item.get_status_display }}
+            {% elif item.status == 'cancelado' %}
+                <i class="fas fa-ban"></i> {{ item.get_status_display }}
+            {% endif %}
+        </span>
+    </td>
+    <td>
+        <div class="data-info">
+            <i class="fas fa-plus-circle"></i> {{ item.data_solicitacao|date:"d/m/Y" }}
+        </div>
+        {% if item.data_aprovacao %}
+            <small class="text-success">
+                <i class="fas fa-check-circle"></i> {{ item.data_aprovacao|date:"d/m/Y" }}
+            </small>
+        {% endif %}
+    </td>
+    <td>
+        {% if item.aprovador %}
+            <div class="aprovador-info">
+                <i class="fas fa-user-check"></i> {{ item.aprovador.nome }}
+            </div>
+        {% else %}
+            <span class="text-muted">Aguardando</span>
+        {% endif %}
+    </td>
+    <td class="table-actions">
+        <a href="{% url 'aprovacoes:aprovacoes_detail' item.pk %}" 
+           class="btn btn-info btn-sm" 
+           title="Visualizar">
+            <i class="fas fa-eye"></i>
+        </a>
+        
+        {% if item.status == 'pendente' %}
+            <button class="btn btn-approve btn-sm approve-btn" 
+                    data-id="{{ item.pk }}" 
+                    data-descricao="{{ item.descricao }}"
+                    title="Aprovar">
+                <i class="fas fa-check"></i>
+            </button>
+            <button class="btn btn-reject btn-sm reject-btn" 
+                    data-id="{{ item.pk }}" 
+                    data-descricao="{{ item.descricao }}"
+                    title="Rejeitar">
+                <i class="fas fa-times"></i>
+            </button>
+        {% endif %}
+        
+        <a href="{% url 'aprovacoes:aprovacoes_update' item.pk %}" 
+           class="btn btn-warning btn-sm" 
+           title="Editar">
+            <i class="fas fa-edit"></i>
+        </a>
+        
+        <a href="{% url 'aprovacoes:aprovacoes_delete' item.pk %}" 
+           class="btn btn-danger btn-sm delete-btn" 
+           title="Excluir">
+            <i class="fas fa-trash"></i>
+        </a>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="text-center py-4">
+        <div class="empty-state">
+            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhuma aprovação encontrada</h5>
+            <p class="text-muted">Comece criando sua primeira solicitação de aprovação.</p>
+            <a href="{% url 'aprovacoes:aprovacoes_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nova Aprovação
+            </a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block add_button_url %}{% url 'aprovacoes:aprovacoes_create' %}{% endblock %}
+{% block add_button_text %}Nova Aprovação{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    // Configurar modal de exclusão
+    $('.delete-btn').on('click', function(e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+        var row = $(this).closest('tr');
+        var descricao = row.find('td:nth-child(2) strong').text();
+        
+        Swal.fire({
+            title: 'Confirmar Exclusão',
+            text: `Tem certeza que deseja excluir a aprovação "${descricao}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+    
+    // Função para aprovar
+    $('.approve-btn').on('click', function() {
+        var id = $(this).data('id');
+        var descricao = $(this).data('descricao');
+        
+        Swal.fire({
+            title: 'Aprovar Solicitação',
+            text: `Confirma a aprovação de "${descricao}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, aprovar!',
+            cancelButtonText: 'Cancelar',
+            input: 'textarea',
+            inputPlaceholder: 'Observações da aprovação (opcional)...',
+            inputAttributes: {
+                'aria-label': 'Observações da aprovação'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Aqui você faria uma requisição AJAX para aprovar
+                $.post(`/aprovacoes/${id}/aprovar/`, {
+                    'observacoes': result.value,
+                    'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                }).done(function() {
+                    Swal.fire('Aprovado!', 'A solicitação foi aprovada com sucesso.', 'success')
+                        .then(() => location.reload());
+                }).fail(function() {
+                    Swal.fire('Erro!', 'Ocorreu um erro ao aprovar a solicitação.', 'error');
+                });
+            }
+        });
+    });
+    
+    // Função para rejeitar
+    $('.reject-btn').on('click', function() {
+        var id = $(this).data('id');
+        var descricao = $(this).data('descricao');
+        
+        Swal.fire({
+            title: 'Rejeitar Solicitação',
+            text: `Confirma a rejeição de "${descricao}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, rejeitar!',
+            cancelButtonText: 'Cancelar',
+            input: 'textarea',
+            inputPlaceholder: 'Motivo da rejeição (obrigatório)...',
+            inputAttributes: {
+                'aria-label': 'Motivo da rejeição'
+            },
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Você precisa informar o motivo da rejeição!'
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Aqui você faria uma requisição AJAX para rejeitar
+                $.post(`/aprovacoes/${id}/rejeitar/`, {
+                    'motivo': result.value,
+                    'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                }).done(function() {
+                    Swal.fire('Rejeitado!', 'A solicitação foi rejeitada.', 'success')
+                        .then(() => location.reload());
+                }).fail(function() {
+                    Swal.fire('Erro!', 'Ocorreu um erro ao rejeitar a solicitação.', 'error');
+                });
+            }
+        });
+    });
+    
+    // Tooltip para botões de ação
+    $('[title]').tooltip();
+    
+    // Auto-refresh para solicitações pendentes a cada 30 segundos
+    if ($('.status-pendente').length > 0) {
+        setInterval(function() {
+            // Recarregar apenas se não há modais abertos
+            if (!$('.swal2-container').length) {
+                location.reload();
+            }
+        }, 30000);
+    }
+});
+</script>
+{% endblock %}

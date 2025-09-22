@@ -1,0 +1,1023 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{# Título do documento #}
+{% block title %}{{ titulo|default:'Estoque - Controle e Gestão' }}{% endblock %}
+
+{# Estilos personalizados para atalhos rápidos #}
+{% block extra_css %}
+<style>
+.quick-shortcuts {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(25, 135, 84, 0.05) 100%);
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-shortcuts::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #0d6efd, #198754, #ffc107, #dc3545);
+    border-radius: 15px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.quick-shortcuts:hover::before {
+    opacity: 0.1;
+}
+
+.quick-shortcuts .btn-group {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.quick-shortcuts .btn {
+    border: none;
+    padding: 8px 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-shortcuts .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.quick-shortcuts .btn:hover::before {
+    left: 100%;
+}
+
+.quick-shortcuts .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.quick-shortcuts .btn small {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    font-weight: normal;
+}
+
+.quick-shortcuts .btn-outline-success:hover {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+}
+
+.quick-shortcuts .btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.quick-shortcuts .btn-outline-info:hover {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+    color: white;
+}
+
+.quick-shortcuts .btn-outline-warning:hover {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.quick-shortcuts .btn-outline-primary:hover {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.quick-shortcuts .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+.quick-shortcuts .btn-outline-dark:hover {
+    background-color: #212529;
+    border-color: #212529;
+    color: white;
+}
+
+/* Animação de entrada para os atalhos */
+.quick-shortcuts .btn-group {
+    animation: slideInUp 0.6s ease forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.quick-shortcuts .btn-group:nth-child(1) { animation-delay: 0.1s; }
+.quick-shortcuts .btn-group:nth-child(2) { animation-delay: 0.2s; }
+.quick-shortcuts .btn-group:nth-child(3) { animation-delay: 0.3s; }
+.quick-shortcuts .btn-group:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsividade para dispositivos móveis */
+@media (max-width: 768px) {
+    .quick-shortcuts .btn small {
+        display: none;
+    }
+    
+    .quick-shortcuts .btn {
+        padding: 6px 10px;
+        font-size: 0.85rem;
+    }
+    
+    .quick-shortcuts .d-flex {
+        flex-direction: column;
+        gap: 10px !important;
+    }
+    
+    .quick-shortcuts .btn-group {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Indicador visual para atalhos de teclado */
+.quick-shortcuts::after {
+    content: '💡 Use os atalhos de teclado para acessar rapidamente as funcionalidades';
+    position: absolute;
+    bottom: 5px;
+    right: 15px;
+    font-size: 0.75rem;
+    color: rgba(13, 110, 253, 0.6);
+    font-weight: 500;
+}
+
+@media (max-width: 992px) {
+    .quick-shortcuts::after {
+        display: none;
+    }
+}
+</style>
+{% endblock %}
+
+{# Cabeçalho padrão do home (usa blocks do pandora_home_ultra_modern) #}
+{% block home_icon %}<i class="fas fa-warehouse me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Gestão de Estoque{% endblock %}
+{% block home_subtitle %}Visão completa do controle de estoque e movimentações{% endblock %}
+
+{# Seção: Atalhos Rápidos - Nova Seção #}
+{% block home_quick_actions %}
+    <div class="quick-shortcuts mb-5" data-aos="fade-up">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-primary">
+                <i class="fas fa-bolt me-2"></i>Atalhos Rápidos
+            </h6>
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaAtalhos" aria-expanded="false">
+                <i class="fas fa-question-circle me-1"></i>Ajuda
+            </button>
+        </div>
+        
+        <div class="collapse mb-3" id="ajudaAtalhos">
+            <div class="alert alert-info mb-3">
+                <div class="row g-2 small">
+                    <div class="col-md-4">
+                        <strong>Movimentações:</strong><br>
+                        <code>Ctrl + E</code> Nova Entrada<br>
+                        <code>Ctrl + S</code> Nova Saída<br>
+                        <code>Ctrl + T</code> Transferência
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Consultas:</strong><br>
+                        <code>Ctrl + 1</code> Saldos<br>
+                        <code>Ctrl + 2</code> Movimentos<br>
+                        <code>Ctrl + 3</code> Reservas
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Operações:</strong><br>
+                        <code>Ctrl + P</code> Picking<br>
+                        <code>Ctrl + A</code> Auditoria<br>
+                        <code>Ctrl + F</code> Busca Rápida
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
+            <div class="btn-group" role="group" aria-label="Atalhos de Movimentação">
+                {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="abrirModalMovimento('ENTRADA')" data-bs-toggle="tooltip" title="Nova Entrada - Ctrl+E">
+                    <i class="fas fa-arrow-up me-1"></i>Entrada <small>(Ctrl+E)</small>
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="abrirModalMovimento('SAIDA')" data-bs-toggle="tooltip" title="Nova Saída - Ctrl+S">
+                    <i class="fas fa-arrow-down me-1"></i>Saída <small>(Ctrl+S)</small>
+                </button>
+                <button type="button" class="btn btn-outline-info btn-sm" onclick="abrirModalMovimento('TRANSFERENCIA')" data-bs-toggle="tooltip" title="Nova Transferência - Ctrl+T">
+                    <i class="fas fa-exchange-alt me-1"></i>Transfer. <small>(Ctrl+T)</small>
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="btn-group" role="group" aria-label="Atalhos de Consulta">
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                <a href="{% url 'estoque:saldos_list' %}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Consultar Saldos - Ctrl+1">
+                    <i class="fas fa-list-alt me-1"></i>Saldos <small>(Ctrl+1)</small>
+                </a>
+                <a href="{% url 'estoque:movimentos_list' %}" class="btn btn-outline-secondary btn-sm" data-bs-toggle="tooltip" title="Ver Movimentos - Ctrl+2">
+                    <i class="fas fa-history me-1"></i>Movimentos <small>(Ctrl+2)</small>
+                </a>
+                <a href="{% url 'estoque:reservas_list' %}" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Gerenciar Reservas - Ctrl+3">
+                    <i class="fas fa-hand-holding me-1"></i>Reservas <small>(Ctrl+3)</small>
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="btn-group" role="group" aria-label="Atalhos de Picking">
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                <a href="{% url 'estoque:picking_kanban' %}" class="btn btn-outline-info btn-sm" data-bs-toggle="tooltip" title="Sistema Picking - Ctrl+P">
+                    <i class="fas fa-shipping-fast me-1"></i>Picking <small>(Ctrl+P)</small>
+                </a>
+                <a href="{% url 'estoque:auditoria_list' %}" class="btn btn-outline-dark btn-sm" data-bs-toggle="tooltip" title="Auditoria - Ctrl+A">
+                    <i class="fas fa-search-plus me-1"></i>Auditoria <small>(Ctrl+A)</small>
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="btn-group" role="group" aria-label="Atalhos de Busca">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="abrirBuscaRapida()" data-bs-toggle="tooltip" title="Busca Rápida - Ctrl+F">
+                    <i class="fas fa-search me-1"></i>Buscar <small>(Ctrl+F)</small>
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-toggle="tooltip" title="Relatórios Rápidos">
+                        <i class="fas fa-chart-pie me-1"></i>Relatórios
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="gerarRelatorioRapido('saldos')"><i class="fas fa-file-alt me-2"></i>Posição de Estoque</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="gerarRelatorioRapido('movimentacao')"><i class="fas fa-chart-line me-2"></i>Movimentação do Dia</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="gerarRelatorioRapido('reservas')"><i class="fas fa-calendar-check me-2"></i>Reservas Ativas</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'relatorios:relatorios_home' %}"><i class="fas fa-external-link-alt me-2"></i>Todos os Relatórios</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Seção: Visão Geral / Estatísticas #}
+{% block home_stats %}
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-chart-bar me-2 text-primary"></i>
+        Visão Geral do Estoque
+    </h2>
+    <div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-primary mb-1">{{ stats.total_produtos|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Produtos em Estoque</p>
+                    <small class="text-muted"><i class="fas fa-arrow-up me-1"></i>{{ stats.produtos_ativos|default:0 }} ativos</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-success mb-1">R$ {{ stats.valor_total_estoque|floatformat:2|default:"0,00" }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Valor Total do Estoque</p>
+                    <small class="text-muted"><i class="fas fa-chart-line me-1"></i>Valorização FIFO</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-warning mb-1">{{ stats.produtos_baixo_estoque|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Estoque Baixo</p>
+                    <small class="text-muted"><i class="fas fa-bell me-1"></i>Requer atenção</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                        <i class="fas fa-hand-holding"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-info mb-1">{{ stats.total_reservado|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Itens Reservados</p>
+                    <small class="text-muted"><i class="fas fa-clock me-1"></i>{{ stats.reservas_ativas|default:0 }} reservas ativas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Gráfico de Movimentações #}
+    <div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="col-lg-8">
+            <div class="action-card h-100">
+                <div class="card-header border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exchange-alt me-2 text-primary"></i>
+                        Movimentações dos Últimos 7 Dias
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="movimentacaoChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="action-card h-100">
+                <div class="card-header border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks me-2 text-info"></i>
+                        Status Picking
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <span>Pendentes</span>
+                                <span class="fw-bold">{{ stats.picking_pendentes|default:0 }}</span>
+                            </div>
+                            <div class="progress mt-1" style="height: 6px;">
+                                <div class="progress-bar bg-warning" style="width: {{ stats.picking_pendentes_percent|default:0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <span>Em Separação</span>
+                                <span class="fw-bold">{{ stats.picking_em_separacao|default:0 }}</span>
+                            </div>
+                            <div class="progress mt-1" style="height: 6px;">
+                                <div class="progress-bar bg-primary" style="width: {{ stats.picking_em_separacao_percent|default:0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <span>Finalizados Hoje</span>
+                                <span class="fw-bold">{{ stats.picking_finalizados_hoje|default:0 }}</span>
+                            </div>
+                            <div class="progress mt-1" style="height: 6px;">
+                                <div class="progress-bar bg-success" style="width: {{ stats.picking_finalizados_percent|default:0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Seção: Ações rápidas #}
+{% block home_actions %}
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-bolt me-2 text-primary"></i>
+        Ações Principais
+    </h2>
+    <div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}<a href="{% url 'estoque:saldos_list' %}" class="stretched-link">{% endif %}
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-list-alt"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Consultar Saldos</h5>
+                        <p class="text-muted mb-0">Visualizar posição atual do estoque por produto e depósito</p>
+                    </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}</a>{% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                {% if perms_ui.can_add|default:perms.can_add|default:True %}<a href="{% url 'estoque:movimento_add' %}" class="stretched-link">{% endif %}
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Nova Movimentação</h5>
+                        <p class="text-muted mb-0">Registrar entrada, saída ou transferência de produtos</p>
+                    </div>
+                {% if perms_ui.can_add|default:perms.can_add|default:True %}</a>{% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}<a href="{% url 'estoque:reservas_list' %}" class="stretched-link">{% endif %}
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                            <i class="fas fa-hand-holding"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Gerenciar Reservas</h5>
+                        <p class="text-muted mb-0">Controlar reservas ativas e criar novas reservas</p>
+                    </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}</a>{% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}<a href="{% url 'estoque:picking_list' %}" class="stretched-link">{% endif %}
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                            <i class="fas fa-shipping-fast"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Sistema de Picking</h5>
+                        <p class="text-muted mb-0">Gerenciar separação e conferência de pedidos</p>
+                    </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}</a>{% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}<a href="{% url 'estoque:depositos_list' %}" class="stretched-link">{% endif %}
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-secondary text-white mx-auto mb-3">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Gerenciar Depósitos</h5>
+                        <p class="text-muted mb-0">Configurar locais de armazenagem e estrutura física</p>
+                    </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}</a>{% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}<a href="{% url 'estoque:auditoria_list' %}" class="stretched-link">{% endif %}
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-dark text-white mx-auto mb-3">
+                            <i class="fas fa-search-plus"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Auditoria</h5>
+                        <p class="text-muted mb-0">Acompanhar trilha de auditoria e relatórios de compliance</p>
+                    </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}</a>{% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Seção de alertas e pendências #}
+{% block home_widgets %}
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-exclamation-circle me-2 text-warning"></i>
+        Alertas e Pendências
+    </h2>
+    <div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+        {% if alertas.produtos_zerados %}
+        <div class="col-lg-6">
+            <div class="alert alert-danger d-flex align-items-center" role="alert">
+                <i class="fas fa-exclamation-triangle fa-lg me-3"></i>
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading mb-1">Produtos em Falta</h6>
+                    <p class="mb-0">{{ alertas.produtos_zerados }} produto{% if alertas.produtos_zerados > 1 %}s{% endif %} com estoque zerado</p>
+                </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                <a href="{% url 'estoque:saldos_list' %}?estoque_zero=true" class="btn btn-outline-danger btn-sm">Ver produtos</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if alertas.reservas_expirando %}
+        <div class="col-lg-6">
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fas fa-clock fa-lg me-3"></i>
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading mb-1">Reservas Expirando</h6>
+                    <p class="mb-0">{{ alertas.reservas_expirando }} reserva{% if alertas.reservas_expirando > 1 %}s{% endif %} expira{% if alertas.reservas_expirando == 1 %}m{% endif %} nas próximas 24h</p>
+                </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                <a href="{% url 'estoque:reservas_list' %}?expirando=24h" class="btn btn-outline-warning btn-sm">Verificar</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if alertas.pedidos_pendentes %}
+        <div class="col-lg-6">
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="fas fa-tasks fa-lg me-3"></i>
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading mb-1">Pedidos Pendentes</h6>
+                    <p class="mb-0">{{ alertas.pedidos_pendentes }} pedido{% if alertas.pedidos_pendentes > 1 %}s{% endif %} aguardando separação</p>
+                </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                <a href="{% url 'estoque:picking_list' %}?status=PENDENTE" class="btn btn-outline-info btn-sm">Separar</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if alertas.produtos_baixo_estoque %}
+        <div class="col-lg-6">
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fas fa-chart-line fa-lg me-3"></i>
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading mb-1">Estoque Baixo</h6>
+                    <p class="mb-0">{{ alertas.produtos_baixo_estoque }} produto{% if alertas.produtos_baixo_estoque > 1 %}s{% endif %} com estoque baixo</p>
+                </div>
+                {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                <a href="{% url 'estoque:saldos_list' %}?estoque_baixo=true" class="btn btn-outline-warning btn-sm">Verificar</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{# Scripts específicos do módulo #}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Permissões de UI expostas ao JS
+var ESTOQUE_CAN_VIEW = {% if perms_ui.can_view|default:perms.can_view|default:True %}true{% else %}false{% endif %};
+var ESTOQUE_CAN_ADD = {% if perms_ui.can_add|default:perms.can_add|default:True %}true{% else %}false{% endif %};
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de Movimentações
+    const ctx = document.getElementById('movimentacaoChart');
+    if (ctx) {
+        const chartData = {{ grafico_movimentacao|safe }};
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Entradas',
+                    data: chartData.entradas,
+                    borderColor: 'rgb(25, 135, 84)',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Saídas',
+                    data: chartData.saidas,
+                    borderColor: 'rgb(220, 53, 69)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // WebSocket para atualizações em tempo real
+    if ('WebSocket' in window) {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${protocol}${window.location.host}/ws/estoque/`;
+        
+        try {
+            const estoque_ws = new WebSocket(wsUrl);
+            
+            estoque_ws.onopen = function() {
+                console.log('Conectado ao stream de estoque');
+            };
+            
+            estoque_ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                
+                if (data.event) {
+                    // Mostrar notificação para eventos importantes
+                    if (data.event.includes('reserva_') || data.event.includes('picking_')) {
+                        if (window.PandoraNotif) {
+                            PandoraNotif.toast(`Estoque: ${data.event}`, 'info', 3000);
+                        }
+                    }
+                    
+                    // Atualizar contadores se necessário
+                    if (data.event === 'estoque.saldo_atualizado') {
+                        // Recarregar estatísticas se necessário
+                    }
+                }
+            };
+            
+            estoque_ws.onclose = function() {
+                console.log('Desconectado do stream de estoque');
+            };
+            
+        } catch (error) {
+            console.error('Erro ao conectar WebSocket do estoque:', error);
+        }
+    }
+
+    // ===============================
+    // SISTEMA DE ATALHOS RÁPIDOS
+    // ===============================
+    
+    // Configurar atalhos de teclado
+    document.addEventListener('keydown', function(e) {
+        // Verificar se Ctrl está pressionado
+        if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+            switch(e.code) {
+                case 'KeyE':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_ADD) { abrirModalMovimento('ENTRADA'); }
+                    break;
+                case 'KeyS':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_ADD) { abrirModalMovimento('SAIDA'); }
+                    break;
+                case 'KeyT':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_ADD) { abrirModalMovimento('TRANSFERENCIA'); }
+                    break;
+                case 'Digit1':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_VIEW) { window.location.href = "{% url 'estoque:saldos_list' %}"; }
+                    break;
+                case 'Digit2':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_VIEW) { window.location.href = "{% url 'estoque:movimentos_list' %}"; }
+                    break;
+                case 'Digit3':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_VIEW) { window.location.href = "{% url 'estoque:reservas_list' %}"; }
+                    break;
+                case 'KeyP':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_VIEW) { window.location.href = "{% url 'estoque:picking_kanban' %}"; }
+                    break;
+                case 'KeyA':
+                    e.preventDefault();
+                    if (ESTOQUE_CAN_VIEW) { window.location.href = "{% url 'estoque:auditoria_list' %}"; }
+                    break;
+                case 'KeyF':
+                    e.preventDefault();
+                    abrirBuscaRapida();
+                    break;
+            }
+        }
+    });
+
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+
+// ===============================
+// FUNÇÕES DOS ATALHOS RÁPIDOS
+// ===============================
+
+function abrirModalMovimento(tipo) {
+    // Criar modal dinâmico para movimentação
+    const modalId = 'modalMovimento' + tipo;
+    
+    // Remover modal anterior se existir
+    const modalExistente = document.getElementById(modalId);
+    if (modalExistente) {
+        modalExistente.remove();
+    }
+    
+    // HTML do modal
+    const modalHTML = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-${getTipoColor(tipo)}">
+                        <h5 class="modal-title text-white">
+                            <i class="fas ${getTipoIcon(tipo)} me-2"></i>
+                            Nova ${tipo.charAt(0) + tipo.slice(1).toLowerCase()}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="form${tipo}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Produto</label>
+                                    <select class="form-select" name="produto" required>
+                                        <option value="">Selecione um produto...</option>
+                                        <!-- Produtos serão carregados via AJAX -->
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Quantidade</label>
+                                    <input type="number" class="form-control" name="quantidade" step="0.01" min="0.01" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Depósito ${tipo === 'TRANSFERENCIA' ? 'Origem' : ''}</label>
+                                    <select class="form-select" name="deposito${tipo === 'TRANSFERENCIA' ? '_origem' : ''}" required>
+                                        <option value="">Selecione um depósito...</option>
+                                        <!-- Depósitos serão carregados via AJAX -->
+                                    </select>
+                                </div>
+                                ${tipo === 'TRANSFERENCIA' ? `
+                                <div class="col-md-6">
+                                    <label class="form-label">Depósito Destino</label>
+                                    <select class="form-select" name="deposito_destino" required>
+                                        <option value="">Selecione um depósito...</option>
+                                    </select>
+                                </div>
+                                ` : `
+                                <div class="col-md-6">
+                                    <label class="form-label">Valor Unitário</label>
+                                    <input type="number" class="form-control" name="valor_unitario" step="0.01" min="0">
+                                </div>
+                                `}
+                                <div class="col-12">
+                                    <label class="form-label">Observações</label>
+                                    <textarea class="form-control" name="observacoes" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-${getTipoColor(tipo)}" onclick="salvarMovimento('${tipo}')">
+                            <i class="fas fa-save me-2"></i>Salvar ${tipo}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Adicionar modal ao DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+    
+    // Carregar dados dos selects
+    carregarProdutos(modalId);
+    carregarDepositos(modalId);
+    
+    // Remover modal quando fechado
+    document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+function abrirBuscaRapida() {
+    // Criar modal de busca rápida
+    const modalId = 'modalBuscaRapida';
+    
+    // Remover modal anterior se existir
+    const modalExistente = document.getElementById(modalId);
+    if (modalExistente) {
+        modalExistente.remove();
+    }
+    
+    const modalHTML = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary">
+                        <h5 class="modal-title text-white">
+                            <i class="fas fa-search me-2"></i>Busca Rápida no Estoque
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control form-control-lg" id="campoBusca" 
+                                   placeholder="Digite o código, nome do produto ou código de barras..." autofocus>
+                            <button class="btn btn-primary" onclick="executarBuscaRapida()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-outline-primary btn-sm" onclick="filtrarBusca('produto')">
+                                <i class="fas fa-cube me-1"></i>Produtos
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="filtrarBusca('saldo')">
+                                <i class="fas fa-list-alt me-1"></i>Saldos
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="filtrarBusca('movimento')">
+                                <i class="fas fa-history me-1"></i>Movimentos
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="filtrarBusca('reserva')">
+                                <i class="fas fa-hand-holding me-1"></i>Reservas
+                            </button>
+                        </div>
+                        
+                        <div id="resultadosBusca" class="border rounded p-3" style="min-height: 200px; max-height: 400px; overflow-y: auto;">
+                            <div class="text-muted text-center">
+                                <i class="fas fa-search fa-2x mb-2"></i><br>
+                                Digite algo para começar a buscar...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Adicionar modal ao DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+    
+    // Configurar busca em tempo real
+    document.getElementById('campoBusca').addEventListener('input', function() {
+        if (this.value.length >= 2) {
+            executarBuscaRapida();
+        }
+    });
+    
+    // Configurar Enter para buscar
+    document.getElementById('campoBusca').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            executarBuscaRapida();
+        }
+    });
+    
+    // Remover modal quando fechado
+    document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+function gerarRelatorioRapido(tipo) {
+    // Mostrar loading
+    if (window.PandoraNotif) {
+        PandoraNotif.toast('Gerando relatório...', 'info', 2000);
+    }
+    
+    // URLs dos relatórios
+    const urls = {
+        'saldos': '/api/estoque/relatorio/saldos/',
+        'movimentacao': '/api/estoque/relatorio/movimentacao-hoje/',
+        'reservas': '/api/estoque/relatorio/reservas-ativas/'
+    };
+    
+    if (urls[tipo]) {
+        // Abrir em nova aba
+        window.open(urls[tipo], '_blank');
+    }
+}
+
+// ===============================
+// FUNÇÕES AUXILIARES
+// ===============================
+
+function getTipoColor(tipo) {
+    const cores = {
+        'ENTRADA': 'success',
+        'SAIDA': 'danger',
+        'TRANSFERENCIA': 'info'
+    };
+    return cores[tipo] || 'primary';
+}
+
+function getTipoIcon(tipo) {
+    const icones = {
+        'ENTRADA': 'fa-arrow-up',
+        'SAIDA': 'fa-arrow-down',
+        'TRANSFERENCIA': 'fa-exchange-alt'
+    };
+    return icones[tipo] || 'fa-plus';
+}
+
+function carregarProdutos(modalId) {
+    // Simular carregamento (implementar chamada real à API)
+    setTimeout(() => {
+        const select = document.querySelector(`#${modalId} select[name="produto"]`);
+        select.innerHTML = `
+            <option value="">Selecione um produto...</option>
+            <option value="1">Produto Exemplo 1</option>
+            <option value="2">Produto Exemplo 2</option>
+        `;
+    }, 500);
+}
+
+function carregarDepositos(modalId) {
+    // Simular carregamento (implementar chamada real à API)
+    setTimeout(() => {
+        const selects = document.querySelectorAll(`#${modalId} select[name^="deposito"]`);
+        selects.forEach(select => {
+            select.innerHTML = `
+                <option value="">Selecione um depósito...</option>
+                <option value="1">Depósito Principal</option>
+                <option value="2">Depósito Secundário</option>
+            `;
+        });
+    }, 500);
+}
+
+function salvarMovimento(tipo) {
+    // Implementar salvamento via API
+    if (window.PandoraNotif) {
+        PandoraNotif.toast(`${tipo} registrada com sucesso!`, 'success', 3000);
+    }
+    
+    // Fechar modal
+    const modalId = 'modalMovimento' + tipo;
+    const modalElement = document.getElementById(modalId);
+    if (modalElement) {
+        bootstrap.Modal.getInstance(modalElement).hide();
+    }
+}
+
+function executarBuscaRapida() {
+    const termo = document.getElementById('campoBusca').value;
+    const resultados = document.getElementById('resultadosBusca');
+    
+    if (termo.length < 2) {
+        resultados.innerHTML = '<div class="text-muted text-center">Digite pelo menos 2 caracteres...</div>';
+        return;
+    }
+    
+    // Mostrar loading
+    resultados.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+    
+    // Simular busca (implementar chamada real à API)
+    setTimeout(() => {
+        resultados.innerHTML = `
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1"><i class="fas fa-cube me-2"></i>Produto encontrado para: ${termo}</h6>
+                        <small class="text-success">Em estoque</small>
+                    </div>
+                    <p class="mb-1">Código: P001 - Saldo: 50 unidades</p>
+                    <small class="text-muted">Depósito Principal</small>
+                </a>
+            </div>
+        `;
+    }, 800);
+}
+
+function filtrarBusca(filtro) {
+    const campo = document.getElementById('campoBusca');
+    campo.placeholder = `Buscar ${filtro}s...`;
+    campo.focus();
+}
+</script>
+{% endblock %}

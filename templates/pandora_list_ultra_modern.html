@@ -1,0 +1,383 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% load core_tags %}
+{% load core_filters %}
+
+{% block body_classes %} list-page{% endblock %}
+
+{% block title %}{{ page_title }} - Pandora ERP{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}{{ page_subtitle|default:"Gerencie os registros do sistema" }}{% endblock %}
+
+{% block page_actions %}
+{# Ações movidas para o card moderno abaixo #}
+{% endblock %}
+
+{% block content %}
+<div class="list-container" data-aos="fade-up">
+    <!-- Card moderno de ações -->
+    {% include 'partials/_list_actions_card.html' with add_url=add_url %}
+    
+    {% if statistics %}
+    <div class="row g-4 mb-4">
+        {% for stat in statistics %}
+        <div class="col-12 col-sm-6 col-lg-3">
+            {% if stat.url %}<a href="{{ stat.url }}" class="text-decoration-none">{% endif %}
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    {% with bg=stat.bg textc=stat.text_color color=stat.color %}
+                    <div class="action-icon {% if bg %}{{ bg }}{% elif color %}bg-gradient-{{ color }}{% else %}bg-gradient-primary{% endif %} text-white mx-auto mb-3">
+                        <i class="{{ stat.icon|default:'fas fa-chart-pie' }}"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold {% if textc %}{{ textc }}{% elif color %}text-{{ color }}{% else %}text-primary{% endif %} mb-1">{{ stat.value|default:0 }}</h3>
+                    {% endwith %}
+                    <p class="text-muted mb-1 fw-semibold">{{ stat.label|default:'Indicador' }}</p>
+                    {% if stat.subtitle %}<small class="text-muted">{{ stat.subtitle }}</small>{% endif %}
+                </div>
+            </div>
+            {% if stat.url %}</a>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="collapse mb-4" id="quick-search-panel">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-search me-2"></i>
+                    Buscar e Filtrar {{ page_title|default:"Registros" }}
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="get" class="search-form">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-10">
+                            <label class="form-label">
+                                <i class="fas fa-search me-1"></i>
+                                Busca Rápida
+                            </label>
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control form-control-lg" 
+                                   placeholder="Digite para buscar..." 
+                                   value="{{ search_query }}"
+                                   autocomplete="off">
+                            <div class="form-text">
+                                Busque por qualquer informação nos registros desta listagem
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-secondary" title="Buscar">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {% if filters %}
+                    <div class="border-top pt-4">
+                        <h6 class="mb-3">
+                            <i class="fas fa-filter me-2"></i>
+                            Filtros Avançados
+                        </h6>
+                        <div class="row g-3">
+                            {% for filter in filters %}
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <label class="form-label">{{ filter.label }}</label>
+                                {% if filter.type == 'select' %}
+                                    <select name="{{ filter.name }}" class="form-select">
+                                        <option value="">Todos</option>
+                                        {% for option in filter.options %}
+                                        <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>
+                                            {{ option.label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                {% elif filter.type == 'date' %}
+                                    <input type="date" name="{{ filter.name }}" class="form-control" value="{{ filter.value }}">
+                                {% else %}
+                                    <input type="text" name="{{ filter.name }}" class="form-control" value="{{ filter.value }}" placeholder="{{ filter.placeholder }}">
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-1 mt-4 justify-content-end">
+                        <a href="?" class="btn btn-outline-secondary">
+                            <i class="fas fa-times-circle"></i>
+                            Limpar Tudo
+                        </a>
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="fas fa-search"></i>
+                            Aplicar Filtros
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="view-content" id="table-view" {% if view_mode != 'table' and view_mode %}style="display: none;"{% endif %}>
+                {% block table_content %}
+                {% if object_list %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm" style="--bs-table-hover-bg: rgba(var(--bs-primary-rgb), 0.04);">
+                        <thead class="table-header" style="border-bottom: 2px solid var(--bs-border-color); background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                            <tr>
+                                {% if bulk_actions %}
+                                <th width="40">
+                                    <input type="checkbox" class="form-check-input" id="select-all">
+                                </th>
+                                {% endif %}
+                                
+                                {% for column in table_columns %}
+                                <th {% if column.width %}width="{{ column.width }}"{% endif %} 
+                                    {% if column.sortable %}class="sortable"{% endif %}>
+                                    {% if column.sortable %}
+                                    <a href="?{% if request.GET.ordering == column.field %}ordering=-{{ column.field }}{% else %}ordering={{ column.field }}{% endif %}&{{ request.GET.urlencode }}"
+                                       class="sort-link">
+                                        {{ column.label }}
+                                        {% if request.GET.ordering == column.field %}
+                                            <i class="fas fa-arrow-up"></i>
+                                        {% elif request.GET.ordering == '-'|add:column.field %}
+                                            <i class="fas fa-arrow-down"></i>
+                                        {% endif %}
+                                    </a>
+                                    {% else %}
+                                    {{ column.label }}
+                                    {% endif %}
+                                </th>
+                                {% endfor %}
+                                
+                                {% if actions %}
+                                <th width="160">Ações</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for object in object_list %}
+                            <tr class="table-row" data-id="{{ object.id }}">
+                                {% if bulk_actions %}
+                                <td>
+                                    <input type="checkbox" class="form-check-input row-select" value="{{ object.id }}">
+                                </td>
+                                {% endif %}
+                                
+                                {% for column in table_columns %}
+                                <td>
+                                    {% if column.template %}
+                                        {% include column.template with object=object %}
+                                    {% else %}
+                                        {{ object|get_item:column.field }}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                                
+                                {% if actions %}
+                                <td width="160">
+                                    <div class="d-flex gap-1">
+                                        {% for action in actions %}
+                                        <a href="{{ action.url|replace_id:object.id }}" 
+                                           class="btn {{ action.class|default:'btn-outline-secondary' }} btn-action-sm"
+                                           {% if action.confirm %}
+                                           onclick="window.Pandora.confirmDelete(event, this.href, '{{ object|escapejs|default:'este item' }}')"
+                                           {% endif %}
+                                           title="{{ action.title }}">
+                                            <i class="{{ action.icon }}"></i>
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3>Nenhum registro encontrado</h3>
+                    <p>{% if search_query %}Não encontramos resultados para "{{ search_query }}".{% else %}Não há registros para exibir.{% endif %}</p>
+                </div>
+                {% endif %}
+                {% endblock table_content %}
+            </div>
+
+            <div class="view-content" id="grid-view" {% if view_mode != 'grid' %}style="display: none;"{% endif %}>
+                {% if object_list %}
+                <div class="row g-4 p-4">
+                    {% for object in object_list %}
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="card grid-card">
+                            {% if object.image %}
+                            <div class="card-img-top">
+                                <img src="{{ object.image.url }}" alt="{{ object }}" class="img-fluid">
+                            </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ object }}</h5>
+                                {% if object.description %}
+                                <p class="card-text text-muted">{{ object.description|truncatewords:20 }}</p>
+                                {% endif %}
+                                
+                                {% if actions %}
+                                <div class="d-flex gap-1 mt-3">
+                                    {% for action in actions %}
+                                    <a href="{{ action.url|replace_id:object.id }}" 
+                                       class="btn {{ action.class|default:'btn-outline-secondary' }}"
+                                       {% if action.confirm %}
+                                       onclick="window.Pandora.confirmDelete(event, this.href, '{{ object|escapejs|default:'este item' }}')"
+                                       {% endif %}
+                                       title="{{ action.title }}">
+                                        <i class="{{ action.icon }}"></i>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-th"></i>
+                    </div>
+                    <h3>Nenhum registro encontrado</h3>
+                    <p>{% if search_query %}Não encontramos resultados para "{{ search_query }}".{% else %}Não há registros para exibir.{% endif %}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="view-content" id="kanban-view" {% if view_mode != 'kanban' %}style="display: none;"{% endif %}>
+                {% if kanban_columns %}
+                <div class="kanban-board p-4">
+                    <div class="d-flex gap-4 overflow-auto">
+                        {% for column in kanban_columns %}
+                        <div class="kanban-column">
+                            <div class="kanban-header">
+                                <h5>{{ column.title }}</h5>
+                                <span class="badge bg-secondary">{{ column.items|length }}</span>
+                            </div>
+                            <div class="kanban-content">
+                                {% for item in column.items %}
+                                <div class="kanban-card" data-id="{{ item.id }}">
+                                    <div class="kanban-card-header">
+                                        <h6>{{ item.title }}</h6>
+                                        {% if item.priority %}
+                                        <span class="badge bg-{{ item.priority.color }}">{{ item.priority.label }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if item.description %}
+                                    <p class="kanban-card-content">{{ item.description|truncatewords:15 }}</p>
+                                    {% endif %}
+                                    {% if item.assignee %}
+                                    <div class="kanban-card-footer">
+                                        <img src="{{ item.assignee.avatar.url }}" alt="{{ item.assignee }}" class="assignee-avatar">
+                                        <span class="assignee-name">{{ item.assignee }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-columns"></i>
+                    </div>
+                    <h3>Kanban não configurado</h3>
+                    <p>Esta visualização não está disponível para este modelo.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if bulk_actions %}
+        <div class="bulk-actions-bar" id="bulk-actions-bar" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="selected-count">0 itens selecionados</span>
+                <div class="bulk-actions">
+                    {% for action in bulk_actions %}
+                    <button type="button" class="btn btn-sm {{ action.class|default:'btn-outline-secondary' }}" 
+                            data-action="{{ action.action }}"
+                            {% if action.confirm %}data-confirm="{{ action.confirm }}"{% endif %}>
+                        <i class="{{ action.icon }}"></i>
+                        {{ action.label }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="pagination-info">
+                    Exibindo {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+                </div>
+                
+                <nav aria-label="Paginação">
+                    <ul class="pagination mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&{{ request.GET.urlencode }}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in page_obj.paginator.page_range %}
+                        {% if page_num == page_obj.number %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% elif page_num > page_obj.number|add:'-5' and page_num < page_obj.number|add:'5' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_num }}&{{ request.GET.urlencode }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- JavaScript now handled by pandora-ultra-modern.js modular system -->
+{% endblock %}

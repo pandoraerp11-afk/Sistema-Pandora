@@ -1,0 +1,10 @@
+{% extends 'pandora_base.html' %}{% load i18n %}
+{% block title %}{% trans 'Excluir Disponibilidade' %}{% endblock %}
+{% block content %}
+<h4 class="mb-3">{% trans 'Excluir Disponibilidade' %}</h4>
+<p class="text-danger">{% trans 'Esta ação removerá a janela de disponibilidade e os slots ainda livres (slots já vinculados a atendimentos permanecem).' %}</p>
+<form method="post">{% csrf_token %}
+  <button type="submit" class="btn btn-danger">{% trans 'Confirmar Exclusão' %}</button>
+  <a href="{% url 'prontuarios:disponibilidades_list' %}" class="btn btn-secondary">{% trans 'Cancelar' %}</a>
+</form>
+{% endblock %}

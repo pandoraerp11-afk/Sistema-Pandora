@@ -1,0 +1,39 @@
+{% extends "pandora_delete_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Excluir {{ object.name }}{% endblock %}
+
+{% block delete_title_content %}
+<i class="fas fa-building me-2"></i>
+Excluir Empresa
+{% endblock %}
+
+{% block delete_subtitle %}
+Confirme a exclusão da empresa
+{% endblock %}
+
+{% block object_title %}{{ object.name }}{% endblock %}
+
+{% block confirmation_message %}
+<strong>Tem certeza que deseja excluir a empresa "{{ object.name }}"?</strong><br>
+Esta ação removerá permanentemente a empresa e todos os dados relacionados.
+{% endblock %}
+
+{% block impact_list %}
+<li class="d-flex align-items-center mb-2">
+    <i class="fas fa-times-circle text-danger me-2"></i>
+    <span>Todos os dados da empresa {{ object.name }}</span>
+</li>
+<li class="d-flex align-items-center mb-2">
+    <i class="fas fa-times-circle text-danger me-2"></i>
+    <span>Usuários vinculados a esta empresa</span>
+</li>
+<li class="d-flex align-items-center mb-2">
+    <i class="fas fa-times-circle text-danger me-2"></i>
+    <span>Configurações e módulos habilitados</span>
+</li>
+<li class="d-flex align-items-center mb-2">
+    <i class="fas fa-times-circle text-danger me-2"></i>
+    <span>Histórico de atividades e logs</span>
+</li>
+{% endblock %}

@@ -1,0 +1,589 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}
+{% if object %}Editar Convite{% else %}Novo Convite{% endif %} - Pandora ERP
+{% endblock %}
+
+{% block page_title %}
+{% if object %}Editar Convite{% else %}Novo Convite{% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+{% if object %}
+    Atualize as informações do convite para {{ object.email }}
+{% else %}
+    Envie um convite para um novo usuário se juntar ao sistema
+{% endif %}
+{% endblock %}
+
+{% block form_title %}Informações do Convite{% endblock %}
+
+{% block form_content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-aos="fade-up">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate id="conviteForm">
+                    {% csrf_token %}
+                    
+                    <!-- Informações do Convite -->
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-envelope me-2"></i>
+                                Dados do Convite
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-envelope text-primary"></i>
+                                    E-mail do Convidado
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.email|add_class:"form-control" }}
+                                {% if form.email.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.email.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">E-mail da pessoa que receberá o convite</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-user text-primary"></i>
+                                    Nome do Convidado
+                                </label>
+                                {{ form.nome|add_class:"form-control" }}
+                                {% if form.nome.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.nome.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Nome da pessoa que receberá o convite</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-comment text-primary"></i>
+                                    Mensagem Personalizada
+                                </label>
+                                {{ form.mensagem|add_class:"form-control" }}
+                                {% if form.mensagem.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.mensagem.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Mensagem opcional que será incluída no e-mail de convite</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-users text-primary"></i>
+                                    Grupo/Perfil
+                                </label>
+                                {{ form.grupo|add_class:"form-select" }}
+                                {% if form.grupo.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.grupo.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Grupo de permissões para o novo usuário</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-calendar text-primary"></i>
+                                    Validade do Convite
+                                </label>
+                                {{ form.validade|add_class:"form-control" }}
+                                {% if form.validade.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.validade.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Data limite para aceitar o convite</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configurações do Convite -->
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-cog me-2"></i>
+                                Configurações
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="form-check d-flex align-items-center">
+                                    {{ form.ativo|add_class:"form-check-input me-2" }}
+                                    <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                        <i class="fas fa-toggle-on text-success me-1"></i>
+                                        Convite Ativo
+                                    </label>
+                                </div>
+                                {% if form.ativo.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.ativo.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Convite pode ser aceito</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="form-check d-flex align-items-center">
+                                    {{ form.enviar_email|add_class:"form-check-input me-2" }}
+                                    <label class="form-check-label" for="{{ form.enviar_email.id_for_label }}">
+                                        <i class="fas fa-paper-plane text-primary me-1"></i>
+                                        Enviar E-mail
+                                    </label>
+                                </div>
+                                {% if form.enviar_email.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.enviar_email.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Enviar convite por e-mail automaticamente</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="form-check d-flex align-items-center">
+                                    {{ form.multiplos_usos|add_class:"form-check-input me-2" }}
+                                    <label class="form-check-label" for="{{ form.multiplos_usos.id_for_label }}">
+                                        <i class="fas fa-repeat text-warning me-1"></i>
+                                        Múltiplos Usos
+                                    </label>
+                                </div>
+                                {% if form.multiplos_usos.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.multiplos_usos.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Convite pode ser usado várias vezes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informações do Convite (apenas para edição) -->
+                    {% if object %}
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Status do Convite
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-envelope-open me-2"></i>
+                                <strong>Convite para:</strong> {{ object.email }}<br>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>Criado em: {{ object.data_criacao|date:"d/m/Y H:i" }}<br>
+                                    <i class="fas fa-clock me-1"></i>Status: 
+                                    {% if object.aceito %}
+                                        <span class="badge bg-success">Aceito</span>
+                                    {% elif object.expirado %}
+                                        <span class="badge bg-danger">Expirado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% endif %}
+                                    <br>
+                                    {% if object.aceito %}
+                                        <i class="fas fa-check me-1"></i>Aceito em: {{ object.data_aceite|date:"d/m/Y H:i" }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <a href="{% url 'user_management:convite_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </a>
+                        {% if object and not object.aceito %}
+                        <button type="button" class="btn btn-outline-info" onclick="reenviarConvite()">
+                            <i class="fas fa-paper-plane me-2"></i>Reenviar
+                        </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save me-2"></i>
+                            {% if object %}Atualizar{% else %}Criar Convite{% endif %}
+                        </button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-eye me-2"></i>
+                        Preview do Convite
+                    </h6>
+                    
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle fs-5" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold" id="previewNome">
+                                        {% if object %}{{ object.nome|default:"Convidado" }}{% else %}Novo Convidado{% endif %}
+                                    </div>
+                                    <div class="text-muted small" id="previewEmail">
+                                        {% if object %}{{ object.email }}{% else %}Digite o email{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="fw-bold" id="previewStatus">
+                                            {% if object %}
+                                                {% if object.aceito %}
+                                                    <span class="badge bg-success">Aceito</span>
+                                                {% elif object.expirado %}
+                                                    <span class="badge bg-danger">Expirado</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pendente</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-warning">Pendente</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">Status</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fw-bold" id="previewValidade">
+                                            {% if object %}
+                                                {{ object.validade|date:"d/m/Y" }}
+                                            {% else %}
+                                                --/--/----
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">Validade</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tips -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Dicas
+                    </h6>
+                    
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>O convite será enviado automaticamente por e-mail</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Defina uma data de validade apropriada</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Escolha o grupo de permissões adequado</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Mensagens personalizadas tornam o convite mais acolhedor</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Convites podem ser reenviados se necessário</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Convites Recentes -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-clock me-2"></i>
+                        Convites Recentes
+                    </h6>
+                    
+                    <div class="list-group list-group-flush">
+                        <!-- Placeholder para convites recentes - pode ser implementado na view -->
+                        <div class="text-muted small text-center py-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Lista será implementada em breve
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'user_management:convite_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i>
+                            Ver Todos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.form-group.focused {
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.is-valid {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.1rem rgba(25, 135, 84, 0.15) !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.1rem rgba(220, 53, 69, 0.15) !important;
+}
+
+.card[data-aos] {
+    transition: transform 0.2s ease;
+}
+
+.card[data-aos]:hover {
+    transform: translateY(-2px);
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.alert {
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form validation and preview
+    initializeFormValidation();
+    initializePreview();
+});
+
+function initializeFormValidation() {
+    const form = document.getElementById('conviteForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+            submitBtn.disabled = true;
+            
+            // Re-enable button after 5 seconds as fallback
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+    }
+    
+    // Get form fields
+    const emailField = document.querySelector('input[name="email"]');
+    const nomeField = document.querySelector('input[name="nome"]');
+    const mensagemField = document.querySelector('textarea[name="mensagem"]');
+    const validadeField = document.querySelector('input[name="validade"]');
+    const ativoField = document.querySelector('input[name="ativo"]');
+    const enviarEmailField = document.querySelector('input[name="enviar_email"]');
+    
+    // Add event listeners
+    [emailField, nomeField, mensagemField, validadeField].forEach(field => {
+        if (field) {
+            field.addEventListener('input', function() {
+                validateField(this);
+                updatePreview();
+            });
+            
+            field.addEventListener('focus', function() {
+                this.parentNode.classList.add('focused');
+            });
+            field.addEventListener('blur', function() {
+                this.parentNode.classList.remove('focused');
+            });
+        }
+    });
+    
+    [ativoField, enviarEmailField].forEach(field => {
+        if (field) {
+            field.addEventListener('change', updatePreview);
+        }
+    });
+}
+
+function validateField(field) {
+    const value = field.value.trim();
+    const fieldName = field.name;
+    let isValid = true;
+    let message = '';
+    
+    // Remove previous error
+    let errorDiv = field.parentNode.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+    
+    // Field-specific validation
+    if (fieldName === 'email' && value) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            isValid = false;
+            message = 'E-mail inválido';
+        }
+    } else if (fieldName === 'nome' && value) {
+        if (value.length < 2) {
+            isValid = false;
+            message = 'Nome deve ter pelo menos 2 caracteres';
+        }
+    } else if (fieldName === 'validade' && value) {
+        const selectedDate = new Date(value);
+        const today = new Date();
+        if (selectedDate <= today) {
+            isValid = false;
+            message = 'Data deve ser futura';
+        }
+    }
+    
+    // Update field classes
+    if (!isValid) {
+        field.classList.add('is-invalid');
+        field.classList.remove('is-valid');
+        
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message text-danger small mt-1';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
+        field.parentNode.appendChild(errorDiv);
+    } else if (value.length > 0) {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+    } else {
+        field.classList.remove('is-invalid', 'is-valid');
+    }
+    
+    return isValid;
+}
+
+function initializePreview() {
+    updatePreview();
+}
+
+function updatePreview() {
+    // Get field values
+    const emailField = document.querySelector('input[name="email"]');
+    const nomeField = document.querySelector('input[name="nome"]');
+    const validadeField = document.querySelector('input[name="validade"]');
+    const ativoField = document.querySelector('input[name="ativo"]');
+    
+    const email = emailField ? emailField.value.trim() : '';
+    const nome = nomeField ? nomeField.value.trim() : '';
+    const validade = validadeField ? validadeField.value : '';
+    
+    // Update preview elements
+    const previewNome = document.getElementById('previewNome');
+    const previewEmail = document.getElementById('previewEmail');
+    const previewStatus = document.getElementById('previewStatus');
+    const previewValidade = document.getElementById('previewValidade');
+    
+    if (previewNome) {
+        previewNome.textContent = nome || 'Novo Convidado';
+    }
+    
+    if (previewEmail) {
+        previewEmail.textContent = email || 'Digite o email';
+    }
+    
+    // Update status
+    if (previewStatus && ativoField) {
+        if (ativoField.checked) {
+            previewStatus.innerHTML = '<span class="badge bg-warning">Pendente</span>';
+        } else {
+            previewStatus.innerHTML = '<span class="badge bg-secondary">Inativo</span>';
+        }
+    }
+    
+    // Update validade
+    if (previewValidade) {
+        if (validade) {
+            const date = new Date(validade);
+            previewValidade.textContent = date.toLocaleDateString('pt-BR');
+        } else {
+            previewValidade.textContent = '--/--/----';
+        }
+    }
+}
+
+function reenviarConvite() {
+    if (confirm('Tem certeza que deseja reenviar este convite?')) {
+        // Implementar lógica para reenviar convite
+        alert('Convite reenviado com sucesso!');
+    }
+}
+</script>
+{% endblock %}

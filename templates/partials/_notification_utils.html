@@ -1,0 +1,37 @@
+{# Utilidades globais reutilizáveis para notificações (toast, spinner, CSRF, POST JSON) #}
+<script>
+(function(){
+  if(window.PandoraNotif) return; // evita redefinição
+  function ensureContainers(){
+    if(!document.getElementById('toast-container')){
+      const tc=document.createElement('div');
+      tc.id='toast-container';
+      tc.className='toast-container position-fixed top-0 end-0 p-3';
+      tc.style.zIndex=1080; document.body.appendChild(tc);
+    }
+    if(!document.getElementById('global-spinner')){
+      const sp=document.createElement('div');
+      sp.id='global-spinner';
+      sp.className='position-fixed top-0 start-0 w-100 h-100 d-none';
+      sp.style.cssText='backdrop-filter:blur(2px);background:rgba(255,255,255,.4);z-index:1075;';
+      sp.innerHTML='<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visualmente-oculto">Carregando...</span></div></div>';
+      document.body.appendChild(sp);
+    }
+  }
+  function csrf(){ const m=document.cookie.match(/csrftoken=([^;]+)/); return m?m[1]:''; }
+  function toast(msg,type='success',timeout=4000){
+    ensureContainers();
+    const c=document.getElementById('toast-container');
+    const el=document.createElement('div');
+    const color=type==='error'?'bg-danger':(type==='warning'?'bg-warning text-dark':'bg-success');
+    el.className='toast align-items-center text-white '+color+' show mb-2 fade';
+    el.setAttribute('role','alert');
+    el.innerHTML='<div class="d-flex"><div class="toast-body small">'+msg+'</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+    c.appendChild(el);
+    setTimeout(()=>{el.classList.remove('show'); el.addEventListener('transitionend',()=>el.remove(),{once:true});}, timeout);
+  }
+  function spinner(show){ ensureContainers(); document.getElementById('global-spinner').classList.toggle('d-none', !show); }
+  function postJSON(url, payload){ spinner(true); return fetch(url,{method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf()}, body:JSON.stringify(payload||{})}).then(r=>r.json()).finally(()=>spinner(false)); }
+  window.PandoraNotif = { csrf, toast, spinner, postJSON };
+})();
+</script>

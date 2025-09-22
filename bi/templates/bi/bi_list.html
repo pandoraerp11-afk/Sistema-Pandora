@@ -1,0 +1,1346 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Business Intelligence | Pandora ERP{% endblock %}
+
+{% block page_title %}Business Intelligence{% endblock %}
+{% block page_subtitle %}Dashboard de Indicadores e Métricas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .indicator-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .indicator-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .indicator-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #007bff, #0056b3);
+    }
+    
+    .indicator-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .indicator-type {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .type-financeiro {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .type-produtividade {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+    
+    .type-qualidade {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+    
+    .type-eficiencia {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #856404;
+    }
+    
+    .type-vendas {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+    
+    .type-marketing {
+        background: linear-gradient(135deg, #6f42c1, #563d7c);
+        color: white;
+    }
+    
+    .type-operacional {
+        background: linear-gradient(135deg, #343a40, #23272b);
+        color: white;
+    }
+    
+    .type-rh {
+        background: linear-gradient(135deg, #6c757d, #545b62);
+        color: white;
+    }
+    
+    .type-outro {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        color: #495057;
+    }
+    
+    .indicator-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+    
+    .indicator-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+    
+    .indicator-body {
+        padding: 1.5rem;
+    }
+    
+    .indicator-value {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .value-main {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #007bff;
+    }
+    
+    .value-unit {
+        font-size: 1rem;
+        color: #6c757d;
+        margin-left: 0.5rem;
+    }
+    
+    .indicator-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+    
+    .progress-container {
+        margin-bottom: 1rem;
+    }
+    
+    .progress {
+        height: 8px;
+        border-radius: 10px;
+        background-color: #e9ecef;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .indicator-footer {
+        padding: 1rem 1.5rem;
+        background-color: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .indicator-date {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .indicator-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-action {
+        padding: 0.25rem 0.5rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-view {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-view:hover {
+        background-color: #0056b3;
+        color: white;
+    }
+    
+    .btn-edit {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .btn-edit:hover {
+        background-color: #1e7e34;
+        color: white;
+    }
+    
+    .btn-delete {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-delete:hover {
+        background-color: #c82333;
+        color: white;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-ativo {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .status-inativo {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #856404;
+    }
+    
+    .status-arquivado {
+        background: linear-gradient(135deg, #6c757d, #545b62);
+        color: white;
+    }
+    
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: none;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #007bff;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    
+    @media (max-width: 768px) {
+        .stats-cards {
+            grid-template-columns: 1fr;
+        }
+        
+        .indicator-card {
+            margin-bottom: 1rem;
+        }
+        
+        .indicator-actions {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Estatísticas -->
+    <div class="stats-cards">
+        <div class="stats-card">
+            <div class="stats-number">{{ total_indicadores }}</div>
+            <div class="stats-label">Total de Indicadores</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number">{{ indicadores_ativos }}</div>
+            <div class="stats-label">Indicadores Ativos</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number">{{ indicadores_meta_atingida }}</div>
+            <div class="stats-label">Metas Atingidas</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number">{{ indicadores.count }}</div>
+            <div class="stats-label">Nesta Visualização</div>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-filter me-2"></i>Filtros
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Buscar</label>
+                    {{ filter_form.search }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tipo</label>
+                    {{ filter_form.tipo }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Período</label>
+                    {{ filter_form.periodo }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    {{ filter_form.status }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Data Início</label>
+                    {{ filter_form.data_inicio }}
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Lista de Indicadores -->
+    {% if indicadores %}
+        <div class="row">
+            {% for indicador in indicadores %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="indicator-card">
+                        <div class="indicator-header">
+                            <div class="indicator-type type-{{ indicador.tipo }}">
+                                {{ indicador.get_tipo_display }}
+                            </div>
+                            <div class="indicator-title">{{ indicador.nome }}</div>
+                            {% if indicador.descricao %}
+                                <div class="indicator-description">
+                                    {{ indicador.descricao|truncatewords:15 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="indicator-body">
+                            <div class="indicator-value">
+                                <div>
+                                    <span class="value-main">{{ indicador.valor|floatformat:2 }}</span>
+                                    {% if indicador.unidade_medida %}
+                                        <span class="value-unit">{{ indicador.unidade_medida }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="status-badge status-{{ indicador.status }}">
+                                    {{ indicador.get_status_display }}
+                                </div>
+                            </div>
+                            
+                            {% if indicador.meta %}
+                                <div class="indicator-meta">
+                                    Meta: {{ indicador.meta|floatformat:2 }}
+                                    {% if indicador.unidade_medida %}{{ indicador.unidade_medida }}{% endif %}
+                                </div>
+                                
+                                <div class="progress-container">
+                                    {% with progress=indicador.get_progresso_meta %}
+                                        <div class="progress">
+                                            <div class="progress-bar {% if progress >= 100 %}bg-success{% elif progress >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                 style="width: {{ progress|floatformat:0 }}%"></div>
+                                        </div>
+                                        <div class="progress-text">
+                                            {{ progress|floatformat:1 }}% da meta
+                                        </div>
+                                    {% endwith %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if indicador.observacoes %}
+                                <div class="indicator-description">
+                                    <small>{{ indicador.observacoes|truncatewords:20 }}</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="indicator-footer">
+                            <div class="indicator-date">
+                                <i class="fas fa-calendar me-1"></i>
+                                {{ indicador.data|date:"d/m/Y" }}
+                            </div>
+                            <div class="indicator-actions">
+                                <a href="{% url 'bi:bi_detail' indicador.pk %}" class="btn btn-action btn-view">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'bi:bi_update' indicador.pk %}" class="btn btn-action btn-edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'bi:bi_delete' indicador.pk %}" class="btn btn-action btn-delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Paginação -->
+        {% if is_paginated %}
+            <nav aria-label="Paginação">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-chart-bar"></i>
+            <h4>Nenhum indicador encontrado</h4>
+            <p>Não há indicadores cadastrados ou que correspondam aos filtros aplicados.</p>
+            <a href="{% url 'bi:bi_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Criar Primeiro Indicador
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animação dos cards
+    const cards = document.querySelectorAll('.indicator-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Animação das barras de progresso
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 300);
+    });
+});
+</script>
+{% endblock %}% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}BI - Business Intelligence{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bi-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .bi-card {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .bi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .bi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+
+    .kpi-card {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+        transform: rotate(45deg);
+    }
+
+    .kpi-value {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .kpi-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+    }
+
+    .kpi-change {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .kpi-change.positive {
+        color: #4caf50;
+    }
+
+    .kpi-change.negative {
+        color: #f44336;
+    }
+
+    .chart-container {
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--background-color);
+        border-radius: 12px;
+        margin: 1rem 0;
+        position: relative;
+    }
+
+    .chart-placeholder {
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .chart-placeholder i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .metric-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .metric-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .metric-item:hover {
+        background: var(--background-color);
+    }
+
+    .metric-item:last-child {
+        border-bottom: none;
+    }
+
+    .metric-name {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .metric-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .metric-trend {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .trend-up {
+        color: var(--success-color);
+    }
+
+    .trend-down {
+        color: var(--danger-color);
+    }
+
+    .trend-stable {
+        color: var(--text-secondary);
+    }
+
+    .filter-section {
+        background: var(--surface-color);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .indicator-card {
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        background: var(--surface-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .indicator-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .indicator-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .indicator-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .indicator-icon.tipo-financeiro {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .indicator-icon.tipo-produtividade {
+        background: linear-gradient(135deg, #007bff, #6610f2);
+    }
+
+    .indicator-icon.tipo-qualidade {
+        background: linear-gradient(135deg, #fd7e14, #ffc107);
+    }
+
+    .indicator-icon.tipo-eficiencia {
+        background: linear-gradient(135deg, #6f42c1, #e83e8c);
+    }
+
+    .indicator-icon.tipo-outro {
+        background: linear-gradient(135deg, #6c757d, #495057);
+    }
+
+    .indicator-info {
+        flex: 1;
+    }
+
+    .indicator-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .indicator-description {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    .indicator-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .indicator-date {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .indicator-type {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .indicator-type.tipo-financeiro {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .indicator-type.tipo-produtividade {
+        background: #cce7ff;
+        color: #004085;
+    }
+
+    .indicator-type.tipo-qualidade {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .indicator-type.tipo-eficiencia {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .indicator-type.tipo-outro {
+        background: #e2e3e5;
+        color: #495057;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .main-dashboard {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .sidebar-widgets {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .widget {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .widget-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .performance-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--background-color);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .performance-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .main-dashboard {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .bi-dashboard {
+            grid-template-columns: 1fr;
+        }
+        
+        .indicator-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="fas fa-chart-bar"></i>
+            BI - Business Intelligence
+        </h1>
+        <p class="page-description">Acompanhe indicadores e métricas de performance</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="refreshDashboard()">
+            <i class="fas fa-sync-alt"></i>
+            Atualizar
+        </button>
+        <button class="btn btn-outline" onclick="exportDashboard()">
+            <i class="fas fa-download"></i>
+            Exportar
+        </button>
+        <a href="{% url 'bi:bi_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i>
+            Novo Indicador
+        </a>
+    </div>
+</div>
+
+<!-- Dashboard Principal -->
+<div class="dashboard-grid">
+    <div class="main-dashboard">
+        <!-- KPIs Principais -->
+        <div class="kpi-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+            <div class="kpi-value">{{ receita_total|default:"R$ 0,00" }}</div>
+            <div class="kpi-label">Receita Total</div>
+            <div class="kpi-change positive">
+                <i class="fas fa-arrow-up"></i>
+                <span>+12.5% vs mês anterior</span>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="background: linear-gradient(135deg, #007bff, #6610f2);">
+            <div class="kpi-value">{{ projetos_ativos|default:"0" }}</div>
+            <div class="kpi-label">Projetos Ativos</div>
+            <div class="kpi-change positive">
+                <i class="fas fa-arrow-up"></i>
+                <span>+3 novos projetos</span>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="background: linear-gradient(135deg, #fd7e14, #ffc107);">
+            <div class="kpi-value">{{ eficiencia_media|default:"0%" }}</div>
+            <div class="kpi-label">Eficiência Média</div>
+            <div class="kpi-change stable">
+                <i class="fas fa-minus"></i>
+                <span>Mantida vs mês anterior</span>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="background: linear-gradient(135deg, #6f42c1, #e83e8c);">
+            <div class="kpi-value">{{ satisfacao_cliente|default:"0%" }}</div>
+            <div class="kpi-label">Satisfação do Cliente</div>
+            <div class="kpi-change positive">
+                <i class="fas fa-arrow-up"></i>
+                <span>+2.3% vs mês anterior</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-widgets">
+        <!-- Widget de Performance -->
+        <div class="widget">
+            <h3 class="widget-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Performance Geral
+            </h3>
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Vendas</span>
+                    <span>85%</span>
+                </div>
+                <div class="performance-bar">
+                    <div class="performance-fill" style="width: 85%;"></div>
+                </div>
+            </div>
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Produção</span>
+                    <span>92%</span>
+                </div>
+                <div class="performance-bar">
+                    <div class="performance-fill" style="width: 92%;"></div>
+                </div>
+            </div>
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Qualidade</span>
+                    <span>78%</span>
+                </div>
+                <div class="performance-bar">
+                    <div class="performance-fill" style="width: 78%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget de Metas -->
+        <div class="widget">
+            <h3 class="widget-title">
+                <i class="fas fa-bullseye"></i>
+                Metas do Mês
+            </h3>
+            <ul class="metric-list">
+                <li class="metric-item">
+                    <span class="metric-name">Receita</span>
+                    <div class="metric-trend trend-up">
+                        <span class="metric-value">95%</span>
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-name">Novos Clientes</span>
+                    <div class="metric-trend trend-up">
+                        <span class="metric-value">112%</span>
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-name">Projetos</span>
+                    <div class="metric-trend trend-stable">
+                        <span class="metric-value">88%</span>
+                        <i class="fas fa-minus"></i>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="bi-dashboard">
+    <div class="bi-card">
+        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+            <i class="fas fa-chart-line"></i>
+            Receita Mensal
+        </h3>
+        <div class="chart-container">
+            <div class="chart-placeholder">
+                <i class="fas fa-chart-line"></i>
+                <p>Gráfico de receita será exibido aqui</p>
+                <button class="btn btn-primary btn-sm" onclick="loadChart('receita')">
+                    Carregar Gráfico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bi-card">
+        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+            <i class="fas fa-chart-bar"></i>
+            Projetos por Status
+        </h3>
+        <div class="chart-container">
+            <div class="chart-placeholder">
+                <i class="fas fa-chart-bar"></i>
+                <p>Gráfico de projetos será exibido aqui</p>
+                <button class="btn btn-primary btn-sm" onclick="loadChart('projetos')">
+                    Carregar Gráfico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bi-card">
+        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+            <i class="fas fa-chart-pie"></i>
+            Distribuição de Vendas
+        </h3>
+        <div class="chart-container">
+            <div class="chart-placeholder">
+                <i class="fas fa-chart-pie"></i>
+                <p>Gráfico de vendas será exibido aqui</p>
+                <button class="btn btn-primary btn-sm" onclick="loadChart('vendas')">
+                    Carregar Gráfico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bi-card">
+        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+            <i class="fas fa-chart-area"></i>
+            Tendências de Crescimento
+        </h3>
+        <div class="chart-container">
+            <div class="chart-placeholder">
+                <i class="fas fa-chart-area"></i>
+                <p>Gráfico de tendências será exibido aqui</p>
+                <button class="btn btn-primary btn-sm" onclick="loadChart('tendencias')">
+                    Carregar Gráfico
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="filter-section">
+    <h3 class="section-title">
+        <i class="fas fa-filter"></i>
+        Filtros de Indicadores
+    </h3>
+    <form method="get" class="filter-form" id="filter-form">
+        <div class="filter-row">
+            <div class="form-group">
+                <label for="search">Buscar</label>
+                <input type="text" 
+                       id="search" 
+                       name="q" 
+                       class="form-control" 
+                       placeholder="Digite o nome do indicador..."
+                       value="{{ request.GET.q }}">
+            </div>
+            <div class="form-group">
+                <label for="tipo">Tipo</label>
+                <select id="tipo" name="tipo" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="financeiro" {% if request.GET.tipo == 'financeiro' %}selected{% endif %}>Financeiro</option>
+                    <option value="produtividade" {% if request.GET.tipo == 'produtividade' %}selected{% endif %}>Produtividade</option>
+                    <option value="qualidade" {% if request.GET.tipo == 'qualidade' %}selected{% endif %}>Qualidade</option>
+                    <option value="eficiencia" {% if request.GET.tipo == 'eficiencia' %}selected{% endif %}>Eficiência</option>
+                    <option value="outro" {% if request.GET.tipo == 'outro' %}selected{% endif %}>Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="data_inicio">Data Inicial</label>
+                <input type="date" 
+                       id="data_inicio" 
+                       name="data_inicio" 
+                       class="form-control"
+                       value="{{ request.GET.data_inicio }}">
+            </div>
+            <div class="form-group">
+                <label for="data_fim">Data Final</label>
+                <input type="date" 
+                       id="data_fim" 
+                       name="data_fim" 
+                       class="form-control"
+                       value="{{ request.GET.data_fim }}">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Filtrar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Lista de Indicadores -->
+<div class="content-area">
+    <h2 class="section-title">
+        <i class="fas fa-list"></i>
+        Indicadores Cadastrados
+    </h2>
+    
+    <div class="data-container" id="indicators-list">
+        {% for indicador in bi_list %}
+        <div class="indicator-card" data-id="{{ indicador.id }}">
+            <div class="indicator-header">
+                <div style="display: flex; align-items: flex-start;">
+                    <div class="indicator-icon tipo-{{ indicador.tipo }}">
+                        {% if indicador.tipo == 'financeiro' %}
+                            <i class="fas fa-dollar-sign"></i>
+                        {% elif indicador.tipo == 'produtividade' %}
+                            <i class="fas fa-chart-line"></i>
+                        {% elif indicador.tipo == 'qualidade' %}
+                            <i class="fas fa-star"></i>
+                        {% elif indicador.tipo == 'eficiencia' %}
+                            <i class="fas fa-tachometer-alt"></i>
+                        {% else %}
+                            <i class="fas fa-chart-bar"></i>
+                        {% endif %}
+                    </div>
+                    <div class="indicator-info">
+                        <h3 class="indicator-name">{{ indicador.nome }}</h3>
+                        {% if indicador.descricao %}
+                        <p class="indicator-description">{{ indicador.descricao }}</p>
+                        {% endif %}
+                        <div class="indicator-value">{{ indicador.valor }}</div>
+                        <div class="indicator-date">
+                            <i class="fas fa-calendar"></i>
+                            {{ indicador.data|date:"d/m/Y" }}
+                        </div>
+                    </div>
+                </div>
+                <span class="indicator-type tipo-{{ indicador.tipo }}">
+                    {{ indicador.get_tipo_display }}
+                </span>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                <a href="{% url 'bi:bi_detail' indicador.pk %}" 
+                   class="btn btn-sm btn-outline"
+                   title="Visualizar">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'bi:bi_update' indicador.pk %}" 
+                   class="btn btn-sm btn-outline"
+                   title="Editar">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <button class="btn btn-sm btn-primary" 
+                        onclick="createChart('{{ indicador.pk }}')"
+                        title="Gerar Gráfico">
+                    <i class="fas fa-chart-bar"></i>
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-danger"
+                        onclick="confirmDelete('{{ indicador.pk }}', '{{ indicador.nome|escapejs }}')"
+                        title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <h3>Nenhum indicador encontrado</h3>
+            <p>Não há indicadores cadastrados que correspondam aos filtros aplicados.</p>
+            <a href="{% url 'bi:bi_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Criar Primeiro Indicador
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Exclusão</h3>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Tem certeza que deseja excluir o indicador <strong id="deleteItemName"></strong>?</p>
+            <p class="text-muted">Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeDeleteModal()">Cancelar</button>
+            <a href="#" id="deleteConfirmBtn" class="btn btn-danger">Excluir</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshDashboard() {
+    location.reload();
+}
+
+function exportDashboard() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'pdf');
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
+
+function loadChart(type) {
+    // Aqui você implementaria a lógica para carregar os gráficos
+    console.log(`Carregando gráfico: ${type}`);
+    showNotification(`Gráfico de ${type} carregado com sucesso!`, 'success');
+}
+
+function createChart(indicatorId) {
+    // Implementar criação de gráfico para indicador específico
+    console.log(`Criando gráfico para indicador: ${indicatorId}`);
+    showNotification('Gráfico gerado com sucesso!', 'success');
+}
+
+function confirmDelete(id, name) {
+    document.getElementById('deleteItemName').textContent = name;
+    document.getElementById('deleteConfirmBtn').href = 
+        `{% url 'bi:bi_delete' 0 %}`.replace('0', id);
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+// Auto-submit do formulário de filtro
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInputs = document.querySelectorAll('#filter-form input, #filter-form select');
+    filterInputs.forEach(input => {
+        if (input.type !== 'submit') {
+            input.addEventListener('change', function() {
+                if (this.name !== 'q') {
+                    document.getElementById('filter-form').submit();
+                }
+            });
+        }
+    });
+    
+    // Busca em tempo real
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                document.getElementById('filter-form').submit();
+            }, 500);
+        });
+    }
+    
+    // Animação dos KPIs
+    animateKPIs();
+});
+
+function animateKPIs() {
+    const kpis = document.querySelectorAll('.kpi-value');
+    kpis.forEach(kpi => {
+        const finalValue = kpi.textContent;
+        kpi.textContent = '0';
+        
+        // Animação simples de contagem
+        setTimeout(() => {
+            kpi.textContent = finalValue;
+        }, 500);
+    });
+}
+
+// Fechar modal clicando fora
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+
+// Atualização automática a cada 5 minutos
+setInterval(function() {
+    // Atualizar apenas os KPIs sem recarregar a página
+    console.log('Atualizando KPIs...');
+}, 300000); // 5 minutos
+</script>
+{% endblock %}

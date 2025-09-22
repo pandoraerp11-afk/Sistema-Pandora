@@ -1,0 +1,25 @@
+<tr id="item-row-{{ item.id }}">
+  <td>{{ forloop.counter }}</td>
+  <td>{{ item.descricao }}</td>
+  <td>{{ item.quantidade }} {{ item.unidade }}</td>
+  <td>
+    <form hx-post="{% url 'cotacoes:portal-proposta-item-inline-update' proposta.pk item.id %}"
+          hx-target="#item-row-{{ item.id }}" hx-swap="outerHTML" class="d-flex gap-1">
+      <input type="text" name="preco_unitario" value="{{ pi.preco_unitario|default:'' }}" class="form-control form-control-sm" style="width:90px" oninput="debounceHtmx(this)" data-item="{{ item.id }}" placeholder="0,00" />
+      <input type="number" name="prazo_entrega_dias" value="{{ pi.prazo_entrega_dias|default:'' }}" class="form-control form-control-sm" style="width:70px" oninput="debounceHtmx(this)" data-item="{{ item.id }}" />
+      <input type="hidden" name="observacao_item" value="{{ pi.observacao_item|default:'' }}" />
+      <input type="hidden" name="disponibilidade" value="{{ pi.disponibilidade|default:'' }}" />
+      <noscript><button class="btn btn-sm btn-primary">Salvar</button></noscript>
+    </form>
+  </td>
+  <td>{% if pi %}{{ pi.total_item }}{% else %}-{% endif %}</td>
+  <td>{{ pi.disponibilidade|default:'-' }}</td>
+  <td>{{ pi.observacao_item|default:'-' }}</td>
+  <td>
+    {% if proposta.pode_editar %}
+      <span class="badge bg-info">Editável</span>
+    {% else %}
+      <span class="badge bg-secondary">Fechado</span>
+    {% endif %}
+  </td>
+</tr>

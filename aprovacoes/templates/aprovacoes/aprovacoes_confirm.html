@@ -1,0 +1,407 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Confirmar Exclusão - Aprovações{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-confirmation-card {
+        max-width: 600px;
+        margin: 0 auto;
+        border: 2px solid #e3f2fd;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .delete-header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        padding: 1.5rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .delete-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M20 20c0-11.046-8.954-20-20-20v20h20z'/%3E%3C/g%3E%3C/svg%3E") repeat;
+        opacity: 0.3;
+    }
+
+    .delete-header h2 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+    }
+
+    .delete-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #ff6b6b;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .delete-content {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .warning-message {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border: 1px solid #ffc107;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-weight: 500;
+        color: #856404;
+    }
+
+    .item-details {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        text-align: left;
+    }
+
+    .item-details h5 {
+        color: #495057;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        font-weight: 500;
+        color: #6c757d;
+    }
+
+    .detail-value {
+        color: #495057;
+        font-weight: 500;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-pendente {
+        background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+        color: #856404;
+    }
+
+    .status-aprovado {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+
+    .status-rejeitado {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .btn-confirm-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-confirm-delete:hover {
+        background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+    }
+
+    .btn-confirm-delete::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-confirm-delete:hover::before {
+        left: 100%;
+    }
+
+    .btn-cancel {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-cancel:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .consequences {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border: 1px solid #f5c6cb;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        color: #721c24;
+    }
+
+    .consequences h6 {
+        color: #721c24;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .consequences ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .consequences li {
+        margin-bottom: 0.25rem;
+    }
+
+    .breadcrumb-item a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .breadcrumb-item a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-item.active {
+        color: #6c757d;
+    }
+
+    @media (max-width: 768px) {
+        .delete-confirmation-card {
+            margin: 1rem;
+        }
+        
+        .delete-content {
+            padding: 1rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn-confirm-delete,
+        .btn-cancel {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'aprovacoes:aprovacoes_list' %}">Aprovações</a></li>
+            <li class="breadcrumb-item active">Confirmar Exclusão</li>
+        </ol>
+    </nav>
+
+    <div class="delete-confirmation-card">
+        <div class="delete-header">
+            <div class="delete-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2>Confirmar Exclusão</h2>
+        </div>
+
+        <div class="delete-content">
+            <div class="warning-message">
+                <i class="fas fa-warning me-2"></i>
+                <strong>Atenção:</strong> Esta ação não pode ser desfeita!
+            </div>
+
+            <p class="mb-3">Tem certeza de que deseja excluir esta aprovação?</p>
+
+            <div class="item-details">
+                <h5><i class="fas fa-info-circle me-2"></i>Detalhes da Aprovação</h5>
+                
+                <div class="detail-row">
+                    <span class="detail-label">ID:</span>
+                    <span class="detail-value">#{{ object.id }}</span>
+                </div>
+                
+                {% if object.titulo %}
+                <div class="detail-row">
+                    <span class="detail-label">Título:</span>
+                    <span class="detail-value">{{ object.titulo }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.solicitante %}
+                <div class="detail-row">
+                    <span class="detail-label">Solicitante:</span>
+                    <span class="detail-value">{{ object.solicitante.get_full_name|default:object.solicitante.username }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.tipo_aprovacao %}
+                <div class="detail-row">
+                    <span class="detail-label">Tipo:</span>
+                    <span class="detail-value">{{ object.get_tipo_aprovacao_display }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge status-{{ object.status|lower }}">
+                            {{ object.get_status_display }}
+                        </span>
+                    </span>
+                </div>
+                
+                {% if object.data_solicitacao %}
+                <div class="detail-row">
+                    <span class="detail-label">Data Solicitação:</span>
+                    <span class="detail-value">{{ object.data_solicitacao|date:"d/m/Y H:i" }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.valor %}
+                <div class="detail-row">
+                    <span class="detail-label">Valor:</span>
+                    <span class="detail-value">R$ {{ object.valor|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.prioridade %}
+                <div class="detail-row">
+                    <span class="detail-label">Prioridade:</span>
+                    <span class="detail-value">{{ object.get_prioridade_display }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.descricao %}
+                <div class="detail-row">
+                    <span class="detail-label">Descrição:</span>
+                    <span class="detail-value">{{ object.descricao|truncatewords:10 }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="consequences">
+                <h6><i class="fas fa-exclamation-circle me-2"></i>Consequências da Exclusão:</h6>
+                <ul>
+                    <li>Todos os dados relacionados a esta aprovação serão perdidos</li>
+                    <li>O histórico de aprovação será removido permanentemente</li>
+                    <li>Comentários e anexos associados serão excluídos</li>
+                    <li>Esta ação não poderá ser desfeita</li>
+                </ul>
+            </div>
+
+            <form method="post" class="mb-0">
+                {% csrf_token %}
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-confirm-delete">
+                        <i class="fas fa-trash me-2"></i>Sim, Excluir
+                    </button>
+                    <a href="{% url 'aprovacoes:aprovacoes_list' %}" class="btn-cancel">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar confirmação adicional no clique do botão
+    const deleteBtn = document.querySelector('.btn-confirm-delete');
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Mostrar uma segunda confirmação
+            const confirmed = confirm('CONFIRMAÇÃO FINAL: Tem certeza absoluta de que deseja excluir esta aprovação? Esta ação é irreversível!');
+            
+            if (confirmed) {
+                // Submeter o formulário
+                this.closest('form').submit();
+            }
+        });
+    }
+    
+    // Adicionar efeito de hover nos botões
+    const buttons = document.querySelectorAll('.btn-confirm-delete, .btn-cancel');
+    
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

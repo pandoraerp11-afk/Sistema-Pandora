@@ -1,0 +1,61 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+{% block step_content %}
+<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i> Revise os dados e confirme.</div>
+<div class="wizard-section">
+  <h5 class="wizard-section-title">Confirmação</h5>
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-header py-2 bg-light"><strong><i class="fas fa-users me-2"></i>Dependentes</strong></div>
+        <div class="card-body p-2">
+          <div id="confirm-dependentes" class="small text-muted">Carregando...</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-header py-2 bg-light"><strong><i class="fas fa-clock me-2"></i>Horários</strong></div>
+        <div class="card-body p-2">
+          <div id="confirm-horarios" class="small text-muted">Carregando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mb-3 form-check">
+    {{ forms.main.confirmar }}
+    <label class="form-check-label" for="{{ forms.main.confirmar.id_for_label }}">{{ forms.main.confirmar.label }}</label>
+    {% for e in forms.main.confirmar.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block wizard_finish_button_label %}Finalizar{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  function safeParse(val){ try{ return JSON.parse(val||'[]'); }catch(e){ return []; } }
+  // Dependentes vêm do passo 1 armazenado em sessão -> precisamos de um input hidden existente na página? Não: reaproveitamos localStorage fallback durante a navegação
+  // Simples abordagem: procurar campo hidden no DOM anterior (se renderizado) – se não, pedir via endpoint seria ideal; aqui usamos sessionStorage chave wizard_funcionario_dependentes
+  let depsRaw = sessionStorage.getItem('wizard_funcionario_dependentes');
+  if(!depsRaw){ // tentar achar possível campo no form (caso backend inclua)
+    const hidden = document.querySelector('input[name$="dependentes_json"]');
+    if(hidden) depsRaw = hidden.value;
+  }
+  const deps = safeParse(depsRaw);
+  const depBox = document.getElementById('confirm-dependentes');
+  if(depBox){ if(!deps.length){ depBox.innerHTML = '<span class="text-muted">Nenhum dependente cadastrado.</span>'; } else {
+    const rows = deps.map(d=>`<tr><td>${d.nome}</td><td>${d.cpf||''}</td><td>${d.data_nascimento||''}</td><td>${d.tipo||''}</td><td>${d.ir?'Sim':'Não'}</td><td>${d.salario_familia?'Sim':'Não'}</td></tr>`).join('');
+    depBox.innerHTML = `<div class='table-responsive'><table class='table table-sm table-striped mb-0'><thead><tr><th>Nome</th><th>CPF</th><th>Nasc.</th><th>Tipo</th><th>IR</th><th>SF</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }}
+  // Horários — procurar campo hidden horarios_json
+  const horariosHidden = document.querySelector('input[name$="horarios_json"]');
+  const horarios = safeParse(horariosHidden?horariosHidden.value:'[]');
+  const dias = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  const hBox = document.getElementById('confirm-horarios');
+  if(hBox){ if(!horarios.length){ hBox.innerHTML = '<span class="text-muted">Nenhum horário detalhado.</span>'; } else {
+    const rows = horarios.map(h=>`<tr><td>${dias[h.dia_semana]||h.dia_semana}</td><td>${h.ordem}</td><td>${h.entrada||''}</td><td>${h.saida||''}</td><td>${h.intervalo_inicio||''} - ${h.intervalo_fim||''}</td><td>${h.horas_previstas||''}</td></tr>`).join('');
+    hBox.innerHTML = `<div class='table-responsive'><table class='table table-sm table-striped mb-0'><thead><tr><th>Dia</th><th>#</th><th>Entrada</th><th>Saída</th><th>Intervalo</th><th>Horas</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "pandora_delete_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Excluir {{ object.nome_completo }}{% endblock %}
+
+{% block page_title %}Excluir Funcionário{% endblock %}
+{% block page_subtitle %}Confirme a exclusão do funcionário{% endblock %}
+{% block page_icon %}fas fa-trash{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_list' %}">Funcionários</a></li>
+<li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_detail' object.pk %}">{{ object.nome_completo }}</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block delete_object_name %}{{ object.nome_completo }}{% endblock %}
+{% block delete_object_type %}funcionário{% endblock %}
+
+{% block delete_warning_text %}
+Esta ação não pode ser desfeita. Ao excluir este funcionário, você também excluirá:
+{% endblock %}
+
+{% block delete_consequences %}
+<ul class="list-unstyled">
+    <li><i class="fas fa-times text-danger me-2"></i> Histórico de ponto eletrônico</li>
+    <li><i class="fas fa-times text-danger me-2"></i> Registros de férias e afastamentos</li>
+    <li><i class="fas fa-times text-danger me-2"></i> Benefícios ativos e histórico</li>
+    <li><i class="fas fa-times text-danger me-2"></i> Dados de dependentes</li>
+    <li><i class="fas fa-times text-danger me-2"></i> Horários de trabalho configurados</li>
+    <li><i class="fas fa-times text-danger me-2"></i> Todas as informações trabalhistas</li>
+</ul>
+{% endblock %}
+
+{% block cancel_url %}{% url 'funcionarios:funcionario_detail' object.pk %}{% endblock %}
+

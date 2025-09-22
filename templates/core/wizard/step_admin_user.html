@@ -1,0 +1,222 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+
+{% block step_content %}
+<!-- Formulário de Usuários Administradores (STEP 6) - versão multi-admin -->
+
+    <!-- Alerta Informativo -->
+    <div class="alert alert-success border-0 mb-4 wizard-alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-user-shield text-success me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-success">Usuário Administrador</h6>
+                <small class="text-muted">Crie o primeiro usuário administrador da empresa (opcional)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Administradores -->
+    <!-- A seção abaixo é inicializada pelo JS global (wizard_enhanced.js).
+         O atributo data-max-admins define limite de admins no front (back já corta em write).
+         Erros de linha do backend são passados via input oculto abaixo. -->
+     <div class="wizard-section" id="multi-admin-section" data-max-admins="50">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="wizard-section-title mb-0">
+                <i class="fas fa-users-cog wizard-icon"></i>
+                Administradores
+            </h5>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-admin">
+                    <i class="fas fa-user-plus me-1"></i>Adicionar
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-import-admins" data-bs-toggle="collapse" data-bs-target="#importAdminsCollapse">
+                    <i class="fas fa-file-import me-1"></i>Importar CSV
+                </button>
+            </div>
+        </div>
+        <p class="text-muted small mb-3">Cadastre um ou mais administradores iniciais. Pelo menos 1 é recomendado, mas todos os campos são opcionais.</p>
+    {# Preenche valor anterior se houve erro de validação #}
+    <input type="hidden" name="admins_json" id="admins_json" value="{{ wizard_data.step_6.main.admins_json|default:'[]' }}">
+    {# Erros por linha retornados do backend (usado pelo JS global para destacar linhas) #}
+    <input type="hidden" id="admin_row_errors" value='{{ admin_row_errors|default:'[]'|escapejs }}'>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" id="admins-table">
+                    <colgroup>
+                        <col>
+                        <col style="width: 260px;">
+                        <col style="width: 90px;">
+                        <col style="width: 120px;">
+                    </colgroup>
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th class="text-center">Ativo</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <small class="text-muted d-block text-center mt-2">Use o botão Adicionar para incluir administradores. Edite ou remova cada item nas ações.</small>
+            </div>
+        <div class="collapse mt-3" id="importAdminsCollapse">
+            <div class="card card-body border-dashed">
+                <p class="small mb-2"><strong>Importar via CSV</strong> (colunas suportadas: nome,email,telefone,cargo)</p>
+                <input type="file" id="csvAdminsInput" accept="text/csv" class="form-control form-control-sm mb-2" />
+                <button type="button" class="btn btn-sm btn-secondary" id="btn-parse-csv"><i class="fas fa-upload me-1"></i>Processar CSV</button>
+                <div class="small text-muted mt-2" id="csvAdminsStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-cog wizard-icon"></i>
+            Configurações Globais dos Administradores
+        </h5>
+        
+        <div class="row">
+            <!-- Administrador Principal -->
+            <div class="col-md-6 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="admin_principal" name="admin_principal" checked>
+                    <label class="form-check-label" for="admin_principal">
+                        <i class="fas fa-crown me-2"></i>
+                        <strong>Administrador Principal</strong>
+                    </label>
+                </div>
+                <small class="form-text text-muted">Este usuário terá permissões de administrador total</small>
+            </div>
+            
+            <!-- Enviar Email -->
+            <div class="col-md-6 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="enviar_email" name="enviar_email" checked>
+                    <label class="form-check-label" for="enviar_email">
+                        <i class="fas fa-envelope me-2"></i>
+                        Enviar Email de Boas-vindas
+                    </label>
+                </div>
+                <small class="form-text text-muted">Enviar credenciais por email para o administrador</small>
+            </div>
+            
+            <!-- Gerar Senha Automaticamente -->
+            <div class="col-md-6 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="gerar_senha_auto" name="gerar_senha_auto">
+                    <label class="form-check-label" for="gerar_senha_auto">
+                        <i class="fas fa-magic me-2"></i>
+                        Gerar Senha Automaticamente
+                    </label>
+                </div>
+                <small class="form-text text-muted">Se marcado, ignorará a senha digitada e gerará uma nova</small>
+            </div>
+            
+            <!-- Forçar Troca de Senha -->
+            <div class="col-md-6 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="forcar_troca_senha" name="forcar_troca_senha" checked>
+                    <label class="form-check-label" for="forcar_troca_senha">
+                        <i class="fas fa-key me-2"></i>
+                        Forçar Troca de Senha no Primeiro Login
+                    </label>
+                </div>
+                <small class="form-text text-muted">Usuário deverá alterar a senha no primeiro acesso</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Credenciais Padrão (bulk) -->
+    <div class="wizard-section" id="bulk-password-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-key wizard-icon"></i>
+            Credenciais & Senhas (Aplicação em Massa Opcional)
+        </h5>
+        <p class="small text-muted">Gere uma senha padrão para todos ou deixe em branco para geração individual automática.</p>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Senha Padrão</label>
+                <div class="input-group input-group-sm">
+                    <input type="password" class="form-control" id="bulkPassword" placeholder="Senha padrão">
+                    <button class="btn btn-outline-secondary" type="button" id="btn-toggle-bulk-pass"><i class="fas fa-eye"></i></button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-sm btn-primary" id="btn-generate-bulk-pass"><i class="fas fa-magic me-1"></i>Gerar Senha</button>
+            </div>
+            <div class="col-md-5 small text-muted" id="bulk-pass-hint"></div>
+        </div>
+    </div>
+
+    <!-- Seção: Gerador de Senha -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-random wizard-icon"></i>
+            Gerador de Senha Segura
+        </h5>
+        
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <div class="password-generator">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <button type="button" class="btn btn-primary" id="generate-password">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Gerar Senha Segura
+                        </button>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include-symbols" checked>
+                            <label class="form-check-label" for="include-symbols">
+                                Incluir símbolos
+                            </label>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="password-length" class="form-label mb-0">Tamanho:</label>
+                            <input type="range" class="form-range" id="password-length" min="8" max="20" value="12" style="width: 100px;">
+                            <span id="length-display">12</span>
+                        </div>
+                    </div>
+                    
+                    <div class="generated-password" id="generated-password" style="display: none;">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="password-display" readonly>
+                            <button class="btn btn-outline-secondary" type="button" id="copy-password">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="btn btn-success" type="button" id="use-password">
+                                <i class="fas fa-check me-2"></i>
+                                Usar esta senha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informações sobre o administrador -->
+    <div class="alert alert-light border-0 mt-3">
+        <div class="d-flex align-items-start">
+            <i class="fas fa-info-circle text-primary me-3 mt-1"></i>
+            <div>
+                <h6 class="mb-2">Sobre o Usuário Administrador:</h6>
+                <ul class="small text-muted mb-0">
+                    <li><strong>Opcional:</strong> Você pode pular esta etapa e criar usuários posteriormente</li>
+                    <li><strong>Múltiplos:</strong> Suporte a vários administradores iniciais (CSV ou manual)</li>
+                    <li><strong>Permissões:</strong> Cada administrador recebe papel padrão "Administrador"</li>
+                    <li><strong>JSON:</strong> Lista serializada em <code>admins_json</code> é enviada</li>
+                    <li><strong>Primeiro Login:</strong> Use as credenciais criadas aqui para o primeiro acesso</li>
+                    <li><strong>Segurança:</strong> Recomendamos senhas com pelo menos 8 caracteres, incluindo letras, números e símbolos</li>
+                    <li><strong>Alteração:</strong> A senha pode ser alterada após o primeiro login</li>
+                    <li><strong>Email Automático:</strong> Se habilitado, um email com as credenciais será enviado para o administrador</li>
+                    <li><strong>Senha Automática:</strong> Se habilitada, uma senha segura será gerada automaticamente</li>
+                    <li><strong>Cargo:</strong> Campo informativo para identificar a função do administrador</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+

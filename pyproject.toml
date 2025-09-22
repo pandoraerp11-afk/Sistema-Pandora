@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pandora-erp"
+version = "0.1.0"
+description = "Pandora ERP – Plataforma Django multi-tenant"
+authors = [ { name = "Equipe Pandora" } ]
+license = { text = "Proprietary" }
+requires-python = ">=3.12"
+readme = "README.md"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+  ".git",
+  "venv",
+  "migrations",
+  "static",
+  ".mypy_cache",
+  ".pytest_cache"
+]
+
+[tool.ruff.lint]
+select = ["E","F","B","I","UP","SIM","PL"]
+ignore = ["E203", "ANN401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.coverage.run]
+branch = true
+source = ["core","shared","user_management"]
+omit = ["*/migrations/*","*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.pytest.ini_options]
+addopts = "-m 'not slow'"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+exclude = ["migrations","venv"]
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+exclude = "migrations|venv|static"

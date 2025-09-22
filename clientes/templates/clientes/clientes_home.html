@@ -1,0 +1,200 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n humanize %}
+
+{% block title %}👥 Clientes - Dashboard{% endblock %}
+
+{% block home_icon %}<i class="fas fa-users me-2 text-primary"></i>{% endblock %}
+{% block home_title %}{% trans "Clientes" %}{% endblock %}
+{% block home_subtitle %}{% trans "Visão geral e estatísticas do módulo" %}{% endblock %}
+
+{% block home_stats %}
+<div class="mb-5">
+	<h2 class="section-title" data-aos="fade-up">
+		<i class="fas fa-chart-pie me-2 text-primary"></i>
+		{% trans "Visão Geral de Clientes" %}
+	</h2>
+	<div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+		<div class="col-xl-3 col-md-6">
+			<a href="{% url 'clientes:clientes_list' %}" class="text-decoration-none">
+				<div class="action-card h-100">
+					<div class="card-body text-center p-4">
+						<div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+							<i class="fas fa-users"></i>
+						</div>
+						<h3 class="display-6 fw-bold text-primary mb-1">{{ total_clientes|default:0 }}</h3>
+						<p class="text-muted mb-0 fw-semibold">{% trans "Total de Clientes" %}</p>
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="col-xl-3 col-md-6">
+			<a href="{% url 'clientes:clientes_list' %}?status=active" class="text-decoration-none">
+				<div class="action-card h-100">
+					<div class="card-body text-center p-4">
+						<div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+							<i class="fas fa-user-check"></i>
+						</div>
+						<h3 class="display-6 fw-bold text-success mb-1">{{ clientes_ativos|default:0 }}</h3>
+						<p class="text-muted mb-0 fw-semibold">{% trans "Ativos" %}</p>
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="col-xl-3 col-md-6">
+			<a href="{% url 'clientes:clientes_list' %}?status=inactive" class="text-decoration-none">
+				<div class="action-card h-100">
+					<div class="card-body text-center p-4">
+						<div class="action-icon bg-gradient-secondary text-white mx-auto mb-3">
+							<i class="fas fa-user-slash"></i>
+						</div>
+						<h3 class="display-6 fw-bold text-secondary mb-1">{{ clientes_inativos|default:0 }}</h3>
+						<p class="text-muted mb-0 fw-semibold">{% trans "Inativos" %}</p>
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="col-xl-3 col-md-6">
+			<a href="{% url 'clientes:clientes_list' %}?recent=1" class="text-decoration-none">
+				<div class="action-card h-100">
+					<div class="card-body text-center p-4">
+						<div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+							<i class="fas fa-user-plus"></i>
+						</div>
+						<h3 class="display-6 fw-bold text-warning mb-1">{{ novos_clientes_30d|default:0 }}</h3>
+						<p class="text-muted mb-0 fw-semibold">{% trans "Novos (30 dias)" %}</p>
+					</div>
+				</div>
+			</a>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block home_actions %}
+<div class="mb-5">
+	<h2 class="section-title" data-aos="fade-up">
+		<i class="fas fa-bolt me-2 text-primary"></i> {% trans "Ações Rápidas" %}
+	</h2>
+	<div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+		<div class="col-xl-3 col-lg-4 col-md-6">
+			{% if perms_ui.can_add|default:perms.can_add|default:True %}
+			<a href="{% url 'clientes:clientes_create' %}" class="text-decoration-none">
+				<div class="quick-action-card h-100" style="--accent-color:#0d6efd">
+					<div class="card-body p-4 text-center">
+						<div class="quick-action-icon bg-gradient-primary text-white mx-auto mb-3">
+							<i class="fas fa-user-plus"></i>
+						</div>
+						<h6 class="fw-semibold mb-1">{% trans "Novo Cliente" %}</h6>
+						<p class="text-muted small mb-0">{% trans "Cadastrar" %}</p>
+					</div>
+				</div>
+			</a>
+			{% endif %}
+		</div>
+		<div class="col-xl-3 col-lg-4 col-md-6">
+			{% if perms_ui.can_view|default:perms.can_view|default:True %}
+			<a href="{% url 'clientes:clientes_list' %}" class="text-decoration-none">
+				<div class="quick-action-card h-100" style="--accent-color:#198754">
+					<div class="card-body p-4 text-center">
+						<div class="quick-action-icon bg-gradient-success text-white mx-auto mb-3">
+							<i class="fas fa-list"></i>
+						</div>
+						<h6 class="fw-semibold mb-1">{% trans "Listar Clientes" %}</h6>
+						<p class="text-muted small mb-0">{% trans "Gerenciar" %}</p>
+					</div>
+				</div>
+			</a>
+			{% endif %}
+		</div>
+		<div class="col-xl-3 col-lg-4 col-md-6">
+			{% if perms_ui.can_add|default:perms.can_add|default:True %}
+			<a href="{% url 'clientes:cliente_import' %}" class="text-decoration-none">
+				<div class="quick-action-card h-100" style="--accent-color:#ffc107">
+					<div class="card-body p-4 text-center">
+						<div class="quick-action-icon bg-gradient-warning text-white mx-auto mb-3">
+							<i class="fas fa-file-import"></i>
+						</div>
+						<h6 class="fw-semibold mb-1">{% trans "Importar" %}</h6>
+						<p class="text-muted small mb-0">CSV/Planilha</p>
+					</div>
+				</div>
+			</a>
+			{% endif %}
+		</div>
+		<div class="col-xl-3 col-lg-4 col-md-6">
+			{% if perms_ui.can_view|default:perms.can_view|default:True %}
+			<a href="{% url 'clientes:clientes_list' %}" class="text-decoration-none">
+				<div class="quick-action-card h-100" style="--accent-color:#6f42c1">
+					<div class="card-body p-4 text-center">
+						<div class="quick-action-icon bg-gradient-secondary text-white mx-auto mb-3">
+							<i class="fas fa-magnifying-glass"></i>
+						</div>
+						<h6 class="fw-semibold mb-1">{% trans "Buscar" %}</h6>
+						<p class="text-muted small mb-0">Filtros e pesquisa</p>
+					</div>
+				</div>
+			</a>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block home_content %}
+<div class="row g-4" data-aos="fade-up">
+	<div class="col-lg-7">
+		<div class="card h-100 shadow-sm border-0">
+			<div class="card-body p-4">
+				<div class="d-flex justify-content-between align-items-center mb-3">
+					<h5 class="mb-0"><i class="fas fa-clock me-2 text-primary"></i>{% trans "Clientes recentes" %}</h5>
+					{% if perms_ui.can_view|default:perms.can_view|default:True %}
+					<a class="btn btn-sm btn-outline-primary" href="{% url 'clientes:clientes_list' %}"><i class="fas fa-list me-1"></i> {% trans "Ver todos" %}</a>
+					{% endif %}
+				</div>
+				{% if clientes_recentes %}
+					<div class="list-group list-group-flush">
+						{% for c in clientes_recentes %}
+						<a href="{% url 'clientes:clientes_detail' c.pk %}" class="list-group-item list-group-item-action px-0 d-flex justify-content-between align-items-center">
+							<div>
+								<strong>{{ c.nome_display|default:c.pk }}</strong>
+								<small class="text-muted ms-2">{{ c.get_tipo_display|default:"" }}</small>
+							</div>
+							<small class="text-muted">{{ c.data_cadastro|date:"d/m/Y" }}</small>
+						</a>
+						{% endfor %}
+					</div>
+				{% else %}
+					<div class="alert alert-light border mb-0">{% trans "Sem novos clientes nos últimos 30 dias." %}</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	<div class="col-lg-5">
+		<div class="card h-100 shadow-sm border-0">
+			<div class="card-body p-4">
+				<h5 class="mb-3"><i class="fas fa-rectangle-list me-2 text-primary"></i>{% trans "Distribuição por Tipo" %}</h5>
+						<div class="mb-2">
+							<div class="small mb-1">PF ({{ total_pf|default:0 }})</div>
+							<div class="progress mb-2" style="height:6px">
+								<div class="progress-bar bg-info" style="width: {{ pf_percent|default:0 }}%"></div>
+							</div>
+						</div>
+				<div>
+					<div class="small mb-1">PJ ({{ total_pj|default:0 }})</div>
+								<div class="progress" style="height:6px">
+									<div class="progress-bar bg-success" style="width: {{ pj_percent|default:0 }}%"></div>
+								</div>
+				</div>
+				<div class="small text-muted mt-3">{% trans "Resumo simples — use a lista para análises detalhadas." %}</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block home_extra_js %}
+<script>
+// JS opcional para interações futuras
+</script>
+{% endblock %}
+

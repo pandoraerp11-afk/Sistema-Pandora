@@ -1,0 +1,221 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Calendário" }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid calendar-page">
+    <div class="calendar-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="calendar-title mb-1">
+                    {% block calendar_title %}Calendário de Eventos{% endblock %}
+                </h1>
+                <p class="calendar-subtitle text-muted mb-0">
+                    {% block calendar_subtitle %}Gerencie seus eventos e compromissos{% endblock %}
+                </p>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="calendar-actions">
+                    {% block calendar_actions %}
+                    <button type="button" class="btn btn-outline-secondary me-2" id="todayBtn">
+                        <i class="fas fa-calendar-check me-1"></i>
+                        Hoje
+                    </button>
+                    {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                    <a href="{% block add_event_url %}#{% endblock %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>
+                        Novo Evento
+                    </a>
+                    {% endif %}
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-controls mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="calendar-navigation d-flex align-items-center">
+                    <button type="button" class="btn btn-outline-primary btn-sm me-2" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h4 class="calendar-current-date mb-0 me-2" id="currentDate">
+                        </h4>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="nextBtn">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="calendar-view-toggle">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="calendarView" id="monthView" value="dayGridMonth" checked>
+                        <label class="btn btn-outline-secondary" for="monthView">Mês</label>
+
+                        <input type="radio" class="btn-check" name="calendarView" id="weekView" value="timeGridWeek">
+                        <label class="btn btn-outline-secondary" for="weekView">Semana</label>
+
+                        <input type="radio" class="btn-check" name="calendarView" id="dayView" value="timeGridDay">
+                        <label class="btn btn-outline-secondary" for="dayView">Dia</label>
+
+                        <input type="radio" class="btn-check" name="calendarView" id="listView" value="listWeek">
+                        <label class="btn btn-outline-secondary" for="listView">Lista</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-content">
+        <div class="row">
+            <div class="col-lg-9">
+                <div class="card calendar-card">
+                    <div class="card-body p-3">
+                        {% block calendar_container %}
+                        <div id="calendar"></div>
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                {% block sidebar_content %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-calendar-week me-2"></i>
+                            Navegação Rápida
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="miniCalendar"></div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-filter me-2"></i>
+                            Filtros
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% block calendar_filters %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="allEvents" checked>
+                            <label class="form-check-label" for="allEvents">
+                                Todos os eventos
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input event-filter" type="checkbox" id="meetings" value="meeting" checked>
+                            <label class="form-check-label" for="meetings">
+                                <span class="badge bg-primary me-2"></span>
+                                Reuniões
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input event-filter" type="checkbox" id="deadlines" value="deadline" checked>
+                            <label class="form-check-label" for="deadlines">
+                                <span class="badge bg-danger me-2"></span>
+                                Prazos
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input event-filter" type="checkbox" id="appointments" value="appointment" checked>
+                            <label class="form-check-label" for="appointments">
+                                <span class="badge bg-success me-2"></span>
+                                Consultas
+                            </label>
+                        </div>
+                        {% endblock %}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Estatísticas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% block calendar_stats %}
+                        <div class="stat-item d-flex justify-content-between mb-2">
+                            <span>Hoje</span>
+                            <span class="badge bg-primary" id="todayCount">0</span>
+                        </div>
+                        <div class="stat-item d-flex justify-content-between mb-2">
+                            <span>Esta semana</span>
+                            <span class="badge bg-info" id="weekCount">0</span>
+                        </div>
+                        <div class="stat-item d-flex justify-content-between mb-2">
+                            <span>Este mês</span>
+                            <span class="badge bg-success" id="monthCount">0</span>
+                        </div>
+                        <div class="stat-item d-flex justify-content-between">
+                            <span>Pendentes</span>
+                            <span class="badge bg-warning" id="pendingCount">0</span>
+                        </div>
+                        {% endblock %}
+                    </div>
+                </div>
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalTitle">Detalhes do Evento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="eventModalBody">
+                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="editEventBtn">Editar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quickAddModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Evento Rápido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickAddForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="quickTitle" class="form-label">Título</label>
+                        <input type="text" class="form-control" id="quickTitle" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="quickStartDate" class="form-label">Data Início</label>
+                            <input type="datetime-local" class="form-control" id="quickStartDate" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="quickEndDate" class="form-label">Data Fim</label>
+                            <input type="datetime-local" class="form-control" id="quickEndDate">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

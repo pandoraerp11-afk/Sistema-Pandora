@@ -1,0 +1,37 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<div class="alert alert-success border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-cogs text-success me-3" style="font-size: 1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-success">Configurações Finais</h6>
+      <small class="text-muted">Defina status, progresso e finalize.</small>
+    </div>
+  </div>
+</div>
+
+<div class="wizard-section">
+  <h5 class="wizard-section-title">
+    <i class="fas fa-sliders-h wizard-icon"></i>
+    Progresso e Status
+  </h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.status field_size='sm' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.progresso field_size='xs' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.valor_total field_size='sm' %}
+    {% include 'core/wizard/wizard_field.html' with field=form.data_termino field_size='sm' %}
+  </div>
+</div>
+
+<div class="wizard-section">
+  <h5 class="wizard-section-title">
+    <i class="fas fa-sticky-note wizard-icon"></i>
+    Observações
+  </h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.observacoes field_size='lg' %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,930 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar Documento SST{% else %}Novo Documento SST{% endif %}{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .form-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .form-header {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-subtitle {
+            color: #6c757d;
+            font-size: 1.125rem;
+            margin: 0;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc3545;
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+            outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-control.is-valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        .form-control[readonly] {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .success-message {
+            color: #28a745;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .priority-baixa {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .priority-media {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .priority-alta {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .priority-critica {
+            background: #dc3545;
+            color: white;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #e9ecef;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: #28a745;
+            background: #f8f9fa;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #28a745;
+            background: #e8f5e8;
+        }
+
+        .file-upload-icon {
+            font-size: 2rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .file-upload-text {
+            color: #6c757d;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-upload-hint {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .selected-files {
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .file-size {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .file-remove {
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+        }
+
+        .file-remove:hover {
+            background: #f8d7da;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .date-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 1rem;
+            }
+
+            .form-header,
+            .form-card {
+                padding: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .date-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="form-container">
+        <!-- Header -->
+        <div class="form-header">
+            <h1 class="form-title">
+                <i class="fas fa-hard-hat mr-3"></i>
+                {% if form.instance.pk %}
+                    Editar Documento SST
+                {% else %}
+                    Novo Documento SST
+                {% endif %}
+            </h1>
+            <p class="form-subtitle">
+                {% if form.instance.pk %}
+                    Atualize as informações do documento de segurança
+                {% else %}
+                    Preencha os dados para criar um novo documento SST
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Formulário -->
+        <form method="post" enctype="multipart/form-data" id="sst-form">
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Informações Básicas
+                    </h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required" for="id_titulo">Título do Documento</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="id_titulo" 
+                                   name="titulo" 
+                                   value="{{ form.titulo.value|default:'' }}"
+                                   required>
+                            {% if form.titulo.errors %}
+                                <div class="error-message">{{ form.titulo.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Digite um título descritivo para o documento</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="id_tipo">Tipo de Documento</label>
+                            <div class="custom-select">
+                                <select class="form-control" id="id_tipo" name="tipo" required>
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="ppra" {% if form.tipo.value == 'ppra' %}selected{% endif %}>PPRA - Programa de Prevenção de Riscos Ambientais</option>
+                                    <option value="pcmso" {% if form.tipo.value == 'pcmso' %}selected{% endif %}>PCMSO - Programa de Controle Médico</option>
+                                    <option value="ltcat" {% if form.tipo.value == 'ltcat' %}selected{% endif %}>LTCAT - Laudo Técnico de Condições Ambientais</option>
+                                    <option value="ppp" {% if form.tipo.value == 'ppp' %}selected{% endif %}>PPP - Perfil Profissiográfico Previdenciário</option>
+                                    <option value="pgrss" {% if form.tipo.value == 'pgrss' %}selected{% endif %}>PGRSS - Programa de Gerenciamento de Resíduos</option>
+                                    <option value="cipa" {% if form.tipo.value == 'cipa' %}selected{% endif %}>CIPA - Comissão Interna de Prevenção de Acidentes</option>
+                                    <option value="treinamento" {% if form.tipo.value == 'treinamento' %}selected{% endif %}>Treinamento de Segurança</option>
+                                    <option value="procedimento" {% if form.tipo.value == 'procedimento' %}selected{% endif %}>Procedimento Operacional</option>
+                                    <option value="inspecao" {% if form.tipo.value == 'inspecao' %}selected{% endif %}>Inspeção de Segurança</option>
+                                    <option value="acidente" {% if form.tipo.value == 'acidente' %}selected{% endif %}>Registro de Acidente</option>
+                                    <option value="epi" {% if form.tipo.value == 'epi' %}selected{% endif %}>EPI - Equipamento de Proteção Individual</option>
+                                    <option value="epc" {% if form.tipo.value == 'epc' %}selected{% endif %}>EPC - Equipamento de Proteção Coletiva</option>
+                                    <option value="outros" {% if form.tipo.value == 'outros' %}selected{% endif %}>Outros</option>
+                                </select>
+                            </div>
+                            {% if form.tipo.errors %}
+                                <div class="error-message">{{ form.tipo.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required" for="id_prioridade">Prioridade</label>
+                            <div class="custom-select">
+                                <select class="form-control" id="id_prioridade" name="prioridade" required>
+                                    <option value="">Selecione a prioridade</option>
+                                    <option value="baixa" {% if form.prioridade.value == 'baixa' %}selected{% endif %}>Baixa</option>
+                                    <option value="media" {% if form.prioridade.value == 'media' %}selected{% endif %}>Média</option>
+                                    <option value="alta" {% if form.prioridade.value == 'alta' %}selected{% endif %}>Alta</option>
+                                    <option value="critica" {% if form.prioridade.value == 'critica' %}selected{% endif %}>Crítica</option>
+                                </select>
+                            </div>
+                            {% if form.prioridade.errors %}
+                                <div class="error-message">{{ form.prioridade.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_responsavel">Responsável</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="id_responsavel" 
+                                   name="responsavel" 
+                                   value="{{ form.responsavel.value|default:'' }}">
+                            {% if form.responsavel.errors %}
+                                <div class="error-message">{{ form.responsavel.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Nome do responsável pela elaboração/revisão</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="id_descricao">Descrição</label>
+                            <textarea class="form-control" 
+                                      id="id_descricao" 
+                                      name="descricao" 
+                                      rows="4"
+                                      placeholder="Descreva o conteúdo e objetivo do documento">{{ form.descricao.value|default:'' }}</textarea>
+                            {% if form.descricao.errors %}
+                                <div class="error-message">{{ form.descricao.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datas e Validade -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Datas e Validade
+                    </h2>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Importante:</strong> Documentos SST possuem validade específica conforme legislação vigente.
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="id_data_elaboracao">Data de Elaboração</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="id_data_elaboracao" 
+                                   name="data_elaboracao" 
+                                   value="{{ form.data_elaboracao.value|date:'Y-m-d'|default:'' }}">
+                            {% if form.data_elaboracao.errors %}
+                                <div class="error-message">{{ form.data_elaboracao.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_data_validade">Data de Validade</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="id_data_validade" 
+                                   name="data_validade" 
+                                   value="{{ form.data_validade.value|date:'Y-m-d'|default:'' }}">
+                            {% if form.data_validade.errors %}
+                                <div class="error-message">{{ form.data_validade.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Data em que o documento perde validade</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="id_data_revisao">Próxima Revisão</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="id_data_revisao" 
+                                   name="data_revisao" 
+                                   value="{{ form.data_revisao.value|date:'Y-m-d'|default:'' }}">
+                            {% if form.data_revisao.errors %}
+                                <div class="error-message">{{ form.data_revisao.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Data programada para revisão do documento</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_status">Status</label>
+                            <div class="custom-select">
+                                <select class="form-control" id="id_status" name="status">
+                                    <option value="ativo" {% if form.status.value == 'ativo' %}selected{% endif %}>Ativo</option>
+                                    <option value="inativo" {% if form.status.value == 'inativo' %}selected{% endif %}>Inativo</option>
+                                    <option value="vencido" {% if form.status.value == 'vencido' %}selected{% endif %}>Vencido</option>
+                                    <option value="revisao" {% if form.status.value == 'revisao' %}selected{% endif %}>Em Revisão</option>
+                                    <option value="rascunho" {% if form.status.value == 'rascunho' %}selected{% endif %}>Rascunho</option>
+                                </select>
+                            </div>
+                            {% if form.status.errors %}
+                                <div class="error-message">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Localização e Área -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-map-marker-alt mr-2"></i>
+                        Localização e Área de Aplicação
+                    </h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="id_setor">Setor</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="id_setor" 
+                                   name="setor" 
+                                   value="{{ form.setor.value|default:'' }}">
+                            {% if form.setor.errors %}
+                                <div class="error-message">{{ form.setor.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_area">Área/Departamento</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="id_area" 
+                                   name="area" 
+                                   value="{{ form.area.value|default:'' }}">
+                            {% if form.area.errors %}
+                                <div class="error-message">{{ form.area.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="id_localizacao">Localização Específica</label>
+                            <textarea class="form-control" 
+                                      id="id_localizacao" 
+                                      name="localizacao" 
+                                      rows="3"
+                                      placeholder="Descreva a localização específica onde o documento se aplica">{{ form.localizacao.value|default:'' }}</textarea>
+                            {% if form.localizacao.errors %}
+                                <div class="error-message">{{ form.localizacao.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anexos -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-paperclip mr-2"></i>
+                        Anexos e Documentos
+                    </h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="id_arquivo">Arquivo Principal</label>
+                            <div class="file-upload-area" id="file-upload-area">
+                                <div class="file-upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="file-upload-text">Clique para selecionar ou arraste o arquivo</div>
+                                <div class="file-upload-hint">Formatos suportados: PDF, DOC, DOCX, XLS, XLSX</div>
+                                <input type="file" 
+                                       id="id_arquivo" 
+                                       name="arquivo" 
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                       style="display: none;">
+                            </div>
+                            {% if form.arquivo.errors %}
+                                <div class="error-message">{{ form.arquivo.errors.0 }}</div>
+                            {% endif %}
+                            <div class="selected-files" id="selected-files"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="id_observacoes">Observações</label>
+                            <textarea class="form-control" 
+                                      id="id_observacoes" 
+                                      name="observacoes" 
+                                      rows="4"
+                                      placeholder="Observações adicionais sobre o documento">{{ form.observacoes.value|default:'' }}</textarea>
+                            {% if form.observacoes.errors %}
+                                <div class="error-message">{{ form.observacoes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Checkboxes de Conformidade -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" 
+                                       id="id_auditoria" 
+                                       name="auditoria" 
+                                       {% if form.auditoria.value %}checked{% endif %}>
+                                <label for="id_auditoria">Documento passou por auditoria</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" 
+                                       id="id_aprovado" 
+                                       name="aprovado" 
+                                       {% if form.aprovado.value %}checked{% endif %}>
+                                <label for="id_aprovado">Documento aprovado pela direção</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" 
+                                       id="id_notificar_vencimento" 
+                                       name="notificar_vencimento" 
+                                       {% if form.notificar_vencimento.value %}checked{% endif %}>
+                                <label for="id_notificar_vencimento">Notificar próximo ao vencimento</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" 
+                                       id="id_confidencial" 
+                                       name="confidencial" 
+                                       {% if form.confidencial.value %}checked{% endif %}>
+                                <label for="id_confidencial">Documento confidencial</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <i class="fas fa-save"></i>
+                    {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Documento
+                </button>
+                <button type="submit" name="save_and_continue" class="btn btn-warning" id="save-continue-btn">
+                    <i class="fas fa-save"></i>
+                    Salvar e Continuar
+                </button>
+                <a href="{% url 'sst:sst_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('sst-form');
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const fileInput = document.getElementById('id_arquivo');
+    const selectedFiles = document.getElementById('selected-files');
+
+    // File upload handling
+    fileUploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    fileUploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.add('dragover');
+    });
+
+    fileUploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+    });
+
+    fileUploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            displaySelectedFiles(files);
+        }
+    });
+
+    fileInput.addEventListener('change', function() {
+        displaySelectedFiles(this.files);
+    });
+
+    function displaySelectedFiles(files) {
+        selectedFiles.innerHTML = '';
+        Array.from(files).forEach(function(file) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'file-info';
+            fileInfo.innerHTML = `
+                <i class="fas fa-file"></i>
+                <span class="file-name">${file.name}</span>
+                <span class="file-size">(${formatFileSize(file.size)})</span>
+            `;
+            
+            const removeBtn = document.createElement('div');
+            removeBtn.className = 'file-remove';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.addEventListener('click', function() {
+                fileItem.remove();
+                fileInput.value = '';
+            });
+            
+            fileItem.appendChild(fileInfo);
+            fileItem.appendChild(removeBtn);
+            selectedFiles.appendChild(fileItem);
+        });
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submit-btn');
+        const saveContinueBtn = document.getElementById('save-continue-btn');
+        
+        // Show loading state
+        if (e.submitter === submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            submitBtn.disabled = true;
+        } else if (e.submitter === saveContinueBtn) {
+            saveContinueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            saveContinueBtn.disabled = true;
+        }
+    });
+
+    // Auto-calculate validity date based on document type
+    const tipoSelect = document.getElementById('id_tipo');
+    const dataElaboracao = document.getElementById('id_data_elaboracao');
+    const dataValidade = document.getElementById('id_data_validade');
+    
+    tipoSelect.addEventListener('change', function() {
+        if (dataElaboracao.value) {
+            const elaboracao = new Date(dataElaboracao.value);
+            let validityMonths = 12; // Default 1 year
+            
+            switch(this.value) {
+                case 'ppra':
+                    validityMonths = 12;
+                    break;
+                case 'pcmso':
+                    validityMonths = 12;
+                    break;
+                case 'ltcat':
+                    validityMonths = 24;
+                    break;
+                case 'treinamento':
+                    validityMonths = 12;
+                    break;
+                case 'inspecao':
+                    validityMonths = 6;
+                    break;
+                default:
+                    validityMonths = 12;
+            }
+            
+            const validade = new Date(elaboracao);
+            validade.setMonth(validade.getMonth() + validityMonths);
+            dataValidade.value = validade.toISOString().split('T')[0];
+        }
+    });
+
+    // Date validation
+    dataElaboracao.addEventListener('change', function() {
+        if (dataValidade.value && dataElaboracao.value > dataValidade.value) {
+            dataValidade.value = '';
+        }
+    });
+
+    // Priority badge preview
+    const prioridadeSelect = document.getElementById('id_prioridade');
+    prioridadeSelect.addEventListener('change', function() {
+        // Visual feedback for priority selection
+        const parentGroup = this.closest('.form-group');
+        const badge = parentGroup.querySelector('.priority-badge');
+        
+        if (badge) {
+            badge.remove();
+        }
+        
+        if (this.value) {
+            const newBadge = document.createElement('span');
+            newBadge.className = `priority-badge priority-${this.value}`;
+            newBadge.textContent = this.options[this.selectedIndex].text;
+            parentGroup.appendChild(newBadge);
+        }
+    });
+
+    // Notification reminder
+    const notificarCheckbox = document.getElementById('id_notificar_vencimento');
+    notificarCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-info mt-2';
+            alert.innerHTML = '<i class="fas fa-bell mr-2"></i>Você receberá notificações 30 dias antes do vencimento.';
+            this.closest('.form-group').appendChild(alert);
+        } else {
+            const alert = this.closest('.form-group').querySelector('.alert');
+            if (alert) {
+                alert.remove();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

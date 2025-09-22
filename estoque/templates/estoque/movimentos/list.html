@@ -1,0 +1,244 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{# Título e configurações da página #}
+{% block title %}Movimentações de Estoque{% endblock %}
+
+{# Header da lista #}
+{% block list_icon %}<i class="fas fa-exchange-alt me-2 text-primary"></i>{% endblock %}
+{% block list_title %}Movimentações de Estoque{% endblock %}
+{% block list_subtitle %}Controle completo de entradas, saídas e transferências{% endblock %}
+
+{# Botões de ação no header #}
+{% block list_header_actions %}
+    <div class="dropdown d-inline-block me-2">
+        <button class="btn btn-gradient-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-plus me-1"></i>Nova Movimentação
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item" href="#" onclick="abrirModal('entrada')">
+                    <i class="fas fa-arrow-up me-2 text-success"></i>Entrada
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" onclick="abrirModal('saida')">
+                    <i class="fas fa-arrow-down me-2 text-danger"></i>Saída
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" onclick="abrirModal('transferencia')">
+                    <i class="fas fa-exchange-alt me-2 text-info"></i>Transferência
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item" href="#" onclick="abrirModal('ajuste')">
+                    <i class="fas fa-tools me-2 text-warning"></i>Ajuste
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" onclick="abrirModal('descarte')">
+                    <i class="fas fa-trash me-2 text-secondary"></i>Descarte/Perda
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <button class="btn btn-gradient-success me-2" onclick="exportarMovimentos()">
+        <i class="fas fa-file-excel me-1"></i>Exportar
+    </button>
+    
+    <a href="{% url 'estoque:estoque_home' %}" class="btn btn-gradient-secondary">
+        <i class="fas fa-home me-1"></i>Home
+    </a>
+{% endblock %}
+
+{# Filtros personalizados #}
+{% block list_filters %}
+    {% include 'estoque/movimentos/_filtro_form.html' %}
+{% endblock %}
+
+{# Cards de resumo #}
+{% block list_summary %}
+    <div class="row g-3 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-success">
+                <div class="summary-icon">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.entradas|default:0 }}</h3>
+                    <p>Entradas</p>
+                    <small>R$ {{ resumo.valor_entradas|floatformat:2|default:"0,00" }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-danger">
+                <div class="summary-icon">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.saidas|default:0 }}</h3>
+                    <p>Saídas</p>
+                    <small>R$ {{ resumo.valor_saidas|floatformat:2|default:"0,00" }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-info">
+                <div class="summary-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.transferencias|default:0 }}</h3>
+                    <p>Transferências</p>
+                    <small>{{ resumo.produtos_transferidos|default:0 }} produtos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-warning">
+                <div class="summary-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.pendentes_aprovacao|default:0 }}</h3>
+                    <p>Pendente Aprovação</p>
+                    <small>Descartes e perdas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Tabela de dados #}
+{% block list_table %}
+    <div class="table-card" data-aos="fade-up" data-aos-delay="200">
+        <div class="table-responsive">
+            <table class="table table-modern" id="movimentos-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="data_criacao">
+                            <i class="fas fa-calendar me-1"></i>Data/Hora
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-sort="tipo">
+                            <i class="fas fa-tag me-1"></i>Tipo
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-sort="produto">
+                            <i class="fas fa-cube me-1"></i>Produto
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-center" data-sort="quantidade">
+                            <i class="fas fa-hashtag me-1"></i>Quantidade
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th>
+                            <i class="fas fa-warehouse me-1"></i>Local
+                        </th>
+                        <th class="sortable" data-sort="usuario">
+                            <i class="fas fa-user me-1"></i>Usuário
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="movimentos-tbody">
+                    {% for movimento in movimentos %}
+                        {% include 'estoque/movimentos/_linha.html' %}
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Nenhuma movimentação encontrada</h5>
+                                    <p class="text-muted mb-3">Tente ajustar os filtros ou registre uma nova movimentação</p>
+                                    <button class="btn btn-gradient-primary" onclick="abrirModal('entrada')">
+                                        <i class="fas fa-plus me-1"></i>Nova Movimentação
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{# Área para modals dinâmicos #}
+{% block extra_content %}
+    <div id="modal-container"></div>
+{% endblock %}
+
+{# Scripts personalizados #}
+{% block extra_js %}
+<script src="{% static 'estoque/js/movimentos.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar sistema de movimentos
+    EstoqueMovimentos.init({
+        endpoints: {
+            list: '/api/estoque/movimentos/',
+            entrada: '/api/estoque/movimentos/entrada/',
+            saida: '/api/estoque/movimentos/saida/',
+            transferencia: '/api/estoque/movimentos/transferencia/',
+            ajuste: '/api/estoque/movimentos/ajuste/',
+            descarte: '/api/estoque/movimentos/descarte/',
+            export: '/api/estoque/movimentos/export/',
+            produtos: '/api/produtos/',
+            depositos: '/api/estoque/depositos/',
+            saldo: '/api/estoque/saldos/'
+        },
+        wsUrl: `${window.location.protocol === 'https:' ? 'wss://' : 'ws://'}${window.location.host}/ws/estoque/`,
+        permissoes: {
+            pode_operar: {{ permissoes_usuario.pode_operar|yesno:"true,false" }},
+            pode_aprovar: {{ permissoes_usuario.pode_aprovar|yesno:"true,false" }},
+            pode_reverter: {{ permissoes_usuario.pode_reverter|yesno:"true,false" }}
+        }
+    });
+    
+    // Configurar WebSocket para atualizações em tempo real
+    EstoqueMovimentos.subscribeWebSocket();
+});
+
+// Função para abrir modals
+function abrirModal(tipo) {
+    EstoqueMovimentos.abrirModal(tipo);
+}
+
+// Função para exportar movimentos
+function exportarMovimentos() {
+    EstoqueMovimentos.exportar();
+}
+
+// Função para atualizar linha da tabela (chamada via WebSocket)
+function atualizarLinhaMovimento(movimento) {
+    EstoqueMovimentos.atualizarLinha(movimento);
+}
+
+// Função para reverter movimento
+function reverterMovimento(movimentoId) {
+    if (confirm('Tem certeza que deseja reverter esta movimentação? Esta ação não pode ser desfeita.')) {
+        EstoqueMovimentos.reverter(movimentoId);
+    }
+}
+
+// Função para aprovar/rejeitar movimento
+function aprovarMovimento(movimentoId, acao) {
+    const mensagem = acao === 'aprovar' ? 
+        'Confirma a aprovação desta movimentação?' : 
+        'Confirma a rejeição desta movimentação?';
+    
+    if (confirm(mensagem)) {
+        EstoqueMovimentos.aprovar(movimentoId, acao);
+    }
+}
+</script>
+{% endblock %}

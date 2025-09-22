@@ -1,0 +1,245 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal Cliente - Meus Agendamentos{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-calendar-alt me-2"></i>Meus Agendamentos</h2>
+            <p class="text-muted">Gerencie seus agendamentos e visualize histórico</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'portal_cliente:novo_agendamento' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Novo Agendamento
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="todos" {% if status_filter == 'todos' %}selected{% endif %}>Todos</option>
+                                <option value="pendente" {% if status_filter == 'pendente' %}selected{% endif %}>Pendente</option>
+                                <option value="confirmado" {% if status_filter == 'confirmado' %}selected{% endif %}>Confirmado</option>
+                                <option value="em_andamento" {% if status_filter == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                                <option value="concluido" {% if status_filter == 'concluido' %}selected{% endif %}>Concluído</option>
+                                <option value="cancelado" {% if status_filter == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Período</label>
+                            <select name="data" class="form-select">
+                                <option value="todos" {% if data_filter == 'todos' %}selected{% endif %}>Todos</option>
+                                <option value="futuros" {% if data_filter == 'futuros' %}selected{% endif %}>Próximos</option>
+                                <option value="passados" {% if data_filter == 'passados' %}selected{% endif %}>Passados</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-filter me-2"></i>Filtrar
+                                </button>
+                                <a href="{% url 'portal_cliente:agendamentos_lista' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Limpar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Agendamentos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    {% if agendamentos %}
+                        {% for agendamento in agendamentos %}
+                        <div class="row align-items-center py-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0 me-3">
+                                        <div class="badge bg-primary rounded-pill p-2">
+                                            <i class="fas fa-calendar"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">{{ agendamento.data_inicio|date:"d/m/Y" }}</h6>
+                                        <small class="text-muted">{{ agendamento.data_inicio|date:"H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="mb-1">{{ agendamento.servico.nome_servico }}</h6>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-user me-1"></i>{{ agendamento.profissional.nome }}
+                                </p>
+                            </div>
+                            <div class="col-md-2">
+                                {% if agendamento.status == 'PENDENTE' %}
+                                    <span class="badge bg-warning">{{ agendamento.get_status_display }}</span>
+                                {% elif agendamento.status == 'CONFIRMADO' %}
+                                    <span class="badge bg-primary">{{ agendamento.get_status_display }}</span>
+                                {% elif agendamento.status == 'EM_ANDAMENTO' %}
+                                    <span class="badge bg-info">{{ agendamento.get_status_display }}</span>
+                                {% elif agendamento.status == 'CONCLUIDO' %}
+                                    <span class="badge bg-success">{{ agendamento.get_status_display }}</span>
+                                {% elif agendamento.status == 'CANCELADO' %}
+                                    <span class="badge bg-danger">{{ agendamento.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ agendamento.get_status_display }}</span>
+                                {% endif %}
+                                {% if agendamento.metadata.pendencias %}
+                                    <div class="mt-2 small">
+                                        <span class="badge bg-outline bg-danger text-danger border border-danger" title="Pendências clínicas: {{ agendamento.metadata.pendencias|join:', ' }}">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Pendências
+                                        </span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <div class="btn-group btn-group-sm">
+                                    {% if agendamento.status in 'CONFIRMADO,PENDENTE' and agendamento.data_inicio > now %}
+                                        <a href="{% url 'portal_cliente:cancelar_agendamento' agendamento.id %}" 
+                                           class="btn btn-outline-danger"
+                                           onclick="return confirm('Tem certeza que deseja cancelar este agendamento?')">
+                                            <i class="fas fa-times"></i> Cancelar
+                                        </a>
+                                    {% endif %}
+                                    {% if agendamento.observacoes %}
+                                        <button type="button" class="btn btn-outline-info" 
+                                                data-bs-toggle="tooltip" 
+                                                title="{{ agendamento.observacoes }}">
+                                            <i class="fas fa-comment"></i>
+                                        </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-outline-primary" onclick="abrirStatusAgendamento({{ agendamento.id }})">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <!-- Paginação -->
+                        {% if agendamentos.has_other_pages %}
+                        <div class="d-flex justify-content-center pt-4">
+                            <nav>
+                                <ul class="pagination">
+                                    {% if agendamentos.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ agendamentos.previous_page_number }}{% if status_filter != 'todos' %}&status={{ status_filter }}{% endif %}{% if data_filter != 'todos' %}&data={{ data_filter }}{% endif %}">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in agendamentos.paginator.page_range %}
+                                        {% if agendamentos.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > agendamentos.number|add:'-3' and num < agendamentos.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if status_filter != 'todos' %}&status={{ status_filter }}{% endif %}{% if data_filter != 'todos' %}&data={{ data_filter }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if agendamentos.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ agendamentos.next_page_number }}{% if status_filter != 'todos' %}&status={{ status_filter }}{% endif %}{% if data_filter != 'todos' %}&data={{ data_filter }}{% endif %}">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhum agendamento encontrado</h5>
+                            <p class="text-muted mb-4">Você ainda não possui agendamentos{% if status_filter != 'todos' or data_filter != 'todos' %} com os filtros selecionados{% endif %}.</p>
+                            <a href="{% url 'portal_cliente:novo_agendamento' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Fazer Agendamento
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ativar tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+
+let modalStatus;
+document.addEventListener('DOMContentLoaded', () => {
+        const modalEl = document.getElementById('modalStatusAgendamento');
+        if (modalEl) modalStatus = new bootstrap.Modal(modalEl);
+});
+
+function abrirStatusAgendamento(id) {
+        const body = document.getElementById('statusAgendamentoBody');
+        body.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Carregando status...</p></div>';
+        modalStatus.show();
+        fetch(`{% url 'portal_cliente:agendamentos_lista' %}../ajax/agendamento/${id}/status/`)
+                .then(r => r.json())
+                .then(data => {
+                        if (!data.success) { body.innerHTML = `<div class='alert alert-danger'>${data.error}</div>`; return; }
+                        const s = data.status;
+                        body.innerHTML = `
+                                <ul class="list-group text-start">
+                                    <li class="list-group-item"><strong>Status:</strong> ${s.status_atual}</li>
+                                    <li class="list-group-item"><strong>Historico:</strong><br>${(s.historico||[]).map(h=>`<span class='badge bg-light text-dark me-1 mb-1'>${h.status} - ${h.data}</span>`).join(' ')||'—'}</li>
+                                    <li class="list-group-item"><strong>Atendimentos Vinculados:</strong> ${(s.atendimentos||[]).length}</li>
+                                    <li class="list-group-item"><strong>Pendencias:</strong> ${(s.pendencias||[]).join(', ')||'Nenhuma'}</li>
+                                </ul>`;
+                })
+                .catch(err => body.innerHTML = `<div class='alert alert-danger'>${err}</div>`);
+}
+</script>
+
+<!-- Modal Status -->
+<div class="modal fade" id="modalStatusAgendamento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i>Status do Agendamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="statusAgendamentoBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+</script>
+{% endblock %}

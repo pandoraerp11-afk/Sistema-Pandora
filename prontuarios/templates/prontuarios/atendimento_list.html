@@ -1,0 +1,51 @@
+{% extends "pandora_ultra_modern_base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-2 text-gray-800">Atendimentos</h1>
+    <p class="mb-4">Lista de todos os atendimentos registrados.</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Atendimentos Registrados</h6>
+            <a href="{% url 'prontuarios:atendimento_create' %}" class="btn btn-primary btn-sm float-right">Novo Atendimento</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Serviço</th>
+                            <th>Profissional</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Valor Cobrado</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for atendimento in atendimentos %}
+                        <tr>
+                            <td>{{ atendimento.cliente.nome_razao_social|default:atendimento.cliente.nome_display }}</td>
+                            <td>{{ atendimento.servico.nome_servico }}</td>
+                            <td>{{ atendimento.profissional.get_full_name }}</td>
+                            <td>{{ atendimento.data_atendimento|date:"d/m/Y H:i" }}</td>
+                            <td>{{ atendimento.get_status_display }}</td>
+                            <td>{{ atendimento.valor_cobrado }}</td>
+                            <td>
+                                <a href="{% url 'prontuarios:atendimento_detail' atendimento.pk %}" class="btn btn-info btn-sm">Detalhes</a>
+                                <a href="{% url 'prontuarios:atendimento_update' atendimento.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                                <a href="{% url 'prontuarios:atendimento_delete' atendimento.pk %}" class="btn btn-danger btn-sm">Excluir</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

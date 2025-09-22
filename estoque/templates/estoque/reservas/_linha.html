@@ -1,0 +1,465 @@
+{# Linha individual da tabela de reservas #}
+<tr data-reserva-id="{{ reserva.id }}" class="reserva-row {{ reserva.status|lower }}">
+    <td>
+        <input type="checkbox" class="form-check-input reserva-checkbox" value="{{ reserva.id }}">
+    </td>
+    
+    <td>
+        <div class="d-flex align-items-center">
+            <span class="fw-semibold">#{{ reserva.id }}</span>
+            {% if reserva.prioridade == 'ALTA' %}
+                <span class="badge bg-danger badge-prioridade-alta ms-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i>Alta
+                </span>
+            {% elif reserva.prioridade == 'URGENTE' %}
+                <span class="badge bg-danger badge-prioridade-alta ms-2">
+                    <i class="fas fa-fire me-1"></i>Urgente
+                </span>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td>
+        <div class="produto-reserva-info">
+            {% if reserva.produto.imagem %}
+                <img src="{{ reserva.produto.imagem.url }}" alt="{{ reserva.produto.nome }}" 
+                     class="produto-thumb me-2" width="32" height="32">
+            {% else %}
+                <div class="produto-avatar me-2">
+                    <i class="fas fa-cube"></i>
+                </div>
+            {% endif %}
+            <div>
+                <div class="fw-semibold">{{ reserva.produto.nome|truncatechars:35 }}</div>
+                {% if reserva.produto.codigo %}
+                    <small class="text-muted">{{ reserva.produto.codigo }}</small>
+                {% endif %}
+                {% if reserva.lote %}
+                    <small class="d-block text-info">
+                        <i class="fas fa-barcode me-1"></i>{{ reserva.lote.codigo }}
+                    </small>
+                {% endif %}
+                {% if reserva.deposito %}
+                    <small class="d-block text-muted">
+                        <i class="fas fa-warehouse me-1"></i>{{ reserva.deposito.nome|truncatechars:20 }}
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    
+    <td class="text-center">
+        <div class="quantidade-reserva-info">
+            <!-- Quantidade Reservada -->
+            <div class="d-flex justify-content-center align-items-center mb-1">
+                <span class="fw-bold text-primary fs-5 me-1">{{ reserva.quantidade|floatformat:0 }}</span>
+                <small class="text-muted">{{ reserva.produto.unidade_medida|default:'UN' }}</small>
+            </div>
+            
+            <!-- Quantidade Utilizada -->
+            {% if reserva.quantidade_utilizada > 0 %}
+                <div class="d-flex justify-content-center align-items-center">
+                    <small class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>{{ reserva.quantidade_utilizada|floatformat:0 }} usado
+                    </small>
+                </div>
+            {% endif %}
+            
+            <!-- Quantidade Restante -->
+            {% if reserva.quantidade_restante > 0 %}
+                <div class="d-flex justify-content-center align-items-center">
+                    <small class="text-warning">
+                        <i class="fas fa-clock me-1"></i>{{ reserva.quantidade_restante|floatformat:0 }} restante
+                    </small>
+                </div>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td>
+        <div class="solicitante-info">
+            {% if reserva.usuario_solicitante %}
+                <div class="d-flex align-items-center">
+                    {% if reserva.usuario_solicitante.profile.avatar %}
+                        <img src="{{ reserva.usuario_solicitante.profile.avatar.url }}" 
+                             class="user-avatar me-2" width="24" height="24">
+                    {% else %}
+                        <div class="user-avatar-placeholder me-2">
+                            {{ reserva.usuario_solicitante.first_name.0|default:reserva.usuario_solicitante.username.0|upper }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <div class="fw-semibold">{{ reserva.solicitante_nome|truncatechars:20 }}</div>
+                        {% if reserva.centro_custo %}
+                            <small class="text-muted">{{ reserva.centro_custo.nome|truncatechars:15 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div>
+                    <div class="fw-semibold">{{ reserva.solicitante_nome|truncatechars:20 }}</div>
+                    <small class="text-muted">Solicitante externo</small>
+                </div>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td>
+        <div class="data-info">
+            <div class="fw-semibold">{{ reserva.data_criacao|date:"d/m/Y" }}</div>
+            <small class="text-muted">{{ reserva.data_criacao|time:"H:i:s" }}</small>
+            
+            <!-- Data de Expiração -->
+            {% if reserva.data_expiracao %}
+                <div class="mt-1">
+                    <small class="
+                        {% if reserva.dias_para_expiracao <= 0 %}text-danger
+                        {% elif reserva.dias_para_expiracao <= 3 %}text-warning
+                        {% else %}text-muted{% endif %}">
+                        <i class="fas fa-calendar-times me-1"></i>
+                        {% if reserva.dias_para_expiracao <= 0 %}
+                            Expirou
+                        {% elif reserva.dias_para_expiracao == 1 %}
+                            Expira amanhã
+                        {% else %}
+                            {{ reserva.dias_para_expiracao }} dias
+                        {% endif %}
+                    </small>
+                </div>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td class="text-center">
+        {% if reserva.status == 'ATIVA' %}
+            <span class="badge bg-success">
+                <i class="fas fa-check-circle me-1"></i>Ativa
+            </span>
+        {% elif reserva.status == 'PARCIAL' %}
+            <span class="badge bg-warning">
+                <i class="fas fa-clock me-1"></i>Parcial
+            </span>
+        {% elif reserva.status == 'CONCLUIDA' %}
+            <span class="badge bg-info">
+                <i class="fas fa-check-double me-1"></i>Concluída
+            </span>
+        {% elif reserva.status == 'EXPIRADA' %}
+            <span class="badge bg-danger">
+                <i class="fas fa-times-circle me-1"></i>Expirada
+            </span>
+        {% elif reserva.status == 'CANCELADA' %}
+            <span class="badge bg-secondary">
+                <i class="fas fa-ban me-1"></i>Cancelada
+            </span>
+        {% endif %}
+        
+        <!-- Motivo da Reserva -->
+        {% if reserva.motivo %}
+            <div class="mt-1">
+                <small class="text-muted" title="{{ reserva.motivo }}">
+                    <i class="fas fa-info-circle me-1"></i>{{ reserva.motivo|truncatechars:15 }}
+                </small>
+            </div>
+        {% endif %}
+    </td>
+    
+    <td class="text-center">
+        <div class="progresso-reserva">
+            <!-- Barra de Progresso -->
+            <div class="progress progress-sm mb-1" style="height: 6px;">
+                <div class="progress-bar 
+                    {% if reserva.percentual_utilizacao == 100 %}bg-success
+                    {% elif reserva.percentual_utilizacao > 50 %}bg-info
+                    {% elif reserva.percentual_utilizacao > 0 %}bg-warning
+                    {% else %}bg-secondary{% endif %}" 
+                    style="width: {{ reserva.percentual_utilizacao }}%"></div>
+            </div>
+            
+            <!-- Percentual -->
+            <small class="text-muted fw-semibold">
+                {{ reserva.percentual_utilizacao|floatformat:0 }}%
+            </small>
+            
+            <!-- Tempo Restante (se aplicável) -->
+            {% if reserva.status == 'ATIVA' and reserva.tempo_restante_horas %}
+                <div class="mt-1">
+                    <small class="
+                        {% if reserva.tempo_restante_horas <= 24 %}text-danger
+                        {% elif reserva.tempo_restante_horas <= 72 %}text-warning
+                        {% else %}text-muted{% endif %}">
+                        <i class="fas fa-hourglass-half me-1"></i>
+                        {% if reserva.tempo_restante_horas < 24 %}
+                            {{ reserva.tempo_restante_horas|floatformat:0 }}h
+                        {% else %}
+                            {{ reserva.tempo_restante_dias|floatformat:0 }}d
+                        {% endif %}
+                    </small>
+                </div>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td class="text-center">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-cog"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <!-- Ver Detalhes -->
+                <li>
+                    <a class="dropdown-item" href="#" onclick="verDetalhesReserva({{ reserva.id }})">
+                        <i class="fas fa-eye me-2"></i>Ver Detalhes
+                    </a>
+                </li>
+                
+                <!-- Histórico -->
+                <li>
+                    <a class="dropdown-item" href="#" onclick="verHistoricoReserva({{ reserva.id }})">
+                        <i class="fas fa-history me-2"></i>Histórico
+                    </a>
+                </li>
+                
+                <!-- Ações baseadas no status -->
+                {% if reserva.status == 'ATIVA' %}
+                    <li><hr class="dropdown-divider"></li>
+                    
+                    <!-- Utilizar Reserva -->
+                    <li>
+                        <a class="dropdown-item text-success" href="#" 
+                           onclick="utilizarReserva({{ reserva.id }})">
+                            <i class="fas fa-check me-2"></i>Utilizar
+                        </a>
+                    </li>
+                    
+                    <!-- Utilizar Parcialmente -->
+                    <li>
+                        <a class="dropdown-item text-info" href="#" 
+                           onclick="utilizarParcialReserva({{ reserva.id }})">
+                            <i class="fas fa-divide me-2"></i>Utilizar Parcialmente
+                        </a>
+                    </li>
+                    
+                    <!-- Transferir Reserva -->
+                    <li>
+                        <a class="dropdown-item text-warning" href="#" 
+                           onclick="transferirReserva({{ reserva.id }})">
+                            <i class="fas fa-exchange-alt me-2"></i>Transferir
+                        </a>
+                    </li>
+                    
+                    <!-- Estender Prazo -->
+                    {% if reserva.data_expiracao %}
+                        <li>
+                            <a class="dropdown-item text-primary" href="#" 
+                               onclick="estenderPrazoReserva({{ reserva.id }})">
+                                <i class="fas fa-calendar-plus me-2"></i>Estender Prazo
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <li><hr class="dropdown-divider"></li>
+                    
+                    <!-- Cancelar -->
+                    <li>
+                        <a class="dropdown-item text-danger" href="#" 
+                           onclick="cancelarReserva({{ reserva.id }})">
+                            <i class="fas fa-ban me-2"></i>Cancelar
+                        </a>
+                    </li>
+                    
+                {% elif reserva.status == 'PARCIAL' %}
+                    <li><hr class="dropdown-divider"></li>
+                    
+                    <!-- Finalizar Utilizacao -->
+                    <li>
+                        <a class="dropdown-item text-success" href="#" 
+                           onclick="finalizarReserva({{ reserva.id }})">
+                            <i class="fas fa-check-double me-2"></i>Finalizar
+                        </a>
+                    </li>
+                    
+                    <!-- Utilizar Restante -->
+                    <li>
+                        <a class="dropdown-item text-info" href="#" 
+                           onclick="utilizarRestanteReserva({{ reserva.id }})">
+                            <i class="fas fa-plus me-2"></i>Utilizar Restante
+                        </a>
+                    </li>
+                    
+                {% elif reserva.status == 'EXPIRADA' %}
+                    <li><hr class="dropdown-divider"></li>
+                    
+                    <!-- Reativar -->
+                    <li>
+                        <a class="dropdown-item text-warning" href="#" 
+                           onclick="reativarReserva({{ reserva.id }})">
+                            <i class="fas fa-redo me-2"></i>Reativar
+                        </a>
+                    </li>
+                    
+                    <!-- Liberar Estoque -->
+                    <li>
+                        <a class="dropdown-item text-info" href="#" 
+                           onclick="liberarEstoqueReserva({{ reserva.id }})">
+                            <i class="fas fa-unlock me-2"></i>Liberar Estoque
+                        </a>
+                    </li>
+                {% endif %}
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Duplicar Reserva -->
+                <li>
+                    <a class="dropdown-item" href="#" onclick="duplicarReserva({{ reserva.id }})">
+                        <i class="fas fa-copy me-2"></i>Duplicar
+                    </a>
+                </li>
+                
+                <!-- Imprimir -->
+                <li>
+                    <a class="dropdown-item" href="#" onclick="imprimirReserva({{ reserva.id }})">
+                        <i class="fas fa-print me-2"></i>Imprimir
+                    </a>
+                </li>
+                
+                <!-- Notificar Solicitante -->
+                {% if reserva.usuario_solicitante %}
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="notificarSolicitante({{ reserva.id }})">
+                            <i class="fas fa-bell me-2"></i>Notificar
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </td>
+</tr>
+
+<style>
+.reserva-row {
+    transition: all 0.3s ease;
+}
+
+.reserva-row:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+.reserva-row.ativa {
+    border-left: 4px solid #28a745;
+}
+
+.reserva-row.parcial {
+    border-left: 4px solid #ffc107;
+}
+
+.reserva-row.concluida {
+    border-left: 4px solid #17a2b8;
+}
+
+.reserva-row.expirada {
+    border-left: 4px solid #dc3545;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.reserva-row.cancelada {
+    border-left: 4px solid #6c757d;
+    opacity: 0.7;
+}
+
+.produto-thumb {
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid #e9ecef;
+}
+
+.produto-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+.user-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-avatar-placeholder {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.progress-sm {
+    height: 6px !important;
+    border-radius: 10px;
+}
+
+.progress-sm .progress-bar {
+    border-radius: 10px;
+}
+
+.quantidade-reserva-info {
+    min-width: 80px;
+}
+
+.data-info {
+    min-width: 85px;
+}
+
+.progresso-reserva {
+    min-width: 70px;
+}
+
+/* Animações para novas reservas */
+.reserva-row.nova {
+    background-color: rgba(40, 167, 69, 0.1);
+    animation: highlightFadeReserva 3s ease-out forwards;
+}
+
+@keyframes highlightFadeReserva {
+    0% {
+        background-color: rgba(40, 167, 69, 0.2);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* Badges pulsantes para alta prioridade */
+.badge-prioridade-alta {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+/* Estados especiais */
+.reserva-row.prioridade-alta {
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.1) 0%, transparent 100%);
+}
+
+.reserva-row.expirando-hoje {
+    background: linear-gradient(90deg, rgba(255, 193, 7, 0.1) 0%, transparent 100%);
+}
+
+.reserva-row.expirada {
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.1) 0%, transparent 100%);
+}
+</style>

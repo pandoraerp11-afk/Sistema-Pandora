@@ -1,0 +1,188 @@
+{% extends "pandora_detail_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}{{ object.name }} - Detalhes do Cargo - Pandora ERP{% endblock %}
+
+{% block detail_title %}
+<i class="fas fa-user-tag me-2"></i>
+{{ object.name }}
+{% endblock %}
+
+{% block detail_subtitle %}Cargo{% endblock %}
+
+{% block detail_actions %}
+<a href="{% url 'core:role_update' object.pk %}" class="btn btn-warning">
+    <i class="fas fa-pencil me-1"></i> Editar
+</a>
+<a href="{% url 'core:role_delete' object.pk %}" class="btn btn-danger">
+    <i class="fas fa-trash me-1"></i> Excluir
+</a>
+{% endblock %}
+
+{% block detail_content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="card-title fw-bold">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    Informações Gerais
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nome</dt>
+                    <dd class="col-sm-9">{{ object.name }}</dd>
+                    
+                    <dt class="col-sm-3">Descrição</dt>
+                    <dd class="col-sm-9">{{ object.description|default:"Não informado" }}</dd>
+                    
+                    <dt class="col-sm-3">Status</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-{{ object.is_active|yesno:'success,danger' }}">
+                            <i class="fas fa-{{ object.is_active|yesno:'check-circle,times-circle' }} me-1"></i>
+                            {{ object.is_active|yesno:"Ativo,Inativo" }}
+                        </span>
+                    </dd>
+                    
+                    <dt class="col-sm-3">Criado em</dt>
+                    <dd class="col-sm-9">{{ object.created_at|date:"d/m/Y \à\s H:i" }}</dd>
+                    
+                    <dt class="col-sm-3">Atualizado em</dt>
+                    <dd class="col-sm-9">{{ object.updated_at|date:"d/m/Y \à\s H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="card-title fw-bold">
+                    <i class="fas fa-key me-2 text-primary"></i>
+                    Permissões ({{ object.permissions.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if object.permissions.exists %}
+                    <div class="row g-2">
+                        {% for permission in object.permissions.all %}
+                        <div class="col-md-6">
+                            <div class="bg-light p-2 rounded">
+                                <div class="fw-bold">
+                                    <i class="fas fa-key me-1 text-primary"></i>
+                                    {{ permission.name }}
+                                </div>
+                                <small class="text-muted">{{ permission.content_type.app_label }}.{{ permission.codename }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-key display-4 text-muted mb-3"></i>
+                        <p class="text-muted">Nenhuma permissão atribuída</p>
+                        <a href="{% url 'core:role_permissions' object.pk %}" class="btn btn-primary">
+                            <i class="fas fa-key me-1"></i> Configurar Permissões
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if object.customuser_set.exists %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="card-title fw-bold">
+                    <i class="fas fa-users me-2 text-primary"></i>
+                    Usuários com este Cargo ({{ object.customuser_set.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Último Login</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in object.customuser_set.all %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                            <small class="fw-bold">{{ user.first_name|first|default:user.username|first|upper }}</small>
+                                        </div>
+                                        <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                    </div>
+                                </td>
+                                <td>{{ user.email|default:"Não informado" }}</td>
+                                <td>
+                                    <span class="badge bg-{{ user.is_active|yesno:'success,danger' }}">
+                                        {{ user.is_active|yesno:"Ativo,Inativo" }}
+                                    </span>
+                                </td>
+                                <td>{{ user.last_login|date:"d/m/Y H:i"|default:"Nunca" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h6 class="card-title fw-bold">
+                    <i class="fas fa-cogs me-2 text-primary"></i>
+                    Ações
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'core:role_update' object.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-pencil me-2"></i>
+                        Editar Cargo
+                    </a>
+                    <a href="{% url 'core:role_permissions' object.pk %}" class="btn btn-outline-info">
+                        <i class="fas fa-key me-2"></i>
+                        Gerenciar Permissões
+                    </a>
+                    <a href="{% url 'core:role_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h6 class="card-title fw-bold">
+                    <i class="fas fa-chart-bar me-2 text-primary"></i>
+                    Estatísticas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="fs-3 fw-bold text-primary">{{ object.permissions.count }}</div>
+                    <div class="text-muted">Total de Permissões</div>
+                </div>
+                <div class="text-center mb-3">
+                    <div class="fs-3 fw-bold text-success">{{ object.customuser_set.count }}</div>
+                    <div class="text-muted">Usuários com este Cargo</div>
+                </div>
+                <div class="text-center">
+                    <div class="fs-3 fw-bold text-info">{{ object.customuser_set.filter.is_active=True.count }}</div>
+                    <div class="text-muted">Usuários Ativos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static i18n %}
+
+{% block page_title %}{% trans "Detalhes do Serviço" %} - {{ servico.nome_servico }}{% endblock %}
+
+{% block content_header %}
+<div class="container-fluid">
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1>{{ servico.nome_servico }}</h1>
+            <p class="text-muted">{{ servico.get_tipo_servico_display }}</p>
+        </div>
+        <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{% trans "Início" %}</a></li>
+                <li class="breadcrumb-item"><a href="{{ servico.get_list_url }}">{% trans "Serviços" %}</a></li>
+                <li class="breadcrumb-item active">{{ servico.nome_servico|truncatechars:30 }}</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card card-primary card-outline">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-info-circle me-1"></i> {% trans "Informações do Serviço" %}</h3>
+                    <div class="card-tools">
+                        <a href="{{ servico.get_update_url }}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-edit"></i> {% trans "Editar" %}
+                        </a>
+                        <a href="{{ servico.get_delete_url }}" class="btn btn-sm btn-danger delete-btn">
+                            <i class="fas fa-trash"></i> {% trans "Excluir" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">{% trans "Código" %}</dt>
+                        <dd class="col-sm-8">{{ servico.codigo }}</dd>
+
+                        <dt class="col-sm-4">{% trans "Categoria" %}</dt>
+                        <dd class="col-sm-8">{{ servico.categoria.nome }}</dd>
+
+                        <dt class="col-sm-4">{% trans "Descrição Curta" %}</dt>
+                        <dd class="col-sm-8">{{ servico.descricao_curta|default:"-" }}</dd>
+
+                        <dt class="col-sm-4">{% trans "Descrição Completa" %}</dt>
+                        <dd class="col-sm-8">{{ servico.descricao|linebreaksbr|default:"-" }}</dd>
+
+                        {% if servico.tipo_servico == 'OFERTADO' %}
+                        <dt class="col-sm-4">{% trans "Preço Base (Venda)" %}</dt>
+                        <dd class="col-sm-8">R$ {{ servico.preco_base|floatformat:2 }}</dd>
+                        {% endif %}
+                    </dl>
+                    
+                    {% if servico.tipo_servico == 'RECEBIDO' and fornecedores_servico %}
+                    <hr>
+                    <h5>{% trans "Fornecedores e Preços" %}</h5>
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Fornecedor" %}</th>
+                                <th class="text-right">{% trans "Preço" %}</th>
+                                <th>{% trans "Regra" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sf in fornecedores_servico %}
+                            <tr>
+                                <td>{{ sf.fornecedor }}</td>
+                                <td class="text-right">R$ {{ sf.preco_base_fornecedor|floatformat:2 }}</td>
+                                <td>{{ sf.regra_cobranca_fornecedor.nome|default:"Preço Fixo" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-star me-1"></i> {% trans "Avaliações" %}</h3>
+                </div>
+                <div class="card-body">
+                    {% if avaliacao_media %}
+                        <div class="text-center mb-3">
+                            <strong>{{ avaliacao_media|floatformat:1 }} de 5</strong>
+                            <p class="text-muted">{% blocktrans count counter=avaliacoes.count %}Baseado em {{ counter }} avaliação.{% plural %}Baseado em {{ counter }} avaliações.{% endblocktrans %}</p>
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted">{% trans "Este serviço ainda não foi avaliado." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'plugins/sweetalert2/sweetalert2.min.js' %}"></script>
+<script>
+$(function() {
+    $('.delete-btn').on('click', function(e) {
+        e.preventDefault();
+        const deleteUrl = $(this).attr('href');
+        Swal.fire({
+            title: '{% trans "Você tem certeza?" %}',
+            text: "{% trans 'A exclusão do serviço' %} '{{ servico.nome_servico|escapejs }}' {% trans 'não poderá ser revertida!' %}",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '{% trans "Sim, excluir!" %}',
+            cancelButtonText: '{% trans "Cancelar" %}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = deleteUrl;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

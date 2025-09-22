@@ -1,0 +1,303 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title|default:'Minhas Preferências de Chat' }}{% endblock %}
+{% block page_subtitle %}{{ page_subtitle|default:'Ajuste notificações, exibição e privacidade' }}{% endblock %}
+{% block page_actions %}
+    <a href="{% url 'chat:conversa_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar
+    </a>
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'chat:conversa_list' %}">Chat</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Minhas Preferências</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- Form -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="action-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-cog me-2"></i>Minhas Preferências de Chat
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Erros gerais do form -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <!-- Preferências de Notificação -->
+                            <div class="col-12 mb-4">
+                                <h5 class="text-primary">
+                                    <i class="fas fa-bell me-2"></i>Notificações
+                                </h5>
+                                <hr>
+                            </div>
+
+                            <!-- Notificações Ativas -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.notificacoes_ativas }}
+                                    <label class="form-check-label" for="{{ form.notificacoes_ativas.id_for_label }}">
+                                        <i class="fas fa-bell me-2"></i>{{ form.notificacoes_ativas.label }}
+                                    </label>
+                                </div>
+                                {% if form.notificacoes_ativas.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.notificacoes_ativas.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.notificacoes_ativas.help_text %}
+                                    <div class="form-text">{{ form.notificacoes_ativas.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Notificação por Email -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.notificacao_email }}
+                                    <label class="form-check-label" for="{{ form.notificacao_email.id_for_label }}">
+                                        <i class="fas fa-envelope me-2"></i>{{ form.notificacao_email.label }}
+                                    </label>
+                                </div>
+                                {% if form.notificacao_email.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.notificacao_email.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.notificacao_email.help_text %}
+                                    <div class="form-text">{{ form.notificacao_email.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Notificação Desktop -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.notificacao_desktop }}
+                                    <label class="form-check-label" for="{{ form.notificacao_desktop.id_for_label }}">
+                                        <i class="fas fa-desktop me-2"></i>{{ form.notificacao_desktop.label }}
+                                    </label>
+                                </div>
+                                {% if form.notificacao_desktop.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.notificacao_desktop.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.notificacao_desktop.help_text %}
+                                    <div class="form-text">{{ form.notificacao_desktop.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Som de Notificação -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.som_notificacao }}
+                                    <label class="form-check-label" for="{{ form.som_notificacao.id_for_label }}">
+                                        <i class="fas fa-volume-up me-2"></i>{{ form.som_notificacao.label }}
+                                    </label>
+                                </div>
+                                {% if form.som_notificacao.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.som_notificacao.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.som_notificacao.help_text %}
+                                    <div class="form-text">{{ form.som_notificacao.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Preferências de Exibição -->
+                            <div class="col-12 mb-4 mt-4">
+                                <h5 class="text-primary">
+                                    <i class="fas fa-eye me-2"></i>Exibição
+                                </h5>
+                                <hr>
+                            </div>
+
+                            <!-- Mostrar Status Online -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.mostrar_status_online }}
+                                    <label class="form-check-label" for="{{ form.mostrar_status_online.id_for_label }}">
+                                        <i class="fas fa-circle me-2 text-success"></i>{{ form.mostrar_status_online.label }}
+                                    </label>
+                                </div>
+                                {% if form.mostrar_status_online.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.mostrar_status_online.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.mostrar_status_online.help_text %}
+                                    <div class="form-text">{{ form.mostrar_status_online.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Mostrar Quando Digitando -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.mostrar_digitando }}
+                                    <label class="form-check-label" for="{{ form.mostrar_digitando.id_for_label }}">
+                                        <i class="fas fa-keyboard me-2"></i>{{ form.mostrar_digitando.label }}
+                                    </label>
+                                </div>
+                                {% if form.mostrar_digitando.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.mostrar_digitando.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.mostrar_digitando.help_text %}
+                                    <div class="form-text">{{ form.mostrar_digitando.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Tema do Chat -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tema_chat.id_for_label }}" class="form-label">
+                                    <i class="fas fa-palette me-2"></i>{{ form.tema_chat.label }}
+                                    {% if form.tema_chat.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.tema_chat }}
+                                {% if form.tema_chat.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tema_chat.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.tema_chat.help_text %}
+                                    <div class="form-text">{{ form.tema_chat.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Idioma -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.idioma.id_for_label }}" class="form-label">
+                                    <i class="fas fa-language me-2"></i>{{ form.idioma.label }}
+                                    {% if form.idioma.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.idioma }}
+                                {% if form.idioma.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.idioma.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.idioma.help_text %}
+                                    <div class="form-text">{{ form.idioma.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Preferências de Privacidade -->
+                            <div class="col-12 mb-4 mt-4">
+                                <h5 class="text-primary">
+                                    <i class="fas fa-lock me-2"></i>Privacidade
+                                </h5>
+                                <hr>
+                            </div>
+
+                            <!-- Permitir Mensagens Diretas -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.permitir_mensagens_diretas }}
+                                    <label class="form-check-label" for="{{ form.permitir_mensagens_diretas.id_for_label }}">
+                                        <i class="fas fa-comment me-2"></i>{{ form.permitir_mensagens_diretas.label }}
+                                    </label>
+                                </div>
+                                {% if form.permitir_mensagens_diretas.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.permitir_mensagens_diretas.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.permitir_mensagens_diretas.help_text %}
+                                    <div class="form-text">{{ form.permitir_mensagens_diretas.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Ocultar Perfil -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.ocultar_perfil }}
+                                    <label class="form-check-label" for="{{ form.ocultar_perfil.id_for_label }}">
+                                        <i class="fas fa-user-secret me-2"></i>{{ form.ocultar_perfil.label }}
+                                    </label>
+                                </div>
+                                {% if form.ocultar_perfil.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.ocultar_perfil.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.ocultar_perfil.help_text %}
+                                    <div class="form-text">{{ form.ocultar_perfil.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Mensagem de Status -->
+                            <div class="col-12 mb-3">
+                                <label for="{{ form.mensagem_status.id_for_label }}" class="form-label">
+                                    <i class="fas fa-comment-dots me-2"></i>{{ form.mensagem_status.label }}
+                                    {% if form.mensagem_status.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.mensagem_status }}
+                                {% if form.mensagem_status.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.mensagem_status.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.mensagem_status.help_text %}
+                                    <div class="form-text">{{ form.mensagem_status.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'chat:conversa_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Salvar Preferências
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add form classes for Bootstrap styling
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to form fields
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(function(input) {
+        if (input.type === 'checkbox') {
+            input.classList.add('form-check-input');
+        } else if (input.tagName === 'SELECT') {
+            input.classList.add('form-select');
+        } else {
+            input.classList.add('form-control');
+        }
+    });
+});
+</script>
+{% endblock %}

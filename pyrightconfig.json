@@ -1,0 +1,13 @@
+{
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "warning",
+  "extraPaths": [
+    "c:/dev/Pandora/backand",
+    "c:/dev/correcao/Pandora/backend"
+  ],
+  "exclude": [
+    "**/migrations",
+    "**/__pycache__"
+  ]
+}

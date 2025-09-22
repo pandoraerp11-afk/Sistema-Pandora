@@ -1,0 +1,224 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal Cliente - Detalhes do Atendimento{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-file-medical me-2"></i>Detalhes do Atendimento</h2>
+            <p class="text-muted">{{ atendimento.data_atendimento|date:"d \d\e F \d\e Y \à\s H:i" }}</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'portal_cliente:historico_atendimentos' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar ao Histórico
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informações Principais -->
+        <div class="col-lg-8">
+            <!-- Dados do Atendimento -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações do Atendimento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Serviço Realizado</h6>
+                            <p class="fw-bold h5 text-primary">{{ atendimento.servico.nome_servico }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Profissional Responsável</h6>
+                            <p class="fw-bold">
+                                <i class="fas fa-user-md me-2"></i>{{ atendimento.profissional.nome }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Data e Horário</h6>
+                            <p class="fw-bold">
+                                <i class="fas fa-calendar me-2"></i>{{ atendimento.data_atendimento|date:"d/m/Y" }}
+                                <br>
+                                <i class="fas fa-clock me-2"></i>{{ atendimento.data_atendimento|date:"H:i" }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Status</h6>
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check me-1"></i>{{ atendimento.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if atendimento.observacoes_publicas %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="text-muted">Observações</h6>
+                            <div class="alert alert-light border-start border-info border-3">
+                                {{ atendimento.observacoes_publicas }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Avaliação -->
+            {% if atendimento.satisfacao_cliente %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Sua Avaliação</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <div class="mb-3">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= atendimento.satisfacao_cliente %}
+                                    <i class="fas fa-star text-warning fa-2x"></i>
+                                {% else %}
+                                    <i class="far fa-star text-muted fa-2x"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <h4 class="text-warning">{{ atendimento.satisfacao_cliente }}/5</h4>
+                        {% if atendimento.comentarios_cliente %}
+                            <div class="alert alert-light mt-3">
+                                <strong>Seu comentário:</strong><br>
+                                {{ atendimento.comentarios_cliente }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Fotos do Atendimento -->
+            {% if fotos %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-images me-2"></i>Fotos do Atendimento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for foto in fotos %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="position-relative">
+                                <img src="{{ foto.imagem_thumbnail.url }}" 
+                                     class="img-fluid rounded shadow-sm" 
+                                     alt="Foto do atendimento"
+                                     style="aspect-ratio: 1; object-fit: cover; cursor: pointer;"
+                                     onclick="abrirModalFoto('{{ foto.imagem_thumbnail.url }}', '{{ foto.created_at|date:"d/m/Y H:i" }}')">
+                                
+                                <!-- Badge com timestamp -->
+                                <div class="position-absolute bottom-0 start-0 end-0 p-2">
+                                    <span class="badge bg-dark text-truncate w-100">
+                                        {{ foto.created_at|date:"H:i" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        <small>
+                            Por segurança, você visualiza apenas versões otimizadas (thumbnails) das imagens. 
+                            As fotos originais são mantidas seguras e acessíveis apenas aos profissionais.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar com Resumo -->
+        <div class="col-lg-4">
+            <!-- Card de Resumo -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Resumo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Duração Estimada</small>
+                        <div class="fw-bold">
+                            {% if atendimento.servico.perfil_clinico.duracao_estimada %}
+                                {{ atendimento.servico.perfil_clinico.duracao_estimada }}
+                            {% else %}
+                                Não informado
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if atendimento.servico.preco_base %}
+                    <div class="mb-3">
+                        <small class="text-muted">Valor do Serviço</small>
+                        <div class="fw-bold text-success">R$ {{ atendimento.servico.preco_base }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Código do Atendimento</small>
+                        <div class="fw-bold text-monospace">#{{ atendimento.id|stringformat:"05d" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Próximo Agendamento -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>Próximo Passo</h6>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted mb-3">Gostou do atendimento? Agende sua próxima sessão!</p>
+                    <a href="{% url 'portal_cliente:novo_agendamento' %}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Novo Agendamento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualização de foto -->
+<div class="modal fade" id="fotoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Visualizar Foto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="fotoModalImage" src="" class="img-fluid rounded" alt="Foto ampliada">
+                <div class="mt-3">
+                    <p id="fotoModalInfo" class="text-muted"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function abrirModalFoto(imagemUrl, timestamp) {
+    document.getElementById('fotoModalImage').src = imagemUrl;
+    document.getElementById('fotoModalInfo').textContent = `Registrada em ${timestamp}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('fotoModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

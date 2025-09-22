@@ -1,0 +1,457 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}📊 Relatórios e Métricas - Pandora ERP{% endblock %}
+
+{% block home_icon %}<i class="fas fa-chart-line me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Relatórios e Métricas{% endblock %}
+{% block home_subtitle %}Dashboards e análises avançadas do sistema{% endblock %}
+
+{% block home_stats %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+            Painel de Controle
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <!-- Relatórios Gerados -->
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card primary h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="metric-icon bg-primary text-white mx-auto">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-primary mb-1">{{ total_reports }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Relatórios" %}</p>
+                        <small class="text-muted">Gerados este mês</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transações -->
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card success h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="metric-icon bg-success text-white mx-auto">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-success mb-1">{{ total_transactions|intcomma }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Transações" %}</p>
+                        <small class="text-muted">Processadas hoje</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Usuários Ativos -->
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card warning h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="metric-icon bg-warning text-white mx-auto">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-warning mb-1">{{ active_users }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Usuários Ativos" %}</p>
+                        <small class="text-muted">Online agora</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance -->
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card info h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="metric-icon bg-info text-white mx-auto">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-info mb-1">{{ system_performance|floatformat:1 }}%</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Performance" %}</p>
+                        <small class="text-muted">Média do sistema</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_actions %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            {% trans "Relatórios Disponíveis" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="200">
+            {% for report in reports %}
+            <div class="col-lg-6 col-xl-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:2 }}00">
+                <div class="report-card h-100">
+                    <div class="card-body p-4">
+                        <div class="report-header d-flex align-items-start mb-3">
+                            <div class="report-icon bg-gradient-{{ report.color }} text-white me-3">
+                                <i class="{{ report.icon }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="report-title mb-1">{{ report.name }}</h5>
+                                <p class="report-description text-muted mb-2 small">{{ report.description }}</p>
+                                <span class="report-category badge bg-light text-dark">{{ report.category }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="report-metrics mb-3">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="metric-small text-center p-2 bg-light rounded">
+                                        <small class="text-muted d-block">Registros</small>
+                                        <strong class="text-primary">{{ report.records|intcomma }}</strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-small text-center p-2 bg-light rounded">
+                                        <small class="text-muted d-block">Atualizado</small>
+                                        <strong class="text-success">{{ report.last_update }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="report-actions d-flex gap-2">
+                            <button class="btn btn-primary btn-sm flex-fill" onclick="generateReport('{{ report.id }}')">
+                                <i class="fas fa-play me-1"></i>
+                                Gerar
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="configureReport('{{ report.id }}')" title="Configurar">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="viewHistory('{{ report.id }}')" title="Histórico">
+                                <i class="fas fa-history"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_recent %}
+    <div class="row g-4 mb-5">
+        <!-- Gráfico de Tendências -->
+        <div class="col-lg-8" data-aos="fade-up">
+            <div class="chart-card">
+                <div class="card-header bg-transparent border-0 p-4 pb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-chart-area me-2 text-primary"></i>
+                            {% trans "Tendências do Sistema" %}
+                        </h5>
+                        <div class="chart-controls">
+                            <select class="form-select form-select-sm" id="chartPeriod">
+                                <option value="7d">Últimos 7 dias</option>
+                                <option value="30d" selected>Últimos 30 dias</option>
+                                <option value="90d">Últimos 90 dias</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4 pt-2">
+                    <canvas id="trendsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Atividade Recente -->
+        <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="activity-card h-100">
+                <div class="card-header bg-transparent border-0 p-4 pb-2">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-bell me-2 text-warning"></i>
+                        {% trans "Atividade Recente" %}
+                    </h5>
+                </div>
+                <div class="card-body p-4 pt-2">
+                    <div class="activity-list">
+                        {% for activity in recent_activities %}
+                        <div class="activity-item d-flex align-items-start mb-3">
+                            <div class="activity-icon bg-{{ activity.type }} text-white me-3">
+                                <i class="{{ activity.icon }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <p class="activity-text mb-1 small">{{ activity.description }}</p>
+                                <small class="text-muted">{{ activity.time }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>
+                            Ver Todas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ações Rápidas -->
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-lightning-bolt me-2 text-primary"></i>
+            {% trans "Ações Rápidas" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-md-3">
+                <div class="quick-action-card text-center p-4">
+                    <div class="quick-action-icon bg-gradient-primary text-white mx-auto mb-3">
+                        <i class="fas fa-file-export"></i>
+                    </div>
+                    <h6 class="mb-2">{% trans "Exportar Dados" %}</h6>
+                    <p class="text-muted mb-3 small">Baixe relatórios em Excel ou PDF</p>
+                    <button class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-download me-1"></i>
+                        Exportar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="quick-action-card text-center p-4">
+                    <div class="quick-action-icon bg-gradient-success text-white mx-auto mb-3">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h6 class="mb-2">{% trans "Agendar Relatório" %}</h6>
+                    <p class="text-muted mb-3 small">Configure envios automáticos</p>
+                    <button class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-calendar-plus me-1"></i>
+                        Agendar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="quick-action-card text-center p-4">
+                    <div class="quick-action-icon bg-gradient-info text-white mx-auto mb-3">
+                        <i class="fas fa-share-alt"></i>
+                    </div>
+                    <h6 class="mb-2">{% trans "Compartilhar" %}</h6>
+                    <p class="text-muted mb-3 small">Envie relatórios por email</p>
+                    <button class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-envelope me-1"></i>
+                        Enviar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="quick-action-card text-center p-4">
+                    <div class="quick-action-icon bg-gradient-warning text-white mx-auto mb-3">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h6 class="mb-2">{% trans "Configurações" %}</h6>
+                    <p class="text-muted mb-3 small">Personalize seus relatórios</p>
+                    <a href="{% url 'administration:configurations_page' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-wrench me-1"></i>
+                        Configurar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.report-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.report-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.report-title {
+    font-weight: 700;
+    color: #212529;
+    margin: 0;
+}
+
+.chart-card, .activity-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-card:hover, .activity-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.metric-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+
+.metric-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.quick-action-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.quick-action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.section-title {
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+}
+
+.bg-gradient-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Gráfico de tendências
+const ctx = document.getElementById('trendsChart').getContext('2d');
+const trendsChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['1 Jan', '5 Jan', '10 Jan', '15 Jan', '20 Jan', '25 Jan', '30 Jan'],
+        datasets: [{
+            label: 'Transações',
+            data: [65, 78, 90, 81, 95, 88, 102],
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Usuários',
+            data: [28, 35, 40, 38, 45, 42, 48],
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+function generateReport(reportId) {
+    alert('Gerando relatório: ' + reportId);
+    // Aqui faria a requisição para gerar o relatório
+}
+
+function configureReport(reportId) {
+    alert('Configurando relatório: ' + reportId);
+    // Aqui abriria modal de configuração
+}
+
+function viewHistory(reportId) {
+    alert('Visualizando histórico do relatório: ' + reportId);
+    // Aqui abriria modal com histórico
+}
+
+// Atualizar gráfico quando mudar período
+document.getElementById('chartPeriod').addEventListener('change', function() {
+    // Aqui faria requisição AJAX para novos dados
+    console.log('Período alterado para:', this.value);
+});
+</script>
+{% endblock %}

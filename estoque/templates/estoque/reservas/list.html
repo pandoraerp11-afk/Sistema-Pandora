@@ -1,0 +1,557 @@
+{% extends 'pandora_list_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Reservas de Estoque{% endblock %}
+
+{% block extra_css %}
+<style>
+.reserva-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.reserva-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.status-ativa {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.status-parcial {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.status-concluida {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.status-cancelada {
+    background: linear-gradient(135deg, #d3959b 0%, #bfe6ba 100%);
+}
+
+.status-expirada {
+    background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+}
+
+.filtro-rapido {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filtro-rapido:hover {
+    transform: scale(1.05);
+}
+
+.progress-reserva {
+    height: 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.progress-reserva .progress-bar {
+    border-radius: 10px;
+}
+
+.timeline-reserva {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-reserva::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -37px;
+    top: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #28a745;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-item.pendente::before {
+    background: #ffc107;
+}
+
+.timeline-item.cancelado::before {
+    background: #dc3545;
+}
+
+.badge-prioridade-alta {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+.quick-actions {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+}
+
+.floating-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.floating-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+}
+
+.card-reserva-item {
+    border: 1px solid #e3e6f0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.card-reserva-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/estoque/reservas.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    EstoqueReservas.init();
+    
+    // WebSocket para atualizações em tempo real
+    if (typeof WebSocket !== 'undefined') {
+        const ws = new WebSocket(`ws://${window.location.host}/ws/estoque/reservas/`);
+        
+        ws.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            EstoqueReservas.handleWebSocketMessage(data);
+        };
+    }
+});
+</script>
+{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-hand-holding me-2"></i>Reservas de Estoque
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'estoque:estoque_home' %}">Estoque</a></li>
+                <li class="breadcrumb-item active">Reservas</li>
+            </ol>
+        </nav>
+    </div>
+    
+    <div class="page-actions">
+        <div class="btn-group me-2">
+            <button class="btn btn-outline-primary" onclick="exportarReservas()">
+                <i class="fas fa-download me-1"></i>Exportar
+            </button>
+            
+            <button class="btn btn-outline-info" onclick="abrirRelatorioReservas()">
+                <i class="fas fa-chart-bar me-1"></i>Relatório
+            </button>
+        </div>
+        
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovaReserva">
+            <i class="fas fa-plus me-1"></i>Nova Reserva
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros Rápidos -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Filtros por Status -->
+                    <div class="col-md-2">
+                        <div class="reserva-card status-ativa filtro-rapido" 
+                             onclick="filtrarPorStatus('ATIVA')">
+                            <div class="p-3 text-center">
+                                <div class="fs-2 fw-bold" id="count-ativas">{{ stats.ativas }}</div>
+                                <div class="small">Reservas Ativas</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <div class="reserva-card status-parcial filtro-rapido" 
+                             onclick="filtrarPorStatus('PARCIAL')">
+                            <div class="p-3 text-center">
+                                <div class="fs-2 fw-bold" id="count-parciais">{{ stats.parciais }}</div>
+                                <div class="small">Uso Parcial</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <div class="reserva-card status-concluida filtro-rapido" 
+                             onclick="filtrarPorStatus('CONCLUIDA')">
+                            <div class="p-3 text-center">
+                                <div class="fs-2 fw-bold" id="count-concluidas">{{ stats.concluidas }}</div>
+                                <div class="small">Concluídas</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <div class="reserva-card status-expirada filtro-rapido" 
+                             onclick="filtrarPorStatus('EXPIRADA')">
+                            <div class="p-3 text-center">
+                                <div class="fs-2 fw-bold" id="count-expiradas">{{ stats.expiradas }}</div>
+                                <div class="small">Expiradas</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <div class="reserva-card status-cancelada filtro-rapido" 
+                             onclick="filtrarPorStatus('CANCELADA')">
+                            <div class="p-3 text-center">
+                                <div class="fs-2 fw-bold" id="count-canceladas">{{ stats.canceladas }}</div>
+                                <div class="small">Canceladas</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <div class="reserva-card filtro-rapido" 
+                             onclick="limparFiltros()">
+                            <div class="p-3 text-center">
+                                <div class="fs-2 fw-bold" id="count-total">{{ stats.total }}</div>
+                                <div class="small">Total Geral</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros Avançados -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+        <button class="btn btn-link p-0 text-decoration-none w-100 text-start" 
+                type="button" data-bs-toggle="collapse" data-bs-target="#filtrosAvancados">
+            <i class="fas fa-filter me-2"></i>Filtros Avançados
+            <i class="fas fa-chevron-down float-end"></i>
+        </button>
+    </div>
+    <div class="collapse" id="filtrosAvancados">
+        <div class="card-body">
+            <form id="formFiltros" method="GET">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Produto</label>
+                        <select name="produto" class="form-select" id="filtro-produto">
+                            <option value="">Todos os produtos</option>
+                            {% for produto in produtos %}
+                                <option value="{{ produto.id }}">{{ produto.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label">Solicitante</label>
+                        <input type="text" name="solicitante" class="form-control" 
+                               placeholder="Nome do solicitante" value="{{ request.GET.solicitante }}">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Data Inicial</label>
+                        <input type="date" name="data_inicial" class="form-control" 
+                               value="{{ request.GET.data_inicial }}">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Data Final</label>
+                        <input type="date" name="data_final" class="form-control" 
+                               value="{{ request.GET.data_final }}">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">Prioridade</label>
+                        <select name="prioridade" class="form-select">
+                            <option value="">Todas</option>
+                            <option value="ALTA" {% if request.GET.prioridade == 'ALTA' %}selected{% endif %}>Alta</option>
+                            <option value="NORMAL" {% if request.GET.prioridade == 'NORMAL' %}selected{% endif %}>Normal</option>
+                            <option value="BAIXA" {% if request.GET.prioridade == 'BAIXA' %}selected{% endif %}>Baixa</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Filtrar
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="limparFiltros()">
+                                <i class="fas fa-eraser me-1"></i>Limpar
+                            </button>
+                            <button type="button" class="btn btn-outline-info" onclick="salvarFiltro()">
+                                <i class="fas fa-bookmark me-1"></i>Salvar Filtro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Reservas -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list me-2"></i>Reservas 
+                <small class="text-muted">(<span id="total-reservas">{{ object_list.count }}</span> encontradas)</small>
+            </h5>
+            
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active" onclick="alterarVisualizacao('lista')">
+                    <i class="fas fa-list"></i>
+                </button>
+                <button class="btn btn-outline-secondary" onclick="alterarVisualizacao('cards')">
+                    <i class="fas fa-th"></i>
+                </button>
+                <button class="btn btn-outline-secondary" onclick="alterarVisualizacao('timeline')">
+                    <i class="fas fa-clock"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <!-- Visualização em Lista -->
+        <div id="visualizacao-lista">
+            {% if object_list %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="3%">
+                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                </th>
+                                <th width="8%">
+                                    <a href="?{{ request.GET.urlencode }}&order=id" class="text-decoration-none">
+                                        ID <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th width="25%">
+                                    <a href="?{{ request.GET.urlencode }}&order=produto__nome" class="text-decoration-none">
+                                        Produto <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th width="12%">Quantidade</th>
+                                <th width="15%">Solicitante</th>
+                                <th width="12%">Data Criação</th>
+                                <th width="10%">Status</th>
+                                <th width="8%">Progresso</th>
+                                <th width="7%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-reservas">
+                            {% for reserva in object_list %}
+                                {% include 'estoque/reservas/_linha.html' with reserva=reserva %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-hand-holding fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhuma reserva encontrada</h5>
+                    <p class="text-muted">Comece criando sua primeira reserva de estoque</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovaReserva">
+                        <i class="fas fa-plus me-1"></i>Criar Primeira Reserva
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Visualização em Cards -->
+        <div id="visualizacao-cards" style="display: none;">
+            <div class="row" id="cards-reservas">
+                {% for reserva in object_list %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card-reserva-item">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-primary">#{{ reserva.id }}</span>
+                                    <span class="badge bg-{{ reserva.status_color }}">
+                                        {{ reserva.get_status_display }}
+                                    </span>
+                                </div>
+                                
+                                <h6 class="card-title">{{ reserva.produto.nome|truncatechars:30 }}</h6>
+                                
+                                <div class="row text-center mb-2">
+                                    <div class="col-6">
+                                        <div class="fw-bold text-primary">{{ reserva.quantidade }}</div>
+                                        <small class="text-muted">Reservado</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fw-bold text-success">{{ reserva.quantidade_utilizada }}</div>
+                                        <small class="text-muted">Utilizado</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="progress progress-reserva mb-2">
+                                    <div class="progress-bar" style="width: {{ reserva.percentual_utilizacao }}%"></div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ reserva.solicitante_nome }}</small>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary btn-sm" 
+                                                onclick="verDetalhesReserva({{ reserva.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if reserva.pode_utilizar %}
+                                            <button class="btn btn-outline-success btn-sm"
+                                                    onclick="utilizarReserva({{ reserva.id }})">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Visualização Timeline -->
+        <div id="visualizacao-timeline" style="display: none;">
+            <div class="timeline-reserva">
+                {% for reserva in object_list %}
+                    <div class="timeline-item {% if reserva.status == 'CANCELADA' %}cancelado{% elif reserva.status == 'ATIVA' %}pendente{% endif %}">
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ reserva.produto.nome }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>{{ reserva.solicitante_nome }}
+                                            <i class="fas fa-calendar ms-2 me-1"></i>{{ reserva.data_criacao|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-{{ reserva.status_color }}">
+                                        {{ reserva.get_status_display }}
+                                    </span>
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="progress progress-reserva">
+                                                <div class="progress-bar bg-success" 
+                                                     style="width: {{ reserva.percentual_utilizacao }}%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <small class="text-muted">
+                                                {{ reserva.quantidade_utilizada }}/{{ reserva.quantidade }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Paginação -->
+    {% if is_paginated %}
+        <div class="card-footer bg-transparent">
+            <nav aria-label="Navegação das reservas">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{{ request.GET.urlencode }}">Primeira</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ request.GET.urlencode }}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ request.GET.urlencode }}">Próxima</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ request.GET.urlencode }}">Última</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Ações Rápidas Flutuantes -->
+<div class="quick-actions">
+    <button class="floating-btn" data-bs-toggle="modal" data-bs-target="#modalNovaReserva" 
+            title="Nova Reserva">
+        <i class="fas fa-plus"></i>
+    </button>
+</div>
+
+<!-- Modais -->
+{% include 'estoque/reservas/modal_nova_reserva.html' %}
+{% include 'estoque/reservas/modal_utilizar_reserva.html' %}
+{% include 'estoque/reservas/modal_detalhes_reserva.html' %}
+{% endblock %}

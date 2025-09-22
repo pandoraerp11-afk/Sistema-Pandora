@@ -1,0 +1,7 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% block title %}Minhas Notificações{% endblock %}
+{% block content %}
+<!-- Duplicado e alinhado com backend: usa 'created_at' e campos reais -->
+{% include 'notifications/notification_list.html' %}
+{% endblock %}

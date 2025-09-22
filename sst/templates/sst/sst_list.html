@@ -1,0 +1,847 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}SST - Segurança e Saúde no Trabalho{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sst-card {
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        background: var(--surface-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .sst-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .sst-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--danger-color), var(--warning-color));
+    }
+
+    .sst-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .sst-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .sst-icon.tipo-procedimento {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .sst-icon.tipo-analise_risco {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+    }
+
+    .sst-icon.tipo-treinamento {
+        background: linear-gradient(135deg, #007bff, #6610f2);
+    }
+
+    .sst-icon.tipo-acidente {
+        background: linear-gradient(135deg, #dc3545, #e83e8c);
+    }
+
+    .sst-icon.tipo-epi {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+
+    .sst-icon.tipo-outro {
+        background: linear-gradient(135deg, #6c757d, #495057);
+    }
+
+    .sst-info {
+        flex: 1;
+    }
+
+    .sst-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .sst-description {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .sst-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .sst-type {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .sst-type.tipo-procedimento {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .sst-type.tipo-analise_risco {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .sst-type.tipo-treinamento {
+        background: #cce7ff;
+        color: #004085;
+    }
+
+    .sst-type.tipo-acidente {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .sst-type.tipo-epi {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .sst-type.tipo-outro {
+        background: #e2e3e5;
+        color: #495057;
+    }
+
+    .sst-dates {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .sst-date {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .sst-responsible {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .sst-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .priority-indicator {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    .priority-high {
+        background: var(--danger-color);
+    }
+
+    .priority-medium {
+        background: var(--warning-color);
+    }
+
+    .priority-low {
+        background: var(--success-color);
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--danger-color), var(--warning-color));
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+        pointer-events: none;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .safety-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .safety-widget {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .safety-widget-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        margin: 0 auto 1rem;
+    }
+
+    .safety-widget-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .safety-widget-description {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .alert-banner {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+        color: white;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .alert-banner-icon {
+        font-size: 2rem;
+        animation: pulse 2s infinite;
+    }
+
+    .alert-banner-content h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.2rem;
+    }
+
+    .alert-banner-content p {
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .filter-section {
+        background: var(--surface-color);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .file-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .file-indicator.has-file {
+        color: var(--success-color);
+    }
+
+    .file-indicator.no-file {
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+        .sst-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sst-meta {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .sst-dates {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .safety-dashboard {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="fas fa-hard-hat"></i>
+            SST - Segurança e Saúde no Trabalho
+        </h1>
+        <p class="page-description">Gerencie documentos e procedimentos de segurança</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="toggleView()">
+            <i class="fas fa-th-large" id="view-icon"></i>
+            <span id="view-text">Visualização</span>
+        </button>
+        <button class="btn btn-outline" onclick="exportData()">
+            <i class="fas fa-download"></i>
+            Exportar
+        </button>
+        <a href="{% url 'sst:sst_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i>
+            Novo Documento
+        </a>
+    </div>
+</div>
+
+<!-- Alerta de Segurança -->
+<div class="alert-banner">
+    <div class="alert-banner-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="alert-banner-content">
+        <h3>Atenção à Segurança!</h3>
+        <p>Mantenha sempre os documentos de SST atualizados para garantir a segurança de todos os colaboradores.</p>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ sst_list|length }}</div>
+        <div class="stat-label">Total de Documentos</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, var(--warning-color), #fd7e14);">
+        <div class="stat-value">{{ procedimentos_count|default:0 }}</div>
+        <div class="stat-label">Procedimentos</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, var(--danger-color), #dc3545);">
+        <div class="stat-value">{{ acidentes_count|default:0 }}</div>
+        <div class="stat-label">Registros de Acidentes</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, var(--info-color), #17a2b8);">
+        <div class="stat-value">{{ treinamentos_count|default:0 }}</div>
+        <div class="stat-label">Treinamentos</div>
+    </div>
+</div>
+
+<!-- Dashboard de Segurança -->
+<div class="safety-dashboard">
+    <div class="safety-widget">
+        <div class="safety-widget-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+            <i class="fas fa-clipboard-check"></i>
+        </div>
+        <h3 class="safety-widget-title">Procedimentos de Segurança</h3>
+        <p class="safety-widget-description">Gerencie e atualize procedimentos operacionais</p>
+        <button class="btn btn-primary btn-sm" onclick="createDocument('procedimento')">
+            Criar Procedimento
+        </button>
+    </div>
+    
+    <div class="safety-widget">
+        <div class="safety-widget-icon" style="background: linear-gradient(135deg, #dc3545, #fd7e14);">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="safety-widget-title">Análises de Risco</h3>
+        <p class="safety-widget-description">Identifique e avalie riscos no ambiente de trabalho</p>
+        <button class="btn btn-primary btn-sm" onclick="createDocument('analise_risco')">
+            Nova Análise
+        </button>
+    </div>
+    
+    <div class="safety-widget">
+        <div class="safety-widget-icon" style="background: linear-gradient(135deg, #007bff, #6610f2);">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h3 class="safety-widget-title">Treinamentos</h3>
+        <p class="safety-widget-description">Registre treinamentos de segurança realizados</p>
+        <button class="btn btn-primary btn-sm" onclick="createDocument('treinamento')">
+            Registrar Treinamento
+        </button>
+    </div>
+    
+    <div class="safety-widget">
+        <div class="safety-widget-icon" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h3 class="safety-widget-title">Controle de EPIs</h3>
+        <p class="safety-widget-description">Monitore entrega e uso de equipamentos de proteção</p>
+        <button class="btn btn-primary btn-sm" onclick="createDocument('epi')">
+            Controlar EPIs
+        </button>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="filter-section">
+    <h3 class="section-title">
+        <i class="fas fa-filter"></i>
+        Filtros
+    </h3>
+    <form method="get" class="filter-form" id="filter-form">
+        <div class="filter-row">
+            <div class="form-group">
+                <label for="search">Buscar</label>
+                <input type="text" 
+                       id="search" 
+                       name="q" 
+                       class="form-control" 
+                       placeholder="Digite o título ou descrição..."
+                       value="{{ request.GET.q }}">
+            </div>
+            <div class="form-group">
+                <label for="tipo">Tipo</label>
+                <select id="tipo" name="tipo" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="procedimento" {% if request.GET.tipo == 'procedimento' %}selected{% endif %}>Procedimento</option>
+                    <option value="analise_risco" {% if request.GET.tipo == 'analise_risco' %}selected{% endif %}>Análise de Risco</option>
+                    <option value="treinamento" {% if request.GET.tipo == 'treinamento' %}selected{% endif %}>Treinamento</option>
+                    <option value="acidente" {% if request.GET.tipo == 'acidente' %}selected{% endif %}>Acidente</option>
+                    <option value="epi" {% if request.GET.tipo == 'epi' %}selected{% endif %}>EPI</option>
+                    <option value="outro" {% if request.GET.tipo == 'outro' %}selected{% endif %}>Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="responsavel">Responsável</label>
+                <select id="responsavel" name="responsavel" class="form-control">
+                    <option value="">Todos</option>
+                    {% for responsavel in responsaveis %}
+                    <option value="{{ responsavel.id }}" {% if request.GET.responsavel == responsavel.id|stringformat:"s" %}selected{% endif %}>
+                        {{ responsavel.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="data_inicio">Data Inicial</label>
+                <input type="date" 
+                       id="data_inicio" 
+                       name="data_inicio" 
+                       class="form-control"
+                       value="{{ request.GET.data_inicio }}">
+            </div>
+            <div class="form-group">
+                <label for="data_fim">Data Final</label>
+                <input type="date" 
+                       id="data_fim" 
+                       name="data_fim" 
+                       class="form-control"
+                       value="{{ request.GET.data_fim }}">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Filtrar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Controles de Visualização -->
+<div class="view-controls">
+    <div class="view-controls-left">
+        <div class="results-info">
+            <span>{{ sst_list|length }} documento{{ sst_list|length|pluralize:"s" }} encontrado{{ sst_list|length|pluralize:"s" }}</span>
+        </div>
+    </div>
+    <div class="view-controls-right">
+        <select class="form-control form-control-sm" onchange="changePageSize(this.value)">
+            <option value="10" {% if request.GET.page_size == '10' %}selected{% endif %}>10 por página</option>
+            <option value="25" {% if request.GET.page_size == '25' %}selected{% endif %}>25 por página</option>
+            <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50 por página</option>
+            <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100 por página</option>
+        </select>
+    </div>
+</div>
+
+<!-- Lista de Documentos SST -->
+<div class="content-area">
+    <div class="data-container" id="sst-list">
+        {% for documento in sst_list %}
+        <div class="sst-card" data-id="{{ documento.id }}">
+            <!-- Indicador de Prioridade -->
+            {% if documento.tipo == 'acidente' %}
+            <div class="priority-indicator priority-high"></div>
+            {% elif documento.tipo == 'analise_risco' %}
+            <div class="priority-indicator priority-medium"></div>
+            {% else %}
+            <div class="priority-indicator priority-low"></div>
+            {% endif %}
+            
+            <div class="sst-header">
+                <div style="display: flex; align-items: flex-start;">
+                    <div class="sst-icon tipo-{{ documento.tipo }}">
+                        {% if documento.tipo == 'procedimento' %}
+                            <i class="fas fa-clipboard-check"></i>
+                        {% elif documento.tipo == 'analise_risco' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% elif documento.tipo == 'treinamento' %}
+                            <i class="fas fa-graduation-cap"></i>
+                        {% elif documento.tipo == 'acidente' %}
+                            <i class="fas fa-ambulance"></i>
+                        {% elif documento.tipo == 'epi' %}
+                            <i class="fas fa-shield-alt"></i>
+                        {% else %}
+                            <i class="fas fa-file-alt"></i>
+                        {% endif %}
+                    </div>
+                    <div class="sst-info">
+                        <h3 class="sst-title">{{ documento.titulo }}</h3>
+                        {% if documento.descricao %}
+                        <p class="sst-description">{{ documento.descricao }}</p>
+                        {% endif %}
+                        
+                        {% if documento.responsavel %}
+                        <div class="sst-responsible">
+                            <i class="fas fa-user-check"></i>
+                            <span>{{ documento.responsavel.nome }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="sst-meta">
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <span class="sst-type tipo-{{ documento.tipo }}">
+                        {% if documento.tipo == 'procedimento' %}
+                            <i class="fas fa-clipboard-check"></i>
+                        {% elif documento.tipo == 'analise_risco' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% elif documento.tipo == 'treinamento' %}
+                            <i class="fas fa-graduation-cap"></i>
+                        {% elif documento.tipo == 'acidente' %}
+                            <i class="fas fa-ambulance"></i>
+                        {% elif documento.tipo == 'epi' %}
+                            <i class="fas fa-shield-alt"></i>
+                        {% else %}
+                            <i class="fas fa-file-alt"></i>
+                        {% endif %}
+                        {{ documento.get_tipo_display }}
+                    </span>
+                    
+                    {% if documento.arquivo %}
+                    <div class="file-indicator has-file">
+                        <i class="fas fa-file-download"></i>
+                        <span>Arquivo disponível</span>
+                    </div>
+                    {% else %}
+                    <div class="file-indicator no-file">
+                        <i class="fas fa-file-slash"></i>
+                        <span>Sem arquivo</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="sst-dates">
+                    <div class="sst-date">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Criado: {{ documento.data_criacao|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="sst-date">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Atualizado: {{ documento.data_atualizacao|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sst-actions">
+                <a href="{% url 'sst:sst_detail' documento.pk %}" 
+                   class="btn btn-sm btn-outline"
+                   title="Visualizar">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'sst:sst_update' documento.pk %}" 
+                   class="btn btn-sm btn-outline"
+                   title="Editar">
+                    <i class="fas fa-edit"></i>
+                </a>
+                {% if documento.arquivo %}
+                <a href="{{ documento.arquivo.url }}" 
+                   class="btn btn-sm btn-success"
+                   title="Download"
+                   target="_blank">
+                    <i class="fas fa-download"></i>
+                </a>
+                {% endif %}
+                <button class="btn btn-sm btn-primary" 
+                        onclick="shareDocument('{{ documento.pk }}')"
+                        title="Compartilhar">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-danger"
+                        onclick="confirmDelete('{{ documento.pk }}', '{{ documento.titulo|escapejs }}')"
+                        title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-hard-hat"></i>
+            </div>
+            <h3>Nenhum documento encontrado</h3>
+            <p>Não há documentos de SST cadastrados que correspondam aos filtros aplicados.</p>
+            <a href="{% url 'sst:sst_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Criar Primeiro Documento
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Paginação -->
+{% if is_paginated %}
+<div class="pagination-container">
+    <div class="pagination-info">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        ({{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize:"s" }} no total)
+    </div>
+    <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-angle-left"></i>
+            </a>
+        {% endif %}
+        
+        <span class="pagination-current">{{ page_obj.number }}</span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal de Confirmação de Exclusão -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Exclusão</h3>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Tem certeza que deseja excluir o documento <strong id="deleteItemName"></strong>?</p>
+            <p class="text-muted">Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeDeleteModal()">Cancelar</button>
+            <a href="#" id="deleteConfirmBtn" class="btn btn-danger">Excluir</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Funcionalidades específicas da página
+let currentView = 'card';
+
+function toggleView() {
+    const container = document.getElementById('sst-list');
+    const viewIcon = document.getElementById('view-icon');
+    const viewText = document.getElementById('view-text');
+    
+    if (currentView === 'card') {
+        container.classList.add('table-view');
+        viewIcon.className = 'fas fa-th-large';
+        viewText.textContent = 'Cards';
+        currentView = 'table';
+    } else {
+        container.classList.remove('table-view');
+        viewIcon.className = 'fas fa-table';
+        viewText.textContent = 'Tabela';
+        currentView = 'card';
+    }
+}
+
+function exportData() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'xlsx');
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
+
+function changePageSize(size) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('page_size', size);
+    params.delete('page');
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
+
+function createDocument(tipo) {
+    window.location.href = `{% url 'sst:sst_create' %}?tipo=${tipo}`;
+}
+
+function shareDocument(id) {
+    const url = `${window.location.origin}{% url 'sst:sst_detail' 0 %}`.replace('0', id);
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Documento SST',
+            text: 'Confira este documento de segurança',
+            url: url
+        });
+    } else {
+        navigator.clipboard.writeText(url).then(function() {
+            showNotification('Link copiado para a área de transferência!', 'success');
+        });
+    }
+}
+
+function confirmDelete(id, name) {
+    document.getElementById('deleteItemName').textContent = name;
+    document.getElementById('deleteConfirmBtn').href = 
+        `{% url 'sst:sst_delete' 0 %}`.replace('0', id);
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+// Auto-submit do formulário de filtro
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInputs = document.querySelectorAll('#filter-form input, #filter-form select');
+    filterInputs.forEach(input => {
+        if (input.type !== 'submit') {
+            input.addEventListener('change', function() {
+                if (this.name !== 'q') {
+                    document.getElementById('filter-form').submit();
+                }
+            });
+        }
+    });
+    
+    // Busca em tempo real
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                document.getElementById('filter-form').submit();
+            }, 500);
+        });
+    }
+});
+
+// Fechar modal clicando fora
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+</script>
+{% endblock %}

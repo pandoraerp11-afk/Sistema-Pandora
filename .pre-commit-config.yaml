@@ -1,0 +1,44 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.4
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        args: ["-q", "-ll", "-r", "core", "shared", "user_management"]
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        args: ["-r", "requirements.txt", "--progress-spinner", "off"]
+        additional_dependencies: ["pip-audit[cache]"]
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest-fast
+        entry: pytest -m "not slow" -q
+        language: system
+        pass_filenames: false
+      - id: forbid-legacy-scripts
+        name: forbid-legacy-scripts
+        entry: python scripts/dev/check_no_legacy.py
+        language: system
+        pass_filenames: false

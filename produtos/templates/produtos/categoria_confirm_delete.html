@@ -1,0 +1,259 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Confirmar Exclusão - {{ object.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-confirmation {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 40px 0;
+    }
+    
+    .delete-card {
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .delete-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(220, 53, 69, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 30px;
+    }
+    
+    .delete-icon i {
+        font-size: 2.5rem;
+        color: #dc3545;
+    }
+    
+    .delete-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 15px;
+    }
+    
+    .delete-message {
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    
+    .category-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .category-detail {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .category-detail:last-child {
+        margin-bottom: 0;
+    }
+    
+    .category-label {
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    .category-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .warning-section {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .warning-title {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .warning-list {
+        margin: 0;
+        padding-left: 20px;
+        color: #856404;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-delete:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        margin-bottom: 30px;
+        font-size: 0.9rem;
+    }
+    
+    .back-link:hover {
+        color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="delete-confirmation">
+        <a href="{% url 'produtos:categoria_list' %}" class="back-link">
+            <i class="fas fa-arrow-left"></i>
+            Voltar para Categorias
+        </a>
+        
+        <div class="delete-card">
+            <div class="delete-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            
+            <h2 class="delete-title">Confirmar Exclusão</h2>
+            
+            <p class="delete-message">
+                Você tem certeza que deseja excluir esta categoria?<br>
+                Esta ação não poderá ser desfeita.
+            </p>
+            
+            <div class="category-info">
+                <div class="category-detail">
+                    <span class="category-label">Nome:</span>
+                    <span class="category-value">{{ object.nome }}</span>
+                </div>
+                
+                {% if object.descricao %}
+                    <div class="category-detail">
+                        <span class="category-label">Descrição:</span>
+                        <span class="category-value">{{ object.descricao|truncatechars:50 }}</span>
+                    </div>
+                {% endif %}
+                
+                <div class="category-detail">
+                    <span class="category-label">Produtos vinculados:</span>
+                    <span class="category-value">
+                        <span class="badge bg-info">{{ object.produtos.count }}</span>
+                    </span>
+                </div>
+                
+                <div class="category-detail">
+                    <span class="category-label">Data de criação:</span>
+                    <span class="category-value">{{ object.data_criacao|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+            
+            {% if object.produtos.count > 0 %}
+                <div class="warning-section">
+                    <div class="warning-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Atenção!
+                    </div>
+                    <ul class="warning-list">
+                        <li>Esta categoria possui {{ object.produtos.count }} produto{{ object.produtos.count|pluralize }} vinculado{{ object.produtos.count|pluralize }}.</li>
+                        <li>Ao excluir esta categoria, os produtos ficarão sem categoria.</li>
+                        <li>Considere transferir os produtos para outra categoria antes de excluir.</li>
+                    </ul>
+                </div>
+            {% endif %}
+            
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <div class="action-buttons">
+                    <a href="{% url 'produtos:categoria_list' %}" class="btn-cancel">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn-delete">
+                        <i class="fas fa-trash"></i>
+                        Sim, excluir categoria
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar confirmação extra para categorias com produtos
+    const deleteForm = document.querySelector('form');
+    const productCount = {{ object.produtos.count }};
+    
+    if (productCount > 0) {
+        deleteForm.addEventListener('submit', function(e) {
+            const confirmed = confirm(
+                `Esta categoria possui ${productCount} produto${productCount > 1 ? 's' : ''} vinculado${productCount > 1 ? 's' : ''}.\n\n` +
+                'Tem certeza que deseja continuar com a exclusão?\n' +
+                'Os produtos ficarão sem categoria.'
+            );
+            
+            if (!confirmed) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

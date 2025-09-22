@@ -1,0 +1,60 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% block title %}Ajuda & Guia Rápido{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0"><i class="fas fa-question-circle me-2 text-primary"></i>Central de Ajuda</h1>
+  </div>
+  <div class="row g-4">
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Visão Geral</h5>
+          <p class="text-muted mb-2">Aqui você encontra orientação rápida sobre os principais recursos do Pandora ERP.</p>
+          <ul class="list-unstyled small mb-0">
+            <li><i class="fas fa-check-circle text-success me-2"></i>Pesquisa instantânea: use a barra superior para achar módulos.</li>
+            <li><i class="fas fa-check-circle text-success me-2"></i>Menu inteligente: módulos exibidos conforme permissões.</li>
+            <li><i class="fas fa-check-circle text-success me-2"></i>Permissões: personalize acessos em Usuários &gt; Permissões.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="row">
+        {% for grupo in topicos %}
+        <div class="col-md-6 mb-4">
+          <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <h6 class="fw-bold text-primary mb-2">{{ grupo.titulo }}</h6>
+              <ul class="list-unstyled small mb-0">
+                {% for item in grupo.itens %}
+                  <li><i class="fas fa-angle-right text-muted me-1"></i>{{ item }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="fas fa-life-ring me-2 text-primary"></i>Precisa de mais ajuda?</h6>
+          <p class="small text-muted">Use o Assistente Web ou o AI Auditor para suporte orientado por IA. Para questões críticas abra um chamado interno.</p>
+          <a href="/assistente-web/" class="btn btn-outline-primary btn-sm me-2"><i class="fas fa-robot me-1"></i>Assistente</a>
+          <a href="/ai-auditor/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-chart-line me-1"></i>AI Auditor</a>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="fas fa-lightbulb me-2 text-warning"></i>Dicas Rápidas</h6>
+          <ul class="small mb-0 ps-3">
+            <li>Atualize seu perfil em Usuário &gt; Meu Perfil.</li>
+            <li>Revise permissões após criar novos módulos.</li>
+            <li>Use filtros salvos para acelerar consultas recorrentes.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

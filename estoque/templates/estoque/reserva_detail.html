@@ -1,0 +1,123 @@
+{% extends "pandora_detail_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Reserva #{{ object.codigo }}{% endblock %}
+{% block page_title %}Reserva #{{ object.codigo }}{% endblock %}
+{% block page_subtitle %}Detalhes completos da reserva de estoque{% endblock %}
+{% block page_icon %}fas fa-hand-holding text-warning{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'estoque:estoque_home' %}">Estoque</a></li>
+<li class="breadcrumb-item"><a href="{% url 'estoque:reservas_list' %}">Reservas</a></li>
+<li class="breadcrumb-item active">#{{ object.codigo }}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;margin-bottom:.75rem}
+    .info-item{background:#fff;border:1px solid #eef1f4;padding:.85rem .9rem;border-radius:10px;position:relative}
+    .info-item .label{font-size:.65rem;text-transform:uppercase;font-weight:600;color:#6c757d;letter-spacing:.5px;margin-bottom:.15rem;display:block}
+    .info-item .value{font-size:.9rem;font-weight:600;color:#2c3e50}
+    .timeline{position:relative;padding-left:1.25rem}
+    .timeline:before{content:"";position:absolute;left:4px;top:0;bottom:0;width:2px;background:linear-gradient(#0d6efd,#6c757d)}
+    .tl-item{position:relative;padding:0 0 .9rem 1rem}
+    .tl-item:last-child{padding-bottom:0}
+    .tl-item:before{content:"";position:absolute;left:-1px;top:4px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid #6c757d}
+    .tl-item.active:before{border-color:#28a745;background:#28a745}
+    .tl-item.current:before{border-color:#0d6efd;background:#0d6efd}
+    .badge.fs-6{font-size:.75rem!important}
+</style>
+{% endblock %}
+
+{% block detail_actions %}
+<a href="{% url 'estoque:reservas_list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
+{% if object.status == 'ATIVA' and not object.is_expirada %}
+<div class="btn-group" role="group" aria-label="Ações da reserva">
+    <button class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fas fa-cog me-1" aria-hidden="true"></i> Ações</button>
+    <ul class="dropdown-menu" role="menu">
+        <li><a class="dropdown-item" href="{% url 'estoque:reserva_edit' object.pk %}"><i class="fas fa-edit me-2"></i>Editar</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-success" href="{% url 'estoque:reserva_utilizar' object.pk %}"><i class="fas fa-check me-2"></i>Utilizar</a></li>
+        <li><a class="dropdown-item text-danger" href="{% url 'estoque:reserva_cancelar' object.pk %}"><i class="fas fa-times me-2"></i>Cancelar</a></li>
+    </ul>
+</div>
+{% endif %}
+<button class="btn btn-outline-info" onclick="window.print()"><i class="fas fa-print me-1"></i> Imprimir</button>
+{% endblock %}
+
+{% block detail_content %}
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h3 class="mb-2"><i class="fas fa-hand-holding text-warning me-2"></i>Reserva #{{ object.codigo }}</h3>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if object.status == 'ATIVA' %}
+                                {% if object.is_expirada %}<span class="badge bg-danger fs-6"><i class="fas fa-times me-1"></i>Expirada</span>
+                                {% elif object.is_expirando %}<span class="badge bg-warning fs-6"><i class="fas fa-clock me-1"></i>Expirando</span>
+                                {% else %}<span class="badge bg-success fs-6"><i class="fas fa-check-circle me-1"></i>Ativa</span>{% endif %}
+                            {% elif object.status == 'UTILIZADA' %}<span class="badge bg-primary fs-6"><i class="fas fa-check-double me-1"></i>Utilizada</span>
+                            {% elif object.status == 'CANCELADA' %}<span class="badge bg-secondary fs-6"><i class="fas fa-ban me-1"></i>Cancelada</span>{% endif %}
+                            {% if object.prioridade == 'ALTA' %}<span class="badge bg-warning"><i class="fas fa-arrow-up me-1"></i>Alta Prioridade</span>{% elif object.prioridade == 'URGENTE' %}<span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Urgente</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fs-4 fw-bold text-primary">{{ object.quantidade|floatformat:0 }}</div>
+                        <small class="text-muted">{{ object.produto.unidade_medida|default:"UN" }}</small>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item"><span class="label"><i class="fas fa-cube me-1"></i>Produto</span><span class="value">{{ object.produto.nome }}</span>{% if object.produto.codigo %}<small class="text-muted d-block mt-1">Código: {{ object.produto.codigo }}</small>{% endif %}</div>
+                    <div class="info-item"><span class="label"><i class="fas fa-warehouse me-1"></i>Depósito</span><span class="value">{{ object.deposito.nome }}</span>{% if object.deposito.codigo %}<small class="text-muted d-block mt-1">Código: {{ object.deposito.codigo }}</small>{% endif %}</div>
+                    <div class="info-item"><span class="label"><i class="fas fa-user me-1"></i>Responsável</span><span class="value">{% if object.responsavel %}{{ object.responsavel.get_full_name|default:object.responsavel.username }}{% else %}<em class="text-muted">Não informado</em>{% endif %}</span></div>
+                    <div class="info-item"><span class="label"><i class="fas fa-calendar me-1"></i>Criação</span><span class="value">{{ object.data_criacao|date:"d/m/Y H:i" }}</span></div>
+                    {% if object.data_expiracao %}<div class="info-item"><span class="label"><i class="fas fa-clock me-1"></i>Expiração</span><span class="value {% if object.is_expirada %}text-danger{% elif object.is_expirando %}text-warning{% endif %}">{{ object.data_expiracao|date:"d/m/Y H:i" }}</span></div>{% endif %}
+                    {% if object.valor_unitario %}<div class="info-item"><span class="label"><i class="fas fa-dollar-sign me-1"></i>Valor Unitário</span><span class="value">R$ {{ object.valor_unitario|floatformat:2 }}</span></div><div class="info-item"><span class="label"><i class="fas fa-calculator me-1"></i>Valor Total</span><span class="value text-primary">R$ {{ object.valor_total|floatformat:2 }}</span></div>{% endif %}
+                </div>
+
+                {% if object.observacoes %}
+                <div class="mt-3">
+                    <h6 class="fw-bold mb-2"><i class="fas fa-comment me-2 text-info"></i>Observações</h6>
+                    <div class="bg-light p-3 rounded small">{{ object.observacoes|linebreaks }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="fas fa-timeline me-2 text-primary"></i>Linha do Tempo</h5>
+                <div class="timeline">
+                    <div class="tl-item active"><h6 class="mb-1">Reserva Criada</h6><small class="text-muted">{{ object.data_criacao|date:"d/m/Y H:i" }}</small><p class="mb-0 mt-1 small">Por: {{ object.criado_por.get_full_name|default:object.criado_por.username }}</p></div>
+                    {% if object.status == 'ATIVA' %}
+                        <div class="tl-item current"><h6 class="mb-1">Status Ativo</h6><small class="text-muted">{% if object.is_expirada %}<span class="text-danger">Expirada em {{ object.data_expiracao|date:"d/m/Y H:i" }}</span>{% elif object.is_expirando %}<span class="text-warning">Expira em {{ object.data_expiracao|date:"d/m/Y H:i" }}</span>{% else %}Aguardando utilização{% endif %}</small></div>
+                    {% elif object.status == 'UTILIZADA' %}
+                        <div class="tl-item active"><h6 class="mb-1">Reserva Utilizada</h6><small class="text-muted">{{ object.data_utilizacao|date:"d/m/Y H:i" }}</small>{% if object.utilizada_por %}<p class="mb-0 mt-1 small">Por: {{ object.utilizada_por.get_full_name|default:object.utilizada_por.username }}</p>{% endif %}</div>
+                    {% elif object.status == 'CANCELADA' %}
+                        <div class="tl-item active"><h6 class="mb-1">Reserva Cancelada</h6><small class="text-muted">{{ object.data_cancelamento|date:"d/m/Y H:i" }}</small>{% if object.cancelada_por %}<p class="mb-0 mt-1 small">Por: {{ object.cancelada_por.get_full_name|default:object.cancelada_por.username }}</p>{% endif %}{% if object.motivo_cancelamento %}<p class="mb-0 mt-1 small"><strong>Motivo:</strong> {{ object.motivo_cancelamento }}</p>{% endif %}</div>
+                    {% endif %}
+                    {% if object.data_expiracao and object.status == 'ATIVA' %}<div class="tl-item {% if object.is_expirada %}active{% else %}inactive{% endif %}"><h6 class="mb-1">Expiração</h6><small class="text-muted">{{ object.data_expiracao|date:"d/m/Y H:i" }}</small></div>{% endif %}
+                </div>
+                <div class="mt-4 p-3 bg-light rounded small">
+                    <h6 class="mb-2"><i class="fas fa-chart-bar me-1 text-success"></i>Saldo Atual</h6>
+                    <div id="saldo-atual" class="small text-muted">Carregando...</div>
+                </div>
+            </div>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-0"><h5 class="mb-0"><i class="fas fa-history me-2 text-info"></i>Histórico de Movimentações</h5></div>
+            <div class="card-body small" id="historico-movimentacoes"><div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>window.RESERVA_CONTEXT={id:{{ object.id }},produto_id:{{ object.produto.id }},deposito_id:{{ object.deposito.id }},status:'{{ object.status }}'};</script>
+<script src="{% static 'estoque/reservas_detail.js' %}"></script>
+{% endblock %}

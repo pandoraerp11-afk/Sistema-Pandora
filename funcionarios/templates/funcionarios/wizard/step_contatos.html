@@ -1,0 +1,154 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Alerta Informativo -->
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-address-book text-info me-3" style="font-size:1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-info">Contatos do Funcionário</h6>
+      <small class="text-muted">Informe o contato principal, dados de emergência e adicione outros contatos se necessário.</small>
+    </div>
+  </div>
+  {% if forms.main.additional_contacts_json %}
+    {% render_field forms.main.additional_contacts_json class+="wizard-additional-contacts-json" style="display:none" %}
+  {% endif %}
+  <input type="hidden" id="id_main-additional_contacts_json" name="main-additional_contacts_json" />
+</div>
+
+<!-- Contato Principal -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-user-tie wizard-icon"></i>Contato Principal</h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.telefone_pessoal field_size='xs-auto' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.telefone_secundario field_size='xs-auto' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.email_pessoal field_size='grow' hide_help_text=True %}
+  </div>
+</div>
+
+<!-- Contato de Emergência -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-ambulance wizard-icon"></i>Contato de Emergência</h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.contato_emergencia field_size='md' %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.telefone_emergencia field_size='xs-auto' hide_help_text=True %}
+  </div>
+</div>
+
+<!-- Observações -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-sticky-note wizard-icon"></i>Observações</h5>
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.observacoes field_size='xl' hide_help_text=True %}
+  </div>
+</div>
+
+<!-- Contatos Adicionais -->
+<div class="wizard-section">
+  <div class="d-flex align-items-center justify-content-between">
+    <h5 class="wizard-section-title mb-0"><i class="fas fa-users wizard-icon"></i>Contatos Adicionais</h5>
+    <button type="button" class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" id="btnAddContact" formnovalidate data-bs-toggle="tooltip" data-bs-placement="left" title="Adicionar contato" aria-label="Adicionar contato" style="width:2rem;height:2rem;">
+      <i class="fas fa-plus"></i>
+    </button>
+  </div>
+  <div class="table-responsive mt-3">
+    <table class="table table-sm align-middle mb-0" id="tblContacts">
+      <colgroup>
+        <col>
+        <col style="width:280px;">
+        <col style="width:120px;">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th class="text-nowrap">Contatos</th>
+          <th class="text-center text-nowrap">Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <small class="text-muted d-block text-center mt-2">Adicione quantos contatos adicionais forem necessários.</small>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  try { if (window.bootstrap && typeof bootstrap.Tooltip === 'function') {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+  } } catch(_) {}
+
+  const jsonField = document.querySelector('.wizard-additional-contacts-json') || document.querySelector('input[name="main-additional_contacts_json"]');
+  const tableBody = document.querySelector('#tblContacts tbody');
+  const addBtn = document.getElementById('btnAddContact');
+
+  const modalEl = document.getElementById('modalAddContact');
+  const bsModal = window.bootstrap && modalEl ? new bootstrap.Modal(modalEl, { backdrop: true, keyboard: true, focus: true }) : null;
+  let lastTrigger = null;
+
+  const btnSave = document.getElementById('btnSaveContact');
+  let editingIndex = null;
+  const fld = {
+    nome: document.getElementById('contactNome'),
+    telefone: document.getElementById('contactTelefone'),
+    email: document.getElementById('contactEmail')
+  };
+  const errorBox = document.getElementById('contactError');
+  const modalTitle = document.getElementById('modalAddContactLabel');
+  let items = [];
+
+  function setError(msg){ if(!errorBox) return; if(!msg){ errorBox.classList.add('d-none'); errorBox.textContent=''; return;} errorBox.textContent=msg; errorBox.classList.remove('d-none'); }
+  function resetModal(){ setError(''); if(!fld.nome) return; fld.nome.value=''; fld.telefone.value=''; fld.email.value=''; }
+  function fillModal(it){ if(!it) return; fld.nome.value=it.nome||''; fld.telefone.value=it.telefone||''; fld.email.value=it.email||''; }
+  function openModal(editIdx){ try{ lastTrigger=document.activeElement; }catch(_){ lastTrigger=null;} editingIndex=(typeof editIdx==='number'&&!isNaN(editIdx))?editIdx:null; if(editingIndex!==null){ setError(''); fillModal(items[editingIndex]||{}); if(modalTitle) modalTitle.textContent='Editar Contato'; if(btnSave) btnSave.textContent='Salvar'; } else { resetModal(); if(modalTitle) modalTitle.textContent='Adicionar Contato'; if(btnSave) btnSave.textContent='Adicionar'; } if(bsModal) bsModal.show(); else if(modalEl){ modalEl.classList.add('show'); modalEl.style.display='block'; modalEl.setAttribute('aria-modal','true'); modalEl.removeAttribute('aria-hidden'); document.body.classList.add('modal-open'); }
+  }
+  function closeModal(){ if(bsModal) bsModal.hide(); else if(modalEl){ try{ const active=document.activeElement; if(active && modalEl.contains(active)) active.blur(); }catch(_){} modalEl.classList.remove('show'); modalEl.style.display='none'; modalEl.setAttribute('aria-hidden','true'); modalEl.removeAttribute('aria-modal'); document.body.classList.remove('modal-open'); } try{ if(lastTrigger && typeof lastTrigger.focus==='function') lastTrigger.focus(); }catch(_){} editingIndex=null; if(modalTitle) modalTitle.textContent='Adicionar Contato'; if(btnSave) btnSave.textContent='Adicionar'; }
+  if (modalEl && !bsModal){ const dismissBtns = modalEl.querySelectorAll('[data-bs-dismiss="modal"], [data-dismiss="modal"], .btn-close, .close'); dismissBtns.forEach(btn=>btn.addEventListener('click', ()=>closeModal())); }
+
+  function loadFromField(){ try { const raw=jsonField ? (jsonField.value||'[]') : '[]'; const parsed=JSON.parse(raw); items = Array.isArray(parsed)?parsed:[]; } catch(e){ items=[]; } }
+  function saveToField(){ if(jsonField) jsonField.value=JSON.stringify(items); }
+  function renderTable(){ if(!tableBody) return; tableBody.innerHTML=''; if(!items.length){ const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=3; td.className='text-muted text-center py-3'; td.textContent='Nenhum contato adicionado.'; tr.appendChild(td); tableBody.appendChild(tr); return; } items.forEach((it,idx)=>{ const tr=document.createElement('tr'); const tdNome=document.createElement('td'); const tdContato=document.createElement('td'); const tdAcoes=document.createElement('td'); tdContato.className='text-nowrap'; tdAcoes.className='text-center text-nowrap'; tdNome.textContent=it.nome||'-'; const parts=[]; if(it.telefone) parts.push(it.telefone); if(it.email) parts.push(it.email); tdContato.textContent=parts.join(' • '); tdAcoes.innerHTML=`<div class="d-flex gap-2 justify-content-center"><button type="button" class="btn btn-sm btn-link text-primary p-0 btn-edit" data-idx="${idx}" title="Editar" aria-label="Editar"><i class="fas fa-pen"></i></button><button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove" data-idx="${idx}" title="Remover" aria-label="Remover"><i class="fas fa-trash"></i></button></div>`; tdAcoes.querySelector('.btn-edit').addEventListener('click',function(){ const i=parseInt(this.getAttribute('data-idx')); if(!isNaN(i)) openModal(i); }); tdAcoes.querySelector('.btn-remove').addEventListener('click',function(){ const i=parseInt(this.getAttribute('data-idx')); if(!isNaN(i)){ items.splice(i,1); saveToField(); renderTable(); } }); tr.appendChild(tdNome); tr.appendChild(tdContato); tr.appendChild(tdAcoes); tableBody.appendChild(tr); }); }
+  function collectFromModal(){ const nome=(fld.nome?.value||'').trim(); const telefone=(fld.telefone?.value||'').trim(); const email=(fld.email?.value||'').trim(); if(!nome){ setError('Informe o nome do contato.'); return null;} setError(''); return { nome, telefone, email }; }
+  if(addBtn) addBtn.addEventListener('click', function(e){ e.preventDefault(); openModal(null); });
+  if(btnSave) btnSave.addEventListener('click', function(){ const novo=collectFromModal(); if(!novo) return; if(editingIndex!==null){ items[editingIndex]=novo; } else { items.push(novo); } saveToField(); renderTable(); closeModal(); });
+
+  if(jsonField){ loadFromField(); renderTable(); }
+});
+</script>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="modalAddContact" tabindex="-1" aria-labelledby="modalAddContactLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalAddContactLabel">Adicionar Contato</h5>
+        <button type="button" class="btn-close close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"><span class="d-none" aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div id="contactError" class="alert alert-danger py-2 px-3 d-none mb-3"></div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label" for="contactNome">Nome</label>
+            <input id="contactNome" type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="contactTelefone">Telefone</label>
+            <input id="contactTelefone" type="text" class="form-control form-control-sm" />
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="contactEmail">E-mail</label>
+            <input id="contactEmail" type="email" class="form-control form-control-sm" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSaveContact">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

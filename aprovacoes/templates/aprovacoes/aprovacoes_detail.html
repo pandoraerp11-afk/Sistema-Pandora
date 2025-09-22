@@ -1,0 +1,763 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ aprovacao.descricao }} | Pandora ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    
+    .workflow-indicator {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        border-radius: 12px 0 0 12px;
+    }
+    
+    .workflow-pendente {
+        background: linear-gradient(135deg, #ffc107, #ffb300);
+    }
+    
+    .workflow-aprovado {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+    
+    .workflow-rejeitado {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .workflow-cancelado {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .detail-section h4 {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        padding-left: 1rem;
+    }
+    
+    .detail-item {
+        margin-bottom: 1.5rem;
+        padding-left: 1rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #34495e;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .detail-value {
+        color: #2c3e50;
+        font-size: 1.1rem;
+        padding: 0.5rem 0;
+    }
+    
+    .detail-value.empty {
+        color: #7f8c8d;
+        font-style: italic;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        border-radius: 25px;
+        font-weight: 700;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .status-pendente {
+        background: linear-gradient(135deg, #ffc107, #ffb300);
+        color: #fff;
+    }
+    
+    .status-aprovado {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: #fff;
+    }
+    
+    .status-rejeitado {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: #fff;
+    }
+    
+    .status-cancelado {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: #fff;
+    }
+    
+    .timeline {
+        position: relative;
+        padding: 1rem 0;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 2rem;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: #dee2e6;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-left: 4rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: 1.25rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: white;
+        z-index: 2;
+    }
+    
+    .timeline-marker.pending {
+        background: #ffc107;
+    }
+    
+    .timeline-marker.approved {
+        background: #28a745;
+    }
+    
+    .timeline-marker.rejected {
+        background: #dc3545;
+    }
+    
+    .timeline-marker.cancelled {
+        background: #6c757d;
+    }
+    
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 3px solid #3498db;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-description {
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-date {
+        font-size: 0.9rem;
+        color: #007bff;
+        font-weight: 500;
+    }
+    
+    .info-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-left: 4px solid #3498db;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card h5 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-card p {
+        color: #6c757d;
+        margin: 0;
+    }
+    
+    .action-buttons {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .btn-approve {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-right: 0.5rem;
+    }
+    
+    .btn-approve:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    
+    .btn-reject {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-right: 0.5rem;
+    }
+    
+    .btn-reject:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+        color: white;
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(243, 156, 18, 0.4);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #95a5a6;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #7f8c8d;
+        transform: translateY(-2px);
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+    
+    .icon-detail {
+        color: #3498db;
+        margin-right: 0.5rem;
+    }
+    
+    .urgency-indicator {
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-left: 1rem;
+    }
+    
+    .urgency-alta {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .urgency-media {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .urgency-baixa {
+        background: #28a745;
+        color: white;
+    }
+    
+    .approval-workflow {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .workflow-steps {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+    
+    .workflow-step {
+        text-align: center;
+        flex: 1;
+        position: relative;
+    }
+    
+    .workflow-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -50%;
+        transform: translateY(-50%);
+        height: 2px;
+        width: 100%;
+        background: rgba(255,255,255,0.3);
+        z-index: 1;
+    }
+    
+    .workflow-step.active::after,
+    .workflow-step.completed::after {
+        background: rgba(255,255,255,0.8);
+    }
+    
+    .workflow-step-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.5rem;
+        font-size: 1.2rem;
+        position: relative;
+        z-index: 2;
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+    
+    .workflow-step.active .workflow-step-icon,
+    .workflow-step.completed .workflow-step-icon {
+        border-color: white;
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .workflow-step-text {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+    
+    .workflow-step.active .workflow-step-text,
+    .workflow-step.completed .workflow-step-text {
+        opacity: 1;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="page-title">
+                    <i class="fas fa-clipboard-check"></i> {{ aprovacao.descricao }}
+                    <span class="status-badge status-{{ aprovacao.status }}">
+                        {% if aprovacao.status == 'pendente' %}
+                            <i class="fas fa-clock"></i> {{ aprovacao.get_status_display }}
+                        {% elif aprovacao.status == 'aprovado' %}
+                            <i class="fas fa-check"></i> {{ aprovacao.get_status_display }}
+                        {% elif aprovacao.status == 'rejeitado' %}
+                            <i class="fas fa-times"></i> {{ aprovacao.get_status_display }}
+                        {% elif aprovacao.status == 'cancelado' %}
+                            <i class="fas fa-ban"></i> {{ aprovacao.get_status_display }}
+                        {% endif %}
+                    </span>
+                </h1>
+                <p class="page-subtitle">Detalhes da solicitação de aprovação</p>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'aprovacoes:aprovacoes_list' %}">Aprovações</a></li>
+                    <li class="breadcrumb-item active">{{ aprovacao.descricao|truncatewords:3 }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="approval-workflow">
+                    <h5><i class="fas fa-project-diagram"></i> Workflow de Aprovação</h5>
+                    <div class="workflow-steps">
+                        <div class="workflow-step completed">
+                            <div class="workflow-step-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="workflow-step-text">Solicitação</div>
+                        </div>
+                        <div class="workflow-step {% if aprovacao.status == 'pendente' %}active{% else %}completed{% endif %}">
+                            <div class="workflow-step-icon">
+                                {% if aprovacao.status == 'pendente' %}
+                                    <i class="fas fa-clock"></i>
+                                {% elif aprovacao.status == 'aprovado' or aprovacao.status == 'rejeitado' %}
+                                    <i class="fas fa-eye"></i>
+                                {% else %}
+                                    <i class="fas fa-ban"></i>
+                                {% endif %}
+                            </div>
+                            <div class="workflow-step-text">Análise</div>
+                        </div>
+                        <div class="workflow-step {% if aprovacao.status == 'aprovado' or aprovacao.status == 'rejeitado' %}completed{% endif %}">
+                            <div class="workflow-step-icon">
+                                {% if aprovacao.status == 'aprovado' %}
+                                    <i class="fas fa-thumbs-up"></i>
+                                {% elif aprovacao.status == 'rejeitado' %}
+                                    <i class="fas fa-thumbs-down"></i>
+                                {% else %}
+                                    <i class="fas fa-flag-checkered"></i>
+                                {% endif %}
+                            </div>
+                            <div class="workflow-step-text">Decisão</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <div class="workflow-indicator workflow-{{ aprovacao.status }}"></div>
+                    <h4><i class="fas fa-info-circle icon-detail"></i> Informações Gerais</h4>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-align-left icon-detail"></i> Descrição
+                        </span>
+                        <div class="detail-value">{{ aprovacao.descricao }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-calendar-plus icon-detail"></i> Data de Solicitação
+                        </span>
+                        <div class="detail-value">
+                            {{ aprovacao.data_solicitacao|date:"d/m/Y" }}
+                            <small class="text-muted">({{ aprovacao.data_solicitacao|timesince }} atrás)</small>
+                        </div>
+                    </div>
+                    
+                    {% if aprovacao.data_aprovacao %}
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-calendar-check icon-detail"></i> Data de Aprovação
+                        </span>
+                        <div class="detail-value">
+                            {{ aprovacao.data_aprovacao|date:"d/m/Y" }}
+                            <small class="text-muted">({{ aprovacao.data_aprovacao|timesince }} atrás)</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if aprovacao.observacoes %}
+                    <div class="detail-item">
+                        <span class="detail-label">
+                            <i class="fas fa-sticky-note icon-detail"></i> Observações
+                        </span>
+                        <div class="detail-value">{{ aprovacao.observacoes|linebreaks }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="detail-section">
+                    <div class="workflow-indicator workflow-{{ aprovacao.status }}"></div>
+                    <h4><i class="fas fa-users icon-detail"></i> Envolvidos</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if aprovacao.responsavel %}
+                            <div class="info-card">
+                                <h5><i class="fas fa-user"></i> Solicitante</h5>
+                                <p><strong>{{ aprovacao.responsavel.nome }}</strong></p>
+                                {% if aprovacao.responsavel.cargo %}
+                                    <p><i class="fas fa-briefcase"></i> {{ aprovacao.responsavel.cargo }}</p>
+                                {% endif %}
+                                {% if aprovacao.responsavel.email %}
+                                    <p><i class="fas fa-envelope"></i> {{ aprovacao.responsavel.email }}</p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if aprovacao.aprovador %}
+                            <div class="info-card" style="border-left-color: #28a745;">
+                                <h5><i class="fas fa-user-check"></i> Aprovador</h5>
+                                <p><strong>{{ aprovacao.aprovador.nome }}</strong></p>
+                                {% if aprovacao.aprovador.cargo %}
+                                    <p><i class="fas fa-briefcase"></i> {{ aprovacao.aprovador.cargo }}</p>
+                                {% endif %}
+                                {% if aprovacao.aprovador.email %}
+                                    <p><i class="fas fa-envelope"></i> {{ aprovacao.aprovador.email }}</p>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="info-card" style="border-left-color: #ffc107;">
+                                <h5><i class="fas fa-user-clock"></i> Aprovador</h5>
+                                <p class="text-muted">Aguardando definição do aprovador</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <div class="workflow-indicator workflow-{{ aprovacao.status }}"></div>
+                    <h4><i class="fas fa-history icon-detail"></i> Histórico</h4>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker pending">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Solicitação Criada</div>
+                                <div class="timeline-description">
+                                    A solicitação foi criada por {{ aprovacao.responsavel.nome|default:"Sistema" }}
+                                </div>
+                                <div class="timeline-date">{{ aprovacao.data_solicitacao|date:"d/m/Y H:i" }}</div>
+                            </div>
+                        </div>
+                        
+                        {% if aprovacao.status == 'aprovado' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker approved">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Solicitação Aprovada</div>
+                                <div class="timeline-description">
+                                    Aprovada por {{ aprovacao.aprovador.nome|default:"Sistema" }}
+                                </div>
+                                <div class="timeline-date">{{ aprovacao.data_aprovacao|date:"d/m/Y H:i" }}</div>
+                            </div>
+                        </div>
+                        {% elif aprovacao.status == 'rejeitado' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker rejected">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Solicitação Rejeitada</div>
+                                <div class="timeline-description">
+                                    Rejeitada por {{ aprovacao.aprovador.nome|default:"Sistema" }}
+                                </div>
+                                <div class="timeline-date">{{ aprovacao.data_aprovacao|date:"d/m/Y H:i" }}</div>
+                            </div>
+                        </div>
+                        {% elif aprovacao.status == 'cancelado' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker cancelled">
+                                <i class="fas fa-ban"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Solicitação Cancelada</div>
+                                <div class="timeline-description">A solicitação foi cancelada</div>
+                                <div class="timeline-date">{{ aprovacao.data_aprovacao|date:"d/m/Y H:i"|default:"Data não definida" }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="action-buttons">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cogs"></i> Ações
+                    </h5>
+                    
+                    <div class="d-grid gap-3">
+                        {% if aprovacao.status == 'pendente' %}
+                            <button class="btn btn-approve btn-block approve-btn" 
+                                    data-id="{{ aprovacao.pk }}" 
+                                    data-descricao="{{ aprovacao.descricao }}">
+                                <i class="fas fa-check"></i> Aprovar
+                            </button>
+                            
+                            <button class="btn btn-reject btn-block reject-btn" 
+                                    data-id="{{ aprovacao.pk }}" 
+                                    data-descricao="{{ aprovacao.descricao }}">
+                                <i class="fas fa-times"></i> Rejeitar
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'aprovacoes:aprovacoes_update' aprovacao.pk %}" 
+                           class="btn btn-warning btn-block">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        
+                        <a href="{% url 'aprovacoes:aprovacoes_delete' aprovacao.pk %}" 
+                           class="btn btn-danger btn-block delete-btn">
+                            <i class="fas fa-trash"></i> Excluir
+                        </a>
+                        
+                        <a href="{% url 'aprovacoes:aprovacoes_list' %}" 
+                           class="btn btn-secondary btn-block">
+                            <i class="fas fa-arrow-left"></i> Voltar à Lista
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="info-card mt-4">
+                    <h5><i class="fas fa-info-circle"></i> Informações do Sistema</h5>
+                    <p><strong>ID:</strong> #{{ aprovacao.id }}</p>
+                    <p><strong>Criado em:</strong> {{ aprovacao.data_solicitacao|date:"d/m/Y H:i" }}</p>
+                    {% if aprovacao.status == 'pendente' %}
+                        <p><strong>Pendente há:</strong> {{ aprovacao.data_solicitacao|timesince }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Função para aprovar
+    $('.approve-btn').on('click', function() {
+        var id = $(this).data('id');
+        var descricao = $(this).data('descricao');
+        
+        Swal.fire({
+            title: 'Aprovar Solicitação',
+            text: `Confirma a aprovação de "${descricao}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, aprovar!',
+            cancelButtonText: 'Cancelar',
+            input: 'textarea',
+            inputPlaceholder: 'Observações da aprovação (opcional)...',
+            inputAttributes: {
+                'aria-label': 'Observações da aprovação'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Aqui você faria uma requisição AJAX para aprovar
+                Swal.fire('Aprovado!', 'A solicitação foi aprovada com sucesso.', 'success')
+                    .then(() => location.reload());
+            }
+        });
+    });
+    
+    // Função para rejeitar
+    $('.reject-btn').on('click', function() {
+        var id = $(this).data('id');
+        var descricao = $(this).data('descricao');
+        
+        Swal.fire({
+            title: 'Rejeitar Solicitação',
+            text: `Confirma a rejeição de "${descricao}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, rejeitar!',
+            cancelButtonText: 'Cancelar',
+            input: 'textarea',
+            inputPlaceholder: 'Motivo da rejeição (obrigatório)...',
+            inputAttributes: {
+                'aria-label': 'Motivo da rejeição'
+            },
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Você precisa informar o motivo da rejeição!'
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Aqui você faria uma requisição AJAX para rejeitar
+                Swal.fire('Rejeitado!', 'A solicitação foi rejeitada.', 'success')
+                    .then(() => location.reload());
+            }
+        });
+    });
+    
+    // Confirmação para exclusão
+    $('.delete-btn').on('click', function(e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+        var descricao = '{{ aprovacao.descricao }}';
+        
+        Swal.fire({
+            title: 'Confirmar Exclusão',
+            text: `Tem certeza que deseja excluir a aprovação "${descricao}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+    
+    // Animação suave para botões
+    $('.btn').on('mouseenter', function() {
+        $(this).addClass('shadow-lg');
+    }).on('mouseleave', function() {
+        $(this).removeClass('shadow-lg');
+    });
+    
+    // Tooltip para elementos com título
+    $('[title]').tooltip();
+});
+</script>
+{% endblock %}

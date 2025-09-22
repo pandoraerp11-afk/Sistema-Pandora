@@ -1,0 +1,488 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Orçamentos{% endblock %}
+
+{% block page_title %}Orçamentos{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Orçamentos</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="ph-duotone ph-calculator"></i>
+            Orçamentos
+        </h1>
+        <p class="page-subtitle">Gerencie todos os orçamentos e propostas</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline-primary" onclick="toggleAdvancedSearch()">
+            <i class="ph-duotone ph-magnifying-glass"></i>
+            Busca Avançada
+        </button>
+        <a href="{% url 'orcamentos:orcamento_create' %}" class="btn btn-primary">
+            <i class="ph-duotone ph-plus"></i>
+            Novo Orçamento
+        </a>
+    </div>
+</div>
+
+<!-- Busca Avançada -->
+<div id="advanced-search" class="advanced-search-panel" style="display: none;">
+    <form method="get" action="{% url 'orcamentos:orcamento_list' %}">
+        <div class="search-grid">
+            <div class="search-field">
+                <label for="id_numero">Número</label>
+                <input type="text" id="id_numero" name="numero" class="form-control" value="{{ request.GET.numero }}" placeholder="Digite o número do orçamento">
+            </div>
+            <div class="search-field">
+                <label for="id_cliente">Cliente</label>
+                <select id="id_cliente" name="cliente" class="form-control">
+                    <option value="">Todos os clientes</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {% if request.GET.cliente == cliente.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cliente.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="search-field">
+                <label for="id_status">Status</label>
+                <select id="id_status" name="status" class="form-control">
+                    <option value="">Todos os status</option>
+                    <option value="rascunho" {% if request.GET.status == 'rascunho' %}selected{% endif %}>Rascunho</option>
+                    <option value="enviado" {% if request.GET.status == 'enviado' %}selected{% endif %}>Enviado</option>
+                    <option value="aprovado" {% if request.GET.status == 'aprovado' %}selected{% endif %}>Aprovado</option>
+                    <option value="rejeitado" {% if request.GET.status == 'rejeitado' %}selected{% endif %}>Rejeitado</option>
+                    <option value="expirado" {% if request.GET.status == 'expirado' %}selected{% endif %}>Expirado</option>
+                </select>
+            </div>
+            <div class="search-field">
+                <label for="id_valor_min">Valor Mínimo</label>
+                <input type="number" id="id_valor_min" name="valor_min" class="form-control" value="{{ request.GET.valor_min }}" placeholder="0,00" step="0.01">
+            </div>
+            <div class="search-field">
+                <label for="id_valor_max">Valor Máximo</label>
+                <input type="number" id="id_valor_max" name="valor_max" class="form-control" value="{{ request.GET.valor_max }}" placeholder="0,00" step="0.01">
+            </div>
+            <div class="search-field">
+                <label for="id_data_inicio">Data Início</label>
+                <input type="date" id="id_data_inicio" name="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+            </div>
+        </div>
+        <div class="search-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph-duotone ph-magnifying-glass"></i>
+                Buscar
+            </button>
+            <a href="{% url 'orcamentos:orcamento_list' %}" class="btn btn-outline-secondary">
+                <i class="ph-duotone ph-x"></i>
+                Limpar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Estatísticas -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="ph-duotone ph-calculator"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ total_orcamentos }}</h3>
+            <p>Total de Orçamentos</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="ph-duotone ph-check-circle"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ orcamentos_aprovados }}</h3>
+            <p>Aprovados</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="ph-duotone ph-clock"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ orcamentos_pendentes }}</h3>
+            <p>Pendentes</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="ph-duotone ph-currency-dollar"></i>
+        </div>
+        <div class="stat-content">
+            <h3>R$ {{ valor_total|floatformat:2 }}</h3>
+            <p>Valor Total</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Orçamentos -->
+<div class="data-table-container">
+    <div class="table-header">
+        <div class="table-info">
+            <span class="record-count">{{ orcamentos|length }} orçamento{{ orcamentos|length|pluralize }}</span>
+        </div>
+        <div class="table-controls">
+            <div class="view-options">
+                <button class="btn btn-sm btn-outline-secondary active" data-view="grid">
+                    <i class="ph-duotone ph-grid-four"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" data-view="list">
+                    <i class="ph-duotone ph-list"></i>
+                </button>
+            </div>
+            <div class="export-options">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+                    <i class="ph-duotone ph-export"></i>
+                    Exportar
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'orcamentos:orcamento_export' %}?format=pdf">
+                        <i class="ph-duotone ph-file-pdf"></i>
+                        PDF
+                    </a>
+                    <a class="dropdown-item" href="{% url 'orcamentos:orcamento_export' %}?format=excel">
+                        <i class="ph-duotone ph-file-xls"></i>
+                        Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table modern-table">
+            <thead>
+                <tr>
+                    <th>
+                        <div class="table-checkbox">
+                            <input type="checkbox" id="select-all">
+                            <label for="select-all"></label>
+                        </div>
+                    </th>
+                    <th>Número</th>
+                    <th>Cliente</th>
+                    <th>Data</th>
+                    <th>Validade</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orcamento in orcamentos %}
+                <tr>
+                    <td>
+                        <div class="table-checkbox">
+                            <input type="checkbox" id="select-{{ orcamento.id }}" value="{{ orcamento.id }}">
+                            <label for="select-{{ orcamento.id }}"></label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="number-cell">
+                            <span class="number-badge">{{ orcamento.numero }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="client-cell">
+                            <div class="client-avatar">
+                                <div class="avatar-placeholder">
+                                    {{ orcamento.cliente.nome|first|upper }}
+                                </div>
+                            </div>
+                            <div class="client-info">
+                                <span class="client-name">{{ orcamento.cliente.nome }}</span>
+                                <span class="client-detail">{{ orcamento.cliente.email }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ orcamento.data_criacao|date:"d/m/Y" }}</span>
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ orcamento.data_validade|date:"d/m/Y" }}</span>
+                    </td>
+                    <td>
+                        <span class="value-cell">R$ {{ orcamento.valor_total|floatformat:2 }}</span>
+                    </td>
+                    <td>
+                        {% if orcamento.status == 'rascunho' %}
+                        <span class="badge badge-secondary">
+                            <i class="ph-duotone ph-file-dashed"></i>
+                            Rascunho
+                        </span>
+                        {% elif orcamento.status == 'enviado' %}
+                        <span class="badge badge-primary">
+                            <i class="ph-duotone ph-paper-plane"></i>
+                            Enviado
+                        </span>
+                        {% elif orcamento.status == 'aprovado' %}
+                        <span class="badge badge-success">
+                            <i class="ph-duotone ph-check-circle"></i>
+                            Aprovado
+                        </span>
+                        {% elif orcamento.status == 'rejeitado' %}
+                        <span class="badge badge-danger">
+                            <i class="ph-duotone ph-x-circle"></i>
+                            Rejeitado
+                        </span>
+                        {% elif orcamento.status == 'expirado' %}
+                        <span class="badge badge-warning">
+                            <i class="ph-duotone ph-clock"></i>
+                            Expirado
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'orcamentos:orcamento_detail' orcamento.pk %}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Visualizar">
+                                <i class="ph-duotone ph-eye"></i>
+                            </a>
+                            <a href="{% url 'orcamentos:orcamento_update' orcamento.pk %}" 
+                               class="btn btn-sm btn-outline-warning" 
+                               title="Editar">
+                                <i class="ph-duotone ph-pencil"></i>
+                            </a>
+                            <a href="{% url 'orcamentos:orcamento_duplicate' orcamento.pk %}" 
+                               class="btn btn-sm btn-outline-info" 
+                               title="Duplicar">
+                                <i class="ph-duotone ph-copy"></i>
+                            </a>
+                            <a href="{% url 'orcamentos:orcamento_pdf' orcamento.pk %}" 
+                               class="btn btn-sm btn-outline-success" 
+                               title="PDF">
+                                <i class="ph-duotone ph-file-pdf"></i>
+                            </a>
+                            <a href="{% url 'orcamentos:orcamento_delete' orcamento.pk %}" 
+                               class="btn btn-sm btn-outline-danger" 
+                               title="Excluir">
+                                <i class="ph-duotone ph-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <div class="empty-state">
+                            <i class="ph-duotone ph-calculator"></i>
+                            <h3>Nenhum orçamento encontrado</h3>
+                            <p>Não há orçamentos cadastrados ou que correspondam aos critérios de busca.</p>
+                            <a href="{% url 'orcamentos:orcamento_create' %}" class="btn btn-primary">
+                                <i class="ph-duotone ph-plus"></i>
+                                Criar Primeiro Orçamento
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} orçamentos
+        </div>
+        <nav class="pagination-nav">
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                <a href="?page=1{% if request.GET.numero %}&numero={{ request.GET.numero }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.numero %}&numero={{ request.GET.numero }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-left"></i>
+                </a>
+                {% endif %}
+                
+                <span class="page-current">
+                    {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.numero %}&numero={{ request.GET.numero }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.numero %}&numero={{ request.GET.numero }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.valor_min %}&valor_min={{ request.GET.valor_min }}{% endif %}{% if request.GET.valor_max %}&valor_max={{ request.GET.valor_max }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}" class="page-link">
+                    <i class="ph-duotone ph-caret-double-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ações em Lote -->
+<div class="bulk-actions" id="bulk-actions" style="display: none;">
+    <div class="bulk-actions-content">
+        <span class="bulk-selected-count">0 orçamentos selecionados</span>
+        <div class="bulk-actions-buttons">
+            <button class="btn btn-outline-secondary" onclick="exportSelected()">
+                <i class="ph-duotone ph-export"></i>
+                Exportar Selecionados
+            </button>
+            <button class="btn btn-outline-primary" onclick="sendSelected()">
+                <i class="ph-duotone ph-paper-plane"></i>
+                Enviar Selecionados
+            </button>
+            <button class="btn btn-outline-warning" onclick="updateStatusSelected()">
+                <i class="ph-duotone ph-pencil"></i>
+                Alterar Status
+            </button>
+            <button class="btn btn-outline-danger" onclick="deleteSelected()">
+                <i class="ph-duotone ph-trash"></i>
+                Excluir Selecionados
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Busca avançada
+    window.toggleAdvancedSearch = function() {
+        const panel = document.getElementById('advanced-search');
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+    };
+
+    // Seleção múltipla
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+    const bulkActions = document.getElementById('bulk-actions');
+    const bulkCount = document.querySelector('.bulk-selected-count');
+
+    selectAll?.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkActions();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkActions);
+    });
+
+    function updateBulkActions() {
+        const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        bulkCount.textContent = `${selectedCount} orçamento${selectedCount !== 1 ? 's' : ''} selecionado${selectedCount !== 1 ? 's' : ''}`;
+        bulkActions.style.display = selectedCount > 0 ? 'block' : 'none';
+        
+        if (selectAll) {
+            selectAll.checked = selectedCount === checkboxes.length;
+            selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+        }
+    }
+
+    // Ações em lote
+    window.exportSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "orcamentos:orcamento_export" %}';
+        
+        selected.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selected_ids';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    };
+
+    window.sendSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Enviar Orçamentos',
+            text: `Deseja enviar ${selected.length} orçamento${selected.length !== 1 ? 's' : ''} por email?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, enviar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log('Enviar orçamentos:', selected);
+            }
+        });
+    };
+
+    window.updateStatusSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Alterar Status',
+            html: `
+                <select id="swal-status" class="swal2-select">
+                    <option value="rascunho">Rascunho</option>
+                    <option value="enviado">Enviado</option>
+                    <option value="aprovado">Aprovado</option>
+                    <option value="rejeitado">Rejeitado</option>
+                    <option value="expirado">Expirado</option>
+                </select>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Alterar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const newStatus = document.getElementById('swal-status').value;
+                console.log('Alterar status:', selected, 'para:', newStatus);
+            }
+        });
+    };
+
+    window.deleteSelected = function() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selected.length === 0) return;
+        
+        Swal.fire({
+            title: 'Excluir Orçamentos',
+            text: `Tem certeza que deseja excluir ${selected.length} orçamento${selected.length !== 1 ? 's' : ''}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, excluir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log('Excluir orçamentos:', selected);
+            }
+        });
+    };
+});
+</script>
+{% endblock %}

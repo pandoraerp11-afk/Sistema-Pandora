@@ -1,0 +1,1655 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title|default:"Formulário de Indicador" }} - BI | Pandora ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M20 20c0-11.046-8.954-20-20-20v20h20z'/%3E%3C/g%3E%3C/svg%3E") repeat;
+        opacity: 0.3;
+    }
+
+    .form-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.8;
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-body {
+        padding: 2.5rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 15px;
+        border-left: 4px solid #007bff;
+    }
+
+    .form-section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label .required {
+        color: #dc3545;
+        font-size: 0.9rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+        outline: none;
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #80bdff;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    .input-group {
+        position: relative;
+    }
+
+    .input-group .form-control {
+        padding-right: 3rem;
+    }
+
+    .input-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    .value-meta-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .progress-preview {
+        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+        display: none;
+    }
+
+    .progress-preview.show {
+        display: block;
+    }
+
+    .progress-bar-preview {
+        background: #e9ecef;
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-fill-preview {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+    }
+
+    .progress-text-preview {
+        text-align: center;
+        font-size: 0.9rem;
+        color: #495057;
+        font-weight: 500;
+    }
+
+    .btn-group-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .btn {
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn:hover::before {
+        left: 100%;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        color: white;
+    }
+
+    .error-message {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border: 1px solid #f5c6cb;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        color: #721c24;
+    }
+
+    .success-message {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: 1px solid #c3e6cb;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        color: #155724;
+    }
+
+    .breadcrumb-item a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .breadcrumb-item a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-item.active {
+        color: #6c757d;
+    }
+
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 1rem;
+        }
+        
+        .form-body {
+            padding: 1.5rem;
+        }
+        
+        .value-meta-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .btn-group-actions {
+            flex-direction: column;
+        }
+        
+        .form-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bi:bi_home' %}">BI</a></li>
+            <li class="breadcrumb-item active">{{ form_title|default:"Formulário" }}</li>
+        </ol>
+    </nav>
+
+    <div class="form-container">
+        <div class="form-card">
+            <div class="form-header">
+                <div class="form-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h1 class="form-title">{{ form_title|default:"Formulário de Indicador" }}</h1>
+                <p class="form-subtitle">{{ page_subtitle|default:"Preencha as informações do indicador" }}</p>
+            </div>
+
+            <div class="form-body">
+                {% if form.errors %}
+                    <div class="error-message">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Corrija os erros abaixo:</h6>
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <div>{{ field }}: {{ error }}</div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" id="indicadorForm">
+                    {% csrf_token %}
+                    
+                    <!-- Seção: Informações Básicas -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-info-circle"></i>
+                            Informações Básicas
+                        </h3>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.nome.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag"></i>
+                                {{ form.nome.label }}
+                                <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                {{ form.nome }}
+                                <i class="fas fa-pencil-alt input-icon"></i>
+                            </div>
+                            {% if form.nome.help_text %}
+                                <div class="form-text">{{ form.nome.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.descricao.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left"></i>
+                                {{ form.descricao.label }}
+                            </label>
+                            {{ form.descricao }}
+                            {% if form.descricao.help_text %}
+                                <div class="form-text">{{ form.descricao.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                        <i class="fas fa-layer-group"></i>
+                                        {{ form.tipo.label }}
+                                        <span class="required">*</span>
+                                    </label>
+                                    {{ form.tipo }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.periodo.id_for_label }}" class="form-label">
+                                        <i class="fas fa-calendar"></i>
+                                        {{ form.periodo.label }}
+                                        <span class="required">*</span>
+                                    </label>
+                                    {{ form.periodo }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label">
+                                        <i class="fas fa-toggle-on"></i>
+                                        {{ form.status.label }}
+                                        <span class="required">*</span>
+                                    </label>
+                                    {{ form.status }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção: Valores e Metas -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Valores e Metas
+                        </h3>
+                        
+                        <div class="value-meta-row">
+                            <div class="form-group">
+                                <label for="{{ form.valor.id_for_label }}" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    {{ form.valor.label }}
+                                    <span class="required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {{ form.valor }}
+                                    <i class="fas fa-calculator input-icon"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.meta.id_for_label }}" class="form-label">
+                                    <i class="fas fa-target"></i>
+                                    {{ form.meta.label }}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.meta }}
+                                    <i class="fas fa-bullseye input-icon"></i>
+                                </div>
+                                {% if form.meta.help_text %}
+                                    <div class="form-text">{{ form.meta.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.unidade_medida.id_for_label }}" class="form-label">
+                                        <i class="fas fa-ruler"></i>
+                                        {{ form.unidade_medida.label }}
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.unidade_medida }}
+                                        <i class="fas fa-percentage input-icon"></i>
+                                    </div>
+                                    {% if form.unidade_medida.help_text %}
+                                        <div class="form-text">{{ form.unidade_medida.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.data.id_for_label }}" class="form-label">
+                                        <i class="fas fa-calendar-day"></i>
+                                        {{ form.data.label }}
+                                        <span class="required">*</span>
+                                    </label>
+                                    {{ form.data }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview do Progresso -->
+                        <div class="progress-preview" id="progressPreview">
+                            <h6><i class="fas fa-eye me-2"></i>Preview do Progresso</h6>
+                            <div class="progress-bar-preview">
+                                <div class="progress-fill-preview" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text-preview" id="progressText">0% da meta</div>
+                        </div>
+                    </div>
+
+                    <!-- Seção: Responsabilidade -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-users"></i>
+                            Responsabilidade
+                        </h3>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.responsavel.id_for_label }}" class="form-label">
+                                <i class="fas fa-user-tie"></i>
+                                {{ form.responsavel.label }}
+                            </label>
+                            {{ form.responsavel }}
+                        </div>
+                    </div>
+
+                    <!-- Seção: Observações -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="fas fa-sticky-note"></i>
+                            Observações Adicionais
+                        </h3>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                                <i class="fas fa-comment"></i>
+                                {{ form.observacoes.label }}
+                            </label>
+                            {{ form.observacoes }}
+                            {% if form.observacoes.help_text %}
+                                <div class="form-text">{{ form.observacoes.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="btn-group-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            {{ submit_text|default:"Salvar" }}
+                        </button>
+                        <a href="{% url cancel_url|default:'bi:bi_dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const valorInput = document.getElementById('{{ form.valor.id_for_label }}');
+    const metaInput = document.getElementById('{{ form.meta.id_for_label }}');
+    const progressPreview = document.getElementById('progressPreview');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    function updateProgressPreview() {
+        const valor = parseFloat(valorInput.value) || 0;
+        const meta = parseFloat(metaInput.value) || 0;
+        
+        if (meta > 0) {
+            const progress = Math.min((valor / meta) * 100, 100);
+            progressPreview.classList.add('show');
+            progressFill.style.width = progress + '%';
+            progressText.textContent = progress.toFixed(1) + '% da meta';
+            
+            // Mudar cor baseado no progresso
+            if (progress >= 100) {
+                progressFill.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            } else if (progress >= 70) {
+                progressFill.style.background = 'linear-gradient(135deg, #ffc107, #e0a800)';
+            } else {
+                progressFill.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+            }
+        } else {
+            progressPreview.classList.remove('show');
+        }
+    }
+
+    // Atualizar preview quando os valores mudarem
+    valorInput.addEventListener('input', updateProgressPreview);
+    metaInput.addEventListener('input', updateProgressPreview);
+    
+    // Inicializar preview
+    updateProgressPreview();
+
+    // Animação dos campos ao focar
+    const formControls = document.querySelectorAll('.form-control, .form-select');
+    formControls.forEach(control => {
+        control.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+        });
+        
+        control.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    });
+
+    // Validação em tempo real
+    const form = document.getElementById('indicadorForm');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Verificar campos obrigatórios
+        const requiredFields = form.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.style.borderColor = '#dc3545';
+            } else {
+                field.style.borderColor = '#28a745';
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Por favor, preencha todos os campos obrigatórios.');
+        }
+    });
+});
+</script>
+{% endblock %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar Indicador BI{% else %}Novo Indicador BI{% endif %}{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .form-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .form-header {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-subtitle {
+            color: #6c757d;
+            font-size: 1.125rem;
+            margin: 0;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc3545;
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.1);
+            outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-control.is-valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        .form-control[readonly] {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .success-message {
+            color: #28a745;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #138496;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        .formula-builder {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .formula-builder-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .formula-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .formula-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            background: white;
+            color: #6c757d;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .formula-btn:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .formula-preview {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            min-height: 60px;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-option.selected {
+            border-color: #2c3e50;
+            border-width: 3px;
+        }
+
+        .chart-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-placeholder {
+            color: #6c757d;
+        }
+
+        .chart-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover {
+            color: #495057;
+            background: #f8f9fa;
+        }
+
+        .tab.active {
+            color: #17a2b8;
+            border-bottom-color: #17a2b8;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 1rem;
+            }
+
+            .form-header,
+            .form-card {
+                padding: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .formula-buttons {
+                justify-content: center;
+            }
+
+            .color-picker {
+                justify-content: center;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="form-container">
+        <!-- Header -->
+        <div class="form-header">
+            <h1 class="form-title">
+                <i class="fas fa-chart-line mr-3"></i>
+                {% if form.instance.pk %}
+                    Editar Indicador BI
+                {% else %}
+                    Novo Indicador BI
+                {% endif %}
+            </h1>
+            <p class="form-subtitle">
+                {% if form.instance.pk %}
+                    Atualize as configurações do indicador de negócio
+                {% else %}
+                    Configure um novo indicador para análise de dados
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Formulário -->
+        <form method="post" id="bi-form">
+            {% csrf_token %}
+            
+            <!-- Tabs -->
+            <div class="form-card">
+                <div class="tabs">
+                    <button type="button" class="tab active" data-tab="basic">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Básico
+                    </button>
+                    <button type="button" class="tab" data-tab="data">
+                        <i class="fas fa-database mr-2"></i>
+                        Dados
+                    </button>
+                    <button type="button" class="tab" data-tab="visualization">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Visualização
+                    </button>
+                    <button type="button" class="tab" data-tab="advanced">
+                        <i class="fas fa-cogs mr-2"></i>
+                        Avançado
+                    </button>
+                </div>
+
+                <!-- Tab: Básico -->
+                <div class="tab-content active" id="basic">
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Informações Básicas
+                        </h2>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="id_nome">Nome do Indicador</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="id_nome" 
+                                       name="nome" 
+                                       value="{{ form.nome.value|default:'' }}"
+                                       required>
+                                {% if form.nome.errors %}
+                                    <div class="error-message">{{ form.nome.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Digite um nome descritivo para o indicador</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required" for="id_categoria">Categoria</label>
+                                <div class="custom-select">
+                                    <select class="form-control" id="id_categoria" name="categoria" required>
+                                        <option value="">Selecione a categoria</option>
+                                        <option value="financeiro" {% if form.categoria.value == 'financeiro' %}selected{% endif %}>Financeiro</option>
+                                        <option value="vendas" {% if form.categoria.value == 'vendas' %}selected{% endif %}>Vendas</option>
+                                        <option value="operacional" {% if form.categoria.value == 'operacional' %}selected{% endif %}>Operacional</option>
+                                        <option value="marketing" {% if form.categoria.value == 'marketing' %}selected{% endif %}>Marketing</option>
+                                        <option value="rh" {% if form.categoria.value == 'rh' %}selected{% endif %}>Recursos Humanos</option>
+                                        <option value="qualidade" {% if form.categoria.value == 'qualidade' %}selected{% endif %}>Qualidade</option>
+                                        <option value="producao" {% if form.categoria.value == 'producao' %}selected{% endif %}>Produção</option>
+                                        <option value="logistica" {% if form.categoria.value == 'logistica' %}selected{% endif %}>Logística</option>
+                                        <option value="estrategico" {% if form.categoria.value == 'estrategico' %}selected{% endif %}>Estratégico</option>
+                                        <option value="custom" {% if form.categoria.value == 'custom' %}selected{% endif %}>Personalizado</option>
+                                    </select>
+                                </div>
+                                {% if form.categoria.errors %}
+                                    <div class="error-message">{{ form.categoria.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="id_tipo_indicador">Tipo de Indicador</label>
+                                <div class="custom-select">
+                                    <select class="form-control" id="id_tipo_indicador" name="tipo_indicador" required>
+                                        <option value="">Selecione o tipo</option>
+                                        <option value="kpi" {% if form.tipo_indicador.value == 'kpi' %}selected{% endif %}>KPI - Indicador Chave de Performance</option>
+                                        <option value="metric" {% if form.tipo_indicador.value == 'metric' %}selected{% endif %}>Métrica</option>
+                                        <option value="target" {% if form.tipo_indicador.value == 'target' %}selected{% endif %}>Meta</option>
+                                        <option value="benchmark" {% if form.tipo_indicador.value == 'benchmark' %}selected{% endif %}>Benchmark</option>
+                                        <option value="score" {% if form.tipo_indicador.value == 'score' %}selected{% endif %}>Score</option>
+                                    </select>
+                                </div>
+                                {% if form.tipo_indicador.errors %}
+                                    <div class="error-message">{{ form.tipo_indicador.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="id_unidade">Unidade de Medida</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="id_unidade" 
+                                       name="unidade" 
+                                       value="{{ form.unidade.value|default:'' }}"
+                                       placeholder="Ex: %, R$, unidades, dias">
+                                {% if form.unidade.errors %}
+                                    <div class="error-message">{{ form.unidade.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label class="form-label" for="id_descricao">Descrição</label>
+                                <textarea class="form-control" 
+                                          id="id_descricao" 
+                                          name="descricao" 
+                                          rows="4"
+                                          placeholder="Descreva o objetivo e importância deste indicador">{{ form.descricao.value|default:'' }}</textarea>
+                                {% if form.descricao.errors %}
+                                    <div class="error-message">{{ form.descricao.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Dados -->
+                <div class="tab-content" id="data">
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-database mr-2"></i>
+                            Configuração de Dados
+                        </h2>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>Importante:</strong> Configure a fonte de dados e fórmula de cálculo do indicador.
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="id_fonte_dados">Fonte de Dados</label>
+                                <div class="custom-select">
+                                    <select class="form-control" id="id_fonte_dados" name="fonte_dados" required>
+                                        <option value="">Selecione a fonte</option>
+                                        <option value="vendas" {% if form.fonte_dados.value == 'vendas' %}selected{% endif %}>Vendas</option>
+                                        <option value="financeiro" {% if form.fonte_dados.value == 'financeiro' %}selected{% endif %}>Financeiro</option>
+                                        <option value="estoque" {% if form.fonte_dados.value == 'estoque' %}selected{% endif %}>Estoque</option>
+                                        <option value="clientes" {% if form.fonte_dados.value == 'clientes' %}selected{% endif %}>Clientes</option>
+                                        <option value="funcionarios" {% if form.fonte_dados.value == 'funcionarios' %}selected{% endif %}>Funcionários</option>
+                                        <option value="produtos" {% if form.fonte_dados.value == 'produtos' %}selected{% endif %}>Produtos</option>
+                                        <option value="projetos" {% if form.fonte_dados.value == 'projetos' %}selected{% endif %}>Projetos</option>
+                                        <option value="custom" {% if form.fonte_dados.value == 'custom' %}selected{% endif %}>Personalizado</option>
+                                    </select>
+                                </div>
+                                {% if form.fonte_dados.errors %}
+                                    <div class="error-message">{{ form.fonte_dados.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required" for="id_periodo">Período de Análise</label>
+                                <div class="custom-select">
+                                    <select class="form-control" id="id_periodo" name="periodo" required>
+                                        <option value="">Selecione o período</option>
+                                        <option value="diario" {% if form.periodo.value == 'diario' %}selected{% endif %}>Diário</option>
+                                        <option value="semanal" {% if form.periodo.value == 'semanal' %}selected{% endif %}>Semanal</option>
+                                        <option value="mensal" {% if form.periodo.value == 'mensal' %}selected{% endif %}>Mensal</option>
+                                        <option value="trimestral" {% if form.periodo.value == 'trimestral' %}selected{% endif %}>Trimestral</option>
+                                        <option value="anual" {% if form.periodo.value == 'anual' %}selected{% endif %}>Anual</option>
+                                        <option value="custom" {% if form.periodo.value == 'custom' %}selected{% endif %}>Personalizado</option>
+                                    </select>
+                                </div>
+                                {% if form.periodo.errors %}
+                                    <div class="error-message">{{ form.periodo.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label class="form-label required" for="id_formula">Fórmula de Cálculo</label>
+                                <textarea class="form-control" 
+                                          id="id_formula" 
+                                          name="formula" 
+                                          rows="4"
+                                          placeholder="Ex: SUM(vendas) / COUNT(clientes)"
+                                          required>{{ form.formula.value|default:'' }}</textarea>
+                                {% if form.formula.errors %}
+                                    <div class="error-message">{{ form.formula.errors.0 }}</div>
+                                {% endif %}
+                                
+                                <!-- Formula Builder -->
+                                <div class="formula-builder">
+                                    <div class="formula-builder-title">Construtor de Fórmulas</div>
+                                    <div class="formula-buttons">
+                                        <button type="button" class="formula-btn" onclick="addToFormula('SUM()')">SUM</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula('AVG()')">AVG</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula('COUNT()')">COUNT</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula('MAX()')">MAX</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula('MIN()')">MIN</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula(' + ')">(+)</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula(' - ')">(-)</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula(' * ')">(×)</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula(' / ')">(÷)</button>
+                                        <button type="button" class="formula-btn" onclick="addToFormula(' = ')">(=)</button>
+                                    </div>
+                                    <div class="formula-preview" id="formula-preview">
+                                        Digite sua fórmula acima ou use os botões para construir
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="id_meta">Meta/Objetivo</label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="id_meta" 
+                                       name="meta" 
+                                       value="{{ form.meta.value|default:'' }}"
+                                       step="0.01"
+                                       placeholder="Ex: 100, 85.5">
+                                {% if form.meta.errors %}
+                                    <div class="error-message">{{ form.meta.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Valor alvo para este indicador</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="id_frequencia_calculo">Frequência de Cálculo</label>
+                                <div class="custom-select">
+                                    <select class="form-control" id="id_frequencia_calculo" name="frequencia_calculo">
+                                        <option value="manual" {% if form.frequencia_calculo.value == 'manual' %}selected{% endif %}>Manual</option>
+                                        <option value="tempo_real" {% if form.frequencia_calculo.value == 'tempo_real' %}selected{% endif %}>Tempo Real</option>
+                                        <option value="horario" {% if form.frequencia_calculo.value == 'horario' %}selected{% endif %}>A cada hora</option>
+                                        <option value="diario" {% if form.frequencia_calculo.value == 'diario' %}selected{% endif %}>Diário</option>
+                                        <option value="semanal" {% if form.frequencia_calculo.value == 'semanal' %}selected{% endif %}>Semanal</option>
+                                    </select>
+                                </div>
+                                {% if form.frequencia_calculo.errors %}
+                                    <div class="error-message">{{ form.frequencia_calculo.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Visualização -->
+                <div class="tab-content" id="visualization">
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-chart-bar mr-2"></i>
+                            Configuração de Visualização
+                        </h2>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="id_tipo_grafico">Tipo de Gráfico</label>
+                                <div class="custom-select">
+                                    <select class="form-control" id="id_tipo_grafico" name="tipo_grafico" required>
+                                        <option value="">Selecione o tipo</option>
+                                        <option value="line" {% if form.tipo_grafico.value == 'line' %}selected{% endif %}>row</option>
+                                        <option value="bar" {% if form.tipo_grafico.value == 'bar' %}selected{% endif %}>Barra</option>
+                                        <option value="pie" {% if form.tipo_grafico.value == 'pie' %}selected{% endif %}>Pizza</option>
+                                        <option value="doughnut" {% if form.tipo_grafico.value == 'doughnut' %}selected{% endif %}>Rosca</option>
+                                        <option value="area" {% if form.tipo_grafico.value == 'area' %}selected{% endif %}>Área</option>
+                                        <option value="gauge" {% if form.tipo_grafico.value == 'gauge' %}selected{% endif %}>Gauge</option>
+                                        <option value="number" {% if form.tipo_grafico.value == 'number' %}selected{% endif %}>Número</option>
+                                        <option value="table" {% if form.tipo_grafico.value == 'table' %}selected{% endif %}>Tabela</option>
+                                    </select>
+                                </div>
+                                {% if form.tipo_grafico.errors %}
+                                    <div class="error-message">{{ form.tipo_grafico.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="id_cor_primaria">Cor Primária</label>
+                                <input type="color" 
+                                       class="form-control" 
+                                       id="id_cor_primaria" 
+                                       name="cor_primaria" 
+                                       value="{{ form.cor_primaria.value|default:'#17a2b8' }}">
+                                {% if form.cor_primaria.errors %}
+                                    <div class="error-message">{{ form.cor_primaria.errors.0 }}</div>
+                                {% endif %}
+                                
+                                <!-- Color Picker -->
+                                <div class="color-picker">
+                                    <div class="color-option" style="background: #17a2b8" data-color="#17a2b8"></div>
+                                    <div class="color-option" style="background: #007bff" data-color="#007bff"></div>
+                                    <div class="color-option" style="background: #28a745" data-color="#28a745"></div>
+                                    <div class="color-option" style="background: #ffc107" data-color="#ffc107"></div>
+                                    <div class="color-option" style="background: #dc3545" data-color="#dc3545"></div>
+                                    <div class="color-option" style="background: #6c757d" data-color="#6c757d"></div>
+                                    <div class="color-option" style="background: #6f42c1" data-color="#6f42c1"></div>
+                                    <div class="color-option" style="background: #e83e8c" data-color="#e83e8c"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label class="form-label">Preview do Gráfico</label>
+                                <div class="chart-preview" id="chart-preview">
+                                    <div class="chart-placeholder">
+                                        <i class="fas fa-chart-line"></i>
+                                        <h4>Preview do Gráfico</h4>
+                                        <p>Selecione um tipo de gráfico para visualizar o preview</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Avançado -->
+                <div class="tab-content" id="advanced">
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i class="fas fa-cogs mr-2"></i>
+                            Configurações Avançadas
+                        </h2>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="id_responsavel">Responsável</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="id_responsavel" 
+                                       name="responsavel" 
+                                       value="{{ form.responsavel.value|default:'' }}">
+                                {% if form.responsavel.errors %}
+                                    <div class="error-message">{{ form.responsavel.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Nome do responsável por este indicador</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="id_status">Status</label>
+                                <div class="custom-select">
+                                    <select class="form-control" id="id_status" name="status">
+                                        <option value="ativo" {% if form.status.value == 'ativo' %}selected{% endif %}>Ativo</option>
+                                        <option value="inativo" {% if form.status.value == 'inativo' %}selected{% endif %}>Inativo</option>
+                                        <option value="manutencao" {% if form.status.value == 'manutencao' %}selected{% endif %}>Em Manutenção</option>
+                                        <option value="teste" {% if form.status.value == 'teste' %}selected{% endif %}>Teste</option>
+                                    </select>
+                                </div>
+                                {% if form.status.errors %}
+                                    <div class="error-message">{{ form.status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label class="form-label" for="id_observacoes">Observações</label>
+                                <textarea class="form-control" 
+                                          id="id_observacoes" 
+                                          name="observacoes" 
+                                          rows="4"
+                                          placeholder="Observações adicionais sobre este indicador">{{ form.observacoes.value|default:'' }}</textarea>
+                                {% if form.observacoes.errors %}
+                                    <div class="error-message">{{ form.observacoes.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Métricas de Exemplo -->
+                        <div class="metric-cards">
+                            <div class="metric-card">
+                                <div class="metric-value">95.2%</div>
+                                <div class="metric-label">Valor Atual</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">100%</div>
+                                <div class="metric-label">Meta</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">-4.8%</div>
+                                <div class="metric-label">Diferença</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">↗ 2.3%</div>
+                                <div class="metric-label">Tendência</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <i class="fas fa-save"></i>
+                    {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Indicador
+                </button>
+                <button type="submit" name="save_and_continue" class="btn btn-success" id="save-continue-btn">
+                    <i class="fas fa-save"></i>
+                    Salvar e Continuar
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="testFormula()">
+                    <i class="fas fa-play"></i>
+                    Testar Fórmula
+                </button>
+                <a href="{% url 'bi:bi_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab functionality
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(tc => tc.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+
+    // Formula builder
+    const formulaTextarea = document.getElementById('id_formula');
+    const formulaPreview = document.getElementById('formula-preview');
+    
+    formulaTextarea.addEventListener('input', function() {
+        formulaPreview.textContent = this.value || 'Digite sua fórmula acima ou use os botões para construir';
+    });
+
+    // Color picker
+    const colorOptions = document.querySelectorAll('.color-option');
+    const colorInput = document.getElementById('id_cor_primaria');
+    
+    colorOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const color = this.dataset.color;
+            colorInput.value = color;
+            
+            // Update selection
+            colorOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            // Update chart preview
+            updateChartPreview();
+        });
+    });
+
+    // Chart type change
+    const chartTypeSelect = document.getElementById('id_tipo_grafico');
+    chartTypeSelect.addEventListener('change', function() {
+        updateChartPreview();
+    });
+
+    // Form submission
+    const form = document.getElementById('bi-form');
+    form.addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submit-btn');
+        const saveContinueBtn = document.getElementById('save-continue-btn');
+        
+        if (e.submitter === submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            submitBtn.disabled = true;
+        } else if (e.submitter === saveContinueBtn) {
+            saveContinueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            saveContinueBtn.disabled = true;
+        }
+    });
+
+    // Initialize
+    updateChartPreview();
+});
+
+function addToFormula(text) {
+    const formulaTextarea = document.getElementById('id_formula');
+    const cursorPos = formulaTextarea.selectionStart;
+    const textBefore = formulaTextarea.value.substring(0, cursorPos);
+    const textAfter = formulaTextarea.value.substring(cursorPos);
+    
+    formulaTextarea.value = textBefore + text + textAfter;
+    formulaTextarea.focus();
+    formulaTextarea.setSelectionRange(cursorPos + text.length, cursorPos + text.length);
+    
+    // Update preview
+    const formulaPreview = document.getElementById('formula-preview');
+    formulaPreview.textContent = formulaTextarea.value;
+}
+
+function updateChartPreview() {
+    const chartType = document.getElementById('id_tipo_grafico').value;
+    const chartPreview = document.getElementById('chart-preview');
+    
+    if (!chartType) {
+        chartPreview.innerHTML = `
+            <div class="chart-placeholder">
+                <i class="fas fa-chart-line"></i>
+                <h4>Preview do Gráfico</h4>
+                <p>Selecione um tipo de gráfico para visualizar o preview</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let icon = 'fas fa-chart-line';
+    let title = 'Gráfico de row';
+    
+    switch(chartType) {
+        case 'line':
+            icon = 'fas fa-chart-line';
+            title = 'Gráfico de row';
+            break;
+        case 'bar':
+            icon = 'fas fa-chart-bar';
+            title = 'Gráfico de Barras';
+            break;
+        case 'pie':
+            icon = 'fas fa-chart-pie';
+            title = 'Gráfico de Pizza';
+            break;
+        case 'doughnut':
+            icon = 'fas fa-chart-pie';
+            title = 'Gráfico de Rosca';
+            break;
+        case 'area':
+            icon = 'fas fa-chart-area';
+            title = 'Gráfico de Área';
+            break;
+        case 'gauge':
+            icon = 'fas fa-tachometer-alt';
+            title = 'Medidor (Gauge)';
+            break;
+        case 'number':
+            icon = 'fas fa-hashtag';
+            title = 'Número';
+            break;
+        case 'table':
+            icon = 'fas fa-table';
+            title = 'Tabela';
+            break;
+    }
+    
+    chartPreview.innerHTML = `
+        <div class="chart-placeholder">
+            <i class="${icon}"></i>
+            <h4>${title}</h4>
+            <p>Preview será exibido aqui após salvar</p>
+        </div>
+    `;
+}
+
+function testFormula() {
+    const formula = document.getElementById('id_formula').value;
+    const fonteDados = document.getElementById('id_fonte_dados').value;
+    
+    if (!formula) {
+        alert('Digite uma fórmula antes de testar');
+        return;
+    }
+    
+    if (!fonteDados) {
+        alert('Selecione uma fonte de dados antes de testar');
+        return;
+    }
+    
+    // Simulate formula test
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testando...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        alert('Fórmula testada com sucesso!\nResultado: 95.2%');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }, 2000);
+}
+</script>
+{% endblock %}

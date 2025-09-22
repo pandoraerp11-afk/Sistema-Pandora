@@ -1,0 +1,40 @@
+<div class="card">
+    <div class="card-header"><h5 class="card-title">Adicionar Novo Documento</h5></div>
+    <div class="card-body">
+        <form action="{% url 'produtos:produto_documento_add' produto_id=object.pk %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="form-group col-md-5">{{ documento_form.titulo.label_tag }}{{ documento_form.titulo }}</div>
+                <div class="form-group col-md-4">{{ documento_form.tipo.label_tag }}{{ documento_form.tipo }}</div>
+                <div class="form-group col-md-3">{{ documento_form.arquivo.label_tag }}{{ documento_form.arquivo }}</div>
+            </div>
+            <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Adicionar Documento</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header"><h5 class="card-title">Documentos Existentes</h5></div>
+    <div class="card-body">
+        <table class="table">
+             <thead><tr><th>Título</th><th>Tipo</th><th>Arquivo</th><th>Ações</th></tr></thead>
+            <tbody>
+                {% for doc in documentos_existentes %}
+                <tr>
+                    <td>{{ doc.titulo }}</td>
+                    <td>{{ doc.get_tipo_display }}</td>
+                    <td><a href="{{ doc.arquivo.url }}" target="_blank">Ver Arquivo</a></td>
+                    <td>
+                        <form action="{% url 'produtos:produto_documento_delete' doc.pk %}" method="post" onsubmit="return confirmarExclusao(this);">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-xs"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">Nenhum documento cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

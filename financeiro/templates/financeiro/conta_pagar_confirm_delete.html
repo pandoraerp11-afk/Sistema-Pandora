@@ -1,0 +1,202 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Excluir Conta a Pagar - {{ conta.descricao }}{% endblock %}
+
+{% block page_title %}Excluir Conta a Pagar{% endblock %}
+{% block page_subtitle %}Confirmar exclusão de {{ conta.descricao }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:financeiro_list' %}">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:conta_pagar_list' %}">Contas a Pagar</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:conta_pagar_detail' conta.pk %}">{{ conta.descricao }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Excluir</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10 col-12">
+        <div class="card card-modern border-danger">
+            <div class="card-header bg-danger text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div>
+                        <h5 class="card-title mb-0">Confirmar Exclusão</h5>
+                        <small class="opacity-75">Esta ação não pode ser desfeita</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div>
+                        <strong>Atenção!</strong> Você está prestes a excluir permanentemente esta conta a pagar.
+                        Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-12">
+                        <h6 class="text-danger mb-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Detalhes da conta que será excluída:
+                        </h6>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Descrição</label>
+                        <p class="form-control-plaintext fw-medium">{{ conta.descricao }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Fornecedor</label>
+                        <p class="form-control-plaintext">{{ conta.fornecedor }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Valor</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge bg-danger fs-6">
+                                R$ {{ conta.valor|floatformat:2 }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Data de Vencimento</label>
+                        <p class="form-control-plaintext">{{ conta.data_vencimento|date:"d/m/Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Status</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge 
+                                {% if conta.status == 'pago' %}bg-success
+                                {% elif conta.status == 'pendente' %}bg-warning
+                                {% else %}bg-danger{% endif %}">
+                                {{ conta.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    {% if conta.data_pagamento %}
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Data de Pagamento</label>
+                        <p class="form-control-plaintext">{{ conta.data_pagamento|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if conta.observacoes %}
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Observações</label>
+                        <p class="form-control-plaintext">{{ conta.observacoes|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if conta.status == 'pago' %}
+                <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div>
+                        <strong>Aviso Importante:</strong> Esta conta já foi paga. Excluí-la pode afetar 
+                        relatórios financeiros e controles contábeis.
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" class="mb-0">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'financeiro:conta_pagar_detail' conta.pk %}" 
+                           class="btn btn-outline-secondary btn-modern">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            Cancelar
+                        </a>
+                        <a href="{% url 'financeiro:conta_pagar_list' %}" 
+                           class="btn btn-outline-primary btn-modern">
+                            <i class="fas fa-bars me-1"></i>
+                            Ver Lista
+                        </a>
+                        <button type="submit" class="btn btn-danger btn-modern">
+                            <i class="fas fa-trash me-1"></i>
+                            Sim, Excluir Definitivamente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card-modern {
+    border: none;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    border-radius: 0.75rem;
+}
+
+.card-modern.border-danger {
+    border: 2px solid #dc3545 !important;
+}
+
+.form-control-plaintext {
+    padding: 0.375rem 0;
+    margin-bottom: 0;
+    line-height: 1.5;
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.btn-modern {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+}
+
+.badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmação adicional antes do envio do formulário
+    const form = document.querySelector('form');
+    const deleteBtn = form.querySelector('button[type="submit"]');
+    
+    deleteBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const confirmed = confirm(
+            'Tem certeza absoluta de que deseja excluir esta conta a pagar?\n\n' +
+            'Esta ação é IRREVERSÍVEL e todos os dados serão perdidos permanentemente.'
+        );
+        
+        if (confirmed) {
+            form.submit();
+        }
+    });
+    
+    // Foco no botão cancelar ao carregar a página
+    document.querySelector('.btn-outline-secondary').focus();
+});
+</script>
+{% endblock %}

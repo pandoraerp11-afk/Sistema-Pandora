@@ -1,0 +1,25 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt bandit pip-audit
+      - name: Bandit
+        run: bandit -q -ll -r core shared user_management || true
+      - name: pip-audit
+        run: pip-audit -r requirements.txt || true
+      - name: Upload reports (placeholder)
+        run: echo "(Adicionar parser de resultados se necessário)"

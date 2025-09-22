@@ -1,0 +1,530 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}
+    {% if object %}Editar <span translate="no">Cargo</span>{% else %}Novo <span translate="no">Cargo</span>{% endif %} - Pandora ERP
+{% endblock %}
+
+{% block page_title %}
+    {% if object %}Editar <span translate="no">Cargo</span>{% else %}Novo <span translate="no">Cargo</span>{% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+    {% if object %}
+        Atualize as informações do cargo {{ object.name }}
+    {% else %}
+        Preencha os dados para criar um novo cargo
+    {% endif %}
+{% endblock %}
+
+{% block form_title %}Informações do <span translate="no">Cargo</span>{% endblock %}
+
+{% block form_content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-aos="fade-up">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-body">
+                    <form method="post" novalidate id="roleForm">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="row g-4">
+                        {% if form.tenant %}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.tenant.id_for_label }}" class="form-label">
+                                    <i class="fas fa-building text-primary"></i>
+                                    Empresa (Tenant)
+                                </label>
+                                {{ form.tenant }}
+                                {% if form.tenant.errors %}
+                                    <div class="error-message">{{ form.tenant.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Deixe em branco para tornar este cargo Global (visível para todos os tenants).</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if form.department %}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.department.id_for_label }}" class="form-label">
+                                    <i class="fas fa-sitemap text-primary"></i>
+                                    Departamento (opcional)
+                                </label>
+                                {{ form.department }}
+                                {% if form.department.errors %}
+                                    <div class="error-message">{{ form.department.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Vincule a um departamento global ou do tenant selecionado ou deixe em branco.</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Informações Básicas
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    <i class="fas fa-user-tag text-primary"></i>
+                                    Nome do <span translate="no">Cargo</span>
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="error-message">
+                                        {{ form.name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Digite um nome claro e único para o cargo
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if form.code %}
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.code.id_for_label }}" class="form-label">
+                                    <i class="fas fa-hashtag text-primary"></i>
+                                    Código
+                                </label>
+                                {{ form.code }}
+                                {% if form.code.errors %}
+                                    <div class="error-message">
+                                        {{ form.code.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Código identificador único
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    <i class="fas fa-align-left text-primary"></i>
+                                    Descrição
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="error-message">
+                                        {{ form.description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Descreva as responsabilidades e atribuições do cargo
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-toggle-on text-primary"></i>
+                                    Status
+                                </label>
+                                <div class="form-check form-switch">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        <span translate="no">Cargo</span> Ativo
+                                    </label>
+                                    {% if form.is_active.errors %}
+                                        <div class="error-message">
+                                            {{ form.is_active.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Cargos inativos não podem ser atribuídos a novos usuários
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if form.permissions %}
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-key text-primary"></i>
+                                    Permissões
+                                </label>
+                                <div class="mb-2 d-flex flex-wrap gap-2 align-items-center">
+                                    <div class="flex-grow-1 position-relative" style="min-width:240px;">
+                                        <input type="text" id="permSearch" class="form-control" placeholder="Filtrar (app, modelo ou ação)..." autocomplete="off">
+                                    </div>
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Seleção rápida">
+                                        <button type="button" class="btn btn-outline-primary" id="btnSelectAll" title="Selecionar todas"><i class="fas fa-check-double"></i></button>
+                                        <button type="button" class="btn btn-outline-secondary" id="btnClearAll" title="Limpar seleção"><i class="fas fa-eraser"></i></button>
+                                        <button type="button" class="btn btn-outline-dark" id="btnInvert" title="Inverter seleção"><i class="fas fa-random"></i></button>
+                                    </div>
+                                    <span class="badge bg-primary" id="permCount">0</span>
+                                </div>
+                                <div id="permContainer" class="border rounded p-2 bg-light" style="max-height:420px; overflow:auto;"></div>
+                                <div id="originalPermissionsWrapper" class="d-none">{{ form.permissions }}</div>
+                                <script id="permData" type="application/json">[
+{% for p in form.fields.permissions.queryset %}{"id": {{ p.id }}, "codename": "{{ p.codename }}", "name": "{{ p.name|escapejs }}", "app_label": "{{ p.content_type.app_label }}", "model": "{{ p.content_type.model }}", "selected": {% if p.id|stringformat:'s' in form.permissions.value %}true{% else %}false{% endif %}}{% if not forloop.last %},{% endif %}
+{% endfor %}
+]</script>
+                                {% if form.permissions.errors %}
+                                    <div class="error-message mt-1">{{ form.permissions.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text mt-2">Agrupado por App e Modelo. Ações: add | change | delete | view | custom.</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <button type="button" class="btn btn-secondary" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-eye me-2"></i>
+                        Preview do <span translate="no">Cargo</span>
+                    </h6>
+                    
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-3 fs-5" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user-tag"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold" id="previewName">
+                                        {% if object %}{{ object.name }}{% else %}Nome do <span translate="no">Cargo</span>{% endif %}
+                                    </div>
+                                    <div class="text-muted small" id="previewCode">
+                                        {% if object and object.code %}{{ object.code }}{% else %}Código{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-muted small" id="previewDescription">
+                                {% if object %}{{ object.description|default:"Sem descrição" }}{% else %}Descrição do cargo aparecerá aqui{% endif %}
+                            </div>
+                            
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="fw-bold text-primary" id="previewPermissions">
+                                            {% if object %}{{ object.permissions.count }}{% else %}0{% endif %}
+                                        </div>
+                                        <div class="small text-muted">Permissões</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fw-bold" id="previewStatus">
+                                            {% if object %}
+                                                {% if object.is_active %}
+                                                    <span class="text-success">Ativo</span>
+                                                {% else %}
+                                                    <span class="text-danger">Inativo</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-success">Ativo</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">Status</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Preview em tempo real
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Dicas
+                    </h6>
+                    <div class="small text-muted">
+                        <div class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Use nomes descritivos para os cargos
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Defina permissões específicas por cargo
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Mantenha a descrição clara e objetiva
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Roles -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-clock me-2"></i>
+                        Últimos <span translate="no">Cadastros</span>
+                    </h6>
+                    
+                    <div class="list-group list-group-flush">
+                        {% if recent_roles %}
+                            {% for role in recent_roles %}
+                            <div class="list-group-item border-0 px-0 py-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                            <i class="fas fa-user-tag text-white" style="font-size: 12px;"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold small">{{ role.name }}</div>
+                                        <div class="text-muted" style="font-size: 11px;">{{ role.created_at|timesince }} atrás</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item border-0 px-0 py-2 text-center text-muted">
+                                <small>Nenhum <span translate="no">cargo</span> cadastrado ainda</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'core:role_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i>
+                            Ver todos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const nameField = document.getElementById('{{ form.name.id_for_label }}');
+    const codeField = document.getElementById('{{ form.code.id_for_label }}');
+    const descriptionField = document.getElementById('{{ form.description.id_for_label }}');
+    const isActiveField = document.getElementById('{{ form.is_active.id_for_label }}');
+    const permissionsField = document.getElementById('{{ form.permissions.id_for_label }}');
+    
+    // Preview elements
+    const previewName = document.getElementById('previewName');
+    const previewCode = document.getElementById('previewCode');
+    const previewDescription = document.getElementById('previewDescription');
+    const previewStatus = document.getElementById('previewStatus');
+    const previewPermissions = document.getElementById('previewPermissions');
+
+    // Real-time preview updates
+    if (nameField) {
+        nameField.addEventListener('input', function() {
+            previewName.textContent = this.value || 'Nome do Cargo';
+        });
+    }
+
+    if (codeField) {
+        codeField.addEventListener('input', function() {
+            previewCode.textContent = this.value || 'Código';
+        });
+    }
+
+    if (descriptionField) {
+        descriptionField.addEventListener('input', function() {
+            previewDescription.textContent = this.value || 'Descrição do cargo aparecerá aqui';
+        });
+    }
+
+    if (isActiveField) {
+        isActiveField.addEventListener('change', function() {
+            if (this.checked) {
+                previewStatus.innerHTML = '<span class="text-success">Ativo</span>';
+            } else {
+                previewStatus.innerHTML = '<span class="text-danger">Inativo</span>';
+            }
+        });
+    }
+
+    if (permissionsField) {
+        // Initialize Select2 for permissions
+        if (typeof $.fn.select2 !== 'undefined') {
+            $(permissionsField).select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Selecione as permissões...',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+        
+        permissionsField.addEventListener('change', function() {
+            const selectedCount = this.selectedOptions.length;
+            previewPermissions.textContent = selectedCount;
+        });
+    }
+
+    // Form validation
+    const form = document.getElementById('roleForm');
+    if(form){
+        form.addEventListener('submit', function(event) {
+            if (nameField && !nameField.value.trim()) {
+                event.preventDefault();
+                nameField.focus();
+                nameField.classList.add('is-invalid');
+            }
+        });
+    }
+
+    // Remove validation classes on input
+    [nameField, codeField, descriptionField].forEach(field => {
+        if (field) {
+            field.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+            });
+        }
+    });
+
+    // Tooltip initialization
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Atualização dinâmica de departamentos ao mudar tenant (somente superuser)
+    // IDs padrão gerados pelo Django: id_<nome_do_campo>
+    const tenantField = document.getElementById('id_tenant');
+    const deptField = document.getElementById('id_department');
+    async function reloadDepartments(){
+        if(!deptField) return;
+        const selTenant = tenantField ? tenantField.value : '';
+        const url = '{% url "core:api_departments_list" %}?include_globals=true' + (selTenant ? ('&tenant='+encodeURIComponent(selTenant)) : '');
+        deptField.disabled = true;
+        const prev = deptField.value;
+        try {
+            const resp = await fetch(url, {headers:{'Accept':'application/json'}});
+            if(!resp.ok) throw new Error('HTTP '+resp.status);
+            const data = await resp.json();
+            const list = Array.isArray(data.results)?data.results:[];
+            deptField.innerHTML = '<option value="">---------</option>';
+            list.forEach(d=>{
+                const opt = document.createElement('option');
+                opt.value = d.id; opt.textContent = d.label; deptField.appendChild(opt);
+            });
+            if(list.some(d=>String(d.id)===String(prev))) deptField.value = prev;
+        } catch(e){ console.warn('Falha ao recarregar departamentos', e); }
+        finally { deptField.disabled = false; }
+    }
+    if(tenantField && deptField){ tenantField.addEventListener('change', reloadDepartments); }
+    // Se superuser e página carregou sem tenant selecionado, garantir lista inicial (globais)
+    if(tenantField && deptField){ reloadDepartments(); }
+
+    // ======================= PERMISSÕES (JSON DEFINITIVO) =======================
+    (function initPermissionsUI(){
+        try {
+        console.log('[RoleForm] initPermissionsUI start');
+        const dataEl = document.getElementById('permData');
+        const originalWrapper = document.getElementById('originalPermissionsWrapper');
+        if(!dataEl || !originalWrapper) return;
+        let raw = dataEl.textContent.trim();
+        console.log('[RoleForm] permData length:', raw.length);
+        let perms=[]; try { perms = JSON.parse(raw); } catch(e){ console.error('permData inválido', e, raw.slice(0,300)); }
+        const container = document.getElementById('permContainer');
+        const searchInput = document.getElementById('permSearch');
+        const badgeCount = document.getElementById('permCount');
+        const btnAll = document.getElementById('btnSelectAll');
+        const btnClear = document.getElementById('btnClearAll');
+        const btnInvert = document.getElementById('btnInvert');
+    if(!perms.length){ container.innerHTML='<div class="text-muted small">Nenhuma permissão disponível (array vazio).</div>'; return; }
+    console.log('[RoleForm] total perms:', perms.length);
+        // Substitui conteúdo original por inputs ocultos consistentes
+        originalWrapper.innerHTML = perms.map(p=>`<input type="checkbox" name="permissions" value="${p.id}" ${p.selected?'checked':''} class="d-none">`).join('');
+        const groups={};
+        perms.forEach(p=>{ const key=p.app_label+':'+p.model; (groups[key]||(groups[key]={key,app:p.app_label, model:p.model, perms:[]})).perms.push(p); });
+        const frag=document.createDocumentFragment();
+        Object.keys(groups).sort((a,b)=>a.localeCompare(b)).forEach(k=>{
+            const g=groups[k];
+            const wrap=document.createElement('div');
+            wrap.className='mb-2 permission-group border rounded bg-white';
+            const header=document.createElement('div');
+            header.className='px-2 py-1 d-flex align-items-center justify-content-between group-header';
+            header.style.cursor='pointer';
+            header.innerHTML=`<span class="fw-semibold small"><i class="fas fa-folder-open text-primary me-1"></i>${g.app}:${g.model}</span><div class="btn-group btn-group-sm"><button type="button" class="btn btn-outline-primary btn-select-group" data-action="select">+</button><button type="button" class="btn btn-outline-secondary btn-select-group" data-action="clear">–</button></div>`;
+            const body=document.createElement('div');
+            body.className='px-2 pb-2 pt-1 d-flex flex-wrap gap-2';
+            g.perms.sort((a,b)=>a.codename.localeCompare(b.codename)).forEach(p=>{
+                const pid='perm_'+p.id;
+                const div=document.createElement('div');
+                div.className='form-check form-check-sm';
+                div.innerHTML=`<input class="form-check-input perm-checkbox" type="checkbox" id="${pid}" value="${p.id}" ${p.selected?'checked':''}><label class="form-check-label small" for="${pid}">${p.name}</label>`;
+                body.appendChild(div);
+            });
+            wrap.appendChild(header); wrap.appendChild(body); frag.appendChild(wrap);
+            header.addEventListener('click',e=>{ if(e.target.closest('.btn-select-group')) return; body.classList.toggle('d-none'); });
+            header.querySelectorAll('.btn-select-group').forEach(btn=> btn.addEventListener('click',ev=>{ ev.stopPropagation(); const act=btn.getAttribute('data-action'); body.querySelectorAll('.perm-checkbox').forEach(ch=> ch.checked=(act==='select')); syncBack(); updateCount(); }));
+        });
+        container.innerHTML=''; container.appendChild(frag);
+        function hidden(){ return Array.from(originalWrapper.querySelectorAll('input[name="permissions"]')); }
+        function syncBack(){ const sel=new Set(Array.from(container.querySelectorAll('.perm-checkbox:checked')).map(i=>i.value)); hidden().forEach(i=> i.checked=sel.has(i.value)); }
+        function updateCount(){ const c=container.querySelectorAll('.perm-checkbox:checked').length; badgeCount.textContent=c; }
+        container.addEventListener('change',e=>{ if(e.target.classList.contains('perm-checkbox')){ syncBack(); updateCount(); }});
+        btnAll && btnAll.addEventListener('click',()=>{ container.querySelectorAll('.perm-checkbox').forEach(c=>c.checked=true); syncBack(); updateCount(); });
+        btnClear && btnClear.addEventListener('click',()=>{ container.querySelectorAll('.perm-checkbox').forEach(c=>c.checked=false); syncBack(); updateCount(); });
+        btnInvert && btnInvert.addEventListener('click',()=>{ container.querySelectorAll('.perm-checkbox').forEach(c=>c.checked=!c.checked); syncBack(); updateCount(); });
+        searchInput && searchInput.addEventListener('input',()=>{ const q=searchInput.value.trim().toLowerCase(); container.querySelectorAll('.permission-group').forEach(g=>{ const match=Array.from(g.querySelectorAll('.perm-checkbox')).some(ch=> ch.nextElementSibling.textContent.toLowerCase().includes(q)); g.style.display=(q && !match)?'none':''; }); });
+        updateCount();
+        } catch(e){
+            console.error('[RoleForm] Falha ao montar permissões', e);
+        }
+    })();
+});
+</script>
+{% endblock %}

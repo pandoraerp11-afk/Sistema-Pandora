@@ -1,0 +1,263 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Convites - Pandora ERP{% endblock %}
+
+{% block page_title %}Convites de Usuários{% endblock %}
+{% block page_subtitle %}Gerenciamento de convites enviados para novos usuários{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-3 align-items-center">
+    <a href="{% url 'user_management:convite_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus-lg"></i>
+        <span class="d-none d-md-inline">Novo Convite</span>
+    </a>
+    
+    <button type="button" class="btn btn-outline-secondary" onclick="refreshInvites()">
+        <i class="fas fa-sync-alt"></i>
+        <span class="d-none d-md-inline">Atualizar</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">Lista de Convites</h5>
+                            <small class="text-muted">Total: {{ object_list.count }} convites</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="status-filter">
+                                <option value="">Todos os status</option>
+                                <option value="pending">Pendente</option>
+                                <option value="accepted">Aceito</option>
+                                <option value="expired">Expirado</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="convites-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>E-mail Convidado</th>
+                                    <th>Enviado por</th>
+                                    <th>Cargo/Grupo</th>
+                                    <th>Data Envio</th>
+                                    <th>Validade</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for convite in object_list %}
+                                <tr data-status="{{ convite.status }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar me-2">
+                                                <div class="bg-info rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px;">
+                                                    <i class="fas fa-envelope"></i>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ convite.email }}</div>
+                                                <small class="text-muted">{{ convite.nome|default:"Nome não informado" }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="fw-bold">{{ convite.enviado_por.get_full_name|default:convite.enviado_por.username }}</div>
+                                            <small class="text-muted">{{ convite.enviado_por.email }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if convite.grupo %}
+                                        <span class="badge bg-primary">{{ convite.grupo.name }}</span>
+                                        {% else %}
+                                        <span class="text-muted">Sem grupo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ convite.data_envio|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if convite.data_expiracao %}
+                                        <span class="{% if convite.is_expired %}text-danger{% else %}text-success{% endif %}">
+                                            {{ convite.data_expiracao|date:"d/m/Y" }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">Sem expiração</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if convite.status == 'pending' %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                        {% elif convite.status == 'accepted' %}
+                                        <span class="badge bg-success">Aceito</span>
+                                        {% elif convite.status == 'expired' %}
+                                        <span class="badge bg-danger">Expirado</span>
+                                        {% elif convite.status == 'cancelled' %}
+                                        <span class="badge bg-secondary">Cancelado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="viewInvite('{{ convite.id }}')" title="Visualizar">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if convite.status == 'pending' %}
+                                            <button class="btn btn-outline-info" onclick="resendInvite('{{ convite.id }}')" title="Reenviar">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="cancelInvite('{{ convite.id }}')" title="Cancelar">
+                                                <i class="fas fa-times-circle"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-envelope-plus" style="font-size: 48px;"></i>
+                                            <p class="mt-2 mb-0">Nenhum convite encontrado</p>
+                                            <small>Clique em "Novo Convite" para enviar o primeiro convite</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes do Convite -->
+<div class="modal fade" id="inviteDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalhes do Convite</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="invite-details-content">
+                <!-- Conteúdo carregado via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filtro por status
+document.getElementById('status-filter').addEventListener('change', function() {
+    const filter = this.value;
+    const rows = document.querySelectorAll('#convites-table tbody tr');
+    
+    rows.forEach(row => {
+        const status = row.dataset.status;
+        row.style.display = (filter === '' || status === filter) ? '' : 'none';
+    });
+});
+
+// Atualizar lista de convites
+function refreshInvites() {
+    location.reload();
+}
+
+// Visualizar detalhes do convite
+function viewInvite(inviteId) {
+    fetch(`/user-management/invites/${inviteId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('invite-details-content').innerHTML = `
+                <div class="row">
+                    <div class="col-12">
+                        <table class="table table-sm">
+                            <tr><td><strong>E-mail:</strong></td><td>${data.email}</td></tr>
+                            <tr><td><strong>Nome:</strong></td><td>${data.nome || 'Não informado'}</td></tr>
+                            <tr><td><strong>Enviado por:</strong></td><td>${data.enviado_por}</td></tr>
+                            <tr><td><strong>Grupo:</strong></td><td>${data.grupo || 'Sem grupo'}</td></tr>
+                            <tr><td><strong>Data de Envio:</strong></td><td>${data.data_envio}</td></tr>
+                            <tr><td><strong>Data de Expiração:</strong></td><td>${data.data_expiracao || 'Sem expiração'}</td></tr>
+                            <tr><td><strong>Status:</strong></td><td>${data.status}</td></tr>
+                            <tr><td><strong>Token:</strong></td><td><small>${data.token}</small></td></tr>
+                        </table>
+                        ${data.mensagem ? `<div class="mt-3"><strong>Mensagem:</strong><br>${data.mensagem}</div>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('inviteDetailsModal'));
+            modal.show();
+        })
+        .catch(error => {
+            alert('Erro ao carregar detalhes do convite');
+        });
+}
+
+// Reenviar convite
+function resendInvite(inviteId) {
+    if (confirm('Tem certeza que deseja reenviar este convite?')) {
+        fetch(`/user-management/invites/${inviteId}/resend/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Convite reenviado com sucesso');
+                location.reload();
+            } else {
+                alert('Erro ao reenviar convite: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro ao reenviar convite');
+        });
+    }
+}
+
+// Cancelar convite
+function cancelInvite(inviteId) {
+    if (confirm('Tem certeza que deseja cancelar este convite?')) {
+        fetch(`/user-management/invites/${inviteId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Convite cancelado com sucesso');
+                location.reload();
+            } else {
+                alert('Erro ao cancelar convite: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro ao cancelar convite');
+        });
+    }
+}
+</script>
+{% endblock %}

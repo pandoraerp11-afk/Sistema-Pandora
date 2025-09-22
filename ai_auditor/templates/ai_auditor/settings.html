@@ -1,0 +1,661 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Configurações - Agente de IA{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .settings-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        padding: 32px;
+        color: white;
+        margin-bottom: 32px;
+    }
+    
+    .settings-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    
+    .settings-subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .settings-form {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .form-section {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .section-subtitle {
+        color: #6b7280;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+    
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 24px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f9fafb;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 40px;
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 4px;
+        line-height: 1.4;
+    }
+    
+    .switch-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 16px;
+    }
+    
+    .switch-info {
+        flex: 1;
+    }
+    
+    .switch-title {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 4px;
+    }
+    
+    .switch-description {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #d1d5db;
+        transition: 0.3s;
+        border-radius: 24px;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+    
+    .tag-input {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 48px;
+        padding: 8px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        background: #f9fafb;
+        cursor: text;
+        transition: all 0.3s ease;
+    }
+    
+    .tag-input:focus-within {
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .tag {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .tag-remove {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.3s ease;
+    }
+    
+    .tag-remove:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .tag-input input {
+        border: none;
+        outline: none;
+        background: transparent;
+        padding: 8px;
+        font-size: 1rem;
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .schedule-examples {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 8px;
+    }
+    
+    .schedule-examples h6 {
+        color: #0284c7;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .schedule-example {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid #e0f2fe;
+        font-size: 0.875rem;
+    }
+    
+    .schedule-example:last-child {
+        border-bottom: none;
+    }
+    
+    .schedule-example code {
+        background: rgba(2, 132, 199, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #0369a1;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #f3f4f6;
+    }
+    
+    .btn-settings {
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    
+    .btn-settings-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-settings-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-settings-secondary {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+    
+    .btn-settings-secondary:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .danger-zone {
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+        border-radius: 16px;
+        padding: 24px;
+        margin-top: 32px;
+    }
+    
+    .danger-zone h5 {
+        color: #dc2626;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    
+    .danger-zone p {
+        color: #991b1b;
+        margin-bottom: 16px;
+    }
+    
+    .btn-danger {
+        background: #dc2626;
+        color: white;
+        border: none;
+    }
+    
+    .btn-danger:hover {
+        background: #b91c1c;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <div class="settings-header">
+        <div class="settings-title">⚙️ Configurações do Agente de IA</div>
+        <div class="settings-subtitle">
+            Configure o comportamento e as preferências do sistema de análise automática
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <form method="post" class="settings-form">
+        {% csrf_token %}
+        
+        <!-- Análise Automática -->
+        <div class="form-section">
+            <div class="section-title">
+                <div class="section-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                Análise Automática
+            </div>
+            <div class="section-subtitle">
+                Configure quando e como o agente deve executar análises automáticas de código.
+            </div>
+            
+            <div class="switch-container">
+                <div class="switch-info">
+                    <div class="switch-title">Correção Automática</div>
+                    <div class="switch-description">
+                        Permite que o agente aplique correções automáticas para problemas simples
+                    </div>
+                </div>
+                <label class="switch">
+                    {{ form.auto_fix_enabled }}
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="switch-container">
+                <div class="switch-info">
+                    <div class="switch-title">Geração Automática de Testes</div>
+                    <div class="switch-description">
+                        Gera automaticamente testes unitários para código sem cobertura
+                    </div>
+                </div>
+                <label class="switch">
+                    {{ form.auto_test_generation }}
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Agendamento -->
+        <div class="form-section">
+            <div class="section-title">
+                <div class="section-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                Agendamento de Análises
+            </div>
+            <div class="section-subtitle">
+                Configure quando as análises automáticas devem ser executadas.
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.analysis_schedule.id_for_label }}">
+                    Cronograma (formato Cron)
+                </label>
+                {{ form.analysis_schedule }}
+                <div class="form-text">
+                    Use formato cron para definir quando executar análises automáticas. 
+                    Deixe vazio para desativar análises agendadas.
+                </div>
+                
+                <div class="schedule-examples">
+                    <h6>Exemplos de agendamento:</h6>
+                    <div class="schedule-example">
+                        <span><code>0 2 * * *</code></span>
+                        <span>Todo dia às 2:00</span>
+                    </div>
+                    <div class="schedule-example">
+                        <span><code>0 9 * * 1</code></span>
+                        <span>Toda segunda às 9:00</span>
+                    </div>
+                    <div class="schedule-example">
+                        <span><code>0 */6 * * *</code></span>
+                        <span>A cada 6 horas</span>
+                    </div>
+                    <div class="schedule-example">
+                        <span><code>0 0 1 * *</code></span>
+                        <span>Todo dia 1º do mês</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exclusões -->
+        <div class="form-section">
+            <div class="section-title">
+                <div class="section-icon">
+                    <i class="fas fa-filter"></i>
+                </div>
+                Aplicações Excluídas
+            </div>
+            <div class="section-subtitle">
+                Selecione quais aplicações Django devem ser ignoradas durante a análise.
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Aplicações para Ignorar</label>
+                <div class="tag-input" id="excludedApps">
+                    {% for app in form.excluded_apps.value %}
+                    <div class="tag">
+                        {{ app }}
+                        <button type="button" class="tag-remove" onclick="removeTag(this)">×</button>
+                    </div>
+                    {% endfor %}
+                    <input type="text" placeholder="Digite o nome da aplicação..." onkeypress="handleTagInput(event)">
+                </div>
+                <div class="form-text">
+                    Digite o nome da aplicação e pressione Enter para adicionar à lista de exclusões.
+                </div>
+                {{ form.excluded_apps.as_hidden }}
+            </div>
+        </div>
+
+        <!-- Notificações -->
+        <div class="form-section">
+            <div class="section-title">
+                <div class="section-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                Notificações
+            </div>
+            <div class="section-subtitle">
+                Configure como e quando receber notificações sobre problemas encontrados.
+            </div>
+            
+            <div class="switch-container">
+                <div class="switch-info">
+                    <div class="switch-title">Notificações por Email</div>
+                    <div class="switch-description">
+                        Receba notificações por email quando problemas críticos forem encontrados
+                    </div>
+                </div>
+                <label class="switch">
+                    {{ form.email_notifications }}
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.critical_threshold.id_for_label }}">
+                    Limite para Problemas Críticos
+                </label>
+                {{ form.critical_threshold }}
+                <div class="form-text">
+                    Número máximo de problemas críticos antes de enviar notificação de alerta.
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="action-buttons">
+            <a href="{% url 'ai_auditor:dashboard' %}" class="btn-settings btn-settings-secondary">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+            <button type="submit" class="btn-settings btn-settings-primary">
+                <i class="fas fa-save"></i>
+                Salvar Configurações
+            </button>
+        </div>
+    </form>
+
+    <!-- Zona de Perigo -->
+    <div class="danger-zone">
+        <h5>
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Zona de Perigo
+        </h5>
+        <p>
+            As ações abaixo são irreversíveis e podem afetar significativamente o sistema.
+        </p>
+        <div class="d-flex gap-3">
+            <button type="button" class="btn-settings btn-danger" onclick="confirmReset()">
+                <i class="fas fa-undo"></i>
+                Resetar Configurações
+            </button>
+            <button type="button" class="btn-settings btn-danger" onclick="confirmClearData()">
+                <i class="fas fa-trash"></i>
+                Limpar Dados de Auditoria
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Ação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmButton">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+function handleTagInput(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const input = event.target;
+        const value = input.value.trim();
+        
+        if (value && !isTagExists(value)) {
+            addTag(value);
+            input.value = '';
+            updateHiddenField();
+        }
+    }
+}
+
+function addTag(value) {
+    const container = document.getElementById('excludedApps');
+    const input = container.querySelector('input');
+    
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    tag.innerHTML = `
+        ${value}
+        <button type="button" class="tag-remove" onclick="removeTag(this)">×</button>
+    `;
+    
+    container.insertBefore(tag, input);
+}
+
+function removeTag(button) {
+    button.parentElement.remove();
+    updateHiddenField();
+}
+
+function isTagExists(value) {
+    const tags = document.querySelectorAll('#excludedApps .tag');
+    return Array.from(tags).some(tag => tag.textContent.trim().replace('×', '') === value);
+}
+
+function updateHiddenField() {
+    const tags = document.querySelectorAll('#excludedApps .tag');
+    const values = Array.from(tags).map(tag => tag.textContent.trim().replace('×', ''));
+    document.getElementById('{{ form.excluded_apps.id_for_label }}').value = JSON.stringify(values);
+}
+
+function confirmReset() {
+    document.getElementById('confirmMessage').textContent = 
+        'Tem certeza que deseja resetar todas as configurações para os valores padrão? Esta ação não pode ser desfeita.';
+    
+    document.getElementById('confirmButton').onclick = function() {
+        // Implementar reset
+        window.location.href = '{% url "ai_auditor:settings" %}?reset=true';
+    };
+    
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+function confirmClearData() {
+    document.getElementById('confirmMessage').textContent = 
+        'Tem certeza que deseja limpar todos os dados de auditoria? Isso incluirá sessões, problemas e testes gerados. Esta ação não pode ser desfeita.';
+    
+    document.getElementById('confirmButton').onclick = function() {
+        // Implementar limpeza de dados
+        window.location.href = '{% url "ai_auditor:settings" %}?clear_data=true';
+    };
+    
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+// Inicializar campo de tags
+document.addEventListener('DOMContentLoaded', function() {
+    updateHiddenField();
+    
+    // Focus no input quando clicar no container
+    document.getElementById('excludedApps').addEventListener('click', function() {
+        this.querySelector('input').focus();
+    });
+});
+</script>
+{% endblock %}

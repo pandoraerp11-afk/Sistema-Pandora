@@ -1,0 +1,48 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-gear text-info me-3" style="font-size: 1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-info">Configurações do Fornecedor</h6>
+      <small class="text-muted">Defina preferências gerais e o tipo de fornecimento.</small>
+    </div>
+  </div>
+</div>
+
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-boxes-stacked wizard-icon"></i> Tipo de Fornecimento</h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.tipo_fornecimento field_size='sm' %}
+  </div>
+</div>
+
+<div class="wizard-section mt-4">
+  <h5 class="wizard-section-title"><i class="fas fa-tags wizard-icon"></i> Linhas/Categorias Fornecidas</h5>
+  <div class="row g-2">
+    {% include 'core/wizard/wizard_field.html' with field=form.linhas_fornecidas field_size='md' %}
+  </div>
+  <small class="text-muted">Use Ctrl/Cmd para selecionar várias opções.</small>
+  <div class="mt-2">
+    <span class="badge bg-light text-dark">Filtro</span>
+    <small class="text-muted">As opções vêm de Itens Auxiliares marcados para fornecedor.</small>
+  </div>
+  <hr class="my-3"/>
+  <div class="row g-2">
+    <div class="col-md-6">
+      {% include 'core/wizard/wizard_field.html' with field=form.regioes_atendidas field_size='md' %}
+    </div>
+    <div class="col-md-6">
+      {% include 'core/wizard/wizard_field.html' with field=form.prazo_medio_entrega_dias field_size='sm' %}
+    </div>
+    <div class="col-md-4">
+      {% include 'core/wizard/wizard_field.html' with field=form.prazo_pagamento_dias field_size='sm' %}
+    </div>
+    <div class="col-md-4">
+      {% include 'core/wizard/wizard_field.html' with field=form.pedido_minimo field_size='sm' %}
+    </div>
+  </div>
+</div>
+{% endblock %}

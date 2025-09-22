@@ -1,0 +1,890 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ cliente.nome }} - Detalhes do Cliente{% endblock %}
+
+{% block extra_css %}
+<style>
+    .client-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 32px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .client-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .client-header-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+    
+    .client-avatar-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: 600;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        overflow: hidden;
+    }
+    
+    .client-avatar-large img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .client-header-info h1 {
+        margin: 0 0 8px 0;
+        font-size: 32px;
+        font-weight: 700;
+    }
+    
+    .client-header-info p {
+        margin: 0;
+        font-size: 16px;
+        opacity: 0.9;
+    }
+    
+    .client-header-badges {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+    }
+    
+    .client-header-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .client-header-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+    }
+    
+    .client-header-actions .btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        backdrop-filter: blur(10px);
+    }
+    
+    .client-header-actions .btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .client-details-grid {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 24px;
+        margin-top: 24px;
+    }
+    
+    .client-details-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+    
+    .client-details-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+    
+    .detail-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+    }
+    
+    .detail-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .detail-card-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .detail-card-header .icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: var(--primary-light);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+    
+    .detail-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: start;
+        gap: 12px;
+    }
+    
+    .detail-item-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+    
+    .detail-item-content {
+        flex: 1;
+    }
+    
+    .detail-item-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    
+    .detail-item-value {
+        font-size: 14px;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+    
+    .detail-item-value.empty {
+        color: var(--text-muted);
+        font-style: italic;
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-indicator.active {
+        background: var(--success-light);
+        color: var(--success);
+    }
+    
+    .status-indicator.inactive {
+        background: var(--danger-light);
+        color: var(--danger);
+    }
+    
+    .status-indicator-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+    
+    .quick-action {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+    }
+    
+    .quick-action:hover {
+        background: var(--background-light);
+        border-color: var(--primary);
+        color: var(--primary);
+        text-decoration: none;
+    }
+    
+    .quick-action-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        background: var(--primary-light);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+    
+    .quick-action-content h4 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    .quick-action-content p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    .contact-methods {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .contact-method {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+    }
+    
+    .contact-method-icon {
+        width: 16px;
+        height: 16px;
+        color: var(--text-muted);
+    }
+    
+    .contact-method-value {
+        font-size: 14px;
+        color: var(--text-primary);
+    }
+    
+    .contact-method-action {
+        margin-left: auto;
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 12px;
+    }
+    
+    .contact-method-action:hover {
+        text-decoration: underline;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 24px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border-color);
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 24px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -20px;
+        top: 6px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary);
+    }
+    
+    .timeline-item-content {
+        background: var(--background-light);
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .timeline-item-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .timeline-item-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .timeline-item-date {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-left: auto;
+    }
+    
+    .timeline-item-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+    
+    .address-card {
+        background: var(--background-light);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+    }
+    
+    .address-card h4 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .address-card p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+    
+    @media (max-width: 768px) {
+        .client-details-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .client-header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .client-header-actions {
+            margin-left: 0;
+            justify-content: center;
+        }
+        
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <!-- Cabeçalho do Cliente -->
+    <div class="client-header">
+        <div class="client-header-content">
+            <div class="client-avatar-large">
+                {% if cliente.foto %}
+                    <img src="{{ cliente.foto.url }}" alt="Foto do cliente">
+                {% else %}
+                    {{ cliente.nome|first|upper }}
+                {% endif %}
+            </div>
+            
+            <div class="client-header-info">
+                <h1>{{ cliente.nome }}</h1>
+                {% if cliente.nome_fantasia %}
+                    <p>{{ cliente.nome_fantasia }}</p>
+                {% endif %}
+                <p>{{ cliente.get_tipo_display }}</p>
+                
+                <div class="client-header-badges">
+                    <span class="client-header-badge">
+                        {% if cliente.ativo %}
+                            <i class="fas fa-check-circle"></i>
+                            Cliente Ativo
+                        {% else %}
+                            <i class="fas fa-times-circle"></i>
+                            Cliente Inativo
+                        {% endif %}
+                    </span>
+                    {% if cliente.documento %}
+                        <span class="client-header-badge">
+                            <i class="fas fa-id-card"></i>
+                            {{ cliente.documento }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="client-header-actions">
+                <a href="{% url 'clientes:clientes_update' cliente.pk %}" class="btn btn-sm">
+                    <i class="fas fa-edit"></i>
+                    Editar
+                </a>
+                <a href="{% url 'clientes:clientes_list' %}" class="btn btn-sm">
+                    <i class="fas fa-arrow-left"></i>
+                    Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="detail-card">
+        <div class="detail-card-header">
+            <div class="icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h3>Ações Rápidas</h3>
+        </div>
+        <div class="quick-actions">
+            <a href="#" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h4>Novo Pedido</h4>
+                    <p>Criar um novo pedido para este cliente</p>
+                </div>
+            </a>
+            <a href="#" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h4>Gerar Orçamento</h4>
+                    <p>Criar um orçamento personalizado</p>
+                </div>
+            </a>
+            <a href="#" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h4>Relatórios</h4>
+                    <p>Visualizar relatórios e estatísticas</p>
+                </div>
+            </a>
+            <a href="#" class="quick-action">
+                <div class="quick-action-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="quick-action-content">
+                    <h4>Conversar</h4>
+                    <p>Iniciar uma conversa no chat</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="client-details-grid">
+        <!-- Conteúdo Principal -->
+        <div class="client-details-main">
+            <!-- Informações Básicas -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3>Informações Básicas</h3>
+                </div>
+                <div class="detail-list">
+                    <div class="detail-item">
+                        <i class="fas fa-signature detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Nome Completo</div>
+                            <div class="detail-item-value">{{ cliente.nome }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if cliente.nome_fantasia %}
+                    <div class="detail-item">
+                        <i class="fas fa-store detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Nome Fantasia</div>
+                            <div class="detail-item-value">{{ cliente.nome_fantasia }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-id-card detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">{{ cliente.get_tipo_display }}</div>
+                            <div class="detail-item-value">{{ cliente.documento|default:"Não informado" }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if cliente.inscricao_estadual %}
+                    <div class="detail-item">
+                        <i class="fas fa-certificate detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Inscrição Estadual</div>
+                            <div class="detail-item-value">{{ cliente.inscricao_estadual }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-calendar detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">
+                                {% if cliente.tipo == 'pessoa_juridica' %}
+                                    Data de Fundação
+                                {% else %}
+                                    Data de Nascimento
+                                {% endif %}
+                            </div>
+                            <div class="detail-item-value">
+                                {% if cliente.data_nascimento %}
+                                    {{ cliente.data_nascimento|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="empty">Não informado</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if cliente.genero %}
+                    <div class="detail-item">
+                        <i class="fas fa-venus-mars detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Gênero</div>
+                            <div class="detail-item-value">{{ cliente.get_genero_display }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-toggle-on detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Status</div>
+                            <div class="detail-item-value">
+                                {% if cliente.ativo %}
+                                    <span class="status-indicator active">
+                                        <span class="status-indicator-dot"></span>
+                                        Ativo
+                                    </span>
+                                {% else %}
+                                    <span class="status-indicator inactive">
+                                        <span class="status-indicator-dot"></span>
+                                        Inativo
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações de Contato -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-address-book"></i>
+                    </div>
+                    <h3>Informações de Contato</h3>
+                </div>
+                <div class="contact-methods">
+                    {% if cliente.telefone %}
+                    <div class="contact-method">
+                        <i class="fas fa-phone contact-method-icon"></i>
+                        <span class="contact-method-value">{{ cliente.telefone }}</span>
+                        <a href="tel:{{ cliente.telefone }}" class="contact-method-action">Ligar</a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cliente.whatsapp %}
+                    <div class="contact-method">
+                        <i class="fab fa-whatsapp contact-method-icon"></i>
+                        <span class="contact-method-value">{{ cliente.whatsapp }}</span>
+                        <a href="https://wa.me/{{ cliente.whatsapp|cut:' '|cut:'('|cut:')'|cut:'-' }}" target="_blank" class="contact-method-action">WhatsApp</a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cliente.email %}
+                    <div class="contact-method">
+                        <i class="fas fa-envelope contact-method-icon"></i>
+                        <span class="contact-method-value">{{ cliente.email }}</span>
+                        <a href="mailto:{{ cliente.email }}" class="contact-method-action">Enviar Email</a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cliente.site %}
+                    <div class="contact-method">
+                        <i class="fas fa-globe contact-method-icon"></i>
+                        <span class="contact-method-value">{{ cliente.site }}</span>
+                        <a href="{{ cliente.site }}" target="_blank" class="contact-method-action">Visitar Site</a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if not cliente.telefone and not cliente.whatsapp and not cliente.email and not cliente.site %}
+                    <p class="text-muted">Nenhuma informação de contato cadastrada.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Endereço -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3>Endereço</h3>
+                </div>
+                {% if cliente.endereco %}
+                <div class="address-card">
+                    <h4>Endereço Principal</h4>
+                    <p>
+                        {{ cliente.endereco }}{% if cliente.numero %}, {{ cliente.numero }}{% endif %}{% if cliente.complemento %}, {{ cliente.complemento }}{% endif %}<br>
+                        {{ cliente.bairro }}<br>
+                        {{ cliente.cidade }}/{{ cliente.estado }} - {{ cliente.cep }}<br>
+                        {{ cliente.pais|default:"Brasil" }}
+                    </p>
+                </div>
+                {% else %}
+                <p class="text-muted">Nenhum endereço cadastrado.</p>
+                {% endif %}
+            </div>
+
+            <!-- Informações Financeiras -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <h3>Informações Financeiras</h3>
+                </div>
+                <div class="detail-list">
+                    <div class="detail-item">
+                        <i class="fas fa-credit-card detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Limite de Crédito</div>
+                            <div class="detail-item-value">
+                                {% if cliente.limite_credito %}
+                                    R$ {{ cliente.limite_credito|floatformat:2 }}
+                                {% else %}
+                                    <span class="empty">Não definido</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-alt detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Dias de Prazo</div>
+                            <div class="detail-item-value">
+                                {% if cliente.dias_prazo %}
+                                    {{ cliente.dias_prazo }} dias
+                                {% else %}
+                                    <span class="empty">Não definido</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-percentage detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Desconto Padrão</div>
+                            <div class="detail-item-value">
+                                {% if cliente.desconto_padrao %}
+                                    {{ cliente.desconto_padrao }}%
+                                {% else %}
+                                    <span class="empty">Não definido</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-money-bill detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Forma de Pagamento</div>
+                            <div class="detail-item-value">
+                                {% if cliente.forma_pagamento %}
+                                    {{ cliente.get_forma_pagamento_display }}
+                                {% else %}
+                                    <span class="empty">Não definido</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            {% if cliente.observacoes %}
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <h3>Observações</h3>
+                </div>
+                <div class="detail-item-content">
+                    <p>{{ cliente.observacoes|linebreaks }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="client-details-sidebar">
+            <!-- Informações Rápidas -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h3>Informações Rápidas</h3>
+                </div>
+                <div class="detail-list">
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-plus detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Cliente desde</div>
+                            <div class="detail-item-value">{{ cliente.created_at|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-clock detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Última atualização</div>
+                            <div class="detail-item-value">{{ cliente.updated_at|date:"d/m/Y H:i" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-shopping-cart detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Total de Pedidos</div>
+                            <div class="detail-item-value">{{ cliente.total_pedidos|default:0 }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-dollar-sign detail-item-icon"></i>
+                        <div class="detail-item-content">
+                            <div class="detail-item-label">Valor Total</div>
+                            <div class="detail-item-value">R$ {{ cliente.valor_total|default:0|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Atividades Recentes -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>Atividades Recentes</h3>
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-item-content">
+                            <div class="timeline-item-header">
+                                <span class="timeline-item-title">Cliente cadastrado</span>
+                                <span class="timeline-item-date">{{ cliente.created_at|date:"d/m/Y H:i" }}</span>
+                            </div>
+                            <p class="timeline-item-description">
+                                Cliente {{ cliente.nome }} foi cadastrado no sistema.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if cliente.updated_at != cliente.created_at %}
+                    <div class="timeline-item">
+                        <div class="timeline-item-content">
+                            <div class="timeline-item-header">
+                                <span class="timeline-item-title">Dados atualizados</span>
+                                <span class="timeline-item-date">{{ cliente.updated_at|date:"d/m/Y H:i" }}</span>
+                            </div>
+                            <p class="timeline-item-description">
+                                Informações do cliente foram atualizadas.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <div class="icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <h3>Ações</h3>
+                </div>
+                <div class="form-actions">
+                    <a href="{% url 'clientes:clientes_update' cliente.pk %}" class="btn btn-primary btn-block">
+                        <i class="fas fa-edit"></i>
+                        Editar Cliente
+                    </a>
+                    <a href="{% url 'clientes:clientes_list' %}" class="btn btn-outline-secondary btn-block">
+                        <i class="fas fa-list"></i>
+                        Lista de Clientes
+                    </a>
+                    <a href="{% url 'clientes:clientes_delete' cliente.pk %}" class="btn btn-outline-danger btn-block">
+                        <i class="fas fa-trash"></i>
+                        Excluir Cliente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Não há JavaScript específico necessário para esta página
+    // Mas você pode adicionar funcionalidades como:
+    // - Confirmação antes de excluir
+    // - Integração com WhatsApp
+    // - Cópia de informações para clipboard
+    // - etc.
+});
+</script>
+{% endblock %}

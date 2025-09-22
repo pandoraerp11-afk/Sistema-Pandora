@@ -1,0 +1,97 @@
+{% extends "pandora_detail_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Item Estoque - {{ itemestoque.nome_item }}{% endblock %}
+{# Ajustado para herdar corretamente de pandora_detail_ultra_modern.html que usa blocks detail_title e detail_subtitle #}
+{% block detail_title %}{{ itemestoque.nome_item }}{% endblock %}
+{% block detail_subtitle %}Detalhes e situação do item{% endblock %}
+{% block page_icon %}fas fa-warehouse{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'estoque:estoque_home' %}">Estoque</a></li>
+<li class="breadcrumb-item active">Item</li>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'estoque/detail.css' %}">
+{% endblock %}
+
+{% block detail_actions %}
+<a href="{% url 'estoque:estoque_home' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
+{% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+<button class="btn btn-warning" disabled title="Edição em modernização"><i class="fas fa-edit me-1"></i> Editar</button>
+{% endif %}
+{% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+<button class="btn btn-danger" disabled title="Exclusão em modernização"><i class="fas fa-trash me-1"></i> Excluir</button>
+{% endif %}
+{% endblock %}
+
+{% block detail_content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="quantidade-card">
+            <div class="quantidade-numero">{{ itemestoque.quantidade }}</div>
+            <div class="small">{{ itemestoque.unidade_medida.nome|default:"unidades" }} em estoque</div>
+        </div>
+        {% if itemestoque.estoque_minimo %}
+            {% if itemestoque.quantidade <= 0 %}<div class="status-estoque estoque-critico">Estoque Esgotado</div>
+            {% elif itemestoque.quantidade <= itemestoque.estoque_minimo %}<div class="status-estoque estoque-baixo">Estoque Baixo</div>
+            {% else %}<div class="status-estoque estoque-ok">Estoque Normal</div>{% endif %}
+        {% endif %}
+
+        <div class="detail-card">
+            <div class="detail-card-header"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações Gerais</h6></div>
+            <div class="detail-card-body">
+                <div class="detail-item"><span class="detail-label"><i class="fas fa-tag"></i> Nome</span><span class="fw-semibold">{{ itemestoque.nome_item }}</span></div>
+                {% if itemestoque.descricao %}<div class="detail-item"><span class="detail-label"><i class="fas fa-align-left"></i> Descrição</span><span class="text-end flex-grow-1">{{ itemestoque.descricao }}</span></div>{% endif %}
+                <div class="detail-item"><span class="detail-label"><i class="fas fa-ruler"></i> Unidade</span><span>{{ itemestoque.unidade_medida.nome|default:"Não definida" }}</span></div>
+                {% if itemestoque.localizacao %}<div class="detail-item"><span class="detail-label"><i class="fas fa-map-marker-alt"></i> Localização</span><span class="localizacao-badge">{{ itemestoque.localizacao }}</span></div>{% endif %}
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <div class="detail-card-header"><h6 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Financeiro</h6></div>
+            <div class="detail-card-body">
+                {% if itemestoque.valor_unitario %}
+                <div class="detail-item"><span class="detail-label"><i class="fas fa-money-bill-wave"></i> Unitário</span><span>R$ {{ itemestoque.valor_unitario|floatformat:2 }}</span></div>
+                <div class="detail-item"><span class="detail-label"><i class="fas fa-calculator"></i> Total</span><span class="fw-bold">R$ {% widthratio itemestoque.quantidade 1 itemestoque.valor_unitario|floatformat:2 %}</span></div>
+                {% else %}
+                <div class="alert alert-info small mb-0"><i class="fas fa-info-circle me-1"></i> Valor unitário não cadastrado.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if itemestoque.obra %}
+        <div class="detail-card">
+            <div class="detail-card-header"><h6 class="mb-0"><i class="fas fa-construction me-2"></i>Obra Relacionada</h6></div>
+            <div class="detail-card-body">
+                <div class="detail-item"><span class="detail-label"><i class="fas fa-building"></i> Obra</span><span class="fw-semibold">{{ itemestoque.obra.nome }}</span></div>
+                {% if itemestoque.obra.cliente %}<div class="detail-item"><span class="detail-label"><i class="fas fa-user"></i> Cliente</span><span>{{ itemestoque.obra.cliente.nome }}</span></div>{% endif %}
+                {% if itemestoque.obra.endereco %}<div class="detail-item"><span class="detail-label"><i class="fas fa-map-marker-alt"></i> Endereço</span><span>{{ itemestoque.obra.endereco }}</span></div>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-4">
+        {% if itemestoque.estoque_minimo %}
+        <div class="info-card">
+            <strong>Controle:</strong><br>
+            Mín: {{ itemestoque.estoque_minimo }}<br>
+            Atual: {{ itemestoque.quantidade }}<br>
+            Situação: {% if itemestoque.quantidade <= 0 %}<span class="text-danger">Esgotado{% elif itemestoque.quantidade <= itemestoque.estoque_minimo %}<span class="text-warning">Baixo{% else %}<span class="text-success">Normal{% endif %}</span>
+        </div>
+        {% endif %}
+        <div class="info-card">
+            <strong>Sistema:</strong><br>
+            ID: #{{ itemestoque.id }}<br>
+            {% if itemestoque.data_criacao %}Criado: {{ itemestoque.data_criacao|date:"d/m/Y H:i" }}<br>{% endif %}
+            {% if itemestoque.data_atualizacao %}Atualizado: {{ itemestoque.data_atualizacao|date:"d/m/Y H:i" }}{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'estoque/item_detail.js' %}"></script>
+<script>window.ITEM_CONTEXT={nome:'{{ itemestoque.nome_item }}',quantidade:{{ itemestoque.quantidade|default:0 }}};</script>
+{% endblock %}

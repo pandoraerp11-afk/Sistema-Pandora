@@ -1,0 +1,156 @@
+<!-- Floating Toggle Button for Reports -->
+<div class="floating-actions-container" id="floating-actions">
+    <!-- Main Toggle Button -->
+    <div class="floating-toggle-btn" onclick="toggleFloatingActions()" id="floating-toggle">
+        <i class="fas fa-chart-line"></i>
+    </div>
+    
+    <!-- Actions Group -->
+    <div class="floating-actions-group" id="floating-actions-group">
+        <!-- Search/Filter Button -->
+        <div class="floating-action-btn" data-bs-toggle="tooltip" title="Filtros" onclick="toggleSearch()">
+            <i class="fas fa-filter"></i>
+        </div>
+        
+        <!-- Export Excel Button -->
+        <div class="floating-action-btn" data-bs-toggle="tooltip" title="Exportar Excel" onclick="exportExcel()">
+            <i class="fas fa-file-excel"></i>
+        </div>
+        
+        <!-- Export PDF Button -->
+        <div class="floating-action-btn" data-bs-toggle="tooltip" title="Exportar PDF" onclick="exportPDF()">
+            <i class="fas fa-file-pdf"></i>
+        </div>
+        
+        <!-- Print Button -->
+        <div class="floating-action-btn" data-bs-toggle="tooltip" title="Imprimir Relatório" onclick="printReport()">
+            <i class="fas fa-print"></i>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle functionality for floating actions
+function toggleFloatingActions() {
+    const container = document.getElementById('floating-actions');
+    const toggle = document.getElementById('floating-toggle');
+    const group = document.getElementById('floating-actions-group');
+    
+    container.classList.toggle('active');
+    
+    if (container.classList.contains('active')) {
+        toggle.style.transform = 'rotate(45deg)';
+        group.style.transform = 'translateY(-10px)';
+        group.style.opacity = '1';
+        group.style.pointerEvents = 'all';
+    } else {
+        toggle.style.transform = 'rotate(0deg)';
+        group.style.transform = 'translateY(0px)';
+        group.style.opacity = '0';
+        group.style.pointerEvents = 'none';
+    }
+}
+
+// Toggle search/filter panel
+function toggleSearch() {
+    const searchContainer = document.getElementById('search-container');
+    const bsCollapse = new bootstrap.Collapse(searchContainer, {
+        toggle: true
+    });
+}
+
+// Export functions
+function exportExcel() {
+    // Toast notification
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-info border-0 position-fixed top-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-file-excel me-2"></i>Exportando para Excel...
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    setTimeout(() => {
+        document.body.removeChild(toast);
+        // Success toast
+        const successToast = document.createElement('div');
+        successToast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+        successToast.style.zIndex = '9999';
+        successToast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>Arquivo Excel baixado com sucesso!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(successToast);
+        const bsSuccessToast = new bootstrap.Toast(successToast);
+        bsSuccessToast.show();
+        
+        setTimeout(() => {
+            document.body.removeChild(successToast);
+        }, 3000);
+    }, 1500);
+}
+
+function exportPDF() {
+    // Toast notification
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-info border-0 position-fixed top-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-file-pdf me-2"></i>Gerando PDF...
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    setTimeout(() => {
+        document.body.removeChild(toast);
+        // Success toast
+        const successToast = document.createElement('div');
+        successToast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+        successToast.style.zIndex = '9999';
+        successToast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>Arquivo PDF baixado com sucesso!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(successToast);
+        const bsSuccessToast = new bootstrap.Toast(successToast);
+        bsSuccessToast.show();
+        
+        setTimeout(() => {
+            document.body.removeChild(successToast);
+        }, 3000);
+    }, 2000);
+}
+
+function printReport() {
+    window.print();
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>

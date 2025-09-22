@@ -1,0 +1,468 @@
+{# Card do Pedido no Kanban #}
+<div class="pedido-card" 
+     draggable="true" 
+     ondragstart="drag(event)" 
+     data-pedido-id="{{ pedido.id }}"
+     data-prioridade="{{ pedido.prioridade|lower }}"
+     data-cliente-id="{{ pedido.cliente.id }}"
+     data-data="{{ pedido.data_criacao|date:'Y-m-d' }}">
+     
+    <!-- Header do Card -->
+    <div class="pedido-card-header">
+        <div class="pedido-numero">
+            <i class="fas fa-shopping-cart me-1"></i>
+            #{{ pedido.numero }}
+        </div>
+        
+        <div class="pedido-badges">
+            <span class="pedido-prioridade prioridade-{{ pedido.prioridade|lower }}">
+                {% if pedido.prioridade == 'ALTA' %}
+                    <i class="fas fa-exclamation-triangle me-1"></i>Alta
+                {% elif pedido.prioridade == 'MEDIA' %}
+                    <i class="fas fa-exclamation me-1"></i>Média
+                {% elif pedido.prioridade == 'NORMAL' %}
+                    <i class="fas fa-circle me-1"></i>Normal
+                {% else %}
+                    <i class="fas fa-minus me-1"></i>Baixa
+                {% endif %}
+            </span>
+            
+            {% if pedido.tem_observacoes %}
+                <span class="badge bg-info ms-1" title="Tem observações importantes">
+                    <i class="fas fa-sticky-note"></i>
+                </span>
+            {% endif %}
+            
+            {% if pedido.tem_produtos_especiais %}
+                <span class="badge bg-warning ms-1" title="Produtos especiais">
+                    <i class="fas fa-star"></i>
+                </span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Body do Card -->
+    <div class="pedido-card-body">
+        <!-- Cliente -->
+        <div class="cliente-info">
+            <div class="cliente-avatar">
+                {{ pedido.cliente.nome.0|upper }}{{ pedido.cliente.nome|split:' '|last|first|upper }}
+            </div>
+            <div>
+                <div class="cliente-nome">{{ pedido.cliente.nome|truncatechars:20 }}</div>
+                {% if pedido.cliente.cidade %}
+                    <small class="text-muted">{{ pedido.cliente.cidade }}</small>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Resumo dos Itens -->
+        <div class="pedido-itens">
+            {% for item in pedido.itens_resumo|slice:":3" %}
+                <div class="item-resumo">
+                    <span class="item-quantidade">{{ item.quantidade|floatformat:0 }}</span>
+                    <span class="item-nome">{{ item.produto.nome|truncatechars:25 }}</span>
+                </div>
+            {% endfor %}
+            
+            {% if pedido.total_itens > 3 %}
+                <div class="item-resumo">
+                    <span class="text-muted">
+                        <i class="fas fa-plus-circle me-1"></i>
+                        Mais {{ pedido.total_itens|add:"-3" }} {% if pedido.total_itens|add:"-3" == 1 %}item{% else %}itens{% endif %}
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Informações do Pedido -->
+        <div class="pedido-info">
+            <div class="row text-center">
+                <div class="col-4">
+                    <div class="info-item">
+                        <div class="info-value">{{ pedido.total_itens }}</div>
+                        <div class="info-label">Itens</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="info-item">
+                        <div class="info-value">{{ pedido.peso_total|floatformat:1 }}</div>
+                        <div class="info-label">Kg</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="info-item">
+                        <div class="info-value">{{ pedido.volume_total|floatformat:1 }}</div>
+                        <div class="info-label">m³</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Indicadores Visuais -->
+        <div class="pedido-indicators mt-2">
+            {% if pedido.tem_produtos_controlados %}
+                <span class="badge bg-danger badge-sm">
+                    <i class="fas fa-shield-alt me-1"></i>Controlado
+                </span>
+            {% endif %}
+            
+            {% if pedido.tem_produtos_frageis %}
+                <span class="badge bg-warning badge-sm">
+                    <i class="fas fa-fragile me-1"></i>Frágil
+                </span>
+            {% endif %}
+            
+            {% if pedido.entrega_expressa %}
+                <span class="badge bg-info badge-sm">
+                    <i class="fas fa-bolt me-1"></i>Expresso
+                </span>
+            {% endif %}
+            
+            {% if pedido.requer_nota_fiscal %}
+                <span class="badge bg-secondary badge-sm">
+                    <i class="fas fa-file-invoice me-1"></i>NF
+                </span>
+            {% endif %}
+        </div>
+        
+        <!-- Localização de Picking -->
+        {% if pedido.rota_picking %}
+            <div class="rota-picking mt-2">
+                <small class="text-info">
+                    <i class="fas fa-route me-1"></i>
+                    Rota: {{ pedido.rota_picking.nome }}
+                    <span class="badge bg-info badge-sm ms-1">
+                        {{ pedido.rota_picking.total_paradas }} paradas
+                    </span>
+                </small>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Footer do Card -->
+    <div class="pedido-footer">
+        <!-- Progresso -->
+        <div class="pedido-progress">
+            <div class="pedido-progress-bar" style="width: {{ pedido.progresso_percentual }}%"></div>
+        </div>
+        
+        <!-- Meta informações -->
+        <div class="pedido-meta">
+            <div class="pedido-data">
+                <i class="fas fa-calendar me-1"></i>
+                {{ pedido.data_criacao|date:"d/m/Y" }}
+                
+                {% if pedido.prazo_entrega %}
+                    <span class="ms-2 
+                        {% if pedido.dias_para_entrega <= 0 %}text-danger
+                        {% elif pedido.dias_para_entrega <= 1 %}text-warning
+                        {% else %}text-muted{% endif %}">
+                        <i class="fas fa-clock me-1"></i>
+                        {% if pedido.dias_para_entrega <= 0 %}
+                            Atrasado
+                        {% elif pedido.dias_para_entrega == 1 %}
+                            Amanhã
+                        {% else %}
+                            {{ pedido.dias_para_entrega }}d
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </div>
+            
+            <div class="pedido-valor">
+                R$ {{ pedido.valor_total|floatformat:2 }}
+            </div>
+        </div>
+        
+        <!-- Tempo no Status Atual -->
+        <div class="tempo-status mb-2">
+            <small class="text-muted">
+                <i class="fas fa-stopwatch me-1"></i>
+                {% if pedido.tempo_no_status_horas < 1 %}
+                    {{ pedido.tempo_no_status_minutos }} min neste status
+                {% elif pedido.tempo_no_status_horas < 24 %}
+                    {{ pedido.tempo_no_status_horas|floatformat:0 }}h neste status
+                {% else %}
+                    {{ pedido.tempo_no_status_dias }} dias neste status
+                {% endif %}
+            </small>
+        </div>
+        
+        <!-- Ações do Card -->
+        <div class="pedido-actions">
+            <button class="btn-pedido btn-info" 
+                    onclick="verDetalhesPedido({{ pedido.id }})" 
+                    title="Ver detalhes">
+                <i class="fas fa-eye"></i>
+            </button>
+            
+            {% if pedido.pode_iniciar_separacao %}
+                <button class="btn-pedido btn-pick" 
+                        onclick="iniciarSeparacao({{ pedido.id }})" 
+                        title="Iniciar separação">
+                    <i class="fas fa-play"></i>
+                </button>
+            {% endif %}
+            
+            {% if pedido.pode_editar %}
+                <button class="btn-pedido btn-edit" 
+                        onclick="editarPedido({{ pedido.id }})" 
+                        title="Editar pedido">
+                    <i class="fas fa-edit"></i>
+                </button>
+            {% endif %}
+            
+            <!-- Ações específicas por status -->
+            {% if pedido.status == 'SEPARACAO' %}
+                <button class="btn-pedido btn-pick" 
+                        onclick="marcarComoSeparado({{ pedido.id }})" 
+                        title="Marcar como separado">
+                    <i class="fas fa-check"></i>
+                </button>
+            {% elif pedido.status == 'CONFERENCIA' %}
+                <button class="btn-pedido btn-pick" 
+                        onclick="conferirPedido({{ pedido.id }})" 
+                        title="Conferir pedido">
+                    <i class="fas fa-search"></i>
+                </button>
+            {% elif pedido.status == 'EMBALAGEM' %}
+                <button class="btn-pedido btn-pick" 
+                        onclick="embalarPedido({{ pedido.id }})" 
+                        title="Embalar pedido">
+                    <i class="fas fa-box"></i>
+                </button>
+            {% elif pedido.status == 'EXPEDICAO' %}
+                <button class="btn-pedido btn-pick" 
+                        onclick="finalizarExpedicao({{ pedido.id }})" 
+                        title="Finalizar expedição">
+                    <i class="fas fa-truck"></i>
+                </button>
+            {% endif %}
+            
+            <!-- Menu de opções -->
+            <div class="btn-group">
+                <button class="btn-pedido btn-edit dropdown-toggle" 
+                        data-bs-toggle="dropdown" 
+                        title="Mais opções">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="verHistoricoPedido({{ pedido.id }})">
+                            <i class="fas fa-history me-2"></i>Histórico
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="imprimirEtiquetas({{ pedido.id }})">
+                            <i class="fas fa-tags me-2"></i>Imprimir Etiquetas
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="adicionarObservacao({{ pedido.id }})">
+                            <i class="fas fa-comment me-2"></i>Adicionar Observação
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-warning" href="#" onclick="alterarPrioridade({{ pedido.id }})">
+                            <i class="fas fa-flag me-2"></i>Alterar Prioridade
+                        </a>
+                    </li>
+                    {% if pedido.pode_cancelar %}
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" onclick="cancelarPedido({{ pedido.id }})">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Indicador de atividade -->
+    <div class="pedido-activity" style="display: none;">
+        <div class="activity-indicator">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Processando...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.info-item {
+    text-align: center;
+}
+
+.info-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.pedido-indicators {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.badge-sm {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+}
+
+.rota-picking {
+    background: rgba(23, 162, 184, 0.1);
+    padding: 6px 8px;
+    border-radius: 6px;
+    border-left: 3px solid #17a2b8;
+}
+
+.tempo-status {
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 8px;
+}
+
+.pedido-activity {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    z-index: 100;
+}
+
+.activity-indicator {
+    text-align: center;
+    color: #667eea;
+}
+
+/* Estados especiais do card */
+.pedido-card.urgente {
+    border-left: 4px solid #ff6b6b;
+}
+
+.pedido-card.atrasado {
+    border-left: 4px solid #dc3545;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+.pedido-card.em-processamento {
+    border-left: 4px solid #17a2b8;
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+.pedido-card.problemas {
+    border-left: 4px solid #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+/* Animações do card */
+.pedido-card.movido {
+    animation: cardMoved 0.5s ease;
+}
+
+@keyframes cardMoved {
+    0% { transform: scale(1.05); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); }
+    100% { transform: scale(1); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+}
+
+.pedido-card.atualizado {
+    animation: cardUpdated 0.3s ease;
+}
+
+@keyframes cardUpdated {
+    0% { background: rgba(40, 167, 69, 0.1); }
+    100% { background: var(--kanban-card-bg); }
+}
+
+/* Drag states */
+.pedido-card.drag-preview {
+    opacity: 0.5;
+    transform: rotate(5deg);
+    z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+</style>
+
+<script>
+// Drag and Drop do card
+function drag(ev) {
+    ev.dataTransfer.setData('text/plain', ev.target.dataset.pedidoId);
+    ev.target.classList.add('dragging');
+}
+
+// Finalizar drag
+document.addEventListener('dragend', function(e) {
+    if (e.target.classList.contains('pedido-card')) {
+        e.target.classList.remove('dragging');
+    }
+});
+
+// Funções de ação do card
+function verDetalhesPedido(pedidoId) {
+    // Implementar visualização de detalhes
+    EstoquePicking.verDetalhes(pedidoId);
+}
+
+function iniciarSeparacao(pedidoId) {
+    EstoquePicking.iniciarSeparacao(pedidoId);
+}
+
+function editarPedido(pedidoId) {
+    EstoquePicking.editarPedido(pedidoId);
+}
+
+function marcarComoSeparado(pedidoId) {
+    EstoquePicking.marcarComoSeparado(pedidoId);
+}
+
+function conferirPedido(pedidoId) {
+    EstoquePicking.conferirPedido(pedidoId);
+}
+
+function embalarPedido(pedidoId) {
+    EstoquePicking.embalarPedido(pedidoId);
+}
+
+function finalizarExpedicao(pedidoId) {
+    EstoquePicking.finalizarExpedicao(pedidoId);
+}
+
+// Funções do menu dropdown
+function verHistoricoPedido(pedidoId) {
+    EstoquePicking.verHistorico(pedidoId);
+}
+
+function imprimirEtiquetas(pedidoId) {
+    EstoquePicking.imprimirEtiquetas(pedidoId);
+}
+
+function adicionarObservacao(pedidoId) {
+    EstoquePicking.adicionarObservacao(pedidoId);
+}
+
+function alterarPrioridade(pedidoId) {
+    EstoquePicking.alterarPrioridade(pedidoId);
+}
+
+function cancelarPedido(pedidoId) {
+    if (confirm('Tem certeza que deseja cancelar este pedido?')) {
+        EstoquePicking.cancelarPedido(pedidoId);
+    }
+}
+</script>

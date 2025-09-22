@@ -1,0 +1,47 @@
+{# core/templates/core/sidebar_menu.html - Template Moderno para Menu Lateral #}
+{# Compatível com pandora-ultra-modern.css e Bootstrap 5 #}
+<ul class="nav-list">
+	{% for group in menu_groups %}
+		{% if group.header %}<li class="nav-section-title">{{ group.header }}</li>{% endif %}
+		{% for item in group.items %}
+			<li class="nav-item {% if item.is_active %}active{% endif %}">
+				{% if item.has_children %}
+					<a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#{{ item.collapse_id }}" aria-expanded="{% if item.is_active %}true{% else %}false{% endif %}" aria-controls="{{ item.collapse_id }}">
+						<i class="nav-icon {{ item.icon }}"></i>
+						<span class="nav-text">
+							{{ item.name }}
+							{# Badges específicas para módulo Prontuários reaproveitando classes Bootstrap #}
+							{% if item.module_name == 'prontuarios' %}
+								{% if saude_atendimentos_hoje %}<span class="badge bg-success ms-1" title="Atendimentos hoje">{{ saude_atendimentos_hoje }}</span>{% endif %}
+								{% if saude_slots_futuros_livres %}<span class="badge bg-info ms-1" title="Slots livres futuros">{{ saude_slots_futuros_livres }}</span>{% endif %}
+							{% endif %}
+						</span>
+						<i class="nav-arrow fas fa-chevron-down"></i>
+					</a>
+					<ul class="nav-submenu collapse {% if item.is_active %}show{% endif %}" id="{{ item.collapse_id }}" data-bs-parent=".nav-list">
+						{% for child in item.children %}
+							<li class="nav-item">
+								<a href="{{ child.url }}" class="nav-link {% if child.is_active %}active{% endif %}">
+									<span class="nav-text">{{ child.name }}
+										{# Badge contextual em subitens específicos #}
+										{% if item.module_name == 'prontuarios' and 'Slot' in child.name and saude_slots_futuros_livres %}
+											<span class="badge bg-info ms-1">{{ saude_slots_futuros_livres }}</span>
+										{% endif %}
+										{% if item.module_name == 'prontuarios' and 'Atendimento' in child.name and saude_atendimentos_hoje %}
+											<span class="badge bg-success ms-1">{{ saude_atendimentos_hoje }}</span>
+										{% endif %}
+									</span>
+								</a>
+							</li>
+						{% endfor %}
+					</ul>
+				{% else %}
+					<a href="{{ item.url }}" class="nav-link {% if item.is_active %}active{% endif %}">
+						<i class="nav-icon {{ item.icon }}"></i>
+						<span class="nav-text">{{ item.name }}</span>
+					</a>
+				{% endif %}
+			</li>
+		{% endfor %}
+	{% endfor %}
+</ul>

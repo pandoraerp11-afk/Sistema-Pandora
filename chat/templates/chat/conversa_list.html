@@ -1,0 +1,261 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title|default:'Conversas' }}{% endblock %}
+{% block page_subtitle %}{{ page_subtitle|default:'Gerencie e acompanhe suas conversas' }}{% endblock %}
+{% block page_actions %}
+	{% if can_add %}
+	<div class="d-flex gap-2">
+		<a href="{{ add_url }}" class="btn btn-primary">
+			<i class="fas fa-plus me-2"></i>Nova Conversa
+		</a>
+		<a href="{% url 'chat:configuracao_chat' %}" class="btn btn-outline-secondary">
+			<i class="fas fa-cog me-2"></i>Configurações
+		</a>
+	</div>
+	{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+	{% if breadcrumbs %}
+	<li class="breadcrumb-item"><a href="{% url 'chat:conversa_list' %}">Chat</a></li>
+	{% for breadcrumb in breadcrumbs %}
+		{% if breadcrumb.active %}
+			<li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+		{% else %}
+			<li class="breadcrumb-item">
+				{% if breadcrumb.url %}
+					<a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+				{% else %}
+					{{ breadcrumb.title }}
+				{% endif %}
+			</li>
+		{% endif %}
+	{% endfor %}
+	{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-lg-9">
+	<!-- Stats Cards modernizados -->
+	<div class="row g-3 mb-4">
+		<div class="col-12 col-md-6 col-xl-3">
+			<div class="action-card h-100">
+				<div class="card-body d-flex align-items-center justify-content-between">
+					<div>
+						<div class="text-muted mb-1">Total de Conversas</div>
+						<div class="h3 mb-0 fw-bold">{{ total_count|default:0 }}</div>
+					</div>
+					<div class="action-icon bg-gradient-primary text-white">
+						<i class="fas fa-comments"></i>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-md-6 col-xl-3">
+			<div class="action-card h-100">
+				<div class="card-body d-flex align-items-center justify-content-between">
+					<div>
+						<div class="text-muted mb-1">Conversas Ativas</div>
+						<div class="h3 mb-0 fw-bold">{{ active_count|default:0 }}</div>
+					</div>
+					<div class="action-icon bg-gradient-success text-white">
+						<i class="fas fa-comment-dots"></i>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-md-6 col-xl-3">
+			<div class="action-card h-100">
+				<div class="card-body d-flex align-items-center justify-content-between">
+					<div>
+						<div class="text-muted mb-1">Mensagens Não Lidas</div>
+						<div class="h3 mb-0 fw-bold">{{ unread_count|default:0 }}</div>
+					</div>
+					<div class="action-icon bg-gradient-warning text-white">
+						<i class="fas fa-envelope"></i>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-md-6 col-xl-3">
+			<div class="action-card h-100">
+				<div class="card-body d-flex align-items-center justify-content-between">
+					<div>
+						<div class="text-muted mb-1">Recentes (7 dias)</div>
+						<div class="h3 mb-0 fw-bold">{{ recent_count|default:0 }}</div>
+					</div>
+					<div class="action-icon bg-gradient-info text-white">
+						<i class="fas fa-calendar-week"></i>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Busca e filtro -->
+	<div class="quick-action-card p-3 mb-4">
+		<form method="get" class="row g-3 align-items-end">
+			<div class="col-md-6">
+				<label class="form-label fw-semibold text-muted"><i class="fas fa-search me-2"></i>Buscar</label>
+				<input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Buscar por título ou participante...">
+			</div>
+			<div class="col-md-4">
+				<label class="form-label fw-semibold text-muted">Tipo</label>
+				<select name="tipo" class="form-select">
+					<option value="">Todos os tipos</option>
+					{% for choice in tipo_choices %}
+						<option value="{{ choice.0 }}" {% if choice.0 == tipo_filter %}selected{% endif %}>{{ choice.1 }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="col-md-2">
+				<button type="submit" class="btn btn-primary w-100">
+					<i class="fas fa-search me-2"></i>Buscar
+				</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- Lista de conversas -->
+	<div class="action-card" id="conversa-list-wrapper">
+		<div class="card-body">
+			{% if conversas %}
+				<div class="table-responsive">
+					<table class="table table-hover align-middle">
+						<thead>
+							<tr>
+								<th>Conversa</th>
+								<th>Tipo</th>
+								<th>Participantes</th>
+								<th>Última Atividade</th>
+								<th>Não lidas</th>
+								<th class="text-end">Ações</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for conversa in conversas %}
+							<tr>
+								<td>
+									<a href="{% url 'chat:conversa_detail' conversa.pk %}" class="fw-semibold text-decoration-none">
+										{{ conversa.titulo|default:'Conversa sem título' }}
+									</a>
+									{% if conversa.descricao %}
+										<div class="small text-muted">{{ conversa.descricao|truncatechars:80 }}</div>
+									{% endif %}
+								</td>
+								<td><span class="badge-modern"><i class="fas fa-tag me-1"></i>{{ conversa.get_tipo_display }}</span></td>
+								<td>{{ conversa.participantes.count }} participante{{ conversa.participantes.count|pluralize }}</td>
+								<td>
+									{% if conversa.ultima_atividade %}
+										<small class="text-muted">{{ conversa.ultima_atividade|date:'d/m/Y H:i' }}</small>
+									{% else %}
+										<small class="text-muted">-</small>
+									{% endif %}
+								</td>
+								<td>
+									{% if conversa.mensagens_nao_lidas > 0 %}
+										<span class="badge bg-warning">{{ conversa.mensagens_nao_lidas }}</span>
+									{% else %}
+										<span class="text-muted">-</span>
+									{% endif %}
+								</td>
+								<td class="text-end">
+									<div class="btn-group btn-group-sm" role="group">
+										<a href="{% url 'chat:conversa_detail' conversa.pk %}" class="btn btn-outline-primary" title="Ver detalhes">
+											<i class="fas fa-eye"></i>
+										</a>
+										{% if can_edit %}
+										<a href="{% url 'chat:conversa_update' conversa.pk %}" class="btn btn-outline-secondary" title="Editar">
+											<i class="fas fa-edit"></i>
+										</a>
+										{% endif %}
+										{% if can_delete %}
+										<a href="{% url 'chat:conversa_delete' conversa.pk %}" class="btn btn-outline-danger" title="Excluir" onclick="Pandora.confirmDelete(event, '{% url 'chat:conversa_delete' conversa.pk %}', 'esta conversa')">
+											<i class="fas fa-trash"></i>
+										</a>
+										{% endif %}
+									</div>
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+
+				{% if is_paginated %}
+				<nav aria-label="Page navigation">
+					<ul class="pagination justify-content-center">
+						{% if page_obj.has_previous %}
+							<li class="page-item">
+								<a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}"><i class="fas fa-angle-double-left"></i></a>
+							</li>
+							<li class="page-item">
+								<a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}"><i class="fas fa-angle-left"></i></a>
+							</li>
+						{% endif %}
+						{% for num in page_obj.paginator.page_range %}
+							{% if page_obj.number == num %}
+								<li class="page-item active"><span class="page-link">{{ num }}</span></li>
+							{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+								<li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}">{{ num }}</a></li>
+							{% endif %}
+						{% endfor %}
+						{% if page_obj.has_next %}
+							<li class="page-item">
+								<a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}"><i class="fas fa-angle-right"></i></a>
+							</li>
+							<li class="page-item">
+								<a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_filter %}&tipo={{ tipo_filter }}{% endif %}"><i class="fas fa-angle-double-right"></i></a>
+							</li>
+						{% endif %}
+					</ul>
+				</nav>
+				{% endif %}
+			{% else %}
+				<div class="text-center py-5">
+					<i class="fas fa-comments fa-3x text-muted mb-3 opacity-50"></i>
+					<h5 class="mb-1">Nenhuma conversa encontrada</h5>
+					<p class="text-muted mb-3">
+						{% if search_query or tipo_filter %}
+							Ajuste os filtros ou <a href="{% url 'chat:conversa_list' %}">veja todas as conversas</a>.
+						{% else %}
+							Crie sua primeira conversa para começar.
+						{% endif %}
+					</p>
+					{% if can_add %}
+						<a href="{{ add_url }}" class="btn btn-primary">
+							<i class="fas fa-plus me-2"></i>Nova Conversa
+						</a>
+					{% endif %}
+				</div>
+			{% endif %}
+		</div>
+	</div>
+	</div><!-- col principal -->
+	<div class="col-lg-3">
+		<div class="action-card mb-4">
+			<div class="card-header py-2 d-flex justify-content-between align-items-center">
+				<h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-signal me-2"></i>Online</h6>
+				<small id="online-count" class="text-muted">0</small>
+			</div>
+			<div class="card-body p-2" style="max-height:420px;overflow-y:auto;" id="online-users-list">
+				<div class="text-center text-muted small py-4">Conectando...</div>
+			</div>
+		</div>
+	</div>
+	</div><!-- row -->
+</div>
+<script>
+// WebSocket overview para atualizar não lidas + presença global simples
+const wsScheme=location.protocol==='https:'?'wss':'ws';
+const overviewSocket=new WebSocket(`${wsScheme}://${location.host}/ws/chat/overview/`);
+const conversasMap={};
+overviewSocket.onmessage=(e)=>{try{const data=JSON.parse(e.data);if(data.event==='snapshot'||data.event==='conversation_activity'){(data.conversas||[]).forEach(c=>{conversasMap[c.id]=c;atualizarLinha(c);});}}catch(err){}}
+function atualizarLinha(c){const row=document.querySelector(`tr[data-conversa-id='${c.id}']`);if(row){const badge=row.querySelector('[data-unread-badge]');if(badge){if(c.unread>0){badge.innerHTML=`<span class='badge bg-warning'>${c.unread}</span>`;}else{badge.innerHTML='<span class="text-muted">-</span>';}}}}
+// Marcar rows com atributo
+document.querySelectorAll('tbody tr').forEach(tr=>{const link=tr.querySelector('a[href*="/conversas/"]');if(link){const pk=link.getAttribute('href').match(/(\d+)/);if(pk){tr.setAttribute('data-conversa-id',pk[1]);const cell=tr.querySelectorAll('td')[4];if(cell){cell.setAttribute('data-unread-badge','1');}}}});
+</script>
+{% endblock %}

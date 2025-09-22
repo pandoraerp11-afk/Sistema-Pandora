@@ -1,0 +1,26 @@
+{% load humanize %}
+<div class="card h-100 stat-card">
+    <div class="card-body d-flex align-items-center">
+        <div class="stat-icon me-3 {{ color_class }} text-white rounded-circle d-flex align-items-center justify-content-center">
+            <i class="{{ icon }} fa-lg"></i>
+        </div>
+        <div class="stat-content flex-grow-1">
+            <h6 class="stat-title text-muted mb-1">{{ title }}</h6>
+            <h3 class="stat-value mb-1">
+                {% if prefix %}{{ prefix }}{% endif %}
+                {% if value %}
+                    {{ value|floatformat:0|intcomma }}
+                {% else %}
+                    0
+                {% endif %}
+                {% if suffix %}{{ suffix }}{% endif %}
+            </h3>
+            {% if trend %}
+                <small class="stat-trend text-{% if '+' in trend %}success{% else %}danger{% endif %}">
+                    <i class="fas fa-arrow-{% if '+' in trend %}up{% else %}down{% endif %} me-1"></i>
+                    {{ trend }}
+                </small>
+            {% endif %}
+        </div>
+    </div>
+</div>

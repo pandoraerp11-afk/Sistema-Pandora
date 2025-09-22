@@ -1,0 +1,557 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}
+{% if object %}Editar Alerta{% else %}Novo Alerta{% endif %} - Pandora ERP
+{% endblock %}
+
+{% block page_title %}
+{% if object %}Editar Alerta do Sistema{% else %}Novo Alerta do Sistema{% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+{% if object %}
+    Atualize as informações do alerta "{{ object.title }}"
+{% else %}
+    Crie um novo alerta para monitoramento do sistema
+{% endif %}
+{% endblock %}
+
+{% block form_title %}Informações do Alerta{% endblock %}
+
+{% block form_content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-aos="fade-up">
+                        <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" data-aos="fade-up">
+                <div class="card-body">
+                    <form method="post" novalidate id="alertForm">
+                    {% csrf_token %}
+                    
+                    <!-- Informações Básicas -->
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Dados do Alerta
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    <i class="fas fa-heading text-primary"></i>
+                                    Título do Alerta
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.title|add_class:"form-control" }}
+                                {% if form.title.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.title.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Título claro e descritivo do alerta
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    <i class="fas fa-align-left text-primary"></i>
+                                    Descrição
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.description|add_class:"form-control" }}
+                                {% if form.description.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Descrição detalhada do problema ou situação
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.severity.id_for_label }}" class="form-label">
+                                    <i class="fas fa-thermometer-half text-primary"></i>
+                                    Severidade
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.severity|add_class:"form-select" }}
+                                {% if form.severity.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.severity.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Nível de criticidade do alerta
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.alert_type.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tag text-primary"></i>
+                                    Tipo de Alerta
+                                </label>
+                                {{ form.alert_type|add_class:"form-control" }}
+                                {% if form.alert_type.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.alert_type.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Categoria do alerta (sistema, segurança, performance)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configurações Avançadas -->
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-cogs me-2"></i>
+                                Configurações
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.tenant.id_for_label }}" class="form-label">
+                                    <i class="fas fa-building text-primary"></i>
+                                    Empresa Específica
+                                </label>
+                                {{ form.tenant|add_class:"form-select" }}
+                                {% if form.tenant.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.tenant.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Deixe vazio para alerta global
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.assigned_to.id_for_label }}" class="form-label">
+                                    <i class="fas fa-user text-primary"></i>
+                                    Atribuído para
+                                </label>
+                                {{ form.assigned_to|add_class:"form-select" }}
+                                {% if form.assigned_to.errors %}
+                                    <div class="error-message text-danger small mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.assigned_to.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Usuário responsável pelo alerta
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status do Alerta (se editando) -->
+                    {% if object %}
+                    <div class="row g-4 mt-4">
+                        <div class="col-12">
+                            <h5 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Status Atual
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert alert-{% if object.status == 'open' %}warning{% elif object.status == 'acknowledged' %}info{% else %}success{% endif %}">
+                                <i class="fas fa-{% if object.status == 'open' %}exclamation-triangle{% elif object.status == 'acknowledged' %}info-circle{% else %}check-circle{% endif %} me-2"></i>
+                                <strong>Status:</strong> {{ object.get_status_display }}<br>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>Criado em: {{ object.created_at|date:"d/m/Y H:i" }}<br>
+                                    {% if object.acknowledged_at %}
+                                        <i class="fas fa-user-check me-1"></i>Reconhecido em: {{ object.acknowledged_at|date:"d/m/Y H:i" }}<br>
+                                    {% endif %}
+                                    {% if object.resolved_at %}
+                                        <i class="fas fa-check-circle me-1"></i>Resolvido em: {{ object.resolved_at|date:"d/m/Y H:i" }}<br>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <a href="{% url 'admin:alerts-page' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save me-2"></i>
+                            {% if object %}Atualizar Alerta{% else %}Criar Alerta{% endif %}
+                        </button>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-eye me-2"></i>
+                        Preview do Alerta
+                    </h6>
+                    
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="me-3">
+                                    <div class="d-flex align-items-center justify-content-center text-white rounded-circle fs-5" 
+                                         style="width: 50px; height: 50px;" id="previewIcon">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold" id="previewTitle">
+                                        {% if object %}{{ object.title }}{% else %}Título do Alerta{% endif %}
+                                    </div>
+                                    <div class="text-muted small" id="previewType">
+                                        {% if object %}{{ object.alert_type|default:"Tipo não definido" }}{% else %}Tipo do alerta{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-muted small mb-3" id="previewDescription">
+                                {% if object %}{{ object.description|truncatewords:20 }}{% else %}Descrição do alerta aparecerá aqui...{% endif %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge" id="previewSeverity">
+                                    {% if object %}{{ object.get_severity_display }}{% else %}Média{% endif %}
+                                </span>
+                                <span class="badge bg-secondary" id="previewStatus">
+                                    {% if object %}{{ object.get_status_display }}{% else %}Novo{% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="text-muted small" id="previewTenant">
+                                    <i class="fas fa-building me-1"></i>
+                                    {% if object and object.tenant %}{{ object.tenant.name }}{% else %}Global (todas as empresas){% endif %}
+                                </div>
+                                
+                                <div class="text-muted small mt-1" id="previewAssigned">
+                                    <i class="fas fa-user me-1"></i>
+                                    {% if object and object.assigned_to %}{{ object.assigned_to.get_full_name|default:object.assigned_to.username }}{% else %}Não atribuído{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tips -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Dicas
+                    </h6>
+                    
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Use títulos claros e específicos</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Escolha a severidade apropriada</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Descreva o problema detalhadamente</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Atribua para o responsável correto</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Níveis de Severidade -->
+            <div class="card shadow-sm mt-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">
+                        <i class="fas fa-thermometer-half me-2"></i>
+                        Níveis de Severidade
+                    </h6>
+                    
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 py-2 border-0">
+                            <span class="badge bg-danger me-2">Crítica</span>
+                            <small class="text-muted">Sistema fora do ar</small>
+                        </div>
+                        <div class="list-group-item px-0 py-2 border-0">
+                            <span class="badge bg-warning me-2">Alta</span>
+                            <small class="text-muted">Funcionalidade comprometida</small>
+                        </div>
+                        <div class="list-group-item px-0 py-2 border-0">
+                            <span class="badge bg-info me-2">Média</span>
+                            <small class="text-muted">Problema moderado</small>
+                        </div>
+                        <div class="list-group-item px-0 py-2 border-0">
+                            <span class="badge bg-secondary me-2">Baixa</span>
+                            <small class="text-muted">Informativo</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.form-group.focused {
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.is-valid {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.1rem rgba(25, 135, 84, 0.15) !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.1rem rgba(220, 53, 69, 0.15) !important;
+}
+
+.card[data-aos] {
+    transition: transform 0.2s ease;
+}
+
+.card[data-aos]:hover {
+    transform: translateY(-2px);
+}
+
+.alert {
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFormValidation();
+    initializePreview();
+});
+
+function initializeFormValidation() {
+    const form = document.getElementById('alertForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+            submitBtn.disabled = true;
+            
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+    }
+    
+    // Real-time validation for form fields
+    const titleField = document.getElementById('{{ form.title.id_for_label }}');
+    const descriptionField = document.getElementById('{{ form.description.id_for_label }}');
+    const severityField = document.getElementById('{{ form.severity.id_for_label }}');
+    const alertTypeField = document.getElementById('{{ form.alert_type.id_for_label }}');
+    const tenantField = document.getElementById('{{ form.tenant.id_for_label }}');
+    const assignedToField = document.getElementById('{{ form.assigned_to.id_for_label }}');
+    
+    [titleField, descriptionField, alertTypeField].forEach(field => {
+        if (field) {
+            field.addEventListener('input', function() {
+                validateField(this);
+                updatePreview();
+            });
+            
+            field.addEventListener('focus', function() {
+                this.parentNode.classList.add('focused');
+            });
+            field.addEventListener('blur', function() {
+                this.parentNode.classList.remove('focused');
+            });
+        }
+    });
+    
+    [severityField, tenantField, assignedToField].forEach(field => {
+        if (field) {
+            field.addEventListener('change', updatePreview);
+        }
+    });
+}
+
+function validateField(field) {
+    const value = field.value.trim();
+    let isValid = true;
+    let message = '';
+    
+    // Remove previous error
+    let errorDiv = field.parentNode.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+    
+    if (field.name === 'title' && value) {
+        if (value.length < 3) {
+            isValid = false;
+            message = 'Título deve ter pelo menos 3 caracteres';
+        } else if (value.length > 200) {
+            isValid = false;
+            message = 'Título muito longo (máximo 200 caracteres)';
+        }
+    } else if (field.name === 'description' && value) {
+        if (value.length < 10) {
+            isValid = false;
+            message = 'Descrição deve ter pelo menos 10 caracteres';
+        }
+    }
+    
+    // Update field classes
+    if (!isValid) {
+        field.classList.add('is-invalid');
+        field.classList.remove('is-valid');
+        
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message text-danger small mt-1';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
+        field.parentNode.appendChild(errorDiv);
+    } else if (value.length > 0) {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+    } else {
+        field.classList.remove('is-invalid', 'is-valid');
+    }
+    
+    return isValid;
+}
+
+function updatePreview() {
+    const titleField = document.getElementById('{{ form.title.id_for_label }}');
+    const descriptionField = document.getElementById('{{ form.description.id_for_label }}');
+    const severityField = document.getElementById('{{ form.severity.id_for_label }}');
+    const alertTypeField = document.getElementById('{{ form.alert_type.id_for_label }}');
+    const tenantField = document.getElementById('{{ form.tenant.id_for_label }}');
+    const assignedToField = document.getElementById('{{ form.assigned_to.id_for_label }}');
+    
+    // Update preview elements
+    const previewTitle = document.getElementById('previewTitle');
+    const previewDescription = document.getElementById('previewDescription');
+    const previewType = document.getElementById('previewType');
+    const previewSeverity = document.getElementById('previewSeverity');
+    const previewTenant = document.getElementById('previewTenant');
+    const previewAssigned = document.getElementById('previewAssigned');
+    const previewIcon = document.getElementById('previewIcon');
+    
+    // Update title
+    if (previewTitle && titleField) {
+        previewTitle.textContent = titleField.value.trim() || 'Título do Alerta';
+    }
+    
+    // Update description
+    if (previewDescription && descriptionField) {
+        const desc = descriptionField.value.trim();
+        previewDescription.textContent = desc ? 
+            desc.substring(0, 100) + (desc.length > 100 ? '...' : '') : 
+            'Descrição do alerta aparecerá aqui...';
+    }
+    
+    // Update type
+    if (previewType && alertTypeField) {
+        previewType.textContent = alertTypeField.value.trim() || 'Tipo do alerta';
+    }
+    
+    // Update severity
+    if (previewSeverity && severityField) {
+        const severity = severityField.value;
+        const severityText = severityField.options[severityField.selectedIndex].text;
+        
+        previewSeverity.textContent = severityText;
+        previewSeverity.className = 'badge';
+        
+        // Update severity badge color and icon
+        if (severity === 'critical') {
+            previewSeverity.classList.add('bg-danger');
+            previewIcon.style.backgroundColor = '#dc3545';
+        } else if (severity === 'high') {
+            previewSeverity.classList.add('bg-warning');
+            previewIcon.style.backgroundColor = '#ffc107';
+        } else if (severity === 'medium') {
+            previewSeverity.classList.add('bg-info');
+            previewIcon.style.backgroundColor = '#0dcaf0';
+        } else {
+            previewSeverity.classList.add('bg-secondary');
+            previewIcon.style.backgroundColor = '#6c757d';
+        }
+    }
+    
+    // Update tenant
+    if (previewTenant && tenantField) {
+        const tenantText = tenantField.value ? 
+            tenantField.options[tenantField.selectedIndex].text : 
+            'Global (todas as empresas)';
+        previewTenant.innerHTML = `<i class="fas fa-building me-1"></i>${tenantText}`;
+    }
+    
+    // Update assigned
+    if (previewAssigned && assignedToField) {
+        const assignedText = assignedToField.value ? 
+            assignedToField.options[assignedToField.selectedIndex].text : 
+            'Não atribuído';
+        previewAssigned.innerHTML = `<i class="fas fa-user me-1"></i>${assignedText}`;
+    }
+}
+</script>
+{% endblock %}

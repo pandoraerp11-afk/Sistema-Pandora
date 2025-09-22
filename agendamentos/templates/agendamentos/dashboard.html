@@ -1,0 +1,186 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static humanize %}
+{% block title %}Dashboard Agendamentos{% endblock %}
+
+{% block home_icon %}<i class="fas fa-calendar-check me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Dashboard de Agendamentos{% endblock %}
+{% block home_subtitle %}Visão operacional, capacidade, distribuição de status e próximos agendamentos{% endblock %}
+
+{# Bloco de métricas principais #}
+{% block home_stats %}
+  <h2 class="section-title"><i class="fas fa-chart-line me-2 text-primary"></i>Métricas Principais</h2>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="0">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-primary text-white mx-auto mb-3"><i class="fas fa-database"></i></div>
+          <h3 class="display-6 fw-bold text-primary mb-1" id="metric-total">--</h3>
+          <p class="text-muted mb-1 fw-semibold">Total Agendamentos</p>
+          <small class="text-muted">Volume geral</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="50">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-success text-white mx-auto mb-3"><i class="fas fa-check-circle"></i></div>
+          <h3 class="display-6 fw-bold text-success mb-1" id="metric-confirmados">--</h3>
+          <p class="text-muted mb-1 fw-semibold">Confirmados Futuros</p>
+          <small class="text-muted">Em agenda</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="100">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-warning text-white mx-auto mb-3"><i class="fas fa-hourglass-half"></i></div>
+          <h3 class="display-6 fw-bold text-warning mb-1" id="metric-pendentes">--</h3>
+          <p class="text-muted mb-1 fw-semibold">Pendentes Futuros</p>
+          <small class="text-muted">Aguardando confirmação</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="150">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-danger text-white mx-auto mb-3"><i class="fas fa-user-slash"></i></div>
+          <h3 class="display-6 fw-bold text-danger mb-1" id="metric-noshow">--</h3>
+          <p class="text-muted mb-1 fw-semibold">No-Show Total</p>
+          <small class="text-muted">Histórico acumulado</small>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block home_actions %}
+  <h2 class="section-title"><i class="fas fa-bolt me-2 text-primary"></i>Métricas de Hoje</h2>
+  <div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6" data-aos="fade-up" data-aos-delay="0">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-3">
+          <div class="action-icon bg-gradient-primary text-white mx-auto mb-2"><i class="fas fa-calendar-day"></i></div>
+          <h4 class="fw-bold mb-1" id="metric-hoje-confirmados">--</h4>
+          <small class="text-muted fw-semibold">Hoje Confirmados</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6" data-aos="fade-up" data-aos-delay="50">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-3">
+          <div class="action-icon bg-gradient-secondary text-white mx-auto mb-2"><i class="fas fa-clock"></i></div>
+          <h4 class="fw-bold mb-1" id="metric-hoje-pendentes">--</h4>
+          <small class="text-muted fw-semibold">Hoje Pendentes</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6" data-aos="fade-up" data-aos-delay="100">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-3">
+          <div class="action-icon bg-gradient-success text-white mx-auto mb-2"><i class="fas fa-percentage"></i></div>
+          <h4 class="fw-bold mb-1" id="metric-hoje-ocupacao">--</h4>
+          <small class="text-muted fw-semibold">Ocupação Hoje</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6" data-aos="fade-up" data-aos-delay="150">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-3">
+          <div class="action-icon bg-gradient-info text-white mx-auto mb-2"><i class="fas fa-list"></i></div>
+          <h4 class="fw-bold mb-1" id="metric-hoje-total">--</h4>
+          <small class="text-muted fw-semibold">Agendamentos Hoje</small>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block home_content %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6" data-aos="fade-up" data-aos-delay="0">
+      <div class="card h-100">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>Capacidade por Profissional (7 dias)</h5>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-reload" title="Recarregar"><i class="fas fa-sync"></i></button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive small" style="max-height:300px;">
+            <table class="table table-sm align-middle mb-0" id="tbl-capacidade">
+              <thead class="table-light">
+                <tr>
+                  <th>Profissional</th>
+                  <th>Slots</th>
+                  <th>Total</th>
+                  <th>Util.</th>
+                  <th>Ocup.</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6" data-aos="fade-up" data-aos-delay="50">
+      <div class="card h-100">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0"><i class="fas fa-forward me-2 text-primary"></i>Próximos 12 Agendamentos</h5>
+          <a href="{% url 'agendamentos:agendamento-list' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive small" style="max-height:300px;">
+            <table class="table table-sm mb-0">
+              <thead class="table-light"><tr><th>Início</th><th>Cliente</th><th>Serviço</th><th>Status</th></tr></thead>
+              <tbody id="tbl-upcoming"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4" data-aos="fade-up" data-aos-delay="0">
+      <div class="card h-100">
+        <div class="card-header bg-light"><h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>Status Hoje</h5></div>
+        <div class="card-body"><div id="status-bars" class="small"></div></div>
+      </div>
+    </div>
+    <div class="col-lg-8" data-aos="fade-up" data-aos-delay="50">
+      <div class="card h-100">
+        <div class="card-header bg-light"><h5 class="card-title mb-0"><i class="fas fa-bolt me-2 text-primary"></i>Ações Rápidas</h5></div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'agendamentos:agendamento-create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Novo</a>
+            <a href="{% url 'agendamentos:agendamento-list' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-list me-1"></i>Agendamentos</a>
+            <a href="{% url 'agendamentos:slot-list' %}" class="btn btn-outline-info btn-sm"><i class="fas fa-clock me-1"></i>Slots</a>
+            <a href="{% url 'agendamentos:disponibilidade-list' %}" class="btn btn-outline-info btn-sm"><i class="fas fa-calendar-plus me-1"></i>Disponibilidades</a>
+            <a href="{% url 'agendamentos:waitlist-list' %}" class="btn btn-outline-success btn-sm"><i class="fas fa-user-clock me-1"></i>Waitlist</a>
+            <a href="{% url 'agendamentos:auditoria-list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-history me-1"></i>Auditoria</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block home_extra %}
+  <div class="alert alert-info d-flex align-items-center" role="alert">
+    <i class="fas fa-info-circle me-2"></i>
+    Dados carregados dinamicamente da API de agendamentos. Atualize clicando no ícone <i class="fas fa-sync"></i>.
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadStats(){try{const r=await fetch('/api/agendamentos/stats/');if(!r.ok)return;const d=await r.json();
+document.getElementById('metric-total').innerText=d.total??0;document.getElementById('metric-confirmados').innerText=d.confirmados_futuros??0;document.getElementById('metric-pendentes').innerText=d.pendentes_futuros??0;document.getElementById('metric-noshow').innerText=d.no_show_total??0;if(d.hoje){document.getElementById('metric-hoje-confirmados').innerText=d.hoje.confirmados||0;document.getElementById('metric-hoje-pendentes').innerText=d.hoje.pendentes||0;document.getElementById('metric-hoje-total').innerText=d.hoje.total||0;const ocup=d.hoje.capacidade_total?Math.round((d.hoje.capacidade_utilizada/d.hoje.capacidade_total)*100):0;document.getElementById('metric-hoje-ocupacao').innerText=ocup+'%';renderStatusBars(d.hoje.status_breakdown||{});}}
+catch(e){console.error(e);} }
+async function loadCapacidade(){try{const hoje=new Date();const start=hoje.toISOString().slice(0,10);const endDate=new Date();endDate.setDate(endDate.getDate()+7);const end=endDate.toISOString().slice(0,10);const r=await fetch(`/api/agendamentos/capacidade/?data_start=${start}&data_end=${end}`);if(!r.ok)return;const d=await r.json();const tbody=document.querySelector('#tbl-capacidade tbody');tbody.innerHTML='';d.forEach(row=>{const ocup=row.capacidade_total?Math.round((row.capacidade_utilizada/row.capacidade_total)*100):0;const tr=document.createElement('tr');tr.innerHTML=`<td>${row.profissional_id}</td><td>${row.slots}</td><td>${row.capacidade_total}</td><td>${row.capacidade_utilizada}</td><td><div class='progress' style='height:6px'><div class='progress-bar bg-${ocup>80?'danger':ocup>50?'warning':'success'}' style='width:${ocup}%'></div></div><small class='text-muted ms-1'>${ocup}%</small></td>`;tbody.appendChild(tr);});}catch(e){console.error(e);} }
+async function loadUpcoming(){try{const r=await fetch(`/api/agendamentos/?ordering=data_inicio&limit=12`);if(!r.ok)return;const data=await r.json();const results=data.results||data;const tbody=document.getElementById('tbl-upcoming');if(!tbody)return;tbody.innerHTML='';results.slice(0,12).forEach(a=>{const tr=document.createElement('tr');const statusBadge=`<span class='badge bg-${badgeFor(a.status)}'>${a.status}</span>`;tr.innerHTML=`<td>${fmtDT(a.data_inicio)}</td><td>${(a.cliente_nome||'')}</td><td>${a.servico_nome||'-'}</td><td>${statusBadge}</td>`;tbody.appendChild(tr);});}catch(e){console.error(e);} }
+function fmtDT(s){try{const d=new Date(s);return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
+function badgeFor(status){if(status==='CONFIRMADO')return 'success';if(status==='PENDENTE')return 'secondary';if(status==='EM_ANDAMENTO')return 'info';if(status==='CONCLUIDO')return 'primary';if(status==='CANCELADO')return 'danger';if(status==='NO_SHOW')return 'warning text-dark';return 'light';}
+function renderStatusBars(breakdown){const container=document.getElementById('status-bars');if(!container)return;container.innerHTML='';const total=Object.values(breakdown).reduce((a,b)=>a+b,0)||1;Object.entries(breakdown).forEach(([k,v])=>{const pct=Math.round((v/total)*100);const div=document.createElement('div');div.className='mb-2';div.innerHTML=`<div class='d-flex justify-content-between'><span>${k}</span><span class='text-muted'>${v} (${pct}%)</span></div><div class='progress' style='height:6px'><div class='progress-bar bg-${badgeFor(k).split(' ')[0]}' style='width:${pct}%'></div></div>`;container.appendChild(div);});}
+async function initDash(){await loadStats();await loadCapacidade();await loadUpcoming();}
+document.addEventListener('DOMContentLoaded',()=>{initDash();document.getElementById('btn-reload').addEventListener('click',initDash);});
+</script>
+{% endblock %}

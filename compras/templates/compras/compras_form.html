@@ -1,0 +1,393 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block page_title %}Nova Compra{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dist/css/pandora-ultra-modern.css' %}">
+<style>
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+    
+    .section-header h5 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .section-body {
+        padding: 2rem;
+    }
+    
+    .form-floating label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
+    }
+    
+    .btn-modern {
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.75rem 2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .required-asterisk {
+        color: #dc3545;
+        font-weight: bold;
+        margin-left: 3px;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .value-calculator {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i></a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'compras:compras_list' %}">Compras</a></li>
+                        <li class="breadcrumb-item active">{{ compra.pk|yesno:"Editar,Nova" }} Compra</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title">
+                    <i class="fas fa-shopping-cart page-icon"></i>
+                    {{ compra.pk|yesno:"Editar Compra,Nova Compra" }}
+                </h1>
+                <p class="page-subtitle text-muted">
+                    {% if compra.pk %}
+                        Atualize as informações da compra #{{ compra.numero }}
+                    {% else %}
+                        Cadastre uma nova compra no sistema
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'compras:compras_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar à Lista
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            
+            <!-- Dados Principais -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Dados Principais</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                {{ form.numero }}
+                                <label for="{{ form.numero.id_for_label }}">
+                                    Número da Compra<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.numero.errors %}
+                                <div class="invalid-feedback d-block">{{ form.numero.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Número único identificador da compra</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.fornecedor }}
+                                <label for="{{ form.fornecedor.id_for_label }}">
+                                    Fornecedor<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.fornecedor.errors %}
+                                <div class="invalid-feedback d-block">{{ form.fornecedor.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-5">
+                            <div class="form-floating">
+                                {{ form.obra }}
+                                <label for="{{ form.obra.id_for_label }}">
+                                    Obra<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.obra.errors %}
+                                <div class="invalid-feedback d-block">{{ form.obra.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.data_pedido }}
+                                <label for="{{ form.data_pedido.id_for_label }}">
+                                    Data do Pedido<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.data_pedido.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_pedido.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.data_entrega_prevista }}
+                                <label for="{{ form.data_entrega_prevista.id_for_label }}">
+                                    Entrega Prevista<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.data_entrega_prevista.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_entrega_prevista.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.data_entrega_real }}
+                                <label for="{{ form.data_entrega_real.id_for_label }}">
+                                    Data de Entrega Real
+                                </label>
+                            </div>
+                            {% if form.data_entrega_real.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_entrega_real.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Preencher apenas após a entrega</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Valores e Status -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-dollar-sign me-2"></i>Valores e Status</h5>
+                </div>
+                <div class="section-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.valor_total }}
+                                <label for="{{ form.valor_total.id_for_label }}">
+                                    Valor Total<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.valor_total.errors %}
+                                <div class="invalid-feedback d-block">{{ form.valor_total.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.status }}
+                                <label for="{{ form.status.id_for_label }}">
+                                    Status<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.forma_pagamento }}
+                                <label for="{{ form.forma_pagamento.id_for_label }}">
+                                    Forma de Pagamento<span class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                            {% if form.forma_pagamento.errors %}
+                                <div class="invalid-feedback d-block">{{ form.forma_pagamento.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if form.condicoes_pagamento %}
+                    <div class="row g-3 mt-3">
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {{ form.condicoes_pagamento }}
+                                <label for="{{ form.condicoes_pagamento.id_for_label }}">
+                                    Condições de Pagamento
+                                </label>
+                            </div>
+                            {% if form.condicoes_pagamento.errors %}
+                                <div class="invalid-feedback d-block">{{ form.condicoes_pagamento.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Detalhes sobre prazos e condições de pagamento</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Observações -->
+            {% if form.observacoes %}
+            <div class="form-section">
+                <div class="section-header">
+                    <h5><i class="fas fa-sticky-note me-2"></i>Observações</h5>
+                </div>
+                <div class="section-body">
+                    <div class="form-floating">
+                        {{ form.observacoes }}
+                        <label for="{{ form.observacoes.id_for_label }}">Observações Gerais</label>
+                    </div>
+                    {% if form.observacoes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+                    {% endif %}
+                    <div class="help-text">Informações adicionais sobre a compra</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Botões de Ação -->
+            <div class="form-section">
+                <div class="section-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'compras:compras_list' %}" class="btn btn-outline-secondary btn-modern">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-modern">
+                                <i class="fas fa-save me-2"></i>{{ compra.pk|yesno:"Atualizar,Salvar" }} Compra
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Máscaras para campos de data
+    $('input[type="date"]').each(function() {
+        $(this).attr('data-inputmask', "'alias': 'datetime', 'inputFormat': 'dd/mm/yyyy'");
+    });
+    
+    // Máscara para valor
+    $('input[name*="valor"]').each(function() {
+        $(this).mask('000.000.000.000.000,00', {reverse: true});
+    });
+    
+    // Geração automática do número da compra (se novo)
+    {% if not compra.pk %}
+    if (!$('#id_numero').val()) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const time = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+        const numero = `COM${year}${month}${day}${time}`;
+        $('#id_numero').val(numero);
+    }
+    {% endif %}
+    
+    // Validação dinâmica da data de entrega
+    $('#id_data_entrega_prevista, #id_data_pedido').on('change', function() {
+        const dataPedido = new Date($('#id_data_pedido').val());
+        const dataEntrega = new Date($('#id_data_entrega_prevista').val());
+        
+        if (dataPedido && dataEntrega && dataEntrega < dataPedido) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Inválida',
+                text: 'A data de entrega não pode ser anterior à data do pedido.',
+                confirmButtonColor: '#667eea'
+            });
+            $('#id_data_entrega_prevista').val('');
+        }
+    });
+    
+    // Atualização automática do status baseado nas datas
+    $('#id_data_entrega_real').on('change', function() {
+        if ($(this).val() && $('#id_status').val() !== 'entregue') {
+            Swal.fire({
+                title: 'Atualizar Status?',
+                text: 'Deseja marcar esta compra como "Entregue"?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, marcar como entregue',
+                cancelButtonText: 'Não, manter status atual'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#id_status').val('entregue');
+                }
+            });
+        }
+    });
+    
+    // Confirmação antes de enviar o formulário
+    $('form').on('submit', function(e) {
+        const valorTotal = parseFloat($('#id_valor_total').val().replace(/[^\d,]/g, '').replace(',', '.'));
+        
+        if (valorTotal > 100000) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Valor Alto',
+                text: `O valor total (R$ ${valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}) está acima de R$ 100.000,00. Confirma?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#667eea',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, confirmar',
+                cancelButtonText: 'Revisar valor'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $(this).off('submit').submit();
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

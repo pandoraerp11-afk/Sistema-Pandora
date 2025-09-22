@@ -1,0 +1,685 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar Relatório{% else %}Novo Relatório{% endif %}{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .form-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .form-header {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-subtitle {
+            color: #6c757d;
+            font-size: 1.125rem;
+            margin: 0;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc3545;
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-control.is-valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        .form-control[readonly] {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .success-message {
+            color: #28a745;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #e9ecef;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        .file-upload-icon {
+            font-size: 2rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .file-upload-text {
+            color: #6c757d;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-upload-hint {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .selected-files {
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .file-size {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .file-remove {
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+        }
+
+        .file-remove:hover {
+            background: #f8d7da;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 1rem;
+            }
+
+            .form-header,
+            .form-card {
+                padding: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="form-container">
+        <!-- Header -->
+        <div class="form-header">
+            <h1 class="form-title">
+                <i class="fas fa-chart-bar mr-3"></i>
+                {% if form.instance.pk %}
+                    Editar Relatório
+                {% else %}
+                    Novo Relatório
+                {% endif %}
+            </h1>
+            <p class="form-subtitle">
+                {% if form.instance.pk %}
+                    Atualize as informações do relatório
+                {% else %}
+                    Preencha os dados para criar um novo relatório
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Formulário -->
+        <form method="post" enctype="multipart/form-data" id="relatorio-form">
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Informações Básicas
+                    </h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required" for="id_nome">Nome do Relatório</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="id_nome" 
+                                   name="nome" 
+                                   value="{{ form.nome.value|default:'' }}"
+                                   required>
+                            {% if form.nome.errors %}
+                                <div class="error-message">{{ form.nome.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Digite um nome descritivo para o relatório</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="id_tipo">Tipo de Relatório</label>
+                            <div class="custom-select">
+                                <select class="form-control" id="id_tipo" name="tipo" required>
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="financeiro" {% if form.tipo.value == 'financeiro' %}selected{% endif %}>Financeiro</option>
+                                    <option value="operacional" {% if form.tipo.value == 'operacional' %}selected{% endif %}>Operacional</option>
+                                    <option value="vendas" {% if form.tipo.value == 'vendas' %}selected{% endif %}>Vendas</option>
+                                    <option value="estoque" {% if form.tipo.value == 'estoque' %}selected{% endif %}>Estoque</option>
+                                    <option value="clientes" {% if form.tipo.value == 'clientes' %}selected{% endif %}>Clientes</option>
+                                    <option value="fornecedores" {% if form.tipo.value == 'fornecedores' %}selected{% endif %}>Fornecedores</option>
+                                    <option value="funcionarios" {% if form.tipo.value == 'funcionarios' %}selected{% endif %}>Funcionários</option>
+                                    <option value="customizado" {% if form.tipo.value == 'customizado' %}selected{% endif %}>Customizado</option>
+                                </select>
+                            </div>
+                            {% if form.tipo.errors %}
+                                <div class="error-message">{{ form.tipo.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="id_data_inicio">Data de Início</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="id_data_inicio" 
+                                   name="data_inicio" 
+                                   value="{{ form.data_inicio.value|date:'Y-m-d'|default:'' }}">
+                            {% if form.data_inicio.errors %}
+                                <div class="error-message">{{ form.data_inicio.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_data_fim">Data de Fim</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="id_data_fim" 
+                                   name="data_fim" 
+                                   value="{{ form.data_fim.value|date:'Y-m-d'|default:'' }}">
+                            {% if form.data_fim.errors %}
+                                <div class="error-message">{{ form.data_fim.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="id_descricao">Descrição</label>
+                            <textarea class="form-control" 
+                                      id="id_descricao" 
+                                      name="descricao" 
+                                      rows="4"
+                                      placeholder="Descreva o objetivo e conteúdo do relatório">{{ form.descricao.value|default:'' }}</textarea>
+                            {% if form.descricao.errors %}
+                                <div class="error-message">{{ form.descricao.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parâmetros e Filtros -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-filter mr-2"></i>
+                        Parâmetros e Filtros
+                    </h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="id_formato">Formato de Saída</label>
+                            <div class="custom-select">
+                                <select class="form-control" id="id_formato" name="formato">
+                                    <option value="pdf" {% if form.formato.value == 'pdf' %}selected{% endif %}>PDF</option>
+                                    <option value="excel" {% if form.formato.value == 'excel' %}selected{% endif %}>Excel</option>
+                                    <option value="csv" {% if form.formato.value == 'csv' %}selected{% endif %}>CSV</option>
+                                    <option value="html" {% if form.formato.value == 'html' %}selected{% endif %}>HTML</option>
+                                </select>
+                            </div>
+                            {% if form.formato.errors %}
+                                <div class="error-message">{{ form.formato.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_status">Status</label>
+                            <div class="custom-select">
+                                <select class="form-control" id="id_status" name="status">
+                                    <option value="ativo" {% if form.status.value == 'ativo' %}selected{% endif %}>Ativo</option>
+                                    <option value="inativo" {% if form.status.value == 'inativo' %}selected{% endif %}>Inativo</option>
+                                    <option value="rascunho" {% if form.status.value == 'rascunho' %}selected{% endif %}>Rascunho</option>
+                                </select>
+                            </div>
+                            {% if form.status.errors %}
+                                <div class="error-message">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="id_parametros">Parâmetros Personalizados</label>
+                            <textarea class="form-control" 
+                                      id="id_parametros" 
+                                      name="parametros" 
+                                      rows="4"
+                                      placeholder="Digite os parâmetros do relatório em formato JSON">{{ form.parametros.value|default:'' }}</textarea>
+                            {% if form.parametros.errors %}
+                                <div class="error-message">{{ form.parametros.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Ex: {"campo1": "valor1", "campo2": "valor2"}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anexos -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-paperclip mr-2"></i>
+                        Anexos
+                    </h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="id_arquivo">Arquivo de Template</label>
+                            <div class="file-upload-area" id="file-upload-area">
+                                <div class="file-upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="file-upload-text">Clique para selecionar ou arraste o arquivo</div>
+                                <div class="file-upload-hint">Formatos suportados: PDF, DOC, DOCX, XLS, XLSX</div>
+                                <input type="file" 
+                                       id="id_arquivo" 
+                                       name="arquivo" 
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                       style="display: none;">
+                            </div>
+                            {% if form.arquivo.errors %}
+                                <div class="error-message">{{ form.arquivo.errors.0 }}</div>
+                            {% endif %}
+                            <div class="selected-files" id="selected-files"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <i class="fas fa-save"></i>
+                    {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Relatório
+                </button>
+                <button type="submit" name="save_and_continue" class="btn btn-success" id="save-continue-btn">
+                    <i class="fas fa-save"></i>
+                    Salvar e Continuar
+                </button>
+                <a href="{% url 'relatorios:relatorios_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('relatorio-form');
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const fileInput = document.getElementById('id_arquivo');
+    const selectedFiles = document.getElementById('selected-files');
+
+    // File upload handling
+    fileUploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    fileUploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.add('dragover');
+    });
+
+    fileUploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+    });
+
+    fileUploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            displaySelectedFiles(files);
+        }
+    });
+
+    fileInput.addEventListener('change', function() {
+        displaySelectedFiles(this.files);
+    });
+
+    function displaySelectedFiles(files) {
+        selectedFiles.innerHTML = '';
+        Array.from(files).forEach(function(file) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'file-info';
+            fileInfo.innerHTML = `
+                <i class="fas fa-file"></i>
+                <span class="file-name">${file.name}</span>
+                <span class="file-size">(${formatFileSize(file.size)})</span>
+            `;
+            
+            const removeBtn = document.createElement('div');
+            removeBtn.className = 'file-remove';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.addEventListener('click', function() {
+                fileItem.remove();
+                fileInput.value = '';
+            });
+            
+            fileItem.appendChild(fileInfo);
+            fileItem.appendChild(removeBtn);
+            selectedFiles.appendChild(fileItem);
+        });
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submit-btn');
+        const saveContinueBtn = document.getElementById('save-continue-btn');
+        
+        // Show loading state
+        if (e.submitter === submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            submitBtn.disabled = true;
+        } else if (e.submitter === saveContinueBtn) {
+            saveContinueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            saveContinueBtn.disabled = true;
+        }
+    });
+
+    // Auto-save functionality
+    let autoSaveTimeout;
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(function() {
+                // Auto-save logic here
+                console.log('Auto-saving...');
+            }, 30000); // 30 seconds
+        });
+    });
+
+    // Date validation
+    const dataInicio = document.getElementById('id_data_inicio');
+    const dataFim = document.getElementById('id_data_fim');
+    
+    dataInicio.addEventListener('change', function() {
+        if (dataFim.value && dataInicio.value > dataFim.value) {
+            dataFim.value = dataInicio.value;
+        }
+    });
+
+    dataFim.addEventListener('change', function() {
+        if (dataInicio.value && dataFim.value < dataInicio.value) {
+            dataInicio.value = dataFim.value;
+        }
+    });
+});
+</script>
+{% endblock %}

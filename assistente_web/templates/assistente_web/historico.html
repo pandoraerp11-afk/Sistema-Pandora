@@ -1,0 +1,212 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}Histórico - Assistente IA{% endblock %}
+
+{% block page_title %}Histórico de Conversas{% endblock %}
+{% block page_subtitle %}Visualize e gerencie suas conversas anteriores com o assistente{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Histórico de Conversas
+                    </h4>
+                    <a href="{% url 'assistente_web:home' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar ao Chat
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if conversas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Data/Hora</th>
+                                    <th>Mensagens</th>
+                                    <th>Modo</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for conversa in conversas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ conversa.titulo }}</strong>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <strong>Início:</strong> {{ conversa.data_inicio|date:"d/m/Y H:i" }}<br>
+                                            {% if conversa.data_fim %}
+                                            <strong>Fim:</strong> {{ conversa.data_fim|date:"d/m/Y H:i" }}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ conversa.mensagens.count }} mensagens
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if conversa.modo_entrada == 'voice' %}
+                                            <i class="fas fa-microphone text-primary" title="Voz"></i>
+                                        {% else %}
+                                            <i class="fas fa-keyboard text-secondary" title="Texto"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if conversa.ativa %}
+                                            <span class="badge bg-success">Ativa</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Finalizada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" 
+                                                    onclick="visualizarConversa({{ conversa.id }})"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#conversaModal">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if conversa.ativa %}
+                                            <a href="{% url 'assistente_web:home' %}" class="btn btn-outline-success">
+                                                <i class="fas fa-play"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5>Nenhuma conversa ainda</h5>
+                        <p class="text-muted">Suas conversas com o assistente aparecerão aqui.</p>
+                        <a href="{% url 'assistente_web:home' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            Iniciar Primeira Conversa
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualizar conversa -->
+<div class="modal fade" id="conversaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-comments me-2"></i>
+                    Detalhes da Conversa
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="conversaDetalhes">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function visualizarConversa(conversaId) {
+    const detalhesDiv = document.getElementById('conversaDetalhes');
+    
+    // Mostrar loading
+    detalhesDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    `;
+    
+    // Carregar dados da conversa
+    fetch(`{% url "assistente_web:obter_conversa" 0 %}`.replace('0', conversaId))
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            let html = `
+                <div class="mb-3">
+                    <h6>Informações da Conversa</h6>
+                    <p><strong>Título:</strong> ${data.conversa.titulo}</p>
+                    <p><strong>Início:</strong> ${new Date(data.conversa.data_inicio).toLocaleString('pt-BR')}</p>
+                    <p><strong>Modo:</strong> ${data.conversa.modo_entrada === 'voice' ? 'Voz' : 'Texto'}</p>
+                    <p><strong>Status:</strong> ${data.conversa.ativa ? 'Ativa' : 'Finalizada'}</p>
+                </div>
+                
+                <div class="messages-history">
+                    <h6>Mensagens (${data.mensagens.length})</h6>
+                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 1rem;">
+            `;
+            
+            data.mensagens.forEach(msg => {
+                const time = new Date(msg.timestamp).toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                const isUser = msg.tipo === 'user';
+                html += `
+                    <div class="mb-3 ${isUser ? 'text-end' : 'text-start'}">
+                        <div class="d-inline-block p-2 rounded ${isUser ? 'bg-primary text-white' : 'bg-light'}">
+                            ${msg.conteudo}
+                        </div>
+                        <div class="small text-muted">${time}</div>
+                        ${msg.intencao ? `<div class="small text-info">Intenção: ${msg.intencao}</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            detalhesDiv.innerHTML = html;
+        } else {
+            detalhesDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    Erro ao carregar conversa: ${data.message}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        detalhesDiv.innerHTML = `
+            <div class="alert alert-danger">
+                Erro de conexão ao carregar conversa.
+            </div>
+        `;
+        console.error('Erro:', error);
+    });
+}
+</script>
+{% endblock %}

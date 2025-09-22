@@ -1,0 +1,705 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Relatórios Core - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Floating Actions CSS */
+.floating-actions-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 15px;
+}
+
+.floating-toggle-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: pulse 2s infinite;
+}
+
+.floating-toggle-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+
+.floating-actions-group {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 12px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.floating-actions-container.active .floating-actions-group {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+.floating-action-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: white;
+    color: #667eea;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform: scale(0.8);
+}
+
+.floating-actions-container.active .floating-action-btn {
+    transform: scale(1);
+}
+
+.floating-action-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); }
+    50% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5); }
+    100% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); }
+}
+
+/* Progress Ring Fix */
+.progress-ring {
+    transform: rotate(-90deg);
+    display: block;
+    margin: 0 auto;
+}
+
+.progress-circle {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+/* Action cards consistency */
+.action-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+/* Chart container adjustments */
+.chart-container {
+    height: 400px;
+    position: relative;
+}
+
+/* Performance circles fix */
+.performance-circle-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 20px 0;
+}
+
+.performance-circle {
+    position: relative;
+    display: block;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+}
+
+.performance-circle svg {
+    transform: rotate(-90deg);
+    display: block;
+    width: 120px !important;
+    height: 120px !important;
+    max-width: 120px !important;
+    max-height: 120px !important;
+    min-width: 120px !important;
+    min-height: 120px !important;
+}
+
+.performance-circle .circle-bg {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 8;
+}
+
+.performance-circle .circle-progress {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.performance-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Override any responsive image classes that might affect SVG */
+.performance-circle svg,
+.performance-circle svg * {
+    max-width: none !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+.performance-circle {
+    flex-shrink: 0;
+}
+
+/* Ensure Bootstrap grid doesn't squeeze the circles */
+.performance-circle-wrapper .col-6 {
+    flex: 0 0 auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="list-container" data-aos="fade-up">
+    <!-- Botões de ação flutuantes -->
+    {% include 'partials/_reports_actions_card.html' %}
+    
+    <!-- Cards de Métricas Principais (menores) -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-3">
+                    <div class="action-icon bg-gradient-primary text-white mx-auto mb-2" style="width: 48px; height: 48px; font-size: 20px;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4 class="display-6 fw-bold text-primary mb-1">{{ total_users|default:9 }}</h4>
+                    <p class="text-muted mb-0 fw-semibold small">Usuários Ativos</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-3">
+                    <div class="action-icon bg-gradient-info text-white mx-auto mb-2" style="width: 48px; height: 48px; font-size: 20px;">
+                        <i class="fas fa-user-tag"></i>
+                    </div>
+                    <h4 class="display-6 fw-bold text-info mb-1">{{ total_roles|default:15 }}</h4>
+                    <p class="text-muted mb-0 fw-semibold small">Cargos Configurados</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-3">
+                    <div class="action-icon bg-gradient-success text-white mx-auto mb-2" style="width: 48px; height: 48px; font-size: 20px;">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <h4 class="display-6 fw-bold text-success mb-1">{{ total_permissions|default:248 }}</h4>
+                    <p class="text-muted mb-0 fw-semibold small">Permissões Ativas</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-3">
+                    <div class="action-icon bg-gradient-warning text-white mx-auto mb-2" style="width: 48px; height: 48px; font-size: 20px;">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <h4 class="display-6 fw-bold text-warning mb-1">{{ total_departments|default:8 }}</h4>
+                    <p class="text-muted mb-0 fw-semibold small">Departamentos</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-3">
+                    <div class="action-icon bg-gradient-secondary text-white mx-auto mb-2" style="width: 48px; height: 48px; font-size: 20px;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4 class="display-6 fw-bold text-secondary mb-1">{{ login_sessions|default:89 }}%</h4>
+                    <p class="text-muted mb-0 fw-semibold small">Taxa de Login</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-3">
+                    <div class="action-icon bg-gradient-danger text-white mx-auto mb-2" style="width: 48px; height: 48px; font-size: 20px;">
+                        <i class="fas fa-shield-check"></i>
+                    </div>
+                    <h4 class="display-6 fw-bold text-danger mb-1">{{ security_score|default:95 }}%</h4>
+                    <p class="text-muted mb-0 fw-semibold small">Score de Segurança</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Painel de Filtros -->
+    <div id="search-container" class="collapse mb-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Filtros de Relatório
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-end g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Período</label>
+                        <select class="form-select" id="periodFilter">
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="30" selected>Últimos 30 dias</option>
+                            <option value="90">Últimos 90 dias</option>
+                            <option value="365">Último ano</option>
+                            <option value="custom">Personalizado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Departamento</label>
+                        <select class="form-select" id="departmentFilter">
+                            <option value="">Todos os departamentos</option>
+                            <option value="ti">Tecnologia</option>
+                            <option value="rh">Recursos Humanos</option>
+                            <option value="financeiro">Financeiro</option>
+                            <option value="operacoes">Operações</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo de Relatório</label>
+                        <select class="form-select" id="reportType">
+                            <option value="general">Geral</option>
+                            <option value="users">Usuários</option>
+                            <option value="permissions">Permissões</option>
+                            <option value="departments">Departamentos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" onclick="generateReport()">
+                            <i class="fas fa-search me-1"></i>Gerar Relatório
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-4">
+        <!-- Atividade de Usuários -->
+        <div class="col-lg-8">
+            <div class="action-card">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Atividade de Usuários (Últimos 30 dias)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="userActivityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribuição de Permissões -->
+        <div class="col-lg-4">
+            <div class="action-card">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Distribuição de Permissões
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="permissionsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance e Segurança -->
+    <div class="row g-4 mt-1">
+        <div class="col-lg-6">
+            <div class="action-card">
+                <div class="card-header bg-info text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Performance do Sistema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row justify-content-center">
+                        <div class="col-6 text-center">
+                            <div class="performance-circle-wrapper">
+                                <div class="performance-circle">
+                                    <svg width="120" height="120" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet">
+                                        <circle cx="60" cy="60" r="50" class="circle-bg"/>
+                                        <circle cx="60" cy="60" r="50" class="circle-progress" stroke="#10b981" stroke-dasharray="314" stroke-dashoffset="31.4"/>
+                                    </svg>
+                                    <div class="performance-text">
+                                        <div class="fw-bold h4">90%</div>
+                                        <div class="small text-muted">Uptime</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="performance-circle-wrapper">
+                                <div class="performance-circle">
+                                    <svg width="120" height="120" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet">
+                                        <circle cx="60" cy="60" r="50" class="circle-bg"/>
+                                        <circle cx="60" cy="60" r="50" class="circle-progress" stroke="#3b82f6" stroke-dasharray="314" stroke-dashoffset="94.2"/>
+                                    </svg>
+                                    <div class="performance-text">
+                                        <div class="fw-bold h4">70%</div>
+                                        <div class="small text-muted">Performance</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="fw-bold text-success h5">2.3s</div>
+                                <div class="small text-muted">Tempo Médio de Resposta</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="fw-bold text-primary h5">99.2%</div>
+                                <div class="small text-muted">Disponibilidade</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="action-card">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-check me-2"></i>
+                        Segurança e Compliance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success text-white rounded-circle p-2 me-3">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Autenticação 2FA</div>
+                                    <div class="small text-muted">85% dos usuários</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-info text-white rounded-circle p-2 me-3">
+                                    <i class="fas fa-key"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Senhas Seguras</div>
+                                    <div class="small text-muted">92% conformidade</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-warning text-dark rounded-circle p-2 me-3">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Alertas de Segurança</div>
+                                    <div class="small text-muted">3 nos últimos 7 dias</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-danger text-white rounded-circle p-2 me-3">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Tentativas Bloqueadas</div>
+                                    <div class="small text-muted">127 este mês</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <div class="fw-bold h4 text-success">Score A+</div>
+                        <div class="small text-muted">Nível de Segurança Geral</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Usuários Mais Ativos -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="action-card">
+                <div class="card-header bg-secondary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Usuários Mais Ativos
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="px-4 py-3 border-0">Usuário</th>
+                                    <th class="px-4 py-3 border-0">Departamento</th>
+                                    <th class="px-4 py-3 border-0 text-center">Logins (30d)</th>
+                                    <th class="px-4 py-3 border-0 text-center">Ações (30d)</th>
+                                    <th class="px-4 py-3 border-0 text-center">Último Acesso</th>
+                                    <th class="px-4 py-3 border-0 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dados mockados -->
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <span class="fw-bold">J</span>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">João Silva</div>
+                                                <div class="small text-muted">joao.silva@empresa.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">Tecnologia</td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-primary rounded-pill">45</span></td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-success rounded-pill">284</span></td>
+                                    <td class="px-4 py-3 text-center"><div class="small">há 5 minutos</div></td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-success">Online</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <span class="fw-bold">M</span>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">Maria Santos</div>
+                                                <div class="small text-muted">maria.santos@empresa.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">Financeiro</td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-primary rounded-pill">38</span></td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-success rounded-pill">201</span></td>
+                                    <td class="px-4 py-3 text-center"><div class="small">há 2 horas</div></td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-warning">Ausente</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <span class="fw-bold">C</span>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">Carlos Oliveira</div>
+                                                <div class="small text-muted">carlos.oliveira@empresa.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">Recursos Humanos</td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-primary rounded-pill">32</span></td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-success rounded-pill">156</span></td>
+                                    <td class="px-4 py-3 text-center"><div class="small">há 1 dia</div></td>
+                                    <td class="px-4 py-3 text-center"><span class="badge bg-secondary">Offline</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de Atividade de Usuários
+    const userActivityCtx = document.getElementById('userActivityChart').getContext('2d');
+    new Chart(userActivityCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 30}, (_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (29 - i));
+                return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            }),
+            datasets: [{
+                label: 'Logins',
+                data: [65, 78, 90, 81, 56, 55, 40, 89, 76, 82, 95, 67, 73, 58, 49, 62, 71, 84, 92, 78, 85, 69, 77, 81, 88, 94, 76, 83, 79, 91],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Ações',
+                data: [45, 58, 70, 61, 36, 35, 25, 69, 56, 62, 75, 47, 53, 38, 29, 42, 51, 64, 72, 58, 65, 49, 57, 61, 68, 74, 56, 63, 59, 71],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Distribuição de Permissões
+    const permissionsCtx = document.getElementById('permissionsChart').getContext('2d');
+    new Chart(permissionsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Admin', 'Manager', 'Editor', 'Viewer', 'Guest'],
+            datasets: [{
+                data: [25, 30, 20, 15, 10],
+                backgroundColor: [
+                    '#667eea',
+                    '#10b981',
+                    '#f59e0b',
+                    '#ef4444',
+                    '#6b7280'
+                ],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+});
+
+function generateReport() {
+    // Simular geração de relatório
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>Relatório gerado com sucesso!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    setTimeout(() => {
+        document.body.removeChild(toast);
+    }, 4000);
+}
+</script>
+{% endblock %}

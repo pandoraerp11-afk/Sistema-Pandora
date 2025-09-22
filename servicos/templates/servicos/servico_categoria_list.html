@@ -1,0 +1,187 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Categorias de Serviço" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tenant-list-wrapper {
+        width: 100%;
+        max-width: 1800px;
+        padding-top: 0.5rem;
+    }
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .modal-title {
+        font-weight: 600;
+    }
+    .card.card-primary.card-outline {
+        border: 1px solid #6366f1;
+        border-radius: 1rem;
+        box-shadow: 0 2px 12px rgba(99,102,241,0.06), 0 1.5px 4px rgba(0,0,0,0.03);
+        margin-bottom: 1.2rem;
+    }
+    .card-header {
+        background: #f8fafc;
+        border-radius: 1rem 1rem 0 0;
+        border-bottom: 1px solid #e3e9f7;
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 0.9rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+        border: none;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+        border-radius: 0.5rem;
+    }
+    .btn-primary:hover, .btn-primary:focus {
+        background: linear-gradient(90deg, #4f46e5 0%, #2563eb 100%);
+    }
+    .table th, .table td {
+        vertical-align: middle !important;
+        font-size: 0.9rem;
+        padding: 0.4rem 0.75rem !important;
+    }
+    .card-footer {
+        background: #f8fafc;
+        border-radius: 0 0 1rem 1rem;
+        border-top: 1px solid #e3e9f7;
+        padding: 0.7rem 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-primary card-outline" data-aos="fade-up" data-aos-delay="100">
+                <div class="card-header d-flex align-items-center">
+                    <h3 class="card-title me-auto h6"><i class="fas fa-tags me-1"></i> {% trans "Categorias de Serviço" %}</h3>
+                    <button type="button" class="btn btn-outline-primary btn-sm me-2 px-3" data-toggle="modal" data-target="#searchModal">
+                        <i class="fas fa-search"></i> {% trans "Buscar" %}
+                    </button>
+                    <a href="{% url 'servicos:categoria_create' %}" class="btn btn-outline-success btn-sm px-3">
+                        <i class="fas fa-plus"></i> {% trans "Adicionar" %}
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Nome da Categoria" %}</th>
+                                    <th>{% trans "Descrição" %}</th>
+                                    <th class="text-center">{% trans "Nº de Serviços" %}</th>
+                                    <th class="text-center">{% trans "Ativo" %}</th>
+                                    <th class="text-nowrap">{% trans "Ações" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for categoria in object_list %}
+                                <tr>
+                                    <td>{{ categoria.nome }}</td>
+                                    <td>{{ categoria.descricao|truncatewords:15|default:"-" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-info">{{ categoria.servicos.count }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if categoria.ativo %}
+                                            <span class="badge badge-success">{% trans "Sim" %}</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">{% trans "Não" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'servicos:categoria_update' categoria.slug %}" class="btn btn-outline-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                            <a href="{% url 'servicos:categoria_delete' categoria.slug %}" class="btn btn-outline-danger" title="Excluir"><i class="fas fa-trash"></i></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                        <h5 class="text-bold">{% trans "Nenhuma categoria de serviço encontrada." %}</h5>
+                        <p class="text-muted">{% trans "Clique em \"Adicionar\" para criar a primeira categoria." %}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if is_paginated %}
+                <div class="card-footer clearfix">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <span class="small text-muted">
+                            {% blocktrans %}Exibindo {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ paginator.count }} categorias{% endblocktrans %}
+                        </span>
+                        <ul class="pagination pagination-sm m-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item"><a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo;</a></li>
+                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}">‹</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+                                <li class="page-item disabled"><a class="page-link" href="#">‹</a></li>
+                            {% endif %}
+                            {% for i in paginator.page_range %}
+                                {% if page_obj.number == i %}
+                                    <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                            {% if page_obj.has_next %}
+                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}">›</a></li>
+                                <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}">&raquo;</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><a class="page-link" href="#">›</a></li>
+                                <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Busca -->
+<div class="modal fade" id="searchModal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchModalLabel"><i class="fas fa-search"></i> {% trans "Busca Avançada de Categorias" %}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <form method="get" class="form">
+                    <div class="form-group">
+                        <label for="id_nome_categoria">{% trans "Nome da Categoria" %}</label>
+                        <input type="text" name="nome_categoria" id="id_nome_categoria" class="form-control" placeholder="Ex: Limpeza, Estética..." value="{{ request.GET.nome_categoria|default:'' }}">
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{% url 'servicos:categoria_list' %}" class="btn btn-outline-secondary me-auto"><i class="fas fa-eraser"></i> {% trans "Limpar Filtros" %}</a>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancelar" %}</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> {% trans "Buscar" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

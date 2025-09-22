@@ -1,0 +1,47 @@
+{% load widget_tweaks %}
+{# Partial especializada para campos de upload de imagem - COMPACTA #}
+
+<div class="col-12 col-md-6 col-lg-4 col-xl-3">
+    <div class="image-upload-section-compact">
+        <label class="form-label form-label-compact mb-2">
+            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+            {{ field.label }}
+        </label>
+        <div class="image-upload-container-compact">
+            <div class="image-preview-area-compact" onclick="document.getElementById('{{ field.id_for_label }}').click()">
+                {% if field.value %}
+                    <img src="{{ field.value.url }}" alt="{{ field.label }}" id="preview-{{ field.name }}" class="preview-img-compact">
+                {% else %}
+                    <div id="placeholder-{{ field.name }}" class="placeholder-compact">
+                        {% if 'logo' in field.name|lower %}
+                            <i class="fas fa-building"></i>
+                        {% elif 'avatar' in field.name|lower or 'foto' in field.name|lower %}
+                            <i class="fas fa-user"></i>
+                        {% else %}
+                            <i class="fas fa-image"></i>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                <div class="upload-overlay-compact">
+                    <i class="fas fa-camera"></i>
+                </div>
+            </div>
+            <input type="file" 
+                   id="{{ field.id_for_label }}" 
+                   name="{{ field.name }}" 
+                   accept="image/*" 
+                   onchange="previewImage(this, '{{ field.name }}')"
+                   {% if field.field.required %}required{% endif %}
+                   {% for attr, value in field.field.widget.attrs.items %}{{ attr }}="{{ value }}"{% endfor %}
+                   style="display: none;">
+            <small class="upload-hint-compact">
+                {% if 'logo' in field.name|lower %}Logo{% elif 'avatar' in field.name|lower %}Avatar{% else %}Imagem{% endif %} • JPG/PNG
+            </small>
+        </div>
+        {% if field.errors %}
+        <div class="invalid-feedback d-block mt-1">
+            {% for error in field.errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>

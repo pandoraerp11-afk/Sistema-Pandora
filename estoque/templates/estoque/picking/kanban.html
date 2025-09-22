@@ -1,0 +1,98 @@
+{% extends 'pandora_dashboard_ultra_modern.html' %}
+{% load static %}
+
+{% block dashboard_title %}Picking / Kanban{% endblock %}
+{% block dashboard_title_content %}Picking / Kanban{% endblock %}
+{% block dashboard_subtitle %}Fluxo operacional de pedidos em tempo real{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2 flex-wrap">
+  <a href="{% url 'estoque:estoque_home' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
+  <button class="btn btn-outline-info" onclick="atualizarKanban()"><i class="fas fa-sync-alt me-1"></i> Atualizar</button>
+  <button class="btn btn-outline-primary" onclick="limparFiltros()"><i class="fas fa-eraser me-1"></i> Limpar Filtros</button>
+</div>
+{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'estoque/kanban.css' %}">{% endblock %}
+
+{% block dashboard_extra_js %}
+<script src="{% static 'estoque/picking.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{EstoquePicking.init();if('WebSocket'in window){const ws=new WebSocket(`${location.protocol==='https:'?'wss://':'ws://'}${location.host}/ws/estoque/picking/`);ws.onmessage=e=>{const data=JSON.parse(e.data);EstoquePicking.handleWebSocketMessage(data);};}});
+</script>
+{% endblock %}
+
+{% block dashboard_widgets %}
+<div class="grid-stack-item" gs-w="12" gs-h="12" gs-id="picking-kanban" style="min-height:600px;">
+  <div class="grid-stack-item-content p-0">
+    <div class="widget h-100 p-0" style="background:transparent;box-shadow:none;">
+      <div class="widget-body p-0">
+        <!-- Controles do Kanban -->
+        <div class="kanban-controls" role="region" aria-label="Filtros e estatísticas do Kanban">
+            <div class="kanban-filters" role="group" aria-label="Filtros">
+                <div class="filter-group">
+                    <label class="form-label mb-0"><i class="fas fa-filter me-1"></i>Filtros:</label>
+                </div>
+                <div class="filter-group">
+                    <select class="filter-select" id="filtro-prioridade" onchange="filtrarPorPrioridade(this.value)" aria-label="Filtrar por prioridade">
+                        <option value="">Todas as Prioridades</option>
+                        <option value="ALTA">Alta</option>
+                        <option value="MEDIA">Média</option>
+                        <option value="NORMAL">Normal</option>
+                        <option value="BAIXA">Baixa</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select class="filter-select" id="filtro-cliente" onchange="filtrarPorCliente(this.value)" aria-label="Filtrar por cliente">
+                        <option value="">Todos os Clientes</option>
+                        {% for cliente in clientes %}<option value="{{ cliente.id }}">{{ cliente.nome }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select class="filter-select" id="filtro-data" onchange="filtrarPorData(this.value)" aria-label="Filtrar por data">
+                        <option value="">Todas as Datas</option>
+                        <option value="hoje">Hoje</option>
+                        <option value="ontem">Ontem</option>
+                        <option value="semana">Esta Semana</option>
+                        <option value="mes">Este Mês</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="limparFiltros()"><i class="fas fa-eraser me-1"></i>Limpar</button>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-sm btn-info" onclick="atualizarKanban()"><i class="fas fa-sync-alt me-1"></i>Atualizar</button>
+                </div>
+            </div>
+            <div class="kanban-stats">
+                <div class="stat-item"><span class="stat-value" id="total-pedidos">{{ stats.total_pedidos }}</span><span class="stat-label">Total</span></div>
+                <div class="stat-item"><span class="stat-value" id="em-andamento">{{ stats.em_andamento }}</span><span class="stat-label">Em Andamento</span></div>
+                <div class="stat-item"><span class="stat-value" id="finalizados-hoje">{{ stats.finalizados_hoje }}</span><span class="stat-label">Finalizados Hoje</span></div>
+            </div>
+        </div>
+        <!-- Board Kanban -->
+        <div class="kanban-board" role="region" aria-label="Quadro Kanban de Picking">
+            <div class="kanban-container" id="kanban-container" role="list" aria-label="Colunas do Kanban">
+                <div class="kanban-column coluna-pendente" data-status="PENDENTE" id="coluna-pendente" role="group" aria-label="Pedidos pendentes">{% include 'estoque/picking/picking_coluna.html' with status='PENDENTE' titulo='Pendentes' pedidos=pedidos_pendentes %}</div>
+                <div class="kanban-column coluna-separacao" data-status="SEPARACAO" id="coluna-separacao" role="group" aria-label="Pedidos em separação">{% include 'estoque/picking/picking_coluna.html' with status='SEPARACAO' titulo='Em Separação' pedidos=pedidos_separacao %}</div>
+                <div class="kanban-column coluna-conferencia" data-status="CONFERENCIA" id="coluna-conferencia" role="group" aria-label="Pedidos em conferência">{% include 'estoque/picking/picking_coluna.html' with status='CONFERENCIA' titulo='Conferência' pedidos=pedidos_conferencia %}</div>
+                <div class="kanban-column coluna-embalagem" data-status="EMBALAGEM" id="coluna-embalagem" role="group" aria-label="Pedidos em embalagem">{% include 'estoque/picking/picking_coluna.html' with status='EMBALAGEM' titulo='Embalagem' pedidos=pedidos_embalagem %}</div>
+                <div class="kanban-column coluna-expedição" data-status="EXPEDICAO" id="coluna-expedicao" role="group" aria-label="Pedidos em expedição">{% include 'estoque/picking/picking_coluna.html' with status='EXPEDICAO' titulo='Expedição' pedidos=pedidos_expedicao %}</div>
+                <div class="kanban-column coluna-finalizado" data-status="FINALIZADO" id="coluna-finalizado" role="group" aria-label="Pedidos finalizados">{% include 'estoque/picking/picking_coluna.html' with status='FINALIZADO' titulo='Finalizados' pedidos=pedidos_finalizados %}</div>
+            </div>
+        </div>
+        {% include 'estoque/picking/modal_item.html' %}
+        {% include 'estoque/picking/modal_mensagem.html' %}
+        <div id="kanban-loading" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background:rgba(0,0,0,0.5);z-index:9999;">
+            <div class="d-flex justify-content-center align-items-center h-100"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Fallback caso widgets não renderizem -->
+<div class="kanban-controls">(Ver seção Kanban acima)</div>
+{% endblock %}

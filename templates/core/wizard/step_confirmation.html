@@ -1,0 +1,701 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Formulário de Confirmação Final (Step 7) -->
+
+    <!-- Alerta de Confirmação -->
+    <div class="alert alert-primary border-0 mb-4 wizard-alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-check-circle text-primary me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-primary">Confirmação Final</h6>
+                <small class="text-muted">Revise todos os dados e confirme para criar a empresa</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progresso do Cadastro -->
+    <div class="wizard-section">
+        <div class="d-flex align-items-center justify-content-between wizard-section-title">
+            <h5 class="mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-tasks wizard-icon"></i>
+                <span>Progresso do Cadastro</span>
+            </h5>
+            {% if view.kwargs.pk %}
+            <a href="{% url 'documentos:documento_list' 'core' view.kwargs.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                <i class="fas fa-folder-open me-1"></i> Ver Documentos
+            </a>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="step-summary step-completed">
+                    <div class="step-icon">
+                        <i class="fas fa-building text-success"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6 class="mb-1">Identificação</h6>
+                        <small class="text-success">Concluído</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="step-summary step-completed">
+                    <div class="step-icon">
+                        <i class="fas fa-map-marker-alt text-success"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6 class="mb-1">Endereço</h6>
+                        <small class="text-success">Concluído</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="step-summary step-completed">
+                    <div class="step-icon">
+                        <i class="fas fa-phone text-success"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6 class="mb-1">Contatos</h6>
+                        <small class="text-success">Concluído</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="step-summary step-completed">
+                    <div class="step-icon">
+                        <i class="fas fa-file-alt text-success"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6 class="mb-1">Documentos</h6>
+                        <small class="text-success">Concluído</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="step-summary step-completed">
+                    <div class="step-icon">
+                        <i class="fas fa-cog text-success"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6 class="mb-1">Configurações</h6>
+                        <small class="text-success">Concluído</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="step-summary step-completed">
+                    <div class="step-icon">
+                        <i class="fas fa-user-shield text-success"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6 class="mb-1">Administradores</h6>
+                        <small class="text-success">Concluído</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo dos Dados Principais -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-clipboard-list wizard-icon"></i>
+            Resumo dos Dados
+        </h5>
+        
+        <div class="row">
+            <!-- Dados da Empresa -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-building me-2"></i>
+                            Dados da Empresa
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <strong>Nome/Razão Social:</strong><br>
+                            <span class="text-muted">{{ review_step_1_main.nome|default:"Não informado" }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tipo de Pessoa:</strong><br>
+                            <span class="text-muted">
+                                {% if review_step_1_main.tipo_pessoa == 'PJ' %}
+                                    Pessoa Jurídica
+                                {% elif review_step_1_main.tipo_pessoa == 'PF' %}
+                                    Pessoa Física
+                                {% else %}
+                                    Não informado
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Email Principal:</strong><br>
+                            <span class="text-muted">{{ review_step_1_main.email|default:"Não informado" }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Telefone Principal:</strong><br>
+                            <span class="text-muted">{{ review_step_1_main.telefone|default:"Não informado" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dados de Endereço -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            Endereço
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <strong>CEP:</strong><br>
+                            <span class="text-muted">{{ review_step_2_main.cep|default:"Não informado" }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Logradouro:</strong><br>
+                            <span class="text-muted">{{ review_step_2_main.logradouro|default:"Não informado" }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Cidade/Estado:</strong><br>
+                            <span class="text-muted">{{ review_step_2_main.cidade|default:"Não informado" }}/{{ review_step_2_main.estado|default:"" }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Bairro:</strong><br>
+                            <span class="text-muted">{{ review_step_2_main.bairro|default:"Não informado" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Configurações -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            Configurações
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <strong>Plano de Assinatura:</strong><br>
+                            <span class="text-muted">{{ review_step_5_main.plano_assinatura|default:"Não informado" }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Módulos Habilitados:</strong><br>
+                            <span class="text-muted">
+                                {% if review_step_5_main.enabled_modules_flat %}
+                                    {{ review_step_5_main.enabled_modules_flat|length }} módulo(s) selecionado(s)
+                                {% else %}
+                                    Nenhum módulo selecionado
+                                {% endif %}
+                            </span>
+                        {% if review_step_5_main.enabled_modules_flat %}
+                        <div class="mt-2 small text-muted">
+                            <strong>Lista:</strong>
+                            {{ review_step_5_main.enabled_modules_flat|join:', ' }}
+                        </div>
+                        {% endif %}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Timezone:</strong><br>
+                            <span class="text-muted">{{ review_step_5_main.timezone|default:"America/Sao_Paulo" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Administradores -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0">
+                            <i class="fas fa-user-shield me-2"></i>
+                            Administradores
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% if review_admin.total %}
+                            <div class="admin-summary">
+                                <div class="mb-2">
+                                    <strong>Nome:</strong><br>
+                                    <span class="text-muted">{{ review_admin.nome|default:"-" }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Email:</strong><br>
+                                    <span class="text-muted">{{ review_admin.email|default:"-" }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Telefone:</strong><br>
+                                    <span class="text-muted">{{ review_admin.telefone|default:"Não informado" }}</span>
+                                </div>
+                                {% if review_admin.total > 1 %}
+                                <div class="mb-1 small text-muted">(+ {{ review_admin.total|add:-1 }} admin(s) adicional(is))</div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Nenhum administrador configurado. O usuário atual será o administrador padrão.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Termos e Condições -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-file-contract wizard-icon"></i>
+            Termos e Condições
+        </h5>
+        
+        <div class="wizard-terms">
+            <div class="form-check mb-3">
+                {{ form.aceitar_termos }}
+                <label class="form-check-label" for="{{ form.aceitar_termos.id_for_label }}">
+                    Eu li e aceito os <a href="#" target="_blank">Termos de Uso</a> e a 
+                    <a href="#" target="_blank">Política de Privacidade</a> do Pandora ERP
+                </label>
+                {% if form.aceitar_termos.errors %}
+                    <div class="wizard-field-errors">
+                        {% for error in form.aceitar_termos.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-check mb-3">
+                {{ form.aceitar_comunicacoes }}
+                <label class="form-check-label" for="{{ form.aceitar_comunicacoes.id_for_label }}">
+                    {{ form.aceitar_comunicacoes.label }}
+                </label>
+                <small class="form-text text-muted d-block">
+                    Receber e-mails sobre atualizações do sistema, novidades e ofertas especiais
+                </small>
+            </div>
+            
+            <div class="form-check mb-3">
+                {{ form.confirmar_dados }}
+                <label class="form-check-label" for="{{ form.confirmar_dados.id_for_label }}">
+                    <strong>{{ form.confirmar_dados.label }}</strong>
+                </label>
+                {% if form.confirmar_dados.errors %}
+                    <div class="wizard-field-errors">
+                        {% for error in form.confirmar_dados.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted d-block">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Ao confirmar, você está criando uma nova empresa no sistema com os dados informados acima.
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Campo de Observações -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-comment-dots wizard-icon"></i>
+            Observações Adicionais
+        </h5>
+        
+        <div class="mb-3">
+            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                {{ form.observacoes.label }}
+            </label>
+            {{ form.observacoes }}
+            <small class="form-text text-muted">
+                Informações adicionais sobre a empresa que possam ser úteis (opcional).
+            </small>
+        </div>
+    </div>
+    
+    <!-- Alerta Final -->
+    <div class="alert alert-success border-0 mt-4">
+        <div class="d-flex align-items-start">
+            <i class="fas fa-rocket text-success me-3 mt-1" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-2 text-success">Pronto para começar!</h6>
+                <p class="mb-0 text-muted">
+                    Ao clicar em "Finalizar Cadastro", sua empresa será criada no sistema e você receberá 
+                    um e-mail de confirmação com as instruções para o primeiro acesso.
+                </p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Step Confirmation Ultra Moderno carregado');
+    
+    // Campos do formulário real
+    const confirmarDadosCheckbox = document.getElementById('{{ form.confirmar_dados.id_for_label }}');
+    const aceitarTermosCheckbox = document.getElementById('{{ form.aceitar_termos.id_for_label }}');
+    const submitButton = document.querySelector('button[name="wizard_finish"]');
+    
+    function updateSubmitButton() {
+        const confirmarDados = confirmarDadosCheckbox ? confirmarDadosCheckbox.checked : false;
+        const aceitarTermos = aceitarTermosCheckbox ? aceitarTermosCheckbox.checked : false;
+        const canSubmit = confirmarDados && aceitarTermos;
+        
+        if (submitButton) {
+            submitButton.disabled = !canSubmit;
+            if (canSubmit) {
+                submitButton.classList.remove('btn-secondary');
+                submitButton.classList.add('btn-success');
+                submitButton.innerHTML = '<i class="fas fa-check-circle me-2"></i>Finalizar Cadastro';
+            } else {
+                submitButton.classList.remove('btn-success');
+                submitButton.classList.add('btn-secondary');
+                submitButton.innerHTML = '<i class="fas fa-lock me-2"></i>Complete os requisitos';
+            }
+        }
+    }
+    
+    // Aplicar listeners aos checkboxes obrigatórios
+    if (confirmarDadosCheckbox) {
+        confirmarDadosCheckbox.addEventListener('change', updateSubmitButton);
+    }
+    if (aceitarTermosCheckbox) {
+        aceitarTermosCheckbox.addEventListener('change', updateSubmitButton);
+    }
+    
+    // Chamada inicial
+    updateSubmitButton();
+    
+    // Animação de entrada das seções
+    const sections = document.querySelectorAll('.wizard-section');
+    sections.forEach((section, index) => {
+        section.style.opacity = '0';
+        section.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            section.style.transition = 'all 0.4s ease';
+            section.style.opacity = '1';
+            section.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Validação final antes do submit
+    const form = document.querySelector('.wizard-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const confirmarDados = confirmarDadosCheckbox ? confirmarDadosCheckbox.checked : false;
+            const aceitarTermos = aceitarTermosCheckbox ? aceitarTermosCheckbox.checked : false;
+            
+            if (!aceitarTermos) {
+                e.preventDefault();
+                alert('Por favor, aceite os Termos de Uso e Política de Privacidade para continuar.');
+                aceitarTermosCheckbox.focus();
+                return false;
+            }
+            
+            if (!confirmarDados) {
+                e.preventDefault();
+                alert('Por favor, confirme que todos os dados estão corretos para continuar.');
+                confirmarDadosCheckbox.focus();
+                return false;
+            }
+            
+            // Verificar se é o botão de finalizar
+            if (e.submitter && e.submitter.name === 'wizard_finish') {
+                e.preventDefault();
+                
+                // Confirmação final
+                if (confirm('Confirma a criação da empresa com os dados informados?\n\nEsta ação criará uma nova empresa no sistema.')) {
+                    // Mostrar loading no botão de finalizar
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Criando empresa...';
+                    }
+                    
+                    // Enviar o formulário
+                    setTimeout(() => {
+                        form.submit();
+                    }, 500);
+                }
+            }
+        });
+    }
+    
+    console.log('✅ Validação de confirmação configurada');
+});
+</script>
+
+<style>
+/* Reset de estilos conflitantes - PRIORIDADE MÁXIMA */
+.wizard-terms .form-check-input,
+.wizard-terms input[type="checkbox"],
+.wizard-terms .form-check-input.wizard-field {
+    width: 1.2rem !important;
+    height: 1.2rem !important;
+    min-width: 1.2rem !important;
+    min-height: 1.2rem !important;
+    max-width: 1.2rem !important;
+    max-height: 1.2rem !important;
+    margin-top: 0.2rem !important;
+    margin-right: 0.75rem !important;
+    margin-left: 0 !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 4px !important;
+    background-color: #fff !important;
+    transition: all 0.2s ease !important;
+    font-size: 1rem !important;
+    vertical-align: top !important;
+    position: relative !important;
+    transform: none !important;
+}
+
+/* Estilos Ultra Modernos para Confirmação */
+.step-summary {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.step-summary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    transform: scaleX(1);
+}
+
+.step-summary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border-color: #28a745;
+}
+
+.step-icon {
+    margin-right: 1rem;
+    font-size: 1.5rem;
+}
+
+.step-info h6 {
+    margin-bottom: 0.25rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.step-info small {
+    font-weight: 500;
+}
+
+.admin-summary {
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 0.375rem;
+    border-left: 4px solid #28a745;
+}
+
+.wizard-terms {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.wizard-terms .form-check {
+    display: flex;
+    align-items: flex-start;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    min-height: auto;
+}
+
+.wizard-terms .form-check:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1);
+    transform: translateY(-1px);
+}
+
+.wizard-terms .form-check-input:focus {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+    outline: 0 !important;
+}
+
+.wizard-terms .form-check-input:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.wizard-terms .form-check-label {
+    flex: 1;
+    line-height: 1.5;
+    margin-bottom: 0;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.wizard-terms .form-check-input:checked ~ .form-check-label {
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.wizard-terms .form-text {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+    padding-left: 0;
+}
+
+/* Reset específico para checkboxes */
+.wizard-terms input[type="checkbox"] {
+    width: 1.2rem !important;
+    height: 1.2rem !important;
+    margin: 0.2rem 0.75rem 0 0 !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 4px !important;
+    background-color: #fff !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+}
+
+.wizard-terms input[type="checkbox"]:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.wizard-terms input[type="checkbox"]:checked::before {
+    content: '✓' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    color: white !important;
+    font-size: 0.9rem !important;
+    font-weight: bold !important;
+}
+}
+
+.wizard-field-errors {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.alert {
+    border-radius: 12px;
+    border: none !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.card {
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Animações */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-summary {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.step-summary:nth-child(1) { animation-delay: 0.1s; }
+.step-summary:nth-child(2) { animation-delay: 0.2s; }
+.step-summary:nth-child(3) { animation-delay: 0.3s; }
+.step-summary:nth-child(4) { animation-delay: 0.4s; }
+.step-summary:nth-child(5) { animation-delay: 0.5s; }
+.step-summary:nth-child(6) { animation-delay: 0.6s; }
+
+/* Textos e links */
+a {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+a:hover {
+    color: #0b5ed7;
+    text-decoration: underline;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* Melhorias no textarea */
+textarea.form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    resize: vertical;
+    min-height: 100px;
+}
+
+textarea.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Histórico de Versões" %}{% endblock %}
+{% block page_title %}{% trans "Histórico de Versões" %}{% endblock %}
+{% block page_subtitle %}{% trans "Visualize e gerencie o histórico de versões do documento." %}{% endblock %}
+
+{% block list_content %}
+<div class="card card-ultra-modern mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i> {% trans "Histórico de Versões" %}</h5>
+  {% if perms_ui.can_add|default:perms.can_add|default:True %}
+    <a href="{% url 'documentos:versao_create' documento.pk %}" class="btn btn-success float-end">
+      <i class="fas fa-upload"></i> {% trans "Nova Versão" %}
+    </a>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>{% trans "Versão" %}</th>
+          <th>{% trans "Competência" %}</th>
+          <th>{% trans "Status" %}</th>
+          <th>{% trans "Validade" %}</th>
+          <th>{% trans "Enviado por" %}</th>
+          <th>{% trans "Enviado em" %}</th>
+          <th>{% trans "Arquivo" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for versao in versoes %}
+        <tr>
+          <td>v{{ versao.versao }}</td>
+          <td>{{ versao.competencia|default:'-' }}</td>
+          <td>{{ versao.get_status_display }}</td>
+          <td>{{ versao.validade_data|date:'d/m/Y'|default:'-' }}</td>
+          <td>{{ versao.enviado_por|default:'-' }}</td>
+          <td>{{ versao.enviado_em|date:'d/m/Y H:i' }}</td>
+          <td>
+            {% if versao.arquivo %}
+              <a href="{{ versao.arquivo.url }}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-download"></i></a>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted">{% trans "Nenhuma versão enviada." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

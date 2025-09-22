@@ -1,0 +1,9 @@
+{# Renderizador principal de formulários - detecta tipo e inclui appropriate partial #}
+
+{% if form_sections %}
+    {# Formulário multi-seção #}
+    {% include 'partials/forms/form_sections.html' with sections=form_sections %}
+{% else %}
+    {# Formulário simples #}
+    {% include 'partials/forms/single_form.html' %}
+{% endif %}

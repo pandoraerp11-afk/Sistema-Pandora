@@ -1,0 +1,39 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Associar Documento" %}{% endblock %}
+{% block page_title %}{% trans "Associar Documento" %}{% endblock %}
+{% block page_subtitle %}{% trans "Associe um tipo de documento à entidade desejada." %}{% endblock %}
+
+{% block form_content %}
+<div class="card card-ultra-modern mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><i class="fas fa-paperclip me-2"></i> {% trans "Associar Documento" %}</h5>
+    <p class="card-subtitle text-muted mt-1 mb-0">{% trans "Preencha os dados abaixo para associar o documento." %}</p>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          {{ form.tipo.label_tag }}
+          {{ form.tipo }}
+        </div>
+        <div class="col-md-3">
+          {{ form.obrigatorio.label_tag }}
+          <div class="form-check">{{ form.obrigatorio }}</div>
+        </div>
+        <div class="col-md-3">
+          {{ form.observacao.label_tag }}
+          {{ form.observacao }}
+        </div>
+      </div>
+      <div class="mt-4 d-flex justify-content-end">
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save me-2"></i>{% trans "Salvar" %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

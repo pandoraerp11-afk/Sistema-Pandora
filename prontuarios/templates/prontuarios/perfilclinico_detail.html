@@ -1,0 +1,71 @@
+{% extends 'pandora_home_ultra_modern.html' %}
+{% load core_tags %}
+{% block home_title %}Perfil Clínico{% endblock %}
+{% block home_subtitle %}{{ perfil.cliente.nome_display }}{% endblock %}
+{% block home_actions %}
+{% if is_module_enabled 'prontuarios' %}<a href="{% url 'prontuarios:perfils_clinicos_update' perfil.pk %}" class="btn btn-secondary">Editar</a>{% endif %}
+<a href="{% url 'prontuarios:perfils_clinicos_list' %}" class="btn btn-outline-secondary">Voltar</a>
+{% endblock %}
+{% block home_content %}
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Dados Médicos</div>
+      <div class="card-body small">
+        <dl class="row mb-0">
+          <dt class="col-5">Tipo Sanguíneo</dt><dd class="col-7">{{ perfil.tipo_sanguineo|default:'-' }}</dd>
+          <dt class="col-5">Alergias</dt><dd class="col-7">{{ perfil.alergias|default:'-' }}</dd>
+          <dt class="col-5">Medicamentos</dt><dd class="col-7">{{ perfil.medicamentos_uso|default:'-' }}</dd>
+          <dt class="col-5">Doenças Crônicas</dt><dd class="col-7">{{ perfil.doencas_cronicas|default:'-' }}</dd>
+          <dt class="col-5">Cirurgias</dt><dd class="col-7">{{ perfil.cirurgias_anteriores|default:'-' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Estética</div>
+      <div class="card-body small">
+        <dl class="row mb-0">
+          <dt class="col-5">Tipo de Pele</dt><dd class="col-7">{{ perfil.tipo_pele|default:'-' }}</dd>
+          <dt class="col-5">Fototipo</dt><dd class="col-7">{{ perfil.fototipo|default:'-' }}</dd>
+          <dt class="col-5">Histórico</dt><dd class="col-7">{{ perfil.historico_estetico|default:'-' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Contato Emergência</div>
+      <div class="card-body small">
+        <dl class="row mb-0">
+          <dt class="col-5">Nome</dt><dd class="col-7">{{ perfil.contato_emergencia_nome|default:'-' }}</dd>
+          <dt class="col-5">Telefone</dt><dd class="col-7">{{ perfil.contato_emergencia_telefone|default:'-' }}</dd>
+          <dt class="col-5">Parentesco</dt><dd class="col-7">{{ perfil.contato_emergencia_parentesco|default:'-' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Consentimentos</div>
+      <div class="card-body small">
+        <dl class="row mb-0">
+          <dt class="col-6">Termo Responsabilidade</dt><dd class="col-6">{% if perfil.termo_responsabilidade_assinado %}✔{% else %}-{% endif %}</dd>
+          <dt class="col-6">Data Assinatura</dt><dd class="col-6">{{ perfil.data_assinatura_termo|date:'d/m/Y H:i'|default:'-' }}</dd>
+          <dt class="col-6">LGPD Consentimento</dt><dd class="col-6">{% if perfil.lgpd_consentimento %}✔{% else %}-{% endif %}</dd>
+          <dt class="col-6">Data Consentimento</dt><dd class="col-6">{{ perfil.data_consentimento_lgpd|date:'d/m/Y H:i'|default:'-' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">Observações Gerais</div>
+      <div class="card-body">
+        <p class="mb-0 small">{{ perfil.observacoes_gerais|linebreaks|default:'-' }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

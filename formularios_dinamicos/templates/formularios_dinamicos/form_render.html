@@ -1,0 +1,25 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">{{ formulario.titulo }}</h3>
+                </div>
+                <div class="card-body">
+                    <p>{{ formulario.descricao }}</p>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <button type="submit" class="btn btn-primary mt-3">Enviar Resposta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

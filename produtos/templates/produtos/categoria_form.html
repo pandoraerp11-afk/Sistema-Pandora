@@ -1,0 +1,204 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static %}
+
+{% block form_title %}
+    {% if form.instance.pk %}
+        Editar Categoria
+    {% else %}
+        Nova Categoria
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        Editar Categoria - {{ form.instance.nome }}
+    {% else %}
+        Nova Categoria
+    {% endif %}
+{% endblock %}
+
+{% block form_subtitle %}
+    {% if form.instance.pk %}
+        Atualize as informações desta categoria
+    {% else %}
+        Organize seus produtos criando uma nova categoria
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'produtos:produto_list' %}">Produtos</a></li>
+<li class="breadcrumb-item"><a href="{% url 'produtos:categoria_list' %}">Categorias</a></li>
+<li class="breadcrumb-item active">
+    {% if form.instance.pk %}Editar{% else %}Nova{% endif %}
+</li>
+{% endblock %}
+
+{% block form_action %}{% url 'produtos:categoria_create' %}{% endblock %}
+
+{% block form_method %}post{% endblock %}
+
+{% block form_icon %}fas fa-tags{% endblock %}
+
+{% block form_fields %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="form-section">
+            <h6 class="form-section-title">
+                <i class="fas fa-info-circle"></i>
+                Informações da Categoria
+            </h6>
+            
+            <div class="form-group">
+                <label for="{{ form.nome.id_for_label }}" class="form-label required">
+                    Nome da Categoria
+                </label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.nome.errors.0 }}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Nome que identificará esta categoria
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.descricao.id_for_label }}" class="form-label">
+                    Descrição
+                </label>
+                {{ form.descricao }}
+                {% if form.descricao.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.descricao.errors.0 }}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Descreva o tipo de produtos desta categoria
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-check">
+                    {{ form.ativo }}
+                    <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                        Categoria ativa
+                    </label>
+                </div>
+                {% if form.ativo.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.ativo.errors.0 }}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Categorias inativas não aparecerão nos filtros
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="form-sidebar">
+            <div class="sidebar-section">
+                <h6 class="sidebar-title">
+                    <i class="fas fa-lightbulb"></i>
+                    Dicas
+                </h6>
+                <ul class="sidebar-list">
+                    <li>Use nomes descritivos e fáceis de entender</li>
+                    <li>Organize produtos similares na mesma categoria</li>
+                    <li>Mantenha as categorias sempre atualizadas</li>
+                    <li>Use descrições claras para facilitar a busca</li>
+                </ul>
+            </div>
+            
+            {% if form.instance.pk %}
+                <div class="sidebar-section">
+                    <h6 class="sidebar-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Estatísticas
+                    </h6>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ form.instance.produtos.count }}</div>
+                            <div class="stat-label">Produtos</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ form.instance.produtos.filter.ativo=True.count }}</div>
+                            <div class="stat-label">Ativos</div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block form_actions %}
+<div class="form-actions">
+    <div class="d-flex justify-content-between">
+        <div>
+            <a href="{% url 'produtos:categoria_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Voltar
+            </a>
+        </div>
+        <div class="d-flex gap-2">
+            {% if form.instance.pk %}
+                <a href="{% url 'produtos:categoria_delete' form.instance.pk %}" 
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza que deseja excluir esta categoria?')">
+                    <i class="fas fa-trash"></i>
+                    Excluir
+                </a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-modern">
+                <i class="fas fa-save"></i>
+                {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Categoria
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-gerar slug a partir do nome
+    const nomeInput = document.getElementById('{{ form.nome.id_for_label }}');
+    const slugInput = document.getElementById('{{ form.slug.id_for_label }}');
+    
+    if (nomeInput && slugInput && !slugInput.value) {
+        nomeInput.addEventListener('input', function() {
+            const slug = this.value
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            slugInput.value = slug;
+        });
+    }
+    
+    // Validação do formulário
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const nomeValue = nomeInput.value.trim();
+        
+        if (!nomeValue) {
+            e.preventDefault();
+            alert('Por favor, informe o nome da categoria.');
+            nomeInput.focus();
+            return false;
+        }
+        
+        if (nomeValue.length < 2) {
+            e.preventDefault();
+            alert('O nome da categoria deve ter pelo menos 2 caracteres.');
+            nomeInput.focus();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

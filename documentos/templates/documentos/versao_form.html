@@ -1,0 +1,43 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Nova Versão de Documento" %}{% endblock %}
+{% block page_title %}{% trans "Nova Versão de Documento" %}{% endblock %}
+{% block page_subtitle %}{% trans "Envie uma nova versão do documento associado." %}{% endblock %}
+
+{% block form_content %}
+<div class="card card-ultra-modern mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><i class="fas fa-upload me-2"></i> {% trans "Nova Versão de Documento" %}</h5>
+    <p class="card-subtitle text-muted mt-1 mb-0">{% trans "Preencha os dados abaixo para enviar uma nova versão." %}</p>
+  </div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          {{ form.arquivo.label_tag }}
+          {{ form.arquivo }}
+        </div>
+        <div class="col-md-3">
+          {{ form.competencia.label_tag }}
+          {{ form.competencia }}
+        </div>
+        <div class="col-md-3">
+          {{ form.validade_data.label_tag }}
+          {{ form.validade_data }}
+        </div>
+        <div class="col-md-12">
+          {{ form.observacao.label_tag }}
+          {{ form.observacao }}
+        </div>
+      </div>
+      <div class="mt-4 d-flex justify-content-end">
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-upload me-2"></i>{% trans "Enviar" %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

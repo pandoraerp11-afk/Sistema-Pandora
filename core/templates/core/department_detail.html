@@ -1,0 +1,147 @@
+{% extends "pandora_detail_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{{ object.name }} - Detalhes do Departamento{% endblock %}
+
+{% block detail_title %}
+<i class="fas fa-building me-2"></i>
+{{ object.name }}
+{% endblock %}
+
+{% block detail_subtitle %}Departamento{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'core:department_list' %}">Departamentos</a></li>
+<li class="breadcrumb-item active">{{ object.name }}</li>
+{% endblock %}
+
+{% block detail_actions %}
+<a href="{% url 'core:department_update' object.pk %}" class="btn btn-warning">
+    <i class="fas fa-edit me-1"></i> Editar
+</a>
+<a href="{% url 'core:department_delete' object.pk %}" class="btn btn-danger">
+    <i class="fas fa-trash me-1"></i> Excluir
+</a>
+{% endblock %}
+
+{% block detail_content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    Informações Gerais
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nome</dt>
+                    <dd class="col-sm-9">{{ object.name }}</dd>
+                    
+                    <dt class="col-sm-3">Descrição</dt>
+                    <dd class="col-sm-9">{{ object.description|default:"Não informado" }}</dd>
+                    
+                    <dt class="col-sm-3">Criado em</dt>
+                    <dd class="col-sm-9">{{ object.created_at|date:"d/m/Y \à\s H:i" }}</dd>
+                    
+                    <dt class="col-sm-3">Atualizado em</dt>
+                    <dd class="col-sm-9">{{ object.updated_at|date:"d/m/Y \à\s H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        {% if object.tenant_users.exists %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users text-primary me-2"></i>
+                    Usuários ({{ object.tenant_users.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Usuário</th>
+                                <th>Papel</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tenant_user in object.tenant_users.all %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-circle text-muted me-2"></i>
+                                        <strong>{{ tenant_user.user.get_full_name|default:tenant_user.user.username }}</strong>
+                                    </div>
+                                </td>
+                                <td>{{ tenant_user.user.username }}</td>
+                                <td>{{ tenant_user.role.name|default:"Não definido" }}</td>
+                                <td>
+                                    <span class="badge bg-{{ tenant_user.user.is_active|yesno:'success,danger' }}">
+                                        {{ tenant_user.user.is_active|yesno:"Ativo,Inativo" }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-cogs text-primary me-2"></i>
+                    Ações
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'core:department_update' object.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i> Editar Departamento
+                    </a>
+                    <a href="{% url 'user_management:user_create' %}?department={{ object.pk }}" class="btn btn-outline-success">
+                        <i class="fas fa-user-plus me-2"></i> Adicionar Usuário
+                    </a>
+                    <a href="{% url 'core:department_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i> Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-chart-bar text-primary me-2"></i>
+                    Estatísticas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <div class="h4 text-primary mb-1">{{ object.tenant_users.count }}</div>
+                            <div class="text-muted small">Total de Usuários</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-success mb-1">{{ object.tenant_users.count }}</div>
+                        <div class="text-muted small">Usuários Ativos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

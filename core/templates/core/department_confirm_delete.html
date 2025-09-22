@@ -1,0 +1,57 @@
+{% extends "pandora_delete_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}Confirmar Exclusão - {{ object.name }}{% endblock %}
+
+{% block object_icon %}fas fa-building{% endblock %}
+
+{% block object_title %}{{ object.name }}{% endblock %}
+
+{% block object_type %}departamento{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'core:department_list' %}">Departamentos</a></li>
+<li class="breadcrumb-item"><a href="{% url 'core:department_detail' object.pk %}">{{ object.name }}</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block object_details %}
+<div class="row">
+    <div class="col-md-6">
+        <strong class="text-muted">Nome:</strong><br>
+        <span class="fw-bold">{{ object.name }}</span>
+    </div>
+    <div class="col-md-6">
+        <strong class="text-muted">Descrição:</strong><br>
+        <span>{{ object.description|default:"Não informado" }}</span>
+    </div>
+</div>
+<div class="row mt-2">
+    <div class="col-md-6">
+        <strong class="text-muted">Usuários vinculados:</strong><br>
+        <span class="badge bg-info">{{ object.tenant_users.count }}</span>
+    </div>
+    <div class="col-md-6">
+        <strong class="text-muted">Criado em:</strong><br>
+        <span>{{ object.created_at|date:"d/m/Y H:i" }}</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block impact_list %}
+{% if object.tenant_users.exists %}
+<li><i class="fas fa-users text-warning me-2"></i>{{ object.tenant_users.count }} usuário(s) vinculado(s) serão desvinculados</li>
+{% endif %}
+{% endblock %}
+
+{% block confirmation_message %}
+{% if object.tenant_users.exists %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Atenção!</strong> Este departamento possui {{ object.tenant_users.count }} usuário(s) vinculado(s). Eles serão desvinculados automaticamente.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block cancel_url %}{% url 'core:department_detail' object.pk %}{% endblock %}

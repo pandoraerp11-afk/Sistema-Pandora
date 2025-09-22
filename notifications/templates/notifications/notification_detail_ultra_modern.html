@@ -1,0 +1,35 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% block title %}{{ notificacao.titulo }} - Detalhes{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-bell me-2 text-primary"></i>{{ notificacao.titulo }}</h5>
+      <div>
+        <a href="{% url 'notifications:notification_list' %}" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2"><small>Criada em {{ notificacao.created_at|date:"d/m/Y H:i" }}</small></p>
+      <div class="border rounded p-3 mb-3 bg-light">
+        {{ notificacao.mensagem|linebreaks|default:"(Sem mensagem)" }}
+      </div>
+      <dl class="row small">
+        <dt class="col-sm-3">Tipo</dt><dd class="col-sm-9">{{ notificacao.get_tipo_display }}</dd>
+        <dt class="col-sm-3">Prioridade</dt><dd class="col-sm-9">{{ notificacao.get_prioridade_display }}</dd>
+        <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ notificacao.get_status_display }}</dd>
+        {% if notificacao.data_leitura %}
+        <dt class="col-sm-3">Lida em</dt><dd class="col-sm-9">{{ notificacao.data_leitura|date:"d/m/Y H:i" }}</dd>
+        {% endif %}
+        {% if notificacao.data_expiracao %}
+        <dt class="col-sm-3">Expira em</dt><dd class="col-sm-9">{{ notificacao.data_expiracao|date:"d/m/Y H:i" }}</dd>
+        {% endif %}
+        {% if notificacao.url_acao %}
+        <dt class="col-sm-3">Ação</dt><dd class="col-sm-9"><a class="btn btn-outline-primary btn-sm" href="{{ notificacao.url_acao }}" target="_blank">Abrir</a></dd>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load agendamento_extras %}
+{% block page_icon %}fas fa-user-clock{% endblock %}
+{% block page_title %}Disponibilidades{% endblock %}
+{% block page_subtitle %}Janelas e capacidade por profissional{% endblock %}
+{% block list_actions %}
+  {# Mantém lógica original de permissão incluindo grupo AGENDAMENTOS_SECRETARIA #}
+  {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}
+    <a href="{% url 'agendamentos:disponibilidade-create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Nova</a>
+  {% endif %}
+{% endblock %}
+{% block add_url %}{% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}{% url 'agendamentos:disponibilidade-create' %}{% endif %}{% endblock %}
+{% block list_filters %}
+  <form method="get" class="row g-2">
+    <div class="col-md-2"><input type="date" name="data" value="{{ request.GET.data }}" class="form-control form-control-sm" /></div>
+    <div class="col-md-3">
+      <select name="profissional" class="form-select form-select-sm">
+        <option value="">Profissional...</option>
+        {% for p in profissionais %}
+          <option value="{{ p.0 }}" {% if request.GET.profissional == p.0|stringformat:'s' %}selected{% endif %}>{{ p.1 }} {{ p.2 }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid"><button class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+  </form>
+{% endblock %}
+{% block list_table %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light"><tr><th>Data</th><th>Profissional</th><th>Janela</th><th>Slot (min)</th><th>Cap/Slot</th><th>Ativo</th><th></th></tr></thead>
+      <tbody>
+      {% for d in object_list %}
+        <tr>
+          <td>{{ d.data|date:'d/m/Y' }}</td>
+          <td>{{ d.profissional }}</td>
+          <td>{{ d.hora_inicio }} - {{ d.hora_fim }}</td>
+          <td>{{ d.duracao_slot_minutos }}</td>
+          <td>{{ d.capacidade_por_slot }}</td>
+          <td>{% if d.ativo %}<span class="badge bg-success">Sim{% else %}<span class="badge bg-secondary">Não{% endif %}</span></td>
+          <td class="text-end"><a href="{% url 'agendamentos:disponibilidade-detail' d.id %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-3">Nenhuma disponibilidade.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+{% block list_pagination %}
+  {% if is_paginated %}
+    <ul class="pagination pagination-sm">{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>{% endif %}{% for num in paginator.page_range %}<li class="page-item {% if num == page_obj.number %}active{% endif %}"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>{% endfor %}{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>{% endif %}</ul>
+  {% endif %}
+{% endblock %}

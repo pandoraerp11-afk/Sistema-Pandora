@@ -1,0 +1,164 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Detalhes do Financeiro - {{ financeiro.descricao }}{% endblock %}
+
+{% block page_title %}Detalhes do Financeiro{% endblock %}
+{% block page_subtitle %}{{ financeiro.descricao }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:financeiro_list' %}">Financeiro</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ financeiro.descricao }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="page-actions">
+    <a href="{% url 'financeiro:financeiro_edit' financeiro.pk %}" 
+       class="btn btn-primary btn-modern">
+        <i class="fas fa-pencil-alt"></i>
+        Editar
+    </a>
+    <a href="{% url 'financeiro:financeiro_delete' financeiro.pk %}" 
+       class="btn btn-danger btn-modern">
+        <i class="fas fa-trash"></i>
+        Excluir
+    </a>
+    <a href="{% url 'financeiro:financeiro_list' %}" 
+       class="btn btn-outline-secondary btn-modern">
+        <i class="fas fa-arrow-left"></i>
+        Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 col-md-12">
+        <div class="card card-modern">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-coins me-2"></i>
+                    Informações Financeiras
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Descrição</label>
+                        <p class="form-control-plaintext">{{ financeiro.descricao }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Valor</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge {% if financeiro.tipo == 'receita' %}bg-success{% else %}bg-danger{% endif %} fs-6">
+                                R$ {{ financeiro.valor|floatformat:2 }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Data</label>
+                        <p class="form-control-plaintext">{{ financeiro.data|date:"d/m/Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Tipo</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge {% if financeiro.tipo == 'receita' %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ financeiro.get_tipo_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Categoria</label>
+                        <p class="form-control-plaintext">{{ financeiro.get_categoria_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Status</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge 
+                                {% if financeiro.status == 'pago' or financeiro.status == 'recebido' %}bg-success
+                                {% elif financeiro.status == 'pendente' %}bg-warning
+                                {% else %}bg-danger{% endif %}">
+                                {{ financeiro.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    {% if financeiro.obra %}
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Obra</label>
+                        <p class="form-control-plaintext">
+                            <a href="{{ financeiro.obra.get_absolute_url }}" class="text-primary text-decoration-none">
+                                {{ financeiro.obra }}
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% if financeiro.observacoes %}
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Observações</label>
+                        <p class="form-control-plaintext">{{ financeiro.observacoes|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-12">
+        <div class="card card-modern">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informações do Sistema
+                </h5>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">ID:</span>
+                        <span class="fw-medium">#{{ financeiro.pk }}</span>
+                    </div>
+                    {% if financeiro.criado_em %}
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Criado em:</span>
+                        <span class="fw-medium">{{ financeiro.criado_em|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if financeiro.atualizado_em %}
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Atualizado em:</span>
+                        <span class="fw-medium">{{ financeiro.atualizado_em|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card card-modern mt-3">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-cog me-2"></i>
+                    Ações Rápidas
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'financeiro:financeiro_edit' financeiro.pk %}" 
+                       class="btn btn-outline-primary btn-modern">
+                        <i class="fas fa-pencil-alt me-1"></i>
+                        Editar Financeiro
+                    </a>
+                    <a href="{% url 'financeiro:financeiro_add' %}" 
+                       class="btn btn-outline-success btn-modern">
+                        <i class="fas fa-plus-lg me-1"></i>
+                        Novo Financeiro
+                    </a>
+                    <a href="{% url 'financeiro:financeiro_list' %}" 
+                       class="btn btn-outline-secondary btn-modern">
+                        <i class="fas fa-bars me-1"></i>
+                        Listar Todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

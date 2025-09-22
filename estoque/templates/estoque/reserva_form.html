@@ -1,0 +1,505 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{# Título e configurações da página #}
+{% block title %}{% if object %}Editar Reserva #{{ object.codigo }}{% else %}Nova Reserva de Estoque{% endif %}{% endblock %}
+
+{# Header do formulário #}
+{% block form_icon %}<i class="fas fa-hand-holding me-2 text-warning"></i>{% endblock %}
+{% block form_title %}{% if object %}Editar Reserva #{{ object.codigo }}{% else %}Nova Reserva de Estoque{% endif %}{% endblock %}
+{% block form_subtitle %}{% if object %}Modifique os dados da reserva existente{% else %}Crie uma nova reserva para garantir disponibilidade do produto{% endif %}{% endblock %}
+
+{# Breadcrumbs #}
+{% block breadcrumbs %}
+    <li class="breadcrumb-item">
+        <a href="{% url 'estoque:estoque_home' %}">
+            <i class="fas fa-warehouse me-1"></i>Estoque
+        </a>
+    </li>
+    <li class="breadcrumb-item">
+        <a href="{% url 'estoque:reservas_list' %}">Reservas</a>
+    </li>
+    <li class="breadcrumb-item active">
+        {% if object %}Editar #{{ object.codigo }}{% else %}Nova Reserva{% endif %}
+    </li>
+{% endblock %}
+
+{# Botões de ação no header #}
+{% block form_header_actions %}
+    <a href="{% url 'estoque:reservas_list' %}" class="btn btn-gradient-secondary me-2" data-bs-toggle="tooltip" title="Voltar à Lista">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+    </a>
+    {% if object %}
+        <a href="{% url 'estoque:reserva_detail' object.pk %}" class="btn btn-gradient-info me-2" data-bs-toggle="tooltip" title="Visualizar Detalhes">
+            <i class="fas fa-eye me-1"></i>Visualizar
+        </a>
+    {% endif %}
+{% endblock %}
+
+{# Progresso do wizard (se aplicável) #}
+{% block form_progress %}
+    <div class="progress-wizard" data-aos="fade-up">
+        <div class="progress-step {% if step >= 1 %}active{% endif %}">
+            <div class="step-circle">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <span class="step-label">Informações Básicas</span>
+        </div>
+        <div class="progress-step {% if step >= 2 %}active{% endif %}">
+            <div class="step-circle">
+                <i class="fas fa-cube"></i>
+            </div>
+            <span class="step-label">Produto & Depósito</span>
+        </div>
+        <div class="progress-step {% if step >= 3 %}active{% endif %}">
+            <div class="step-circle">
+                <i class="fas fa-clock"></i>
+            </div>
+            <span class="step-label">Prazo & Prioridade</span>
+        </div>
+        <div class="progress-step {% if step >= 4 %}active{% endif %}">
+            <div class="step-circle">
+                <i class="fas fa-check"></i>
+            </div>
+            <span class="step-label">Confirmação</span>
+        </div>
+    </div>
+{% endblock %}
+
+{# Formulário principal #}
+{% block form_content %}
+    <form method="post" id="reserva-form" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        {# Seção 1: Informações Básicas #}
+        <div class="form-section" data-aos="fade-up">
+            <div class="section-header">
+                <h4 class="section-title">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    Informações Básicas
+                </h4>
+                <p class="section-subtitle text-muted">Defina os dados principais da reserva</p>
+            </div>
+
+            <div class="row g-3">
+                {% if object.codigo %}
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Código da Reserva</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                            <input type="text" class="form-control" value="{{ object.codigo }}" readonly>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="col-md-{% if object.codigo %}4{% else %}6{% endif %}">
+                    <label for="{{ form.prioridade.id_for_label }}" class="form-label fw-semibold required">
+                        Prioridade
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-flag"></i></span>
+                        {{ form.prioridade|add_class:"form-select form-select-modern" }}
+                    </div>
+                    {% if form.prioridade.errors %}
+                        <div class="invalid-feedback d-block">{{ form.prioridade.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-{% if object.codigo %}4{% else %}6{% endif %}">
+                    <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-semibold">
+                        Responsável
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        {{ form.responsavel|add_class:"form-select form-select-modern" }}
+                    </div>
+                    {% if form.responsavel.errors %}
+                        <div class="invalid-feedback d-block">{{ form.responsavel.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Seção 2: Produto e Local #}
+        <div class="form-section" data-aos="fade-up" data-aos-delay="100">
+            <div class="section-header">
+                <h4 class="section-title">
+                    <i class="fas fa-cube me-2 text-primary"></i>
+                    Produto e Local
+                </h4>
+                <p class="section-subtitle text-muted">Selecione o produto e local de armazenagem</p>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.produto.id_for_label }}" class="form-label fw-semibold required">
+                        Produto
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-cube"></i></span>
+                        {{ form.produto|add_class:"form-select form-select-modern" }}
+                        <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#produtoInfoModal" id="btn-info-produto">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                    {% if form.produto.errors %}
+                        <div class="invalid-feedback d-block">{{ form.produto.errors.0 }}</div>
+                    {% endif %}
+                    <div id="produto-info" class="mt-2 d-none">
+                        <div class="alert alert-info">
+                            <div id="produto-detalhes"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="{{ form.deposito.id_for_label }}" class="form-label fw-semibold required">
+                        Depósito
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-warehouse"></i></span>
+                        {{ form.deposito|add_class:"form-select form-select-modern" }}
+                    </div>
+                    {% if form.deposito.errors %}
+                        <div class="invalid-feedback d-block">{{ form.deposito.errors.0 }}</div>
+                    {% endif %}
+                    <div id="deposito-info" class="mt-2 d-none">
+                        <div class="alert alert-warning">
+                            <div id="saldo-disponivel"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="{{ form.quantidade.id_for_label }}" class="form-label fw-semibold required">
+                        Quantidade a Reservar
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                        {{ form.quantidade|add_class:"form-control form-control-modern" }}
+                        <span class="input-group-text" id="unidade-medida">UN</span>
+                    </div>
+                    {% if form.quantidade.errors %}
+                        <div class="invalid-feedback d-block">{{ form.quantidade.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label for="{{ form.valor_unitario.id_for_label }}" class="form-label fw-semibold">
+                        Valor Unitário (Opcional)
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        {{ form.valor_unitario|add_class:"form-control form-control-modern" }}
+                    </div>
+                    {% if form.valor_unitario.errors %}
+                        <div class="invalid-feedback d-block">{{ form.valor_unitario.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Seção 3: Prazo e Observações #}
+        <div class="form-section" data-aos="fade-up" data-aos-delay="200">
+            <div class="section-header">
+                <h4 class="section-title">
+                    <i class="fas fa-clock me-2 text-primary"></i>
+                    Prazo e Detalhes
+                </h4>
+                <p class="section-subtitle text-muted">Configure o prazo de validade e observações</p>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.data_expiracao.id_for_label }}" class="form-label fw-semibold">
+                        Data de Expiração
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-calendar-times"></i></span>
+                        {{ form.data_expiracao|add_class:"form-control form-control-modern datetimepicker" }}
+                    </div>
+                    {% if form.data_expiracao.errors %}
+                        <div class="invalid-feedback d-block">{{ form.data_expiracao.errors.0 }}</div>
+                    {% endif %}
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Deixe vazio para reserva sem prazo definido
+                    </small>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Ações Rápidas de Prazo</label>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="setPrazo(1)">
+                            <i class="fas fa-clock me-1"></i>1 dia
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="setPrazo(7)">
+                            <i class="fas fa-clock me-1"></i>7 dias
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="setPrazo(30)">
+                            <i class="fas fa-clock me-1"></i>30 dias
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limparPrazo()">
+                            <i class="fas fa-times me-1"></i>Sem prazo
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
+                        Observações
+                    </label>
+                    {{ form.observacoes|add_class:"form-control form-control-modern"|attr:"rows:3" }}
+                    {% if form.observacoes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+                    {% endif %}
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Informações adicionais sobre a finalidade da reserva
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        {# Botões de ação do formulário #}
+        <div class="form-actions" data-aos="fade-up" data-aos-delay="300">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{% url 'estoque:reservas_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </a>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-info" onclick="validarSaldo()">
+                        <i class="fas fa-check-circle me-1"></i>Validar Disponibilidade
+                    </button>
+                    <button type="submit" class="btn btn-gradient-warning">
+                        <i class="fas fa-save me-1"></i>
+                        {% if object %}Atualizar Reserva{% else %}Criar Reserva{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{# Modal para informações do produto #}
+{% block form_modals %}
+    <div class="modal fade" id="produtoInfoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-cube me-2 text-primary"></i>
+                        Informações do Produto
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="produto-modal-body">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Scripts personalizados #}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Configurar datetime picker
+    $('.datetimepicker').flatpickr({
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        locale: "pt",
+        minDate: "today",
+        onOpen: function(selectedDates, dateStr, instance) {
+            // Destacar o campo ativo
+            instance.input.style.borderColor = '#0d6efd';
+        },
+        onClose: function(selectedDates, dateStr, instance) {
+            instance.input.style.borderColor = '';
+        }
+    });
+    
+    // Validação personalizada do formulário
+    const form = document.getElementById('reserva-form');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            // Validar disponibilidade antes do submit
+            const produto = document.getElementById('id_produto').value;
+            const deposito = document.getElementById('id_deposito').value;
+            const quantidade = parseFloat(document.getElementById('id_quantidade').value || 0);
+            
+            if (produto && deposito && quantidade > 0) {
+                event.preventDefault();
+                validarESubmeter();
+            }
+        }
+        form.classList.add('was-validated');
+    });
+    
+    // Atualizar informações quando produto/deposito mudar
+    document.getElementById('id_produto').addEventListener('change', atualizarInfoProduto);
+    document.getElementById('id_deposito').addEventListener('change', atualizarSaldoDisponivel);
+    
+    // Funções auxiliares
+    window.setPrazo = function(dias) {
+        const agora = new Date();
+        agora.setDate(agora.getDate() + dias);
+        const dataFormatada = agora.getFullYear() + '-' + 
+            String(agora.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(agora.getDate()).padStart(2, '0') + ' ' +
+            String(agora.getHours()).padStart(2, '0') + ':' +
+            String(agora.getMinutes()).padStart(2, '0');
+        
+        document.getElementById('id_data_expiracao').value = dataFormatada;
+        document.getElementById('id_data_expiracao')._flatpickr?.setDate(dataFormatada);
+    };
+    
+    window.limparPrazo = function() {
+        document.getElementById('id_data_expiracao').value = '';
+        document.getElementById('id_data_expiracao')._flatpickr?.clear();
+    };
+    
+    window.validarSaldo = function() {
+        const produto = document.getElementById('id_produto').value;
+        const deposito = document.getElementById('id_deposito').value;
+        const quantidade = parseFloat(document.getElementById('id_quantidade').value || 0);
+        
+        if (!produto || !deposito) {
+            alert('Selecione produto e depósito primeiro.');
+            return;
+        }
+        
+        if (quantidade <= 0) {
+            alert('Informe uma quantidade válida.');
+            return;
+        }
+        
+        // Fazer requisição AJAX para verificar disponibilidade
+        fetch(`/estoque/api/saldo-disponivel/${produto}/${deposito}/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.disponivel >= quantidade) {
+                if (window.PandoraNotif) {
+                    PandoraNotif.toast(`✓ Disponível: ${data.disponivel} unidades`, 'success', 3000);
+                }
+            } else {
+                if (window.PandoraNotif) {
+                    PandoraNotif.toast(`⚠ Apenas ${data.disponivel} unidades disponíveis`, 'warning', 5000);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao validar saldo:', error);
+            alert('Erro ao verificar disponibilidade.');
+        });
+    };
+    
+    function atualizarInfoProduto() {
+        const produtoId = this.value;
+        const infoDiv = document.getElementById('produto-info');
+        const detalhesDiv = document.getElementById('produto-detalhes');
+        const unidadeSpan = document.getElementById('unidade-medida');
+        
+        if (!produtoId) {
+            infoDiv.classList.add('d-none');
+            unidadeSpan.textContent = 'UN';
+            return;
+        }
+        
+        fetch(`/estoque/api/produto-info/${produtoId}/`)
+            .then(response => response.json())
+            .then(data => {
+                detalhesDiv.innerHTML = `
+                    <strong>${data.nome}</strong><br>
+                    <small>Código: ${data.codigo || '—'}</small><br>
+                    <small>Unidade: ${data.unidade_medida}</small>
+                `;
+                unidadeSpan.textContent = data.unidade_medida;
+                infoDiv.classList.remove('d-none');
+            })
+            .catch(error => {
+                console.error('Erro ao buscar info do produto:', error);
+                infoDiv.classList.add('d-none');
+            });
+    }
+    
+    function atualizarSaldoDisponivel() {
+        const produtoId = document.getElementById('id_produto').value;
+        const depositoId = this.value;
+        const infoDiv = document.getElementById('deposito-info');
+        const saldoDiv = document.getElementById('saldo-disponivel');
+        
+        if (!produtoId || !depositoId) {
+            infoDiv.classList.add('d-none');
+            return;
+        }
+        
+        fetch(`/estoque/api/saldo-disponivel/${produtoId}/${depositoId}/`)
+            .then(response => response.json())
+            .then(data => {
+                saldoDiv.innerHTML = `
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Saldo disponível:</strong> ${data.disponivel} unidades<br>
+                    <small>Total: ${data.total} | Reservado: ${data.reservado}</small>
+                `;
+                infoDiv.classList.remove('d-none');
+                
+                // Definir quantidade máxima
+                const quantidadeInput = document.getElementById('id_quantidade');
+                quantidadeInput.setAttribute('max', data.disponivel);
+            })
+            .catch(error => {
+                console.error('Erro ao buscar saldo:', error);
+                infoDiv.classList.add('d-none');
+            });
+    }
+    
+    function validarESubmeter() {
+        validarSaldo();
+        
+        setTimeout(() => {
+            if (confirm('Confirma a criação desta reserva?')) {
+                document.getElementById('reserva-form').submit();
+            }
+        }, 1000);
+    }
+    
+    // Inicializar campos se já preenchidos
+    if (document.getElementById('id_produto').value) {
+        atualizarInfoProduto.call(document.getElementById('id_produto'));
+    }
+    if (document.getElementById('id_deposito').value) {
+        atualizarSaldoDisponivel.call(document.getElementById('id_deposito'));
+    }
+});
+</script>
+{% endblock %}

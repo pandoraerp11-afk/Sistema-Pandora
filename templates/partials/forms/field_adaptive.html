@@ -1,0 +1,49 @@
+{# Template de campo adaptativo - versão corrigida e simplificada #}
+{% load widget_tweaks %}
+
+{# Determina o tamanho do campo baseado no tipo e nome #}
+{% if field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'radio' %}
+    {% with field_size="xs" max_chars="1" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif field.field.widget.input_type == 'date' or field.field.widget.input_type == 'time' %}
+    {% with field_size="sm" max_chars="10" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif 'cpf' in field.name|lower %}
+    {% with field_size="sm" max_chars="14" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif 'cnpj' in field.name|lower %}
+    {% with field_size="md" max_chars="18" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif 'rg' in field.name|lower %}
+    {% with field_size="sm" max_chars="12" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif 'cep' in field.name|lower %}
+    {% with field_size="xs" max_chars="9" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif 'telefone' in field.name|lower or 'celular' in field.name|lower or field.field.widget.input_type == 'tel' %}
+    {% with field_size="sm" max_chars="15" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif 'email' in field.name|lower or field.field.widget.input_type == 'email' %}
+    {% with field_size="lg" max_chars="50" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif field.field.widget.input_type == 'url' %}
+    {% with field_size="xl" max_chars="100" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% elif 'observacoes' in field.name|lower or 'descricao' in field.name|lower %}
+    {% with field_size="full" max_chars="500" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% else %}
+    {% with field_size="md" max_chars="40" %}
+        {% include "partials/forms/field_adaptive_content.html" %}
+    {% endwith %}
+{% endif %}

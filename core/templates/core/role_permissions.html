@@ -1,0 +1,216 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Permissões - {{ role.name }} - Pandora ERP{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-key me-2 text-primary"></i>
+Permissões para {{ role.name }}
+{% endblock %}
+
+{% block page_subtitle %}Configure as permissões específicas para este cargo{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'core:role_detail' role.pk %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>
+    Voltar
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold text-primary">{{ role.permissions.count }}</div>
+                    <div class="text-muted">Permissões Atribuídas</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold text-success">{{ total_permissions|default:0 }}</div>
+                    <div class="text-muted">Total Disponível</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold text-info">{{ role.customuser_set.count }}</div>
+                    <div class="text-muted">Usuários Afetados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold text-warning">{{ apps_count|default:0 }}</div>
+                    <div class="text-muted">Módulos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permissions Management -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0 fw-bold">
+                <i class="fas fa-cogs me-2"></i>
+                Gerenciamento de Permissões
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Search and Actions -->
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="permission-search" placeholder="Buscar permissões...">
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="selectAll()">
+                            <i class="fas fa-check-double me-1"></i>
+                            Selecionar Todas
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAll()">
+                            <i class="fas fa-times me-1"></i>
+                            Limpar Seleção
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions Form -->
+            <form method="post" id="permissions-form">
+                {% csrf_token %}
+                
+                <!-- Permissions by App -->
+                {% regroup all_permissions by content_type.app_label as grouped_permissions %}
+                {% for app_group in grouped_permissions %}
+                <div class="permission-group mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold text-primary mb-0">
+                            <i class="fas fa-cube me-2"></i>
+                            {{ app_group.grouper|title }}
+                        </h6>
+                        <div>
+                            <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="selectAppPermissions('{{ app_group.grouper }}', true)">
+                                <i class="fas fa-check me-1"></i>
+                                Todas
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAppPermissions('{{ app_group.grouper }}', false)">
+                                <i class="fas fa-times me-1"></i>
+                                Nenhuma
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-2" data-app="{{ app_group.grouper }}">
+                        {% for permission in app_group.list %}
+                        <div class="col-lg-4 col-md-6">
+                            <div class="form-check p-3 border rounded">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="perm_{{ permission.id }}" 
+                                       name="permissions" 
+                                       value="{{ permission.id }}"
+                                       {% if permission in role.permissions.all %}checked{% endif %}>
+                                <label class="form-check-label w-100" for="perm_{{ permission.id }}">
+                                    <div class="fw-bold">{{ permission.name }}</div>
+                                    <small class="text-muted">{{ permission.content_type.model }}</small>
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Save Button -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>
+                        Salvar Permissões
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('permission-search');
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const permissionGroups = document.querySelectorAll('.permission-group');
+        
+        permissionGroups.forEach(group => {
+            const checkboxes = group.querySelectorAll('.form-check');
+            let hasVisibleItems = false;
+            
+            checkboxes.forEach(checkbox => {
+                const label = checkbox.querySelector('label');
+                const text = label.textContent.toLowerCase();
+                
+                if (text.includes(searchTerm)) {
+                    checkbox.style.display = 'block';
+                    hasVisibleItems = true;
+                } else {
+                    checkbox.style.display = 'none';
+                }
+            });
+            
+            group.style.display = hasVisibleItems ? 'block' : 'none';
+        });
+    });
+});
+
+// Select all permissions
+function selectAll() {
+    const checkboxes = document.querySelectorAll('input[name="permissions"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+// Clear all permissions
+function clearAll() {
+    const checkboxes = document.querySelectorAll('input[name="permissions"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+
+// Select permissions for specific app
+function selectAppPermissions(appName, select) {
+    const appGroup = document.querySelector(`[data-app="${appName}"]`);
+    const checkboxes = appGroup.querySelectorAll('input[name="permissions"]');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = select;
+    });
+}
+</script>
+{% endblock %}

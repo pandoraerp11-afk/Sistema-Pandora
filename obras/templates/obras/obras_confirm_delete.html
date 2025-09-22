@@ -1,0 +1,36 @@
+{% extends "pandora_confirm_delete_ultra_modern.html" %}
+
+{% block title %}Excluir Obra - {{ obra.nome }}{% endblock %}
+
+{% block delete_icon %}fas fa-exclamation-triangle{% endblock %}
+{% block delete_title %}Confirmar Exclusão{% endblock %}
+{% block delete_subtitle %}Esta ação não pode ser desfeita{% endblock %}
+
+{% block delete_object_info %}
+<div class="alert alert-warning">
+    <h6 class="mb-2"><i class="fas fa-exclamation-circle me-2"></i> Atenção</h6>
+    <p class="mb-0">Você está prestes a excluir a obra <strong>{{ obra.nome }}</strong>.</p>
+    <small class="text-muted">Esta ação é irreversível.</small>
+    <hr class="my-2">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Cliente:</dt>
+        <dd class="col-sm-9">{{ obra.cliente.nome_display|default:"Não informado" }}</dd>
+        <dt class="col-sm-3">Endereço:</dt>
+        <dd class="col-sm-9">{{ obra.endereco }}, {{ obra.cidade }} - {{ obra.estado }}</dd>
+    </dl>
+ </div>
+{% endblock %}
+
+{% block delete_form %}
+<form method="post">
+    {% csrf_token %}
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'obras:obra_detail' obra.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-2"></i> Sim, Excluir
+        </button>
+    </div>
+</form>
+{% endblock %}

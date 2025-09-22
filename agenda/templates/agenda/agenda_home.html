@@ -1,0 +1,290 @@
+{% extends "pandora_home_ultra_modern.html" %}
+
+{% block page_icon %}{% block home_icon %}<i class="fas fa-calendar-alt me-2 text-primary"></i>{% endblock %}{% endblock %}
+{% block page_title %}{% block home_title %}{{ titulo|default:'Agenda' }}{% endblock %}{% endblock %}
+{% block page_subtitle %}{% block home_subtitle %}{{ subtitulo|default:'Visão geral da agenda' }}{% endblock %}{% endblock %}
+
+{% block home_stats %}
+<div class="mb-5">
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-chart-bar me-2 text-primary"></i>
+        Visão Geral
+    </h2>
+    <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <a href="{% url 'agenda:evento_list' %}" class="text-decoration-none">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-primary mb-1">{{ total_eventos|default:0 }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">Total de Eventos</p>
+                        <small class="text-muted">Cadastrados</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <a href="{% url 'agenda:evento_list' %}" class="text-decoration-none">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-success mb-1">{{ eventos_hoje|default:0 }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">Eventos Hoje</p>
+                        <small class="text-muted">Agendados</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <a href="{% url 'agenda:evento_list' %}?status=pendente" class="text-decoration-none">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-warning mb-1">{{ eventos_pendentes|default:0 }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">Pendentes</p>
+                        <small class="text-muted">Aguardando</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <a href="{% url 'agenda:eventos_relatorio' %}" class="text-decoration-none">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-info mb-1">{{ taxa_conclusao|default:0 }}%</h3>
+                        <p class="text-muted mb-1 fw-semibold">Taxa de Conclusão</p>
+                        <small class="text-muted">Último período</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_actions %}
+<div class="mb-5">
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-bolt me-2 text-primary"></i>
+        Ações Rápidas
+    </h2>
+    <div class="row g-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="300">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">Novo Evento</h4>
+                    <p class="text-muted mb-4">Crie um novo compromisso</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{% url 'agenda:evento_create' %}" class="btn btn-primary btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-plus me-1"></i>Criar
+                        </a>
+                        <a href="{% url 'agenda:evento_list' %}" class="btn btn-outline-primary btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-list me-1"></i>Listar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="400">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">Calendário</h4>
+                    <p class="text-muted mb-4">Visualize seus eventos no mês</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{% url 'agenda:agenda_calendar' %}" class="btn btn-success btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-calendar-alt me-1"></i>Abrir
+                        </a>
+                        <a href="{% url 'agenda:evento_list' %}" class="btn btn-outline-success btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-list me-1"></i>Eventos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="500">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">Gerenciar Eventos</h4>
+                    <p class="text-muted mb-4">Listagem e filtros avançados</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{% url 'agenda:evento_create' %}" class="btn btn-warning btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-plus me-1"></i>Novo
+                        </a>
+                        <a href="{% url 'agenda:evento_list' %}" class="btn btn-outline-warning btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-filter me-1"></i>Listar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="600">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-danger text-white mx-auto mb-3">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">Relatórios</h4>
+                    <p class="text-muted mb-4">Indicadores da agenda</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{% url 'agenda:eventos_relatorio' %}" class="btn btn-danger btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-chart-line me-1"></i>Ver
+                        </a>
+                        <a href="{% url 'agenda:eventos_relatorio' %}" class="btn btn-outline-danger btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-download me-1"></i>Export
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_recent %}
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="action-card h-100">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-3 d-flex align-items-center">
+                    <i class="fas fa-calendar-check me-2 text-primary"></i>
+                    Próximos 7 dias
+                </h5>
+                {% for evento in proximos_eventos %}
+                <div class="recent-item">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="activity-content">
+                            <div class="activity-title">{{ evento.titulo|truncatechars:60 }}</div>
+                            <div class="activity-description text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ evento.data_inicio|date:"d/m/Y H:i" }}
+                                {% if evento.tipo_evento %}
+                                <span class="ms-2"><i class="fas fa-tag me-1"></i>{{ evento.get_tipo_evento_display }}</span>
+                                {% endif %}
+                                {% if evento.local %}
+                                <span class="ms-2"><i class="fas fa-map-marker-alt me-1"></i>{{ evento.local|truncatechars:32 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            {% if evento.prioridade == 'alta' %}
+                                <span class="badge bg-danger mb-2">Alta</span>
+                            {% elif evento.prioridade == 'media' %}
+                                <span class="badge bg-warning mb-2">Média</span>
+                            {% else %}
+                                <span class="badge bg-success mb-2">Baixa</span>
+                            {% endif %}
+                            <div>
+                                <a href="{% url 'agenda:evento_detail' evento.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">Nenhum evento próximo</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="action-card h-100">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-3 d-flex align-items-center">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Eventos recentes
+                </h5>
+                {% for evento in eventos_recentes %}
+                <div class="recent-item">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="activity-content">
+                            <div class="activity-title">
+                                <a href="{% url 'agenda:evento_detail' evento.pk %}" class="text-decoration-none">{{ evento.titulo|truncatechars:60 }}</a>
+                            </div>
+                            <div class="activity-description text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ evento.data_inicio|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            {% if evento.status == 'realizado' or evento.status == 'concluido' %}
+                                <span class="badge bg-success">Concluído</span>
+                            {% elif evento.status == 'confirmado' %}
+                                <span class="badge bg-info">Confirmado</span>
+                            {% elif evento.status == 'cancelado' %}
+                                <span class="badge bg-danger">Cancelado</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pendente</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">Nenhum evento recente</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2"></i>Distribuição por Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for status_data in eventos_por_status %}
+                    <div class="col-6 col-md-4">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <span class="badge me-2" style="background-color: {{ status_data.color }};">&nbsp;</span>
+                            <div>
+                                <div class="small">{{ status_data.status }}</div>
+                                <div class="fw-semibold">{{ status_data.count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="action-card h-100">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-3 d-flex align-items-center">
+                    <i class="fas fa-trophy me-2 text-primary"></i>
+                    Top Responsáveis
+                </h5>
+                {% for r in top_responsaveis %}
+                <div class="recent-item">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="fw-semibold">{{ r.responsavel__first_name }} {{ r.responsavel__last_name }}</div>
+                        <span class="badge bg-primary">{{ r.total_eventos }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">Nenhum dado disponível</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

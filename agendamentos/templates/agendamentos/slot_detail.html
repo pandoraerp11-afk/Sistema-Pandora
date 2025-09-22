@@ -1,0 +1,84 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static humanize agendamento_extras %}
+{% block title %}Slot #{{ slot.id }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="fw-semibold mb-0"><i class="fas fa-clock me-2 text-primary"></i>Slot #{{ object.id }}</h2>
+  <a href="{% url 'agendamentos:slot-list' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i></a>
+  </div>
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Dados</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-3">Horário</dt><dd class="col-sm-9">{{ object.horario|date:'d/m/Y H:i' }}</dd>
+            <dt class="col-sm-3">Profissional</dt><dd class="col-sm-9">{{ object.profissional }}</dd>
+            <dt class="col-sm-3">Capacidade</dt><dd class="col-sm-9">{{ object.capacidade_total }}</dd>
+            <dt class="col-sm-3">Utilizada</dt><dd class="col-sm-9">{{ object.capacidade_utilizada }}</dd>
+            <dt class="col-sm-3">Disponível</dt><dd class="col-sm-9">{% if object.disponivel %}<span class="badge bg-success">Sim{% else %}<span class="badge bg-danger">Não{% endif %}</span></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span>Agendamentos no Slot</span>
+          {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}
+            <a href="{% url 'agendamentos:agendamento-create' %}?slot={{ object.id }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus"></i></a>
+          {% endif %}
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light"><tr><th>ID</th><th>Cliente</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {% for ag in agendamentos %}
+              <tr>
+                <td>#{{ ag.id }}</td>
+                <td>{{ ag.cliente }}</td>
+                <td><span class="badge bg-{% if ag.status == 'CONFIRMADO' %}success{% elif ag.status == 'PENDENTE' %}secondary{% elif ag.status == 'CANCELADO' %}danger{% elif ag.status == 'EM_ANDAMENTO' %}info{% elif ag.status == 'CONCLUIDO' %}primary{% elif ag.status == 'NO_SHOW' %}warning text-dark{% else %}light{% endif %}">{{ ag.status }}</span></td>
+                <td class="text-end"><a href="{% url 'agendamentos:agendamento-detail' ag.id %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">Nenhum agendamento.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+  {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}
+  <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold"><i class="fas fa-bolt me-2"></i>Agendamento Rápido</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'agendamentos:agendamento-create' %}">
+            {% csrf_token %}
+            <input type="hidden" name="slot" value="{{ object.id }}" />
+            <div class="mb-2">
+              <label class="form-label small mb-1">Cliente</label>
+              <select name="cliente" class="form-select form-select-sm" required>
+                <option value="">...</option>
+                {% for c in clientes %}<option value="{{ c.id }}">{{ c }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small mb-1">Serviço</label>
+              <select name="servico" class="form-select form-select-sm">
+                <option value="">...</option>
+                {% comment %}Carregado via JS/Contexto de serviços ativos{% endcomment %}
+              </select>
+              <small class="text-muted">(opcional se não for obrigatório)</small>
+            </div>
+            <div class="d-grid">
+              <button class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Criar</button>
+            </div>
+          </form>
+        </div>
+  </div>
+  {% endif %}
+      {% include 'agendamentos/partials_waitlist.html' with waitlist=waitlist slot=object clientes=clientes %}
+    </div>
+  </div>
+</div>
+{% endblock %}

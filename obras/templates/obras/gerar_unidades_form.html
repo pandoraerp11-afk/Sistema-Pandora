@@ -1,0 +1,9 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% block title %}Gerar Unidades - {{ obra.nome }}{% endblock %}
+{% block page_title %}Gerar Unidades{% endblock %}
+{% block page_subtitle %}Crie rapidamente as unidades por andar e modelo{% endblock %}
+{% block form_content %}
+{% with form_icon='fas fa-clone' form_title='Gerar Unidades em Massa' form_subtitle='Crie rapidamente as unidades por andar e modelo' save_label='Gerar' %}
+	{% include 'partials/forms/form_renderer.html' %}
+{% endwith %}
+{% endblock %}

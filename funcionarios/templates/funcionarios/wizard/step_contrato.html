@@ -1,0 +1,224 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Alerta Informativo -->
+<div class="alert alert-info border-0 mb-4 wizard-alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-briefcase text-info me-3" style="font-size:1.5rem;"></i>
+    <div>
+      <h6 class="mb-1 text-info">Contrato, Jornada & Remuneração</h6>
+      <small class="text-muted">Preencha os dados contratuais, horários de trabalho e informações salariais/bancárias.</small>
+    </div>
+  </div>
+</div>
+
+<!-- Dados Contratuais -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-file-signature wizard-icon"></i>Dados Contratuais</h5>
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.data_admissao field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.tipo_contrato field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.cargo field_size='md' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.departamento field_size='md' hide_help_text=True %}
+  {% include 'core/wizard/wizard_field.html' with field=forms.main.salario_base field_size='sm' hide_help_text=True %}
+  {% include 'core/wizard/wizard_field.html' with field=forms.main.cnpj_prestador field_size='md' hide_help_text=True %}
+  {% include 'core/wizard/wizard_field.html' with field=forms.main.pj_categoria field_size='sm' hide_help_text=True %}
+  </div>
+</div>
+
+<!-- Jornada de Trabalho Simplificada (campo legado) -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-business-time wizard-icon"></i>Jornada de Trabalho (Resumo)</h5>
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.jornada_trabalho_horas field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.horario_entrada field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.horario_saida field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.intervalo_inicio field_size='sm' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.intervalo_fim field_size='sm' hide_help_text=True %}
+  </div>
+  <small class="text-muted">Use a grade detalhada abaixo para horários por dia e múltiplos blocos.</small>
+</div>
+
+<!-- Grade Detalhada de Horários Semanais -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-calendar-week wizard-icon"></i>Grade Detalhada Semanal</h5>
+  <input type="hidden" id="id_horarios_json" name="horarios_json" value="{{ forms.main.horarios_json.value|default:'' }}" />
+  <div class="table-responsive mb-2">
+    <table class="table table-sm align-middle table-striped" id="tabela-horarios">
+      <thead class="table-light">
+        <tr>
+          <th>Dia</th>
+          <th>Bloco</th>
+          <th>Entrada</th>
+          <th>Saída</th>
+          <th>Intervalo Início</th>
+            <th>Intervalo Fim</th>
+          <th>Horas</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <div class="input-group input-group-sm" style="max-width:140px;">
+      <label class="input-group-text">Dia</label>
+      <select class="form-select" id="horario-dia">
+        <option value="0">Segunda</option>
+        <option value="1">Terça</option>
+        <option value="2">Quarta</option>
+        <option value="3">Quinta</option>
+        <option value="4">Sexta</option>
+        <option value="5">Sábado</option>
+        <option value="6">Domingo</option>
+      </select>
+    </div>
+    <div class="input-group input-group-sm" style="max-width:120px;">
+      <label class="input-group-text">Bloco</label>
+      <input type="number" min="1" value="1" class="form-control" id="horario-ordem" />
+    </div>
+    <div class="input-group input-group-sm" style="max-width:130px;">
+      <label class="input-group-text">Entrada</label>
+      <input type="time" class="form-control" id="horario-entrada" />
+    </div>
+    <div class="input-group input-group-sm" style="max-width:130px;">
+      <label class="input-group-text">Saída</label>
+      <input type="time" class="form-control" id="horario-saida" />
+    </div>
+    <div class="input-group input-group-sm" style="max-width:150px;">
+      <label class="input-group-text">Int. Início</label>
+      <input type="time" class="form-control" id="horario-int-inicio" />
+    </div>
+    <div class="input-group input-group-sm" style="max-width:150px;">
+      <label class="input-group-text">Int. Fim</label>
+      <input type="time" class="form-control" id="horario-int-fim" />
+    </div>
+    <button type="button" class="btn btn-sm btn-primary" id="btn-add-horario"><i class="fas fa-plus"></i> Adicionar</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-copiar-seg-sex" title="Copiar padrão Seg-Sex"><i class="fas fa-clone"></i> Replicar Seg→Sex</button>
+  </div>
+  <small class="text-muted d-block mt-1">Adicione blocos (ex: manhã/tarde). Deixe vazio para dias não trabalhados.</small>
+</div>
+
+<!-- Salário & Bancários -->
+<div class="wizard-section">
+  <h5 class="wizard-section-title"><i class="fas fa-money-bill-wave wizard-icon"></i>Salário & Bancários</h5>
+  <div class="row">
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.banco field_size='md' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.agencia field_size='xs' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.conta field_size='xs' hide_help_text=True %}
+    {% include 'core/wizard/wizard_field.html' with field=forms.main.tipo_conta field_size='sm' hide_help_text=True %}
+  </div>
+</div>
+
+<script>
+  (function(){
+    // Exibir/ocultar campo CNPJ conforme tipo contrato PJ
+    function toggleCNPJ(){
+      const tipo = document.getElementById('id_tipo_contrato');
+      const cnpjWrapper = document.getElementById('id_cnpj_prestador')?.closest('.wizard-field-wrapper');
+      const catWrapper = document.getElementById('id_pj_categoria')?.closest('.wizard-field-wrapper');
+      if(!tipo || !cnpjWrapper) return;
+      if(tipo.value === 'PJ') {
+        cnpjWrapper.style.display='';
+        if(catWrapper) catWrapper.style.display='';
+      } else {
+        cnpjWrapper.style.display='none';
+        if(catWrapper) catWrapper.style.display='none';
+        const inp = document.getElementById('id_cnpj_prestador'); if(inp) inp.value='';
+        const cat = document.getElementById('id_pj_categoria'); if(cat) cat.value='';
+      }
+    }
+    document.addEventListener('change', function(e){ if(e.target.id==='id_tipo_contrato') toggleCNPJ(); });
+    toggleCNPJ();
+    // Máscara simples de CNPJ
+    const cnpjInput = document.getElementById('id_cnpj_prestador');
+    if(cnpjInput){
+      cnpjInput.addEventListener('input', function(){
+        let v = this.value.replace(/\D/g,'').slice(0,14);
+        if(v.length>=3) v = v.replace(/^(\d{2})(\d)/,'$1.$2');
+        if(v.length>=6) v = v.replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3');
+        if(v.length>=9) v = v.replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/,'$1.$2.$3/$4');
+        if(v.length>=13) v = v.replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/,'$1.$2.$3/$4-$5');
+        this.value = v;
+      });
+    }
+    const hidden = document.getElementById('id_horarios_json');
+    let itens = [];
+    try { if (hidden.value) itens = JSON.parse(hidden.value); } catch(e) { itens = []; }
+
+    function calcHoras(item){
+      if(!item.entrada || !item.saida) return '';
+      const toM = t=>{let[p,h]=t.split(':');return parseInt(p)*60+parseInt(h)};
+      try {
+        let total = toM(item.saida)-toM(item.entrada);
+        if(item.intervalo_inicio && item.intervalo_fim) total -= (toM(item.intervalo_fim)-toM(item.intervalo_inicio));
+        if(total<0) return '';
+        return (total/60).toFixed(2);
+      } catch(e){return ''}
+    }
+
+    function ordenar(){
+      itens.sort((a,b)=> a.dia_semana - b.dia_semana || a.ordem - b.ordem);
+    }
+
+    function sync(){ hidden.value = JSON.stringify(itens); }
+
+    function render(){
+      ordenar();
+      const tbody = document.querySelector('#tabela-horarios tbody');
+      tbody.innerHTML='';
+      const dias = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+      itens.forEach((it,idx)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${dias[it.dia_semana]}</td><td>${it.ordem}</td>`+
+          `<td>${it.entrada||''}</td><td>${it.saida||''}</td>`+
+          `<td>${it.intervalo_inicio||''}</td><td>${it.intervalo_fim||''}</td>`+
+          `<td>${calcHoras(it)}</td>`+
+          `<td class='text-end'><button type='button' data-idx='${idx}' class='btn btn-xs btn-danger btn-rem-horario'><i class="fas fa-trash"></i></button></td>`;
+        tbody.appendChild(tr);
+      });
+      sync();
+    }
+
+    document.addEventListener('click', function(ev){
+      if(ev.target.closest('.btn-rem-horario')){
+        const idx = ev.target.closest('.btn-rem-horario').dataset.idx;
+        itens.splice(idx,1); render();
+      }
+    });
+
+    document.getElementById('btn-add-horario').addEventListener('click', ()=>{
+      const dia = parseInt(document.getElementById('horario-dia').value);
+      const ordem = parseInt(document.getElementById('horario-ordem').value)||1;
+      const entrada = document.getElementById('horario-entrada').value;
+      const saida = document.getElementById('horario-saida').value;
+      const ii = document.getElementById('horario-int-inicio').value;
+      const iff = document.getElementById('horario-int-fim').value;
+      if(!entrada || !saida){ alert('Informe entrada e saída.'); return; }
+      if(ii && iff && ii>=iff){ alert('Intervalo inválido.'); return; }
+      if(entrada >= saida){ alert('Saída deve ser maior que entrada.'); return; }
+      // Verifica sobreposição
+      const overlap = itens.some(it=> it.dia_semana===dia && it.ordem===ordem);
+      if(overlap){ alert('Já existe bloco com este dia e ordem.'); return; }
+      itens.push({dia_semana:dia, ordem:ordem, entrada:entrada, saida:saida, intervalo_inicio:ii, intervalo_fim:iff});
+      render();
+    });
+
+    document.getElementById('btn-copiar-seg-sex').addEventListener('click', ()=>{
+      // Copia todos blocos de segunda (0) para terça a sexta se inexistentes
+      const base = itens.filter(it=> it.dia_semana===0);
+      [1,2,3,4].forEach(d=>{
+        base.forEach(b=>{
+          if(!itens.some(x=> x.dia_semana===d && x.ordem===b.ordem)){
+            itens.push({...b, dia_semana:d});
+          }
+        });
+      });
+      render();
+    });
+
+    render();
+  })();
+</script>
+{% endblock %}

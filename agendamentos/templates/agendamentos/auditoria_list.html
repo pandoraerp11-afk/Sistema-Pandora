@@ -1,0 +1,54 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% block page_icon %}fas fa-history{% endblock %}
+{% block page_title %}Auditoria{% endblock %}
+{% block page_subtitle %}Eventos e mudanças de estado em agendamentos{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'agendamentos:dashboard' %}" class="btn btn-outline-secondary btn-sm" title="Dashboard"><i class="fas fa-chart-line"></i></a>
+{% endblock %}
+{% block list_filters %}
+  <form method="get" class="row g-2">
+    <div class="col-md-3">
+      <select name="status" class="form-select form-select-sm">
+        <option value="">Status...</option>
+        {% for s,val in status_choices %}
+          <option value="{{ s }}" {% if request.GET.status == s %}selected{% endif %}>{{ val }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="tipo" class="form-select form-select-sm">
+        <option value="">Tipo Evento...</option>
+        {% for t in tipos %}
+          <option value="{{ t }}" {% if request.GET.tipo == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid"><button class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+  </form>
+{% endblock %}
+{% block list_table %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light"><tr><th>Data</th><th>Agendamento</th><th>Evento</th><th>De→Para</th><th>Usuário</th><th>Motivo</th></tr></thead>
+      <tbody>
+      {% for a in object_list %}
+        <tr>
+          <td>{{ a.created_at|date:'d/m/Y H:i' }}</td>
+          <td><a href="{% url 'agendamentos:agendamento-detail' a.agendamento_id %}">#{{ a.agendamento_id }}</a></td>
+          <td>{{ a.tipo_evento }}</td>
+          <td>{{ a.de_status|default:'-' }} → {{ a.para_status|default:'-' }}</td>
+          <td>{{ a.user|default:'-' }}</td>
+          <td><small>{{ a.motivo|default:'-' }}</small></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">Sem auditorias.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+{% block list_pagination %}
+  {% if is_paginated %}
+    <ul class="pagination pagination-sm">{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>{% endif %}{% for num in paginator.page_range %}<li class="page-item {% if num == page_obj.number %}active{% endif %}"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>{% endfor %}{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>{% endif %}</ul>
+  {% endif %}
+{% endblock %}

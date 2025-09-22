@@ -1,0 +1,28 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Exclusão
+        </div>
+        <div class="card-body">
+          <p>Tem certeza que deseja excluir "{{ object }}"?</p>
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{{ cancel_url|default:request.META.HTTP_REFERER }}" class="btn btn-outline-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-danger">Excluir</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,360 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Sessões de Auditoria - Agente de IA{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'ai_auditor:dashboard' %}">Agente de IA</a></li>
+        <li class="breadcrumb-item active">Sessões de Auditoria</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .session-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .session-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .session-header {
+        display: flex;
+        justify-content: between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+    
+    .session-id {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 4px;
+    }
+    
+    .session-date {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .session-status {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-running {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .status-completed {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .status-failed {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .status-cancelled {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+    
+    .session-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .metric-item {
+        text-align: center;
+        padding: 12px;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .metric-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .session-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-session {
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-session-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-session-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-session-secondary {
+        background: white;
+        color: #667eea;
+        border: 1px solid #667eea;
+    }
+    
+    .btn-session-secondary:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .progress-bar {
+        height: 4px;
+        background: #e5e7eb;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 12px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        color: #d1d5db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">
+            <i class="ph-duotone ph-clock-user"></i>
+            Sessões de Auditoria
+        </h1>
+        <p class="page-subtitle">Histórico de auditorias executadas pelo Agente de IA</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'ai_auditor:execute_audit' %}" class="btn btn-primary">
+            <i class="ph-duotone ph-play"></i>
+            Nova Auditoria
+        </a>
+        <a href="{% url 'ai_auditor:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="ph-duotone ph-chart-line"></i>
+            Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="search" placeholder="Buscar sessões..." value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">Todos os Status</option>
+                        <option value="running" {% if request.GET.status == 'running' %}selected{% endif %}>Em Execução</option>
+                        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Concluída</option>
+                        <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Falhou</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelada</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" class="form-control" name="date_from" value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ph-duotone ph-magnifying-glass"></i>
+                        Filtrar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% if object_list %}
+    {% for session in object_list %}
+    <div class="session-card">
+        <div class="session-header">
+            <div>
+                <div class="session-id">Auditoria #{{ session.id }}</div>
+                <div class="session-date">
+                    <i class="ph-duotone ph-clock me-1"></i>
+                    Iniciada em {{ session.created_at|date:"d/m/Y H:i" }}
+                    {% if session.completed_at %}
+                        • Concluída em {{ session.completed_at|date:"d/m/Y H:i" }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="session-status status-{{ session.status }}">
+                {{ session.get_status_display }}
+            </div>
+        </div>
+        
+        <div class="session-metrics">
+            <div class="metric-item">
+                <div class="metric-value">{{ session.total_files_analyzed|default:0 }}</div>
+                <div class="metric-label">Arquivos</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{{ session.total_issues }}</div>
+                <div class="metric-label">Problemas</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{{ session.critical_issues }}</div>
+                <div class="metric-label">Críticos</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{{ session.tests_generated }}</div>
+                <div class="metric-label">Testes</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{{ session.fixes_applied }}</div>
+                <div class="metric-label">Correções</div>
+            </div>
+        </div>
+        
+        {% if session.status == 'running' %}
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: 65%"></div>
+        </div>
+        {% endif %}
+        
+        <div class="session-actions">
+            <a href="{% url 'ai_auditor:session_detail' session.pk %}" class="btn-session btn-session-primary">
+                <i class="fas fa-eye"></i>
+                Ver Detalhes
+            </a>
+            {% if session.status == 'completed' %}
+            <a href="{% url 'ai_auditor:issue_list' %}?session={{ session.pk }}" class="btn-session btn-session-secondary">
+                <i class="fas fa-bug"></i>
+                Ver Problemas
+            </a>
+            {% endif %}
+            {% if session.error_message %}
+            <button class="btn-session btn-session-secondary" data-bs-toggle="modal" data-bs-target="#errorModal{{ session.pk }}">
+                <i class="fas fa-exclamation-triangle"></i>
+                Ver Erro
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Modal de Erro -->
+    {% if session.error_message %}
+    <div class="modal fade" id="errorModal{{ session.pk }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Erro na Auditoria #{{ session.id }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <pre class="bg-light p-3 rounded">{{ session.error_message }}</pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <i class="fas fa-search"></i>
+        <h4>Nenhuma sessão encontrada</h4>
+        <p>Não há sessões de auditoria para exibir.</p>
+        <a href="{% url 'ai_auditor:execute_audit' %}" class="btn btn-primary">
+            <i class="fas fa-play"></i>
+            Executar Primeira Auditoria
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualizar progresso das sessões em execução
+    const runningSessions = document.querySelectorAll('.status-running');
+    runningSessions.forEach(session => {
+        const progressBar = session.closest('.session-card').querySelector('.progress-fill');
+        if (progressBar) {
+            // Simular progresso animado
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                }
+                progressBar.style.width = progress + '%';
+            }, 2000);
+        }
+    });
+    
+    // Auto-refresh para sessões em execução
+    if (document.querySelectorAll('.status-running').length > 0) {
+        setTimeout(() => {
+            location.reload();
+        }, 30000); // Atualizar a cada 30 segundos
+    }
+});
+</script>
+{% endblock %}

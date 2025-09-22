@@ -1,0 +1,9 @@
+// reservas_detail.js - lógica AJAX para detalhes de reserva
+document.addEventListener('DOMContentLoaded',()=>{
+  if(window.RESERVA_CONTEXT){
+    carregarSaldo(); carregarHistorico();
+    if(RESERVA_CONTEXT.status==='ATIVA'){ setInterval(carregarSaldo,30000); }
+  }
+});
+function carregarSaldo(){ if(!window.RESERVA_CONTEXT) return; fetch(`/estoque/api/saldo-disponivel/${RESERVA_CONTEXT.produto_id}/${RESERVA_CONTEXT.deposito_id}/`).then(r=>r.json()).then(d=>{ const el=document.getElementById('saldo-atual'); if(!el) return; el.innerHTML=`<div class='d-flex justify-content-between mb-1'><small>Total:</small><strong>${d.total}</strong></div><div class='d-flex justify-content-between mb-1'><small>Reservado:</small><span class='text-warning'>${d.reservado}</span></div><div class='d-flex justify-content-between'><small>Disponível:</small><span class='text-primary fw-bold'>${d.disponivel}</span></div>`; }).catch(()=>{const el=document.getElementById('saldo-atual'); if(el) el.innerHTML='<span class="text-danger">Erro</span>';}); }
+function carregarHistorico(){ if(!window.RESERVA_CONTEXT) return; fetch(`/estoque/api/historico-reserva/${RESERVA_CONTEXT.id}/`).then(r=>r.json()).then(data=>{ const el=document.getElementById('historico-movimentacoes'); if(!el) return; if(!data.length){ el.innerHTML='<div class="text-center text-muted py-2">Nenhuma movimentação</div>'; return;} let html='<div class="table-responsive"><table class="table table-sm table-hover"><thead><tr><th>Data</th><th>Tipo</th><th>Qtd</th><th>Usuário</th><th>Obs</th></tr></thead><tbody>'; data.forEach(m=>{ html+=`<tr><td>${new Date(m.data).toLocaleString('pt-BR')}</td><td>${m.tipo}</td><td>${m.quantidade}</td><td>${m.usuario}</td><td>${m.observacoes||'—'}</td></tr>`;}); html+='</tbody></table></div>'; el.innerHTML=html; }).catch(()=>{ const el=document.getElementById('historico-movimentacoes'); if(el) el.innerHTML='<div class="text-danger text-center">Erro</div>';}); }

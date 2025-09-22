@@ -1,0 +1,55 @@
+
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content_header %}
+<div class="container-fluid">
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1>{{ page_title }}</h1>
+        </div>
+        <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="#">Início</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'orcamentos:orcamentos_list' %}">Orcamentoss</a></li>
+                <li class="breadcrumb-item active">{{ page_title }}</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="card card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Dados do(a) Orcamentos</h3>
+    </div>
+    <!-- /.card-header -->
+    <!-- form start -->
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-body">
+            {{ form.as_p }} <!-- Renderiza o formulário como parágrafos -->
+            <!-- Ou renderize campo a campo para maior controle:
+            <div class="form-group">
+                <label for="{ form.nome_campo.id_for_label }">{ form.nome_campo.label }</label>
+                { form.nome_campo }
+                {% if form.nome_campo.help_text %}
+                <small class="form-text text-muted">{ form.nome_campo.help_text }</small>
+                {% endif %}
+                {% for error in form.nome_campo.errors %}
+                <div class="invalid-feedback d-block">{ error }</div>
+                {% endfor %}
+            </div>
+            -->
+        </div>
+        <!-- /.card-body -->
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'orcamentos:orcamentos_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

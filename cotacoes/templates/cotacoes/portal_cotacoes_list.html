@@ -1,0 +1,347 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal Fornecedor - Cotações{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/portal-fornecedor.css' %}" rel="stylesheet">
+<style>
+.cotacao-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.cotacao-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.cotacao-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #f8f9fa;
+    padding-bottom: 10px;
+}
+
+.cotacao-codigo {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.cotacao-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.status-aberta {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-encerrada {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.cotacao-info {
+    margin-bottom: 15px;
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 8px;
+}
+
+.info-label {
+    font-weight: 600;
+    min-width: 140px;
+    color: #495057;
+}
+
+.info-value {
+    color: #6c757d;
+}
+
+.prazo-urgente {
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+
+.prazo-proximo {
+    color: #fd7e14 !important;
+    font-weight: bold;
+}
+
+.cotacao-actions {
+    text-align: right;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.btn-portal {
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-portal {
+    background-color: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+}
+
+.btn-primary-portal:hover {
+    background-color: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-success-portal {
+    background-color: #28a745;
+    color: white;
+    border: 1px solid #28a745;
+}
+
+.btn-success-portal:hover {
+    background-color: #1e7e34;
+    color: white;
+    text-decoration: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4em;
+    margin-bottom: 20px;
+    color: #dee2e6;
+}
+
+.search-filters {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+}
+
+.filter-group {
+    flex: 1;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control-portal {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-control-portal:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1><i class="fas fa-shopping-cart"></i> Portal Fornecedor - Cotações Disponíveis</h1>
+                <p class="text-muted">Visualize cotações abertas e envie suas propostas</p>
+            </div>
+
+            <!-- Filtros de Busca -->
+            <div class="search-filters">
+                <form method="get" id="filter-form">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="search">Buscar por código ou título:</label>
+                            <input type="text" id="search" name="search" class="form-control-portal" 
+                                   value="{{ request.GET.search }}" placeholder="Digite aqui...">
+                        </div>
+                        <div class="filter-group">
+                            <label for="valor_min">Valor mínimo:</label>
+                            <input type="number" id="valor_min" name="valor_min" class="form-control-portal" 
+                                   value="{{ request.GET.valor_min }}" placeholder="R$ 0,00" step="0.01">
+                        </div>
+                        <div class="filter-group">
+                            <label for="valor_max">Valor máximo:</label>
+                            <input type="number" id="valor_max" name="valor_max" class="form-control-portal" 
+                                   value="{{ request.GET.valor_max }}" placeholder="R$ 999.999,99" step="0.01">
+                        </div>
+                        <div class="filter-group" style="flex: 0;">
+                            <button type="submit" class="btn btn-primary-portal">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de Cotações -->
+            {% if cotacoes %}
+                <div class="cotacoes-list">
+                    {% for cotacao in cotacoes %}
+                    <div class="cotacao-card">
+                        <div class="cotacao-header">
+                            <div>
+                                <span class="cotacao-codigo">{{ cotacao.codigo }}</span>
+                                <span class="cotacao-status status-{{ cotacao.status }}">
+                                    {{ cotacao.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="text-muted">
+                                <small>Aberta em {{ cotacao.data_abertura|date:"d/m/Y" }}</small>
+                            </div>
+                        </div>
+
+                        <div class="cotacao-info">
+                            <h5>{{ cotacao.titulo }}</h5>
+                            {% if cotacao.descricao %}
+                            <p class="text-muted">{{ cotacao.descricao|truncatewords:20 }}</p>
+                            {% endif %}
+
+                            <div class="info-row">
+                                <span class="info-label">Prazo para propostas:</span>
+                                <span class="info-value {% if cotacao.dias_restantes <= 1 %}prazo-urgente{% elif cotacao.dias_restantes <= 3 %}prazo-proximo{% endif %}">
+                                    {{ cotacao.prazo_proposta|date:"d/m/Y H:i" }}
+                                    {% if cotacao.dias_restantes >= 0 %}
+                                        ({{ cotacao.dias_restantes }} dia{{ cotacao.dias_restantes|pluralize }} restante{{ cotacao.dias_restantes|pluralize }})
+                                    {% else %}
+                                        (Expirado)
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            {% if cotacao.valor_estimado %}
+                            <div class="info-row">
+                                <span class="info-label">Valor estimado:</span>
+                                <span class="info-value">R$ {{ cotacao.valor_estimado|floatformat:2 }}</span>
+                            </div>
+                            {% endif %}
+
+                            <div class="info-row">
+                                <span class="info-label">Total de itens:</span>
+                                <span class="info-value">{{ cotacao.total_itens }} ite{{ cotacao.total_itens|pluralize:"m,ns" }}</span>
+                            </div>
+                        </div>
+
+                        <div class="cotacao-actions">
+                            <a href="{% url 'cotacoes:portal-cotacao-detail' cotacao.pk %}" class="btn btn-primary-portal">
+                                <i class="fas fa-eye"></i> Ver Detalhes
+                            </a>
+                            
+                            {% if cotacao.pode_criar_proposta %}
+                            <a href="{% url 'cotacoes:portal-cotacao-detail' cotacao.pk %}#criar-proposta" class="btn btn-success-portal">
+                                <i class="fas fa-plus"></i> Criar Proposta
+                            </a>
+                            {% elif cotacao.tem_proposta_usuario %}
+                            <a href="{% url 'cotacoes:portal-proposta-detail' cotacao.proposta_usuario.pk %}" class="btn btn-success-portal">
+                                <i class="fas fa-edit"></i> Editar Proposta
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Paginação -->
+                {% if is_paginated %}
+                <nav aria-label="Navegação das cotações">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="fas fa-chevron-left"></i> Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Próxima <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h3>Nenhuma cotação disponível</h3>
+                    <p>Não há cotações abertas no momento que você possa participar.</p>
+                    <small class="text-muted">
+                        Cotações aparecem aqui quando estão abertas e sua empresa está autorizada a participar.
+                    </small>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form on filter changes
+    $('#filter-form input').on('input', function() {
+        clearTimeout(window.searchTimeout);
+        window.searchTimeout = setTimeout(function() {
+            $('#filter-form').submit();
+        }, 500);
+    });
+
+    // Highlight urgent deadlines
+    $('.prazo-urgente').closest('.cotacao-card').addClass('border-danger');
+    $('.prazo-proximo').closest('.cotacao-card').addClass('border-warning');
+});
+</script>
+{% endblock %}

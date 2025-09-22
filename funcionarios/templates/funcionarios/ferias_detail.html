@@ -1,0 +1,116 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Detalhes das Férias - {{ ferias.funcionario.nome_completo }}{% endblock %}
+
+{% block content_header %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-umbrella-beach"></i> 
+                    Detalhes das Férias
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="/">Início</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_list' %}">Funcionários</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_detail' ferias.funcionario.pk %}">{{ ferias.funcionario.nome_completo }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_ferias' ferias.funcionario.pk %}">Férias</a></li>
+                    <li class="breadcrumb-item active">Detalhes</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Informações das Férias
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'funcionarios:ferias_update' ferias.pk %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit mr-1"></i>
+                        Editar
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-user mr-2"></i>Funcionário</h5>
+                        <p><strong>{{ ferias.funcionario.nome_completo }}</strong></p>
+                        
+                        <h5><i class="fas fa-calendar-alt mr-2"></i>Período Aquisitivo</h5>
+                        <p>{{ ferias.periodo_aquisitivo_inicio|date:"d/m/Y" }} a {{ ferias.periodo_aquisitivo_fim|date:"d/m/Y" }}</p>
+                        
+                        <h5><i class="fas fa-calendar-check mr-2"></i>Período de Gozo</h5>
+                        <p>{{ ferias.data_inicio|date:"d/m/Y" }} a {{ ferias.data_fim|date:"d/m/Y" }}</p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-calendar-day mr-2"></i>Dias Gozados</h5>
+                        <p><span class="badge badge-info">{{ ferias.dias_gozados }} dias</span></p>
+                        
+                        <h5><i class="fas fa-money-bill mr-2"></i>Abono Pecuniário</h5>
+                        <p>
+                            {% if ferias.abono_pecuniario %}
+                                <span class="badge badge-warning">{{ ferias.dias_abono }} dias</span>
+                            {% else %}
+                                <span class="text-muted">Não</span>
+                            {% endif %}
+                        </p>
+                        
+                        <h5><i class="fas fa-info-circle mr-2"></i>Status</h5>
+                        <p>
+                            {% if ferias.status == 'AGENDADA' %}
+                                <span class="badge badge-warning">Agendada</span>
+                            {% elif ferias.status == 'EM_ANDAMENTO' %}
+                                <span class="badge badge-info">Em Andamento</span>
+                            {% elif ferias.status == 'CONCLUIDA' %}
+                                <span class="badge badge-success">Concluída</span>
+                            {% elif ferias.status == 'CANCELADA' %}
+                                <span class="badge badge-danger">Cancelada</span>
+                            {% endif %}
+                        </p>
+                        
+                        {% if ferias.valor_pago %}
+                        <h5><i class="fas fa-dollar-sign mr-2"></i>Valor Pago</h5>
+                        <p><strong class="text-success">R$ {{ ferias.valor_pago|floatformat:2 }}</strong></p>
+                        {% endif %}
+                        
+                        {% if ferias.data_pagamento %}
+                        <h5><i class="fas fa-calendar mr-2"></i>Data do Pagamento</h5>
+                        <p>{{ ferias.data_pagamento|date:"d/m/Y" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <a href="{% url 'funcionarios:funcionario_ferias' ferias.funcionario.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left mr-1"></i>
+                    Voltar
+                </a>
+                <a href="{% url 'funcionarios:ferias_update' ferias.pk %}" class="btn btn-primary">
+                    <i class="fas fa-edit mr-1"></i>
+                    Editar
+                </a>
+                <a href="{% url 'funcionarios:ferias_delete' ferias.pk %}" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir estas férias?')">
+                    <i class="fas fa-trash mr-1"></i>
+                    Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

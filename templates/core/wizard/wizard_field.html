@@ -1,0 +1,89 @@
+{# Template de campo específico para o wizard - VERSÃO MODERNIZADA E CORRIGIDA #}
+{% load widget_tweaks %}
+
+{# Layout responsivo com opções adicionais: CEP auto e campo expansível 'grow' #}
+{% if 'cep' in field.name|lower %}
+    <div class="col-6 col-md-auto mb-3">
+{% elif field_size == 'grow' %}
+    <div class="col-12 col-md mb-3">
+{% elif field_size == 'xs-auto' %}
+    <div class="col-6 col-md-auto mb-3">
+{% elif field_size == 'xs' %}
+    <div class="col-6 col-md-2 mb-3">
+{% elif field_size == 'sm' %}
+    <div class="col-6 col-md-3 mb-3">
+{% elif field_size == 'md' %}
+    <div class="col-12 col-md-4 mb-3">
+{% elif field_size == 'lg' %}
+    <div class="col-12 col-md-6 mb-3">
+{% elif field_size == 'xl' %}
+    <div class="col-12 mb-3">
+{% elif 'textarea' in field.field.widget|stringformat:'s'|lower %}
+    <div class="col-12 mb-3">
+{% elif field.field.widget.input_type == 'checkbox' %}
+    <div class="col-6 col-md-3 mb-3">
+{% elif 'select' in field.field.widget|stringformat:'s'|lower %}
+    <div class="col-6 col-md-3 mb-3">
+{% elif field.field.widget.input_type == 'email' or field.field.widget.input_type == 'url' %}
+    <div class="col-12 col-md-4 mb-3">
+{% elif 'cpf' in field.name|lower or 'rg' in field.name|lower or 'cep' in field.name|lower %}
+    <div class="col-6 col-md-3 mb-3">
+{% elif 'telefone' in field.name|lower or 'celular' in field.name|lower or 'whatsapp' in field.name|lower %}
+    <div class="col-6 col-md-auto mb-3">
+{% elif 'numero' in field.name|lower %}
+    <div class="col-6 col-md-2 mb-3">
+{% elif 'data' in field.name|lower or 'date' in field.name|lower %}
+    <div class="col-6 col-md-3 mb-3">
+{% else %}
+    <div class="col-12 col-md-4 mb-3">
+{% endif %}
+
+    <div class="wizard-form-group">
+        {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="form-check">
+                {{ field|add_class:"form-check-input wizard-checkbox" }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-danger ms-1">*</span>{% endif %}
+                </label>
+            </div>
+        {% else %}
+            {% if field.label %}
+                <label for="{{ field.id_for_label }}" class="wizard-form-label">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-danger ms-1">*</span>{% endif %}
+                </label>
+            {% endif %}
+            
+            {% if 'textarea' in field.field.widget|stringformat:'s'|lower %}
+                {{ field|add_class:"form-control wizard-textarea" }}
+            {% elif 'select' in field.field.widget|stringformat:'s'|lower %}
+                {{ field|add_class:"form-select form-select-sm wizard-select"|attr:"style:height: calc(1.5em + .5rem + 2px); line-height: 1.5" }}
+            {% elif field.field.widget.input_type == 'file' %}
+                {{ field|add_class:"form-control form-control-sm wizard-file"|attr:"style:height: calc(1.5em + .5rem + 2px); line-height: 1.5" }}
+            {% elif field.field.widget.input_type == 'date' or field.field.widget.input_type == 'time' %}
+                {{ field|add_class:"form-control form-control-sm wizard-date"|attr:"style:height: calc(1.5em + .5rem + 2px); line-height: 1.5" }}
+            {% elif 'cnpj' in field.name|lower %}
+                {{ field|add_class:"form-control form-control-sm wizard-input cnpj-mask"|attr:"style:height: calc(1.5em + .5rem + 2px); line-height: 1.5" }}
+            {% elif 'cpf' in field.name|lower %}
+                {{ field|add_class:"form-control form-control-sm wizard-input cpf-mask"|attr:"style:height: calc(1.5em + .5rem + 2px); line-height: 1.5" }}
+            {% elif 'cep' in field.name|lower %}
+                {{ field|add_class:"form-control form-control-sm wizard-input cep-mask"|attr:"maxlength:10"|attr:"size:10"|attr:"inputmode:numeric"|attr:"pattern:[0-9]{5}-[0-9]{3}"|attr:"style:width: calc(10ch + 3rem + 2px); height: calc(1.5em + .5rem + 2px); line-height: 1.5"|attr:"title:CEP no formato 00000-000"|attr:"placeholder:00000-000" }}
+            {% elif 'telefone' in field.name|lower or 'celular' in field.name|lower or 'whatsapp' in field.name|lower %}
+                {{ field|add_class:"form-control form-control-sm wizard-input phone-mask"|attr:"maxlength:16"|attr:"size:16"|attr:"inputmode:tel"|attr:"pattern:\\(\\d{2}\\)\\s?\\d{4,5}-\\d{4}"|attr:"style:width: calc(16ch + 3rem + 2px); height: calc(1.5em + .5rem + 2px); line-height: 1.5"|attr:"title:Telefone no formato (11) 99999-9999"|attr:"placeholder:(11) 99999-9999" }}
+            {% else %}
+                {{ field|add_class:"form-control form-control-sm wizard-input"|attr:"style:height: calc(1.5em + .5rem + 2px); line-height: 1.5" }}
+            {% endif %}
+        {% endif %}
+        
+        {% if field.errors %}
+            <div class="wizard-field-errors">
+                {% for error in field.errors %}{{ error }}{% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if field.help_text and not hide_help_text %}
+            <small class="wizard-help-text text-muted">{{ field.help_text }}</small>
+        {% endif %}
+    </div>
+</div>

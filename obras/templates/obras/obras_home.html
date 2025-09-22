@@ -1,0 +1,207 @@
+{% extends "pandora_home_ultra_modern.html" %}
+
+{% block title %}Dashboard - Obras{% endblock %}
+
+{% block home_icon %}<i class="fas fa-hard-hat me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Módulo Obras{% endblock %}
+{% block home_subtitle %}Visão geral do módulo de obras{% endblock %}
+
+{% block home_stats %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            Visão Geral
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'obras:obras_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                                <i class="fas fa-hard-hat"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-info mb-1">{{ total_obras }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">Total de Obras</p>
+                            <small class="text-muted">Cadastradas</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'obras:obras_list' %}?status=em_andamento" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                                <i class="fas fa-play-circle"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-success mb-1">{{ obras_ativas }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">Obras Ativas</p>
+                            <small class="text-muted">Em andamento</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'obras:obras_list' %}?status=concluida" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-warning mb-1">{{ obras_concluidas }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">Concluídas</p>
+                            <small class="text-muted">Finalizadas</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-danger text-white mx-auto mb-3">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-danger mb-1">R$ {{ valor_total_obras|floatformat:0 }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">Valor Total</p>
+                        <small class="text-muted">Contratos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_actions %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-bolt me-2 text-primary"></i>
+            Ações Rápidas
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">Nova Obra</h4>
+                        <p class="text-muted mb-4">Cadastre uma nova obra</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'obras:obra_wizard' %}" class="btn btn-primary btn-sm" style="min-width: 140px;">
+                                <i class="fas fa-plus me-1"></i>Cadastrar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">Ver Todas</h4>
+                        <p class="text-muted mb-4">Listagem completa de obras</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'obras:obras_list' %}" class="btn btn-success btn-sm" style="min-width: 140px;">
+                                <i class="fas fa-list me-1"></i> Listar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-secondary text-white mx-auto mb-3">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">Buscar</h4>
+                        <p class="text-muted mb-4">Filtre e encontre obras</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'obras:obras_list' %}?q=" class="btn btn-outline-secondary btn-sm" style="min-width: 140px;">
+                                <i class="fas fa-search me-1"></i> Pesquisar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_recent %}
+    {% if ultimas_obras %}
+    <div class="mt-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-history me-2 text-primary"></i>
+            Últimas Obras Cadastradas
+        </h2>
+        <div class="row g-4">
+            <div class="col-12" data-aos="fade-up" data-aos-delay="100">
+                <div class="action-card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        {% for obra in ultimas_obras %}
+                        <div class="recent-item">
+                            <div class="row align-items-center py-2">
+                                <div class="col">
+                                    <h6 class="mb-1 fw-bold">
+                                        <a href="{% url 'obras:obra_detail' obra.pk %}" class="text-decoration-none text-dark">
+                                            {{ obra.nome|truncatechars:30 }}
+                                        </a>
+                                    </h6>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-user me-1"></i>
+                                            {{ obra.cliente.nome_display|default:"-"|truncatechars:20 }}
+                                        </small>
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            {{ obra.get_status_display|default:"-" }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="{% url 'obras:obra_detail' obra.pk %}" class="btn btn-sm btn-primary" title="Ver Detalhes">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'obras:obra_edit' obra.pk %}" class="btn btn-sm btn-warning" title="Editar Obra">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if obras_por_status %}
+    <div class="mt-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-pie me-2 text-primary"></i>
+            Distribuição por Status
+        </h2>
+        <div class="row g-4">
+            {% for status_data in obras_por_status %}
+            <div class="col-md-3">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h4 class="h6 fw-bold mb-1">{{ status_data.status }}</h4>
+                        <div class="display-6 fw-bold">{{ status_data.count }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

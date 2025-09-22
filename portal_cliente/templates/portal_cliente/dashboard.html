@@ -1,0 +1,220 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal Cliente - Dashboard{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header do Portal -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white shadow-lg border-0">
+                <div class="card-body py-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-1">Bem-vindo, {{ conta_cliente.cliente.nome_display }}!</h2>
+                            <p class="mb-0 opacity-75">Portal do Cliente - Gerencie seus agendamentos e visualize seu histórico</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <i class="fas fa-user-circle fa-4x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-calendar-check fa-2x"></i>
+                    </div>
+                    <h4 class="text-primary">{{ estatisticas.agendamentos_pendentes }}</h4>
+                    <p class="text-muted mb-0">Próximos Agendamentos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-3">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                    <h4 class="text-success">{{ estatisticas.total_atendimentos }}</h4>
+                    <p class="text-muted mb-0">Total Atendimentos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-3">
+                        <i class="fas fa-star fa-2x"></i>
+                    </div>
+                    <h4 class="text-warning">
+                        {% if estatisticas.satisfacao_media %}{{ estatisticas.satisfacao_media }}/5{% else %}-{% endif %}
+                    </h4>
+                    <p class="text-muted mb-0">Satisfação Média</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-3">
+                        <i class="fas fa-images fa-2x"></i>
+                    </div>
+                    <h4 class="text-info">{{ fotos_recentes|length }}</h4>
+                    <p class="text-muted mb-0">Fotos Recentes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Próximos Agendamentos -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Próximos Agendamentos</h5>
+                        <a href="{% url 'portal_cliente:agendamentos_lista' %}" class="btn btn-outline-primary btn-sm">Ver Todos</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if proximos_agendamentos %}
+                        {% for agendamento in proximos_agendamentos %}
+                        <div class="d-flex align-items-center py-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="badge bg-primary rounded-pill p-2">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ agendamento.servico.nome_servico }}</h6>
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-user me-1"></i>{{ agendamento.profissional.nome }}
+                                </p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ agendamento.data_inicio|date:"d/m/Y \à\s H:i" }}
+                                </small>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-{{ agendamento.status|lower|default:'secondary' }}">{{ agendamento.get_status_display }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center pt-3">
+                            <a href="{% url 'portal_cliente:novo_agendamento' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Novo Agendamento
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-3">Nenhum agendamento próximo encontrado.</p>
+                            <a href="{% url 'portal_cliente:novo_agendamento' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Fazer Primeiro Agendamento
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Fotos Recentes -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-images me-2"></i>Galeria Recente</h5>
+                        <a href="{% url 'portal_cliente:galeria_fotos' %}" class="btn btn-outline-primary btn-sm">Ver Galeria</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if fotos_recentes %}
+                        <div class="row g-2">
+                            {% for foto in fotos_recentes %}
+                            <div class="col-4">
+                                <a href="{% url 'portal_cliente:visualizar_foto' foto.id %}" class="d-block">
+                                    <img src="{{ foto.imagem_thumbnail.url }}" class="img-fluid rounded shadow-sm" 
+                                         alt="Foto do atendimento" style="aspect-ratio: 1; object-fit: cover;">
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-camera fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Nenhuma foto disponível ainda.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Histórico Recente -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Histórico Recente</h5>
+                        <a href="{% url 'portal_cliente:historico_atendimentos' %}" class="btn btn-outline-primary btn-sm">Ver Histórico Completo</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if historico_recente %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Serviço</th>
+                                        <th>Profissional</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for atendimento in historico_recente %}
+                                    <tr>
+                                        <td>{{ atendimento.data_atendimento|date:"d/m/Y" }}</td>
+                                        <td>{{ atendimento.servico.nome_servico }}</td>
+                                        <td>{{ atendimento.profissional.nome }}</td>
+                                        <td><span class="badge bg-success">{{ atendimento.get_status_display }}</span></td>
+                                        <td class="text-end">
+                                            <a href="{% url 'portal_cliente:detalhe_atendimento' atendimento.id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhum atendimento realizado ainda.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/portal_cliente.js' %}"></script>
+{% endblock %}

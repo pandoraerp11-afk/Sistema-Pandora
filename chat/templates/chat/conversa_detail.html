@@ -1,0 +1,366 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title|default:conversa.titulo|default:'Conversa' }}{% endblock %}
+{% block page_subtitle %}{{ page_subtitle|default:'Troque mensagens com sua equipe' }}{% endblock %}
+{% block page_actions %}
+<div class="d-flex flex-wrap gap-2">
+    <a href="{{ list_url }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Voltar</a>
+    {% if can_edit %}<a href="{{ edit_url }}" class="btn btn-outline-primary"><i class="fas fa-edit me-2"></i>Editar</a>{% endif %}
+    {% if can_delete %}<a href="{{ delete_url }}" class="btn btn-outline-danger" onclick="Pandora.confirmDelete(event, '{{ delete_url }}', 'esta conversa')"><i class="fas fa-trash me-2"></i>Excluir</a>{% endif %}
+    <a href="{% url 'agenda:evento_create' %}?conversa_id={{ conversa.id }}" class="btn btn-success"><i class="fas fa-calendar-plus me-1"></i> Reunião</a>
+    <button class="btn btn-outline-info" id="btn-refresh"><i class="fas fa-sync"></i></button>
+</div>
+{% endblock %}
+
+{% block extra_css %}{{ block.super }}
+<style>
+.message-toolbar{opacity:0;transition:opacity .2s;}
+.message:hover .message-toolbar{opacity:1;}
+.message.edited .msg-text:after{content:' (editada)';font-size:.7rem;color:#6c757d;}
+.participant-avatar.online{outline:2px solid #28a745;}
+.chat-messages::-webkit-scrollbar{width:8px;}
+.chat-messages::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#4e73df,#1cc88a);border-radius:4px;}
+</style>
+{% endblock %}
+
+{% block extra_js %}{{ block.super }}
+<script>
+const conversaId={{ conversa.id }};const wsScheme=location.protocol==='https:'?'wss':'ws';
+let editandoId=null;let typingTimeout=null;
+const chatSocket=new WebSocket(`${wsScheme}://${location.host}/ws/chat/conversa/${conversaId}/`);
+const msgContainer=()=>document.getElementById('chat-messages');
+function scrollToBottom(){const el=msgContainer();if(el)el.scrollTop=el.scrollHeight;}
+function escapeHtml(t){const d=document.createElement('div');d.innerText=t;return d.innerHTML.replace(/\n/g,'<br>');}
+function showTyping(username){const el=document.getElementById('typing-indicator');if(!el)return;el.textContent=`${username} está digitando...`;clearTimeout(typingTimeout);typingTimeout=setTimeout(()=>el.textContent='',1400);}
+function updatePresence(ids){document.querySelectorAll('[data-participante-id]').forEach(el=>{const uid=parseInt(el.dataset.participanteId);el.classList.toggle('online',ids.includes(uid)); if(ids.includes(uid)){el.classList.add('bg-success');el.classList.remove('bg-secondary');} else {el.classList.remove('bg-success');el.classList.add('bg-secondary');}});} 
+function buildMessageHTML(m){const isOwn=m.remetente_id==={{ request.user.id }};const toolbar=isOwn&&m.status!=='excluida'?`<div class="message-toolbar btn-group btn-group-sm ms-2" role="group"><button type="button" class="btn btn-outline-secondary btn-edit-msg" data-id="${m.id}" title="Editar"><i class="fas fa-edit"></i></button><button type="button" class="btn btn-outline-danger btn-del-msg" data-id="${m.id}" title="Excluir"><i class="fas fa-trash"></i></button></div>`:'';return `<div class="message ${isOwn?'own':''} ${m.status==='editada'?'edited':''}" data-message-id="${m.id}">${!isOwn?`<div class=\"participant-avatar\">${(m.remetente||'?')[0].toUpperCase()}</div>`:''}<div class="message-content"><div class="msg-text">${escapeHtml(m.conteudo)}</div><div class="message-info d-flex align-items-center flex-wrap gap-2"><small><strong>${m.remetente}</strong> • ${(new Date(m.created_at)).toLocaleString()}</small>${m.status==='editada'?`<span class='badge bg-light text-dark border'>editada</span>`:''}${toolbar}</div></div>${isOwn?`<div class=\"participant-avatar\">${(m.remetente||'?')[0].toUpperCase()}</div>`:''}</div>`;}
+function appendMessage(m){if(!m||m.erro)return;msgContainer().insertAdjacentHTML('beforeend',buildMessageHTML(m));scrollToBottom();}
+function updateMessageEdited(m){const el=document.querySelector(`[data-message-id='${m.id}']`);if(!el)return;el.classList.add('edited');el.querySelector('.msg-text').innerHTML=escapeHtml(m.conteudo);}
+function removeMessage(id){const el=document.querySelector(`[data-message-id='${id}']`);if(!el)return;el.querySelector('.msg-text').innerHTML='[Mensagem excluída]';el.classList.add('opacity-50');}
+chatSocket.onmessage=e=>{try{const d=JSON.parse(e.data);switch(d.event){case 'new_message':appendMessage(d.mensagem);break;case 'typing':showTyping(d.username);break;case 'presence':updatePresence(d.online_user_ids||[]);break;case 'message_edited':updateMessageEdited(d.mensagem);break;case 'message_deleted':removeMessage(d.message_id);break;}}catch(err){console.warn(err);}};
+chatSocket.onopen=scrollToBottom;
+function enviarPing(){if(chatSocket.readyState===1){chatSocket.send(JSON.stringify({action:'ping'}));}}
+setInterval(enviarPing,25000);setTimeout(enviarPing,1200);
+// Form envio
+const form=document.getElementById('message-form');const input=form.querySelector('input[name="conteudo"]');
+form.addEventListener('submit',e=>{e.preventDefault();const texto=input.value.trim();if(!texto||chatSocket.readyState!==1)return;if(editandoId){chatSocket.send(JSON.stringify({action:'edit_message',message_id:editandoId,conteudo:texto}));editandoId=null;document.getElementById('hint-edicao').classList.add('d-none');}else{chatSocket.send(JSON.stringify({action:'send_message',conteudo:texto}));}input.value='';});
+input.addEventListener('input',()=>{if(chatSocket.readyState===1){chatSocket.send(JSON.stringify({action:'typing'}));}});
+document.addEventListener('click',e=>{const editBtn=e.target.closest('.btn-edit-msg');const delBtn=e.target.closest('.btn-del-msg');if(editBtn){const id=editBtn.dataset.id;const el=document.querySelector(`[data-message-id='${id}'] .msg-text`);if(el){input.value=el.innerText;input.focus();editandoId=id;document.getElementById('hint-edicao').classList.remove('d-none');}}else if(delBtn){const id=delBtn.dataset.id;if(confirm('Excluir esta mensagem?')){chatSocket.send(JSON.stringify({action:'delete_message',message_id:id}));}}});
+document.getElementById('btn-refresh').addEventListener('click',e=>{e.preventDefault();scrollToBottom();});
+document.addEventListener('DOMContentLoaded',scrollToBottom);
+</script>
+{% endblock %}
+
+{% block breadcrumb %}
+    {% if breadcrumbs %}
+    <li class="breadcrumb-item"><a href="{% url 'chat:conversa_list' %}">Chat</a></li>
+    {% for breadcrumb in breadcrumbs %}
+        {% if breadcrumb.active %}
+            <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+        {% else %}
+            <li class="breadcrumb-item">
+                {% if breadcrumb.url %}
+                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+                {% else %}
+                    {{ breadcrumb.title }}
+                {% endif %}
+            </li>
+        {% endif %}
+    {% endfor %}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="row">
+        <!-- Chat Area -->
+        <div class="col-lg-8">
+            <div class="action-card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-comments me-2"></i>{{ conversa.titulo|default:"Conversa" }}
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chat-container">
+                        <!-- Chat Header -->
+                        <div class="chat-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ conversa.titulo|default:"Conversa sem título" }}</h6>
+                                    <small class="text-muted">
+                                        {{ participantes.count }} participante{{ participantes.count|pluralize }}
+                                        {% if conversa.tipo %} • {{ conversa.get_tipo_display }}{% endif %}
+                                    </small>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success">{{ conversa.get_status_display }}</span>
+                                    {% if total_mensagens %}
+                                        <small class="text-muted">{{ total_mensagens }} mensagens</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Messages -->
+                        <div class="chat-messages" id="chat-messages">
+                            {% if mensagens %}
+                                {% for mensagem in mensagens %}
+                                <div class="message {% if mensagem.remetente == request.user %}own{% endif %}">
+                                    {% if mensagem.remetente != request.user %}
+                                        <div class="participant-avatar">
+                                            {{ mensagem.remetente.username.0|upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="message-content">
+                                        {% if mensagem.resposta_para %}
+                                            <div class="reply-to mb-2 p-2 bg-light border-start border-primary border-3">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-reply me-1"></i>
+                                                    Respondendo a {{ mensagem.resposta_para.remetente.username }}
+                                                </small>
+                                                <div class="text-muted small">
+                                                    {{ mensagem.resposta_para.conteudo|truncatechars:50 }}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if mensagem.tipo == 'texto' %}
+                                            <div>{{ mensagem.conteudo|linebreaks }}</div>
+                                        {% elif mensagem.tipo == 'arquivo' %}
+                                            <div>
+                                                <i class="fas fa-file me-2"></i>
+                                                <a href="{{ mensagem.arquivo.url }}" target="_blank">
+                                                    {{ mensagem.nome_arquivo_original|default:"Arquivo" }}
+                                                </a>
+                                            </div>
+                                        {% elif mensagem.tipo == 'imagem' %}
+                                            <div>
+                                                <img src="{{ mensagem.arquivo.url }}" class="img-fluid rounded" 
+                                                     style="max-width: 200px;" alt="Imagem">
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="message-info">
+                                            <strong>{{ mensagem.remetente.username }}</strong>
+                                            • {{ mensagem.created_at|date:"d/m/Y H:i" }}
+                                            {% if mensagem.editada %}
+                                                • <em>editada</em>
+                                            {% endif %}
+                                            {% if mensagem.lida %}
+                                                • <i class="fas fa-check-double text-primary"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if mensagem.remetente == request.user %}
+                                        <div class="participant-avatar">
+                                            {{ mensagem.remetente.username.0|upper }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Nenhuma mensagem ainda</h5>
+                                    <p class="text-muted">Seja o primeiro a enviar uma mensagem nesta conversa.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="message-input">
+                            <form method="post" action="{% url 'chat:mensagem_create' conversa.pk %}" 
+                                  enctype="multipart/form-data" id="message-form">
+                                {% csrf_token %}
+                                <div class="input-group">
+                                    <input type="text" name="conteudo" class="form-control" 
+                                           placeholder="Digite sua mensagem..." required>
+                                    <input type="file" name="arquivo" class="d-none" id="file-input">
+                                    <button type="button" class="btn btn-outline-secondary" 
+                                            onclick="document.getElementById('file-input').click()">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Participantes -->
+            <div class="action-card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-users me-2"></i>Participantes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if participantes %}
+                        {% for participante in participantes %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="participant-avatar me-3">
+                                {{ participante.username.0|upper }}
+                            </div>
+                            <div>
+                                <strong>{{ participante.get_full_name|default:participante.username }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if participante == conversa.criador %}
+                                        <i class="fas fa-crown text-warning"></i> Criador
+                                    {% else %}
+                                        <i class="fas fa-user"></i> Participante
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Nenhum participante encontrado.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Informações da Conversa -->
+            <div class="action-card mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Informações
+                    </h6>
+                    <a href="{% url 'agenda:evento_create' %}?conversa_id={{ conversa.id }}" class="btn btn-sm btn-success">
+                        <i class="fas fa-calendar-plus me-1"></i> Agendar reunião
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Criada em:</small>
+                            <div>{{ conversa.created_at|date:"d/m/Y H:i" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Última atividade:</small>
+                            <div>
+                                {% if conversa.ultima_atividade %}
+                                    {{ conversa.ultima_atividade|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Tipo:</small>
+                            <div>{{ conversa.get_tipo_display }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Status:</small>
+                            <div>
+                                <span class="badge bg-success">{{ conversa.get_status_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% if conversa.descricao %}
+                        <hr>
+                        <div>
+                            <small class="text-muted">Descrição:</small>
+                            <div>{{ conversa.descricao }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-scroll to bottom of chat
+function scrollToBottom() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Scroll to bottom on page load
+document.addEventListener('DOMContentLoaded', function() {
+    scrollToBottom();
+});
+
+// Handle form submission
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const messageInput = this.querySelector('input[name="conteudo"]');
+    
+    if (!messageInput.value.trim()) {
+        return;
+    }
+    
+    // Submit form normally for now
+    this.submit();
+});
+
+// Handle file selection
+document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const messageInput = document.querySelector('input[name="conteudo"]');
+        messageInput.placeholder = `Arquivo selecionado: ${file.name}`;
+    }
+});
+</script>
+{% endblock %}

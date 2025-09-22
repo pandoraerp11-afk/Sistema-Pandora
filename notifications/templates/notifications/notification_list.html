@@ -1,0 +1,137 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% block title %}Minhas Notificações{% endblock %}
+{# Removido extra_css antigo #}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1"><i class="fas fa-bell me-2 text-primary"></i>Minhas Notificações</h1>
+      <p class="text-muted small mb-0">Central de avisos do sistema</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-sm btn-outline-success batch-action" data-action="read"><i class="fas fa-check me-1"></i>Ler Selecionadas</button>
+      <button class="btn btn-sm btn-outline-warning batch-action" data-action="unread"><i class="fas fa-envelope me-1"></i>Não Lidas</button>
+  <button class="btn btn-sm btn-outline-secondary batch-action" data-action="archive"><i class="fas fa-box-archive me-1"></i>Arquivar</button>
+      <button class="btn btn-sm btn-outline-danger batch-action" data-action="delete"><i class="fas fa-trash me-1"></i>Excluir</button>
+    </div>
+  </div>
+  <form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Busca</label>
+      <input type="text" name="search" value="{{ request.GET.search }}" class="form-control form-control-sm" placeholder="Título ou mensagem">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">Todos</option>
+        {% for key,value in status_choices %}<option value="{{ key }}" {% if request.GET.status==key %}selected{% endif %}>{{ value }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Tipo</label>
+      <select name="tipo" class="form-select form-select-sm">
+        <option value="">Todos</option>
+        {% for key,value in tipo_choices %}<option value="{{ key }}" {% if request.GET.tipo==key %}selected{% endif %}>{{ value }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Prioridade</label>
+      <select name="prioridade" class="form-select form-select-sm">
+        <option value="">Todas</option>
+        {% for key,value in prioridade_choices %}<option value="{{ key }}" {% if request.GET.prioridade==key %}selected{% endif %}>{{ value }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-primary btn-sm w-100"><i class="fas fa-search me-1"></i>Filtrar</button>
+    </div>
+  </form>
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:30px"><input type="checkbox" id="select-all-notifications"></th>
+            <th>Título</th>
+            <th>Mensagem</th>
+            <th>Tipo</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th style="width:120px">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for notificacao in notificacoes %}
+          <tr class="{% if notificacao.status=='nao_lida' %}fw-bold{% endif %}">
+            <td><input type="checkbox" class="notification-checkbox form-check-input" value="{{ notificacao.pk }}"></td>
+            <td class="small">{{ notificacao.titulo }}</td>
+            <td class="small">{{ notificacao.mensagem|truncatechars:60 }}</td>
+            <td><span class="badge bg-secondary">{{ notificacao.get_tipo_display }}</span></td>
+            <td><span class="badge bg-info text-dark">{{ notificacao.get_prioridade_display }}</span></td>
+            <td class="status-cell">{% if notificacao.status=='nao_lida' %}<span class="badge bg-warning text-dark">Não Lida</span>{% elif notificacao.status=='lida' %}<span class="badge bg-success">Lida</span>{% elif notificacao.status=='arquivada' %}<span class="badge bg-secondary">Arquivada</span>{% elif notificacao.status=='expirada' %}<span class="badge bg-danger">Expirada</span>{% endif %}</td>
+            <td class="small text-nowrap">{{ notificacao.created_at|date:"d/m H:i" }}</td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{% url 'notifications:notification_detail' notificacao.pk %}" class="btn btn-outline-primary" title="Ver"><i class="fas fa-eye"></i></a>
+                {% if notificacao.status=='nao_lida' %}
+                <button type="button" class="btn btn-outline-success mark-as-read-single" data-id="{{ notificacao.pk }}" title="Ler"><i class="fas fa-check"></i></button>
+                {% else %}
+                <button type="button" class="btn btn-outline-warning mark-as-unread-single" data-id="{{ notificacao.pk }}" title="Marcar Não Lida"><i class="fas fa-envelope"></i></button>
+                {% endif %}
+                {% if notificacao.status!='arquivada' %}
+                <button type="button" class="btn btn-outline-secondary archive-single" data-id="{{ notificacao.pk }}" title="Arquivar"><i class="fas fa-box-archive"></i></button>
+                {% endif %}
+                <button type="button" class="btn btn-outline-danger delete-single" data-id="{{ notificacao.pk }}" title="Excluir"><i class="fas fa-trash"></i></button>
+              </div>
+                  if(!window.PandoraNotif){console.error('PandoraNotif util não carregado'); return;}
+                  const {toast, postJSON} = PandoraNotif;
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center py-4 text-muted">Sem notificações.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+                    if(e.target.closest('.archive-single')){batch('archive',[e.target.closest('button').dataset.id]);}
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer py-2 small">
+      <div class="d-flex justify-content-between">
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <div>
+          {% if page_obj.has_previous %}<a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.previous_page_number }}">«</a>{% endif %}
+          {% if page_obj.has_next %}<a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.next_page_number }}">»</a>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index:1080; max-width:320px;"></div>
+<div id="global-spinner" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="backdrop-filter:blur(2px);background:rgba(255,255,255,.4);z-index:1075;">
+  <div class="d-flex justify-content-center align-items-center h-100">
+    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+(function(){
+  function csrf(){const m=document.cookie.match(/csrftoken=([^;]+)/);return m?m[1]:'';}
+  function toast(msg,type='success'){const c=document.getElementById('toast-container');const id='t'+Date.now();const color=type==='error'?'bg-danger':'bg-success';const el=document.createElement('div');el.className='toast align-items-center text-white '+color+' show mb-2 fade';el.id=id;el.role='alert';el.innerHTML='<div class="d-flex"><div class="toast-body small">'+msg+'</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';c.appendChild(el);setTimeout(()=>el.remove(),4000);}  
+  function spinner(show){document.getElementById('global-spinner').classList.toggle('d-none',!show);}  
+  function post(url,payload){spinner(true);return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(payload)}).then(r=>r.json()).finally(()=>spinner(false));}
+  function refreshRowState(id,toStatus){const row=document.querySelector('input.notification-checkbox[value="'+id+'"]').closest('tr');if(!row) return;row.classList.toggle('fw-bold',toStatus==='nao_lida');const cell=row.querySelector('.status-cell');if(cell){let html='';if(toStatus==='nao_lida') html='<span class="badge bg-warning text-dark">Não Lida</span>'; else if(toStatus==='lida') html='<span class="badge bg-success">Lida</span>'; cell.innerHTML=html;}}
+  function batch(op,ids){if(!ids.length){toast('Selecione algo','error');return;} post('{% url "notifications:notification-batch-action" %}',{operation:op,ids:ids}).then(d=>{if(d.error){toast(d.error,'error');return;} if(op==='delete'){ids.forEach(id=>{const cb=document.querySelector('input.notification-checkbox[value="'+id+'"]'); if(cb){const tr=cb.closest('tr'); tr && tr.remove();}});toast('Removidas');} else if(op==='mark_as_read'){ids.forEach(id=>refreshRowState(id,'lida'));toast('Marcadas lidas');} else if(op==='mark_as_unread'){ids.forEach(id=>refreshRowState(id,'nao_lida'));toast('Marcadas não lidas');}}).catch(()=>toast('Falha','error'));}
+  document.addEventListener('click',e=>{
+    if(e.target.id==='select-all-notifications'){const c=e.target.checked;document.querySelectorAll('.notification-checkbox').forEach(cb=>cb.checked=c);}    
+    if(e.target.closest('.mark-as-read-single')){batch('mark_as_read',[e.target.closest('button').dataset.id]);}
+    if(e.target.closest('.mark-as-unread-single')){batch('mark_as_unread',[e.target.closest('button').dataset.id]);}
+    if(e.target.closest('.delete-single')){ if(confirm('Excluir notificação?')) batch('delete',[e.target.closest('button').dataset.id]); }
+    if(e.target.closest('.batch-action')){const act=e.target.closest('.batch-action').dataset.action;const ids=[...document.querySelectorAll('.notification-checkbox:checked')].map(i=>i.value);const map={read:'mark_as_read',unread:'mark_as_unread',delete:'delete'}; if(act==='delete' && !confirm('Excluir selecionadas?')) return; batch(map[act]||act,ids);}  
+  });
+})();
+</script>
+{% endblock %}
+

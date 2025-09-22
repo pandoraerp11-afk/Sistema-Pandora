@@ -1,0 +1,98 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}{% trans "Gerenciar Empresas" %} - {{ block.super }}{% endblock %} {% block page_title %}{% trans "Empresas" %}{% endblock %}
+{% block page_subtitle %}Gerencie as empresas do sistema{% endblock %} {% block add_button_url %}{% url 'core:tenant_create' %}{% endblock %}
+{% block add_button_text %}Nova Empresa{% endblock %} {% block list_filters %}
+<form method="get" class="row g-3"><div class="col-md-4"><input type="text" name="search" class="form-control" placeholder="Buscar por nome, CNPJ..." value="{{ request.GET.search }}"></div><div class="col-md-3"><select name="status" class="form-select"><option value="">Todos os status</option><option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Ativo</option><option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inativo</option><option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pendente</option></select></div><div class="col-md-3"><select name="tipo_pessoa" class="form-select"><option value="">Todos os tipos</option><option value="PJ" {% if request.GET.tipo_pessoa == 'PJ' %}selected{% endif %}>Pessoa Jurídica</option><option value="PF" {% if request.GET.tipo_pessoa == 'PF' %}selected{% endif %}>Pessoa Física</option></select></div><div class="col-md-2"><button type="submit" class="btn btn-outline-primary" title="Filtrar"><i class="fas fa-search"></i></button></div></form>
+{% endblock %} {% block table_content %}
+<div class="table-responsive"><table class="table table-hover" id="tenantsTable"><thead><tr><th class="col-nome">{% trans "Empresa" %}</th><th class="col-documento">{% trans "Documento" %}</th><th class="col-status">{% trans "Status" %}</th><th class="col-tipo">{% trans "Tipo" %}</th><th class="col-criado">{% trans "Criado em" %}</th><th class="col-acoes">{% trans "Ações" %}</th></tr></thead><tbody> {% for tenant in object_list %} <tr><td class="col-nome"><div class="d-flex align-items-center"><div class="avatar-sm me-3"> {% if tenant.logo %} <img src="{{ tenant.logo.url }}" alt="{{ tenant.name }}" class="rounded-circle" > {% else %} <div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"> {{ tenant.name|first|upper }} </div> {% endif %} </div><div><h6 class="mb-0">{{ tenant.name }}</h6><small class="text-muted">{{ tenant.razao_social|default:"" }}</small></div></div></td><td class="col-documento"> {% if tenant.tipo_pessoa == 'PJ' %} <div class="text-truncate"><small class="text-muted d-block">CNPJ</small><span >{{ tenant.cnpj|default:"Não informado" }}</span></div> {% else %} <div class="text-truncate"><small class="text-muted d-block">CPF</small><span >{{ tenant.cpf|default:"Não informado" }}</span></div> {% endif %} </td><td class="col-status"> {% if tenant.status == 'active' %} <span class="badge badge-ultra-modern badge-status-compact badge-status-ativo"><i class="fas fa-check-circle"></i> {% trans "Ativo" %} </span> {% elif tenant.status == 'inactive' %} <span class="badge badge-ultra-modern badge-status-compact badge-status-inativo"><i class="fas fa-times-circle"></i> {% trans "Inativo" %} </span> {% else %} <span class="badge badge-ultra-modern badge-status-compact badge-status-pendente"><i class="fas fa-clock"></i> {% trans "Pendente" %} </span> {% endif %} </td><td class="col-tipo"> {% if tenant.tipo_pessoa == 'PJ' %} <span class="badge badge-ultra-modern badge-type-compact badge-type-juridica"><i class="fas fa-building"></i> PJ </span> {% else %} <span class="badge badge-ultra-modern badge-type-compact badge-type-fisica"><i class="fas fa-user"></i> PF </span> {% endif %} </td><td class="col-criado"><div class="text-xs"><div>{{ tenant.created_at|date:"d/m/Y" }}</div><small class="text-muted">{{ tenant.created_at|date:"H:i" }}</small></div></td><td class="col-acoes"><div class="d-flex gap-1 justify-content-center"><a href="{% url 'core:tenant_detail' tenant.pk %}" class="btn btn-outline-info btn-action-sm" title="{% trans "Visualizar" %}"><i class="fas fa-eye"></i></a><a href="{% url 'core:tenant_update' tenant.pk %}" class="btn btn-outline-primary btn-action-sm" title="{% trans "Editar" %}"><i class="fas fa-edit"></i></a><a href="{% url 'core:tenant_module_config' tenant.pk %}" class="btn btn-outline-success btn-action-sm" title="{% trans "Módulos" %}"><i class="fas fa-cog"></i></a><button type="button" class="btn btn-outline-danger btn-action-sm delete-btn" 
+                        data-url="{% if tenant.id %}{% url 'core:tenant_delete' tenant.id %}{% else %}/core/tenants/ERROR/delete/{% endif %}" 
+                        data-name="{{ tenant.name|default:'Nome não informado' }}" 
+                        data-tenant-id="{{ tenant.id|default:'0' }}" 
+                        data-debug-pk="{{ tenant.pk|default:'undefined' }}"
+                        data-debug-id="{{ tenant.id|default:'undefined' }}"
+                        title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button></div></td></tr> {% empty %} <tr><td colspan="6" class="text-center py-5"><div class="empty-state"><i class="fas fa-building fa-3x text-muted mb-3"></i><h5>Nenhuma empresa encontrada</h5><p class="text-muted">Nenhuma empresa corresponde aos filtros aplicados.</p><a href="{% url 'core:tenant_create' %}" class="btn btn-outline-primary" title="Criar primeira empresa"><i class="fas fa-plus"></i></a></div></td></tr> {% endfor %} </tbody></table></div><!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Navegação" class="mt-4"><ul class="pagination justify-content-center"> {% if page_obj.has_previous %} <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_pessoa %}&tipo_pessoa={{ request.GET.tipo_pessoa }}{% endif %}"><i class="fas fa-angle-double-left"></i></a></li><li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_pessoa %}&tipo_pessoa={{ request.GET.tipo_pessoa }}{% endif %}"><i class="fas fa-angle-left"></i></a></li> {% endif %} {% for num in page_obj.paginator.page_range %} {% if page_obj.number == num %} <li class="page-item active"><span class="page-link">{{ num }}</span></li> {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_pessoa %}&tipo_pessoa={{ request.GET.tipo_pessoa }}{% endif %}">{{ num }}</a></li> {% endif %} {% endfor %} {% if page_obj.has_next %} <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_pessoa %}&tipo_pessoa={{ request.GET.tipo_pessoa }}{% endif %}"><i class="fas fa-angle-right"></i></a></li><li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.tipo_pessoa %}&tipo_pessoa={{ request.GET.tipo_pessoa }}{% endif %}"><i class="fas fa-angle-double-right"></i></a></li> {% endif %} </ul></nav>
+{% endif %}
+{% endblock %} {% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() { 
+    // Delete confirmation with enhanced error handling
+    document.querySelectorAll('.delete-btn').forEach(btn => { 
+        btn.addEventListener('click', function() { 
+            const url = this.dataset.url; 
+            const name = this.dataset.name; 
+            const tenantId = this.dataset.tenantId;
+            const debugPk = this.dataset.debugPk;
+            const debugId = this.dataset.debugId;
+            
+            // Enhanced debug logging
+            console.log('=== DELETE BUTTON DEBUG ===');
+            console.log('Button datasets:', this.dataset);
+            console.log('URL:', url);
+            console.log('Tenant Name:', name);
+            console.log('Tenant ID:', tenantId);
+            console.log('Debug PK:', debugPk);
+            console.log('Debug ID:', debugId);
+            console.log('Button element:', this);
+            console.log('All data attributes:', {
+                url: this.getAttribute('data-url'),
+                name: this.getAttribute('data-name'),
+                tenantId: this.getAttribute('data-tenant-id'),
+                debugPk: this.getAttribute('data-debug-pk'),
+                debugId: this.getAttribute('data-debug-id')
+            });
+            console.log('=== END DEBUG ===');
+            
+            // Comprehensive validation
+            if (!url || url.includes('undefined') || url.includes('null') || !tenantId) {
+                console.error('Invalid delete URL detected:', {
+                    url: url,
+                    tenantId: tenantId,
+                    name: name
+                });
+                
+                Swal.fire({
+                    title: 'Erro de Validação!',
+                    html: `
+                        <p>Não foi possível obter os dados do tenant para exclusão.</p>
+                        <p><strong>URL:</strong> ${url || 'undefined'}</p>
+                        <p><strong>ID:</strong> ${tenantId || 'undefined'}</p>
+                        <p>Recarregue a página e tente novamente.</p>
+                    `,
+                    icon: 'error',
+                    confirmButtonText: 'Recarregar Página',
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+                return;
+            }
+            
+            Swal.fire({ 
+                title: 'Confirmar exclusão?', 
+                html: `Tem certeza que deseja excluir a empresa <strong>${name}</strong>?<br>Esta ação não pode ser desfeita.`, 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#d33', 
+                cancelButtonColor: '#3085d6', 
+                confirmButtonText: 'Sim, excluir!', 
+                cancelButtonText: 'Cancelar' 
+            }).then((result) => { 
+                if (result.isConfirmed) {
+                    console.log('Redirecting to:', url);
+                    window.location.href = url; 
+                } 
+            }); 
+        }); 
+    });
+});
+</script>
+{% endblock %}

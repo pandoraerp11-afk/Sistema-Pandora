@@ -1,0 +1,332 @@
+{# Coluna do Kanban #}
+<div class="kanban-column-header">
+    <h5 class="kanban-column-title">
+        <span>
+            {% if status == 'PENDENTE' %}
+                <i class="fas fa-clock me-2"></i>{{ titulo }}
+            {% elif status == 'SEPARACAO' %}
+                <i class="fas fa-hand-paper me-2"></i>{{ titulo }}
+            {% elif status == 'CONFERENCIA' %}
+                <i class="fas fa-search me-2"></i>{{ titulo }}
+            {% elif status == 'EMBALAGEM' %}
+                <i class="fas fa-box me-2"></i>{{ titulo }}
+            {% elif status == 'EXPEDICAO' %}
+                <i class="fas fa-truck me-2"></i>{{ titulo }}
+            {% elif status == 'FINALIZADO' %}
+                <i class="fas fa-check-circle me-2"></i>{{ titulo }}
+            {% else %}
+                <i class="fas fa-folder me-2"></i>{{ titulo }}
+            {% endif %}
+        </span>
+        
+        <span class="kanban-column-count" id="count-{{ status|lower }}">
+            {{ pedidos.count|default:0 }}
+        </span>
+    </h5>
+    
+    <!-- Ações da coluna -->
+    <div class="column-actions mt-2">
+        {% if status == 'PENDENTE' %}
+            <button class="btn btn-sm btn-light" onclick="processarTodosPendentes()" 
+                    title="Iniciar Separação de Todos">
+                <i class="fas fa-play-circle me-1"></i>Iniciar Todos
+            </button>
+        {% elif status == 'SEPARACAO' %}
+            <button class="btn btn-sm btn-light" onclick="conferirTodosSeparacao()" 
+                    title="Enviar Todos para Conferência">
+                <i class="fas fa-forward me-1"></i>Conferir Todos
+            </button>
+        {% elif status == 'FINALIZADO' %}
+            <button class="btn btn-sm btn-light" onclick="arquivarFinalizados()" 
+                    title="Arquivar Finalizados Antigos">
+                <i class="fas fa-archive me-1"></i>Arquivar
+            </button>
+        {% endif %}
+        
+        <!-- Filtro local da coluna -->
+        {% if pedidos.count > 5 %}
+            <div class="mt-2">
+                <input type="text" class="form-control form-control-sm" 
+                       placeholder="Buscar nesta coluna..." 
+                       onkeyup="filtrarColuna('{{ status|lower }}', this.value)">
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="kanban-column-body" 
+     ondrop="drop(event)" 
+     ondragover="allowDrop(event)"
+     data-status="{{ status }}">
+     
+    {% if pedidos %}
+        {% for pedido in pedidos %}
+            {% include 'estoque/picking/_card_pedido.html' with pedido=pedido %}
+        {% endfor %}
+    {% else %}
+        <!-- Estado vazio -->
+        <div class="drop-zone" id="empty-zone-{{ status|lower }}">
+            {% if status == 'PENDENTE' %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <div>Nenhum pedido pendente</div>
+                    <small>Pedidos aparecerão aqui automaticamente</small>
+                </div>
+            {% elif status == 'SEPARACAO' %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-hand-paper fa-2x mb-2"></i>
+                    <div>Arraste pedidos para separação</div>
+                    <small>Ou clique em "Iniciar" nos pendentes</small>
+                </div>
+            {% elif status == 'CONFERENCIA' %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <div>Aguardando conferência</div>
+                    <small>Pedidos separados aparecerão aqui</small>
+                </div>
+            {% elif status == 'EMBALAGEM' %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-box fa-2x mb-2"></i>
+                    <div>Pronto para embalagem</div>
+                    <small>Pedidos conferidos aparecerão aqui</small>
+                </div>
+            {% elif status == 'EXPEDICAO' %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-truck fa-2x mb-2"></i>
+                    <div>Aguardando expedição</div>
+                    <small>Pedidos embalados aparecerão aqui</small>
+                </div>
+            {% elif status == 'FINALIZADO' %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <div>Nenhum pedido finalizado</div>
+                    <small>Pedidos concluídos aparecerão aqui</small>
+                </div>
+            {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-folder-open fa-2x mb-2"></i>
+                    <div>Área vazia</div>
+                    <small>Arraste pedidos para cá</small>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <!-- Indicador de loading para a coluna -->
+    <div class="kanban-loading d-none" id="loading-{{ status|lower }}">
+        <div class="text-center">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <div class="mt-2">Atualizando...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer da coluna com estatísticas -->
+<div class="kanban-column-footer">
+    <div class="column-stats">
+        <div class="d-flex justify-content-between align-items-center p-2 border-top">
+            <!-- Estatísticas específicas por status -->
+            {% if status == 'PENDENTE' %}
+                <small class="text-muted">
+                    <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                    <span id="urgent-{{ status|lower }}">{{ pedidos|length }}</span> urgentes
+                </small>
+            {% elif status == 'SEPARACAO' %}
+                <small class="text-muted">
+                    <i class="fas fa-user text-info me-1"></i>
+                    <span id="operators-{{ status|lower }}">{{ operadores_ativos }}</span> operadores
+                </small>
+            {% elif status == 'CONFERENCIA' %}
+                <small class="text-muted">
+                    <i class="fas fa-percentage text-success me-1"></i>
+                    <span id="accuracy-{{ status|lower }}">98.5</span>% precisão
+                </small>
+            {% elif status == 'EMBALAGEM' %}
+                <small class="text-muted">
+                    <i class="fas fa-weight text-primary me-1"></i>
+                    <span id="weight-{{ status|lower }}">0</span>kg total
+                </small>
+            {% elif status == 'EXPEDICAO' %}
+                <small class="text-muted">
+                    <i class="fas fa-shipping-fast text-info me-1"></i>
+                    <span id="ready-{{ status|lower }}">{{ pedidos|length }}</span> prontos
+                </small>
+            {% elif status == 'FINALIZADO' %}
+                <small class="text-muted">
+                    <i class="fas fa-calendar text-success me-1"></i>
+                    Hoje: <span id="today-{{ status|lower }}">{{ finalizados_hoje }}</span>
+                </small>
+            {% endif %}
+            
+            <!-- Tempo médio -->
+            <small class="text-muted">
+                <i class="fas fa-clock me-1"></i>
+                <span id="avgtime-{{ status|lower }}">
+                    {% if tempo_medio %}{{ tempo_medio }}min{% else %}--{% endif %}
+                </span>
+            </small>
+        </div>
+    </div>
+</div>
+
+<style>
+.kanban-column-footer {
+    border-top: 1px solid var(--kanban-border);
+    background: #fafafa;
+    border-radius: 0 0 12px 12px;
+}
+
+.column-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.column-actions .btn {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+
+.column-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    transform: scale(1.02);
+}
+
+.drop-zone.active {
+    border-color: #2196f3;
+    background: #e3f2fd;
+    color: #1976d2;
+    animation: dropZonePulse 1s ease-in-out infinite;
+}
+
+@keyframes dropZonePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.column-stats {
+    font-size: 0.75rem;
+}
+
+.column-stats .text-muted {
+    color: #6c757d !important;
+}
+
+/* Responsividade da coluna */
+@media (max-width: 768px) {
+    .column-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .column-actions .btn {
+        flex: 1;
+        min-width: 100px;
+    }
+}
+
+/* Estados visuais das colunas */
+.kanban-column.over-capacity {
+    border: 2px solid #ff9800;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+}
+
+.kanban-column.under-capacity {
+    border: 2px solid #4caf50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+}
+
+.kanban-column.blocked {
+    border: 2px solid #f44336;
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+}
+
+.kanban-column.blocked .kanban-column-header {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%) !important;
+}
+
+.kanban-column.blocked .drop-zone {
+    border-color: #f44336;
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+/* Animações para mudança de estado */
+.kanban-column.updating {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.kanban-column.updated {
+    animation: columnFlash 0.5s ease;
+}
+
+@keyframes columnFlash {
+    0% { background: rgba(76, 175, 80, 0.1); }
+    100% { background: var(--kanban-column-bg); }
+}
+</style>
+
+<script>
+// Funções específicas da coluna
+function filtrarColuna(status, termo) {
+    const coluna = document.getElementById(`coluna-${status}`);
+    const cards = coluna.querySelectorAll('.pedido-card');
+    
+    cards.forEach(card => {
+        const texto = card.textContent.toLowerCase();
+        const visivel = texto.includes(termo.toLowerCase());
+        card.style.display = visivel ? 'block' : 'none';
+    });
+    
+    // Atualizar contador
+    const visiveis = coluna.querySelectorAll('.pedido-card[style*="block"], .pedido-card:not([style*="none"])').length;
+    document.getElementById(`count-${status}`).textContent = visiveis;
+}
+
+// Drag and Drop
+function allowDrop(ev) {
+    ev.preventDefault();
+    const coluna = ev.currentTarget.closest('.kanban-column');
+    coluna.classList.add('drag-over');
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    const coluna = ev.currentTarget.closest('.kanban-column');
+    coluna.classList.remove('drag-over');
+    
+    const pedidoId = ev.dataTransfer.getData('text/plain');
+    const novoStatus = coluna.dataset.status;
+    
+    // Mover pedido
+    EstoquePicking.moverPedido(pedidoId, novoStatus);
+}
+
+// Funções de ação em lote
+function processarTodosPendentes() {
+    if (confirm('Iniciar separação de todos os pedidos pendentes?')) {
+        EstoquePicking.processarLote('PENDENTE', 'SEPARACAO');
+    }
+}
+
+function conferirTodosSeparacao() {
+    if (confirm('Enviar todos os pedidos para conferência?')) {
+        EstoquePicking.processarLote('SEPARACAO', 'CONFERENCIA');
+    }
+}
+
+function arquivarFinalizados() {
+    if (confirm('Arquivar todos os pedidos finalizados há mais de 7 dias?')) {
+        EstoquePicking.arquivarFinalizados();
+    }
+}
+</script>

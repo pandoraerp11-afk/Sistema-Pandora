@@ -1,0 +1,245 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}🚚 {% trans "Módulo Fornecedores" %} - Pandora ERP{% endblock %}
+
+{% block home_icon %}<i class="fas fa-truck me-2 text-primary"></i>{% endblock %}
+{% block home_title %}{% trans "Módulo Fornecedores" %}{% endblock %}
+{% block home_subtitle %}{% trans "Central de gestão de fornecedores, documentos e homologação" %}{% endblock %}
+
+{% block home_stats %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            {% trans "Visão Geral de Fornecedores" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'fornecedores:fornecedores_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-primary mb-1">{{ total_fornecedores|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Total de Fornecedores" %}</p>
+                            <small class="text-muted">{% trans "Cadastrados" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'fornecedores:fornecedores_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-success mb-1">{{ fornecedores_ativos|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Fornecedores Ativos" %}</p>
+                            <small class="text-muted">{% trans "Em operação" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <a href="{% url 'fornecedores:fornecedores_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-warning mb-1">{{ pendentes_homologacao|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Pendentes de Homologação" %}</p>
+                            <small class="text-muted">{% trans "Aguardando revisão" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-info mb-1">{{ media_avaliacao|default:"0.0" }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Média de Avaliação" %}</p>
+                        <small class="text-muted">{% trans "De 1 a 5" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_actions %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-bolt me-2 text-primary"></i>
+            {% trans "Ações Rápidas" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="200">
+            <!-- Gestão de Fornecedores -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Gestão de Fornecedores" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Crie e gerencie fornecedores do sistema" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                            <a href="{% url 'fornecedores:fornecedor_wizard' %}" class="btn btn-primary btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-plus me-1"></i>{% trans "Criar" %}
+                            </a>
+                            {% endif %}
+                            {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                            <a href="{% url 'fornecedores:fornecedores_list' %}" class="btn btn-outline-primary btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-list me-1"></i>{% trans "Listar" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Homologação -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                            <i class="fas fa-badge-check"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Homologação" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Acompanhe pendências e aprovações" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                            <a href="{% url 'fornecedores:fornecedores_list' %}" class="btn btn-warning btn-sm text-dark" style="min-width: 160px;">
+                                <i class="fas fa-clipboard-check me-1"></i>{% trans "Ver Pendências" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relatórios de Fornecedores -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-secondary text-white mx-auto mb-3">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Relatórios de Fornecedores" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Visualize métricas e exportações" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button class="btn btn-secondary btn-sm" style="min-width: 110px;" onclick="alert('Relatórios em desenvolvimento')">
+                                <i class="fas fa-chart-bar me-1"></i>{% trans "Relatórios" %}
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" style="min-width: 110px;" onclick="alert('Export em desenvolvimento')">
+                                <i class="fas fa-download me-1"></i>{% trans "Export" %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_recent %}
+    <div class="mt-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-history me-2 text-primary"></i>
+            {% trans "Fornecedores Adicionados Recentemente" %}
+        </h2>
+        <div class="row g-4">
+            <div class="col-12" data-aos="fade-up" data-aos-delay="100">
+                <div class="action-card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        {% for fornecedor in fornecedores_recentes %}
+                        <div class="recent-item">
+                            <div class="row align-items-center py-2">
+                                <div class="col-auto">
+                                    <div class="d-flex align-items-center justify-content-center bg-gradient-primary text-white rounded-circle" style="width: 52px; height: 52px;">
+                                        {% if fornecedor.tipo_pessoa == 'PJ' %}
+                                        <i class="fas fa-building fa-lg"></i>
+                                        {% else %}
+                                        <i class="fas fa-user fa-lg"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h6 class="mb-1 fw-bold">
+                                        <a href="{% url 'fornecedores:fornecedor_detail' fornecedor.pk %}" class="text-decoration-none text-dark">
+                                            {% if fornecedor.tipo_pessoa == 'PJ' and fornecedor.pessoajuridica %}
+                                                {{ fornecedor.pessoajuridica.nome_fantasia|default:fornecedor.pessoajuridica.razao_social }}
+                                            {% elif fornecedor.tipo_pessoa == 'PF' and fornecedor.pessoafisica %}
+                                                {{ fornecedor.pessoafisica.nome_completo }}
+                                            {% else %}
+                                                {{ fornecedor }}
+                                            {% endif %}
+                                        </a>
+                                    </h6>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-id-card me-1"></i>
+                                            {% if fornecedor.tipo_pessoa == 'PJ' and fornecedor.pessoajuridica %}
+                                                {{ fornecedor.pessoajuridica.cnpj|default:"Não informado" }}
+                                            {% elif fornecedor.tipo_pessoa == 'PF' and fornecedor.pessoafisica %}
+                                                {{ fornecedor.pessoafisica.cpf|default:"Não informado" }}
+                                            {% else %}
+                                                {{ fornecedor.get_tipo_pessoa_display }}
+                                            {% endif %}
+                                        </small>
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ fornecedor.data_cadastro|timesince }} {% trans "atrás" %}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge-modern">
+                                            <i class="fas fa-{% if fornecedor.status == 'active' %}check-circle{% elif fornecedor.status == 'inactive' %}times-circle{% else %}exclamation-circle{% endif %} me-1"></i>
+                                            {{ fornecedor.get_status_display }}
+                                        </span>
+                                        <span class="badge-modern bg-light text-dark border">
+                                            <i class="fas fa-{% if fornecedor.tipo_pessoa == 'PJ' %}building{% else %}user{% endif %} me-1"></i>
+                                            {{ fornecedor.get_tipo_pessoa_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-truck fa-3x mb-3 opacity-25"></i>
+                                <h5 class="mb-2">{% trans "Nenhum fornecedor cadastrado ainda" %}</h5>
+                                <p class="mb-3">{% trans "Clique em 'Novo Fornecedor' para começar" %}</p>
+                                <a href="{% url 'fornecedores:fornecedor_wizard' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>{% trans "Novo Fornecedor" %}
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if fornecedores_recentes %}
+                    <div class="card-footer bg-light border-0 py-3 text-center">
+                        <a href="{% url 'fornecedores:fornecedores_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list me-2"></i>{% trans "Ver Todos os Fornecedores" %}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

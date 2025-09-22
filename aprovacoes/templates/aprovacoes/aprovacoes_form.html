@@ -1,0 +1,566 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}
+{% if object %}
+    Editar Aprovação | Pandora ERP
+{% else %}
+    Nova Aprovação | Pandora ERP
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    
+    .workflow-indicator {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border-radius: 12px 0 0 12px;
+    }
+    
+    .form-section h4 {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        padding-left: 1rem;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        color: #34495e;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        border-radius: 8px;
+        border: 2px solid #e1e8ed;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #95a5a6;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #7f8c8d;
+        transform: translateY(-2px);
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #e74c3c;
+        font-weight: bold;
+    }
+    
+    .form-help {
+        font-size: 0.875rem;
+        color: #7f8c8d;
+        margin-top: 0.25rem;
+    }
+    
+    .status-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .status-option {
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .status-option:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .status-option.selected {
+        border-color: #3498db;
+        background: rgba(52, 152, 219, 0.1);
+    }
+    
+    .status-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    .status-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-pendente .status-icon {
+        color: #ffc107;
+    }
+    
+    .status-aprovado .status-icon {
+        color: #28a745;
+    }
+    
+    .status-rejeitado .status-icon {
+        color: #dc3545;
+    }
+    
+    .status-cancelado .status-icon {
+        color: #6c757d;
+    }
+    
+    /* Estilos para Select2 com Bootstrap 5 */
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        min-height: 50px;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        padding-left: 1rem;
+        padding-top: 0.75rem;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 1.5rem;
+    }
+    
+    .card-header h3 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+    
+    .workflow-progress {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .workflow-step {
+        text-align: center;
+        flex: 1;
+        position: relative;
+    }
+    
+    .workflow-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -50%;
+        transform: translateY(-50%);
+        height: 2px;
+        width: 100%;
+        background: #dee2e6;
+        z-index: 1;
+    }
+    
+    .workflow-step.active::after {
+        background: #3498db;
+    }
+    
+    .workflow-step-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.5rem;
+        font-weight: bold;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .workflow-step.pending .workflow-step-icon {
+        background: #ffc107;
+        color: white;
+    }
+    
+    .workflow-step.active .workflow-step-icon {
+        background: #3498db;
+        color: white;
+    }
+    
+    .workflow-step.completed .workflow-step-icon {
+        background: #28a745;
+        color: white;
+    }
+    
+    .workflow-step-text {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="page-title">
+                    {% if object %}
+                        <i class="fas fa-edit"></i> Editar Aprovação
+                    {% else %}
+                        <i class="fas fa-plus"></i> Nova Aprovação
+                    {% endif %}
+                </h1>
+                <p class="page-subtitle">
+                    {% if object %}
+                        Atualize as informações da solicitação
+                    {% else %}
+                        Cadastre uma nova solicitação de aprovação
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'aprovacoes:aprovacoes_list' %}">Aprovações</a></li>
+                    <li class="breadcrumb-item active">
+                        {% if object %}Editar{% else %}Nova{% endif %}
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                {% if object %}
+                <div class="workflow-progress">
+                    <div class="workflow-step {% if object.status == 'pendente' %}active{% else %}completed{% endif %}">
+                        <div class="workflow-step-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="workflow-step-text">Solicitação</div>
+                    </div>
+                    <div class="workflow-step {% if object.status == 'pendente' %}pending{% elif object.status == 'aprovado' or object.status == 'rejeitado' %}completed{% endif %}">
+                        <div class="workflow-step-icon">
+                            {% if object.status == 'aprovado' %}
+                                <i class="fas fa-check"></i>
+                            {% elif object.status == 'rejeitado' %}
+                                <i class="fas fa-times"></i>
+                            {% else %}
+                                <i class="fas fa-clock"></i>
+                            {% endif %}
+                        </div>
+                        <div class="workflow-step-text">Análise</div>
+                    </div>
+                    <div class="workflow-step {% if object.status == 'aprovado' or object.status == 'rejeitado' %}completed{% endif %}">
+                        <div class="workflow-step-icon">
+                            {% if object.status == 'aprovado' %}
+                                <i class="fas fa-thumbs-up"></i>
+                            {% elif object.status == 'rejeitado' %}
+                                <i class="fas fa-thumbs-down"></i>
+                            {% else %}
+                                <i class="fas fa-flag-checkered"></i>
+                            {% endif %}
+                        </div>
+                        <div class="workflow-step-text">Decisão</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-clipboard-check"></i>
+                            {% if object %}Editar Aprovação{% else %}Nova Aprovação{% endif %}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" class="form-horizontal">
+                            {% csrf_token %}
+                            
+                            <div class="form-section">
+                                <div class="workflow-indicator"></div>
+                                <h4><i class="fas fa-info-circle"></i> Informações da Solicitação</h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="{{ form.descricao.id_for_label }}" class="required-field">
+                                                <i class="fas fa-align-left"></i> Descrição
+                                            </label>
+                                            {{ form.descricao }}
+                                            {% if form.descricao.errors %}
+                                                <div class="text-danger">{{ form.descricao.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-help">Descreva claramente o que precisa ser aprovado</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.responsavel.id_for_label }}" class="required-field">
+                                                <i class="fas fa-user"></i> Solicitante
+                                            </label>
+                                            {{ form.responsavel }}
+                                            {% if form.responsavel.errors %}
+                                                <div class="text-danger">{{ form.responsavel.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-help">Funcionário responsável pela solicitação</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.aprovador.id_for_label }}">
+                                                <i class="fas fa-user-check"></i> Aprovador
+                                            </label>
+                                            {{ form.aprovador }}
+                                            {% if form.aprovador.errors %}
+                                                <div class="text-danger">{{ form.aprovador.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-help">Funcionário responsável pela aprovação (opcional)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if object %}
+                            <div class="form-section">
+                                <div class="workflow-indicator"></div>
+                                <h4><i class="fas fa-tasks"></i> Status da Aprovação</h4>
+                                
+                                <div class="status-selector">
+                                    <div class="status-option status-pendente {% if form.status.value == 'pendente' %}selected{% endif %}" data-status="pendente">
+                                        <div class="status-icon">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div class="status-title">Pendente</div>
+                                        <div class="status-description">Aguardando análise</div>
+                                        <input type="radio" name="status" value="pendente" {% if form.status.value == 'pendente' %}checked{% endif %}>
+                                    </div>
+                                    
+                                    <div class="status-option status-aprovado {% if form.status.value == 'aprovado' %}selected{% endif %}" data-status="aprovado">
+                                        <div class="status-icon">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                        <div class="status-title">Aprovado</div>
+                                        <div class="status-description">Solicitação aprovada</div>
+                                        <input type="radio" name="status" value="aprovado" {% if form.status.value == 'aprovado' %}checked{% endif %}>
+                                    </div>
+                                    
+                                    <div class="status-option status-rejeitado {% if form.status.value == 'rejeitado' %}selected{% endif %}" data-status="rejeitado">
+                                        <div class="status-icon">
+                                            <i class="fas fa-times"></i>
+                                        </div>
+                                        <div class="status-title">Rejeitado</div>
+                                        <div class="status-description">Solicitação rejeitada</div>
+                                        <input type="radio" name="status" value="rejeitado" {% if form.status.value == 'rejeitado' %}checked{% endif %}>
+                                    </div>
+                                    
+                                    <div class="status-option status-cancelado {% if form.status.value == 'cancelado' %}selected{% endif %}" data-status="cancelado">
+                                        <div class="status-icon">
+                                            <i class="fas fa-ban"></i>
+                                        </div>
+                                        <div class="status-title">Cancelado</div>
+                                        <div class="status-description">Solicitação cancelada</div>
+                                        <input type="radio" name="status" value="cancelado" {% if form.status.value == 'cancelado' %}checked{% endif %}>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="form-section">
+                                <div class="workflow-indicator"></div>
+                                <h4><i class="fas fa-comment"></i> Observações</h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="{{ form.observacoes.id_for_label }}">
+                                                <i class="fas fa-sticky-note"></i> Observações
+                                            </label>
+                                            {{ form.observacoes }}
+                                            {% if form.observacoes.errors %}
+                                                <div class="text-danger">{{ form.observacoes.errors }}</div>
+                                            {% endif %}
+                                            <div class="form-help">Informações adicionais sobre a solicitação (opcional)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save"></i>
+                                    {% if object %}Atualizar{% else %}Salvar{% endif %}
+                                </button>
+                                <a href="{% url 'aprovacoes:aprovacoes_list' %}" class="btn btn-secondary btn-lg ml-3">
+                                    <i class="fas fa-arrow-left"></i> Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Inicializar Select2 para campos de seleção
+    $('#id_responsavel').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Selecione um solicitante...',
+        allowClear: true
+    });
+    
+    $('#id_aprovador').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Selecione um aprovador...',
+        allowClear: true
+    });
+    
+    // Aplicar classes CSS aos campos do formulário
+    $('.form-control').addClass('form-control');
+    
+    // Aplicar classes especiais
+    $('#id_observacoes').attr('rows', 4);
+    $('#id_observacoes').attr('placeholder', 'Digite aqui observações sobre a solicitação...');
+    
+    // Gerenciar seleção de status
+    $('.status-option').on('click', function() {
+        $('.status-option').removeClass('selected');
+        $(this).addClass('selected');
+        $(this).find('input[type="radio"]').prop('checked', true);
+    });
+    
+    // Auto-definir data de aprovação quando status muda para aprovado
+    $('input[name="status"]').on('change', function() {
+        var status = $(this).val();
+        if (status === 'aprovado' || status === 'rejeitado') {
+            // Se tiver campo de data de aprovação, definir para hoje
+            var today = new Date().toISOString().split('T')[0];
+            $('#id_data_aprovacao').val(today);
+        }
+    });
+    
+    // Validação em tempo real
+    $('form').on('submit', function(e) {
+        let isValid = true;
+        
+        // Verificar campos obrigatórios
+        $('input[required], select[required], textarea[required]').each(function() {
+            if (!$(this).val()) {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Campos obrigatórios',
+                text: 'Por favor, preencha todos os campos obrigatórios.',
+                confirmButtonText: 'OK'
+            });
+        }
+    });
+    
+    // Remover classe de erro quando o campo for preenchido
+    $('input, select, textarea').on('change keyup', function() {
+        if ($(this).val()) {
+            $(this).removeClass('is-invalid');
+        }
+    });
+    
+    // Feedback visual para campos obrigatórios
+    $('input[required], select[required], textarea[required]').on('focus', function() {
+        $(this).parent().find('label').addClass('required-field');
+    });
+    
+    // Animação suave para botões
+    $('.btn').on('mouseenter', function() {
+        $(this).addClass('shadow-lg');
+    }).on('mouseleave', function() {
+        $(this).removeClass('shadow-lg');
+    });
+    
+    // Animação para status options
+    $('.status-option').on('mouseenter', function() {
+        $(this).addClass('shadow');
+    }).on('mouseleave', function() {
+        $(this).removeClass('shadow');
+    });
+});
+</script>
+{% endblock %}

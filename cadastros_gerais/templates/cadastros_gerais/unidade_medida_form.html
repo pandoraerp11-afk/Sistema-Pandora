@@ -1,0 +1,361 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+    .form-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e3e9f7;
+        overflow: hidden;
+    }
+    .form-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border: none;
+    }
+    .form-card .card-header h4 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .form-card .card-body {
+        padding: 2rem;
+    }
+    .form-floating {
+        margin-bottom: 1.5rem;
+    }
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 2px solid #e3e9f7;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .form-floating > label {
+        color: #6b7280;
+        font-weight: 500;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+        background: #6b7280;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+        background: #4b5563;
+        transform: translateY(-2px);
+    }
+    .alert {
+        border-radius: 12px;
+        border: none;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .alert-danger {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        color: #dc2626;
+    }
+    .form-actions {
+        background: #f8fafc;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid #e3e9f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .field-info {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+    .required-field {
+        position: relative;
+    }
+    .required-field::after {
+        content: "*";
+        color: #dc2626;
+        font-weight: bold;
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    .form-floating.required-field > label::after {
+        content: " *";
+        color: #dc2626;
+    }
+    .preview-card {
+        background: #f8fafc;
+        border: 2px dashed #e3e9f7;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .preview-card:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    .preview-icon {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            {% for breadcrumb in breadcrumbs %}
+                {% if breadcrumb.active %}
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <i class="fas fa-chevron-right me-2"></i>{{ breadcrumb.title }}
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item">
+                        {% if breadcrumb.url %}
+                            <a href="{{ breadcrumb.url }}" class="text-decoration-none">
+                                {{ breadcrumb.title }}
+                            </a>
+                        {% else %}
+                            {{ breadcrumb.title }}
+                        {% endif %}
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">{{ page_title }}</h1>
+            <p class="text-muted mb-0">{{ page_subtitle }}</p>
+        </div>
+        <div>
+            <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Preview Card -->
+            {% if form.instance.pk %}
+                <div class="preview-card">
+                    <div class="preview-icon">
+                        <i class="fas fa-ruler"></i>
+                    </div>
+                    <h5 class="mb-2">{{ form.instance.nome }}</h5>
+                    <p class="text-muted mb-0">
+                        <strong>Símbolo:</strong> {{ form.instance.simbolo }}
+                        {% if form.instance.descricao %}
+                            <br><strong>Descrição:</strong> {{ form.instance.descricao }}
+                        {% endif %}
+                    </p>
+                </div>
+            {% else %}
+                <div class="preview-card">
+                    <div class="preview-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <h5 class="mb-2">Nova Unidade de Medida</h5>
+                    <p class="text-muted mb-0">Preencha os campos abaixo para criar uma nova unidade de medida</p>
+                </div>
+            {% endif %}
+
+            <!-- Form Card -->
+            <div class="form-card">
+                <div class="card-header">                     <h4>
+                        <i class="fas fa-{% if form.instance.pk %}pencil-alt{% else %}plus-circle{% endif %} me-2"></i>
+                         {{ form_title }}
+                    </h4>
+                </div>
+                
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="card-body">
+                        <!-- Form Errors -->
+                        {% if form.non_field_errors %}                             <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                 {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Nome Field -->
+                        <div class="form-floating required-field">
+                            {{ form.nome|add_class:"form-control"|attr:"placeholder:Nome da unidade" }}
+                            <label for="{{ form.nome.id_for_label }}">Nome da Unidade</label>
+                            {% if form.nome.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.nome.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="field-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Nome completo da unidade de medida (ex: Metro, Quilograma, Unidade)
+                            </div>
+                        </div>
+
+                        <!-- Símbolo Field -->
+                        <div class="form-floating required-field">
+                            {{ form.simbolo|add_class:"form-control"|attr:"placeholder:Símbolo" }}
+                            <label for="{{ form.simbolo.id_for_label }}">Símbolo</label>
+                            {% if form.simbolo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.simbolo.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="field-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Abreviação ou símbolo da unidade (ex: m, kg, un, m², l)
+                            </div>
+                        </div>
+
+                        <!-- Descrição Field -->
+                        <div class="form-floating">
+                            {{ form.descricao|add_class:"form-control"|attr:"placeholder:Descrição (opcional)"|attr:"rows:3" }}
+                            <label for="{{ form.descricao.id_for_label }}">Descrição (Opcional)</label>
+                            {% if form.descricao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.descricao.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="field-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Descrição adicional ou detalhes sobre a unidade de medida
+                            </div>
+                        </div>
+
+                        <!-- Help Text -->                         <div class="alert alert-info">
+                            <i class="fas fa-lightbulb me-2"></i>
+                             <strong>Dicas:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Use nomes claros e descritivos para as unidades</li>
+                                <li>Símbolos devem ser únicos no sistema</li>
+                                <li>Considere usar símbolos padrão quando possível (m, kg, l, etc.)</li>
+                                <li>A descrição pode incluir informações sobre quando usar a unidade</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Campos marcados com * são obrigatórios
+                            </small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ cancel_url }}" class="btn btn-secondary">
+                                <i class="fas fa-times-circle me-2"></i>Cancelar
+                            </a>                             <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-{% if form.instance.pk %}check{% else %}plus{% endif %}-circle me-2"></i>
+                                 {{ submit_text }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Real-time preview update
+    document.addEventListener('DOMContentLoaded', function() {
+        const nomeInput = document.querySelector('input[name="nome"]');
+        const simboloInput = document.querySelector('input[name="simbolo"]');
+        const descricaoInput = document.querySelector('textarea[name="descricao"]');
+        
+        function updatePreview() {
+            const previewCard = document.querySelector('.preview-card');
+            const nome = nomeInput.value || 'Nova Unidade de Medida';
+            const simbolo = simboloInput.value;
+            const descricao = descricaoInput.value;
+            
+            let previewContent = `
+                <div class="preview-icon">
+                    <i class="fas fa-ruler"></i>
+                </div>
+                <h5 class="mb-2">${nome}</h5>
+                <p class="text-muted mb-0">
+                    ${simbolo ? `<strong>Símbolo:</strong> ${simbolo}` : ''}
+                    ${descricao ? `<br><strong>Descrição:</strong> ${descricao}` : ''}
+                </p>
+            `;
+            
+            previewCard.innerHTML = previewContent;
+        }
+        
+        // Update preview on input changes
+        nomeInput.addEventListener('input', updatePreview);
+        simboloInput.addEventListener('input', updatePreview);
+        descricaoInput.addEventListener('input', updatePreview);
+    });
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const nome = document.querySelector('input[name="nome"]').value.trim();
+        const simbolo = document.querySelector('input[name="simbolo"]').value.trim();
+        
+        if (!nome || !simbolo) {
+            e.preventDefault();
+            alert('Por favor, preencha todos os campos obrigatórios.');
+            return false;
+        }
+        
+        // Add loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+    });
+    
+    // Auto-focus first field
+    document.querySelector('input[name="nome"]').focus();
+</script>
+{% endblock %}

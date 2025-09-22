@@ -1,0 +1,23 @@
+{% extends "pandora_ultra_modern_base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-2 text-gray-800">Confirmar Exclusão de Atendimento</h1>
+    <p class="mb-4">Tem certeza que deseja excluir o atendimento de "{{ atendimento.cliente.nome_razao_social|default:atendimento.cliente.nome_display }}" para o serviço "{{ atendimento.servico.nome_servico }}" em {{ atendimento.data_atendimento|date:"d/m/Y H:i" }}?</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Confirmação de Exclusão</h6>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                <a href="{% url 'prontuarios:atendimento_detail' atendimento.pk %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

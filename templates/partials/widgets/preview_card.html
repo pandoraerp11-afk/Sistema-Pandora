@@ -1,0 +1,49 @@
+{% comment %}
+Reusable Preview Card (com header padrão e borda mais escura)
+Props:
+- title, subtitle, text, description, items, metrics, icon_class, extra_inner_template
+{% endcomment %}
+<div class="card shadow-sm mb-3" data-aos="fade-up" data-aos-delay="100">
+  <div class="card-header bg-primary text-white py-2">
+    <h6 class="mb-0 d-flex align-items-center">
+      <i class="{{ icon_class|default:'fas fa-eye' }} me-2"></i>
+      {{ title|default:'Prévia' }}
+    </h6>
+  </div>
+  <div class="card-body">
+    {% if subtitle %}
+      <div class="text-muted small mb-1">{{ subtitle }}</div>
+    {% endif %}
+
+    {% if description %}
+      <div class="text-muted mb-2" style="font-size: 0.9rem;">{{ description }}</div>
+    {% elif text %}
+      <div class="text-muted mb-2" style="font-size: 0.9rem;">{{ text }}</div>
+    {% endif %}
+
+    {% if items %}
+      <div class="row g-2 small text-muted mb-2">
+        {% for label, value in items %}
+          <div class="col-6">{{ label }}: <strong>{{ value }}</strong></div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if metrics %}
+      <hr class="my-2" />
+      <div class="row text-center">
+        {% for m in metrics %}
+          <div class="col-6">
+            <div class="fw-semibold" style="color: {{ m.color|default:'#2563eb' }};">{{ m.value }}</div>
+            <div class="text-muted" style="font-size: 0.8rem;">{{ m.label }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if extra_inner_template %}
+      <hr class="my-3" />
+      {% include extra_inner_template %}
+    {% endif %}
+  </div>
+</div>

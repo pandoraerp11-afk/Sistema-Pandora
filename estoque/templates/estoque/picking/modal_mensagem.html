@@ -1,0 +1,796 @@
+{% load widget_tweaks %}
+
+<!-- Modal para Mensagens e Comunicação -->
+<div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalMensagemLabel">
+                    <i class="fas fa-comments me-2"></i>Central de Mensagens - Picking
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Abas de Navegação -->
+                <ul class="nav nav-pills nav-fill mb-3" id="mensagens-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="nova-mensagem-tab" data-bs-toggle="pill" 
+                                data-bs-target="#nova-mensagem" type="button" role="tab">
+                            <i class="fas fa-plus me-1"></i>Nova Mensagem
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="mensagens-recebidas-tab" data-bs-toggle="pill" 
+                                data-bs-target="#mensagens-recebidas" type="button" role="tab">
+                            <i class="fas fa-inbox me-1"></i>
+                            Recebidas 
+                            <span class="badge bg-danger ms-1" id="count-nao-lidas">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="mensagens-enviadas-tab" data-bs-toggle="pill" 
+                                data-bs-target="#mensagens-enviadas" type="button" role="tab">
+                            <i class="fas fa-paper-plane me-1"></i>Enviadas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="alertas-sistema-tab" data-bs-toggle="pill" 
+                                data-bs-target="#alertas-sistema" type="button" role="tab">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Alertas 
+                            <span class="badge bg-warning ms-1" id="count-alertas">0</span>
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Conteúdo das Abas -->
+                <div class="tab-content" id="mensagens-content">
+                    
+                    <!-- Nova Mensagem -->
+                    <div class="tab-pane fade show active" id="nova-mensagem" role="tabpanel">
+                        <form id="form-nova-mensagem">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="tipo-mensagem" class="form-label">
+                                        <i class="fas fa-tag me-1"></i>Tipo de Mensagem *
+                                    </label>
+                                    <select name="tipo" id="tipo-mensagem" class="form-select" required>
+                                        <option value="">Selecione o tipo...</option>
+                                        <option value="PROBLEMA_PRODUTO">Problema com Produto</option>
+                                        <option value="FALTA_ESTOQUE">Falta de Estoque</option>
+                                        <option value="PRODUTO_DANIFICADO">Produto Danificado</option>
+                                        <option value="DUVIDA_CLIENTE">Dúvida sobre Cliente</option>
+                                        <option value="ALTERACAO_PEDIDO">Alteração de Pedido</option>
+                                        <option value="PROBLEMA_SISTEMA">Problema no Sistema</option>
+                                        <option value="SOLICITA_AJUDA">Solicitação de Ajuda</option>
+                                        <option value="INFORMACAO">Informação Geral</option>
+                                        <option value="URGENTE">Mensagem Urgente</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="prioridade-mensagem" class="form-label">
+                                        <i class="fas fa-flag me-1"></i>Prioridade
+                                    </label>
+                                    <select name="prioridade" id="prioridade-mensagem" class="form-select">
+                                        <option value="NORMAL">Normal</option>
+                                        <option value="ALTA">Alta</option>
+                                        <option value="URGENTE">Urgente</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="destinatario-mensagem" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Para (Destinatário)
+                                    </label>
+                                    <select name="destinatario" id="destinatario-mensagem" class="form-select">
+                                        <option value="">Todos os Supervisores</option>
+                                        <optgroup label="Supervisores">
+                                            {% for supervisor in supervisores %}
+                                                <option value="{{ supervisor.id }}">{{ supervisor.get_full_name }}</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                        <optgroup label="Equipe de Picking">
+                                            {% for operador in operadores_picking %}
+                                                <option value="{{ operador.id }}">{{ operador.get_full_name }}</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                        <optgroup label="Outros Setores">
+                                            <option value="ESTOQUE">Setor de Estoque</option>
+                                            <option value="VENDAS">Setor de Vendas</option>
+                                            <option value="EXPEDIÇÃO">Setor de Expedição</option>
+                                            <option value="TI">Suporte Técnico</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="pedido-relacionado" class="form-label">
+                                        <i class="fas fa-shopping-cart me-1"></i>Pedido Relacionado
+                                    </label>
+                                    <select name="pedido_relacionado" id="pedido-relacionado" class="form-select">
+                                        <option value="">Nenhum pedido específico</option>
+                                        <!-- Pedidos em andamento -->
+                                        {% for pedido in pedidos_em_andamento %}
+                                            <option value="{{ pedido.id }}">#{{ pedido.numero }} - {{ pedido.cliente.nome|truncatechars:25 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="assunto-mensagem" class="form-label">
+                                    <i class="fas fa-heading me-1"></i>Assunto *
+                                </label>
+                                <input type="text" name="assunto" id="assunto-mensagem" class="form-control" 
+                                       required placeholder="Descreva brevemente o assunto da mensagem">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="conteudo-mensagem" class="form-label">
+                                    <i class="fas fa-edit me-1"></i>Mensagem *
+                                </label>
+                                <textarea name="conteudo" id="conteudo-mensagem" class="form-control" 
+                                        rows="5" required placeholder="Digite sua mensagem aqui..."></textarea>
+                                <div class="form-text">
+                                    <span id="contador-caracteres">0</span>/1000 caracteres
+                                </div>
+                            </div>
+                            
+                            <!-- Anexos -->
+                            <div class="mb-3">
+                                <label for="anexos-mensagem" class="form-label">
+                                    <i class="fas fa-paperclip me-1"></i>Anexos
+                                </label>
+                                <input type="file" name="anexos" id="anexos-mensagem" class="form-control" 
+                                       multiple accept="image/*,.pdf,.doc,.docx,.txt">
+                                <div class="form-text">
+                                    Máximo 5 arquivos, 10MB cada. Tipos: imagens, PDF, DOC, TXT
+                                </div>
+                                <div id="preview-anexos" class="mt-2"></div>
+                            </div>
+                            
+                            <!-- Opções Avançadas -->
+                            <div class="card border-secondary">
+                                <div class="card-header">
+                                    <button class="btn btn-link p-0 text-decoration-none" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#opcoes-avancadas" 
+                                            aria-expanded="false">
+                                        <i class="fas fa-cog me-1"></i>Opções Avançadas
+                                        <i class="fas fa-chevron-down float-end"></i>
+                                    </button>
+                                </div>
+                                <div class="collapse" id="opcoes-avancadas">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="solicitar_confirmacao" 
+                                                           id="solicitar-confirmacao">
+                                                    <label class="form-check-label" for="solicitar-confirmacao">
+                                                        Solicitar confirmação de leitura
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="notificacao_push" 
+                                                           id="notificacao-push" checked>
+                                                    <label class="form-check-label" for="notificacao-push">
+                                                        Enviar notificação push
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="notificacao_email" 
+                                                           id="notificacao-email">
+                                                    <label class="form-check-label" for="notificacao-email">
+                                                        Enviar por email também
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label for="agendar-envio" class="form-label">Agendar Envio</label>
+                                                <input type="datetime-local" name="agendar_envio" id="agendar-envio" 
+                                                       class="form-control">
+                                                
+                                                <div class="mt-2">
+                                                    <label for="expirar-em" class="form-label">Expirar Em</label>
+                                                    <select name="expirar_em" id="expirar-em" class="form-select">
+                                                        <option value="">Nunca expira</option>
+                                                        <option value="1">1 hora</option>
+                                                        <option value="6">6 horas</option>
+                                                        <option value="24">24 horas</option>
+                                                        <option value="72">3 dias</option>
+                                                        <option value="168">7 dias</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Botões de Ação -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-secondary" onclick="limparFormulario()">
+                                            <i class="fas fa-eraser me-1"></i>Limpar
+                                        </button>
+                                        
+                                        <button type="button" class="btn btn-outline-primary" onclick="salvarRascunho()">
+                                            <i class="fas fa-save me-1"></i>Salvar Rascunho
+                                        </button>
+                                        
+                                        <button type="submit" class="btn btn-info">
+                                            <i class="fas fa-paper-plane me-1"></i>Enviar Mensagem
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Mensagens Recebidas -->
+                    <div class="tab-pane fade" id="mensagens-recebidas" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Mensagens Recebidas</h6>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" onclick="marcarTodasLidas()">
+                                    <i class="fas fa-check-double me-1"></i>Marcar Todas como Lidas
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="atualizarMensagens()">
+                                    <i class="fas fa-sync-alt me-1"></i>Atualizar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="lista-mensagens-recebidas">
+                            <!-- Mensagens serão carregadas via JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Mensagens Enviadas -->
+                    <div class="tab-pane fade" id="mensagens-enviadas" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Mensagens Enviadas</h6>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="carregarMensagensEnviadas()">
+                                <i class="fas fa-sync-alt me-1"></i>Atualizar
+                            </button>
+                        </div>
+                        
+                        <div id="lista-mensagens-enviadas">
+                            <!-- Mensagens serão carregadas via JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Alertas do Sistema -->
+                    <div class="tab-pane fade" id="alertas-sistema" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Alertas do Sistema</h6>
+                            <div>
+                                <button class="btn btn-sm btn-outline-warning" onclick="configurarAlertas()">
+                                    <i class="fas fa-cog me-1"></i>Configurar
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="carregarAlertas()">
+                                    <i class="fas fa-sync-alt me-1"></i>Atualizar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="lista-alertas-sistema">
+                            <!-- Alertas serão carregados via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <div class="btn-group me-auto">
+                    <button type="button" class="btn btn-outline-info" onclick="abrirConfiguracoesNotificacao()">
+                        <i class="fas fa-bell me-1"></i>Notificações
+                    </button>
+                </div>
+                
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.mensagem-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.mensagem-item:hover {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-color: #667eea;
+}
+
+.mensagem-item.nao-lida {
+    border-left: 4px solid #007bff;
+    background: rgba(0, 123, 255, 0.02);
+}
+
+.mensagem-item.urgente {
+    border-left: 4px solid #dc3545;
+    background: rgba(220, 53, 69, 0.02);
+}
+
+.mensagem-header {
+    display: flex;
+    justify-content: between;
+    align-items: start;
+    margin-bottom: 10px;
+}
+
+.mensagem-tipo {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.mensagem-data {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.mensagem-assunto {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.mensagem-preview {
+    color: #495057;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.mensagem-footer {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.mensagem-remetente {
+    font-size: 0.85rem;
+    color: #17a2b8;
+    font-weight: 500;
+}
+
+.preview-anexo {
+    display: inline-block;
+    margin: 5px;
+    padding: 8px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+.alerta-item {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 255, 255, 1) 100%);
+    border-left: 4px solid #ffc107;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.alerta-critico {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(255, 255, 255, 1) 100%);
+    border-left-color: #dc3545;
+}
+
+.alerta-info {
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.1) 0%, rgba(255, 255, 255, 1) 100%);
+    border-left-color: #17a2b8;
+}
+
+#contador-caracteres {
+    font-weight: 500;
+}
+
+.caracteres-limite {
+    color: #dc3545 !important;
+    font-weight: 600;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicialização
+    carregarMensagensRecebidas();
+    carregarAlertas();
+    
+    // Contador de caracteres
+    document.getElementById('conteudo-mensagem').addEventListener('input', function() {
+        const contador = document.getElementById('contador-caracteres');
+        const length = this.value.length;
+        contador.textContent = length;
+        
+        if (length > 900) {
+            contador.classList.add('caracteres-limite');
+        } else {
+            contador.classList.remove('caracteres-limite');
+        }
+    });
+    
+    // Preview de anexos
+    document.getElementById('anexos-mensagem').addEventListener('change', function() {
+        previewAnexos(this.files);
+    });
+    
+    // Formulário de nova mensagem
+    document.getElementById('form-nova-mensagem').addEventListener('submit', function(e) {
+        e.preventDefault();
+        enviarMensagem();
+    });
+    
+    // Auto-preenchimento baseado no tipo
+    document.getElementById('tipo-mensagem').addEventListener('change', function() {
+        autoPreencherPorTipo(this.value);
+    });
+    
+    // WebSocket para mensagens em tempo real
+    if (typeof WebSocket !== 'undefined') {
+        const ws = new WebSocket(`ws://${window.location.host}/ws/picking/mensagens/`);
+        
+        ws.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            handleNovaMensagem(data);
+        };
+    }
+});
+
+function autoPreencherPorTipo(tipo) {
+    const assuntoInput = document.getElementById('assunto-mensagem');
+    const conteudoTextarea = document.getElementById('conteudo-mensagem');
+    
+    const templates = {
+        'PROBLEMA_PRODUTO': {
+            assunto: 'Problema com Produto - Pedido #',
+            conteudo: 'Identifiquei um problema com o produto:\n\nDescrição do problema:\n\nLocalização:\n\nAção necessária:'
+        },
+        'FALTA_ESTOQUE': {
+            assunto: 'Falta de Estoque - Produto não encontrado',
+            conteudo: 'Não foi possível localizar o produto:\n\nProduto:\n\nLocalização verificada:\n\nQuantidade necessária:\n\nSugestão:'
+        },
+        'PRODUTO_DANIFICADO': {
+            assunto: 'Produto Danificado - Necessária Substituição',
+            conteudo: 'Produto encontra-se danificado:\n\nTipo de dano:\n\nQuantidade afetada:\n\nProduto pode ser utilizado:'
+        },
+        'SOLICITA_AJUDA': {
+            assunto: 'Solicitação de Ajuda - Picking',
+            conteudo: 'Preciso de ajuda com:\n\nDescrição da situação:\n\nUrgência:'
+        }
+    };
+    
+    if (templates[tipo]) {
+        if (!assuntoInput.value) {
+            assuntoInput.value = templates[tipo].assunto;
+        }
+        if (!conteudoTextarea.value) {
+            conteudoTextarea.value = templates[tipo].conteudo;
+        }
+        
+        // Focar no campo que precisa ser completado
+        if (templates[tipo].assunto.includes('#')) {
+            assuntoInput.focus();
+            assuntoInput.setSelectionRange(assuntoInput.value.length, assuntoInput.value.length);
+        }
+    }
+}
+
+function previewAnexos(files) {
+    const preview = document.getElementById('preview-anexos');
+    preview.innerHTML = '';
+    
+    Array.from(files).forEach(file => {
+        const div = document.createElement('div');
+        div.className = 'preview-anexo';
+        
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.style.maxWidth = '100px';
+            img.style.maxHeight = '100px';
+            div.appendChild(img);
+        } else {
+            div.innerHTML = `
+                <i class="fas fa-file me-1"></i>
+                ${file.name}
+                <small class="text-muted d-block">${(file.size / 1024).toFixed(1)} KB</small>
+            `;
+        }
+        
+        preview.appendChild(div);
+    });
+}
+
+function enviarMensagem() {
+    const formData = new FormData(document.getElementById('form-nova-mensagem'));
+    
+    // Mostrar loading
+    const btnEnviar = document.querySelector('#form-nova-mensagem button[type="submit"]');
+    const textoOriginal = btnEnviar.innerHTML;
+    btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Enviando...';
+    btnEnviar.disabled = true;
+    
+    fetch('/api/picking/mensagens/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar sucesso
+            showToast('success', 'Mensagem enviada com sucesso!');
+            
+            // Limpar formulário
+            document.getElementById('form-nova-mensagem').reset();
+            document.getElementById('preview-anexos').innerHTML = '';
+            document.getElementById('contador-caracteres').textContent = '0';
+            
+            // Atualizar aba de enviadas
+            carregarMensagensEnviadas();
+            
+        } else {
+            showToast('error', data.message || 'Erro ao enviar mensagem');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        showToast('error', 'Erro interno do sistema');
+    })
+    .finally(() => {
+        // Restaurar botão
+        btnEnviar.innerHTML = textoOriginal;
+        btnEnviar.disabled = false;
+    });
+}
+
+function carregarMensagensRecebidas() {
+    fetch('/api/picking/mensagens/recebidas/')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('lista-mensagens-recebidas');
+            container.innerHTML = '';
+            
+            if (data.mensagens.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <div>Nenhuma mensagem recebida</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            data.mensagens.forEach(mensagem => {
+                const div = document.createElement('div');
+                div.className = `mensagem-item ${mensagem.lida ? '' : 'nao-lida'} ${mensagem.prioridade === 'URGENTE' ? 'urgente' : ''}`;
+                div.innerHTML = `
+                    <div class="mensagem-header">
+                        <div>
+                            <span class="badge bg-${getTipoColor(mensagem.tipo)} mensagem-tipo">
+                                ${mensagem.tipo_display}
+                            </span>
+                            ${mensagem.prioridade === 'URGENTE' ? '<span class="badge bg-danger ms-1">URGENTE</span>' : ''}
+                        </div>
+                        <span class="mensagem-data">${mensagem.data_envio}</span>
+                    </div>
+                    
+                    <div class="mensagem-assunto">${mensagem.assunto}</div>
+                    <div class="mensagem-preview">${mensagem.preview}</div>
+                    
+                    <div class="mensagem-footer">
+                        <span class="mensagem-remetente">
+                            <i class="fas fa-user me-1"></i>${mensagem.remetente}
+                        </span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="verMensagemCompleta(${mensagem.id})">
+                                <i class="fas fa-eye me-1"></i>Ver
+                            </button>
+                            ${!mensagem.lida ? `<button class="btn btn-sm btn-outline-success" onclick="marcarComoLida(${mensagem.id})">
+                                <i class="fas fa-check me-1"></i>Marcar Lida
+                            </button>` : ''}
+                            <button class="btn btn-sm btn-outline-secondary" onclick="responderMensagem(${mensagem.id})">
+                                <i class="fas fa-reply me-1"></i>Responder
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            // Atualizar contador
+            document.getElementById('count-nao-lidas').textContent = data.nao_lidas;
+        })
+        .catch(error => {
+            console.error('Erro ao carregar mensagens:', error);
+        });
+}
+
+function carregarMensagensEnviadas() {
+    // Implementar carregamento de mensagens enviadas
+    fetch('/api/picking/mensagens/enviadas/')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('lista-mensagens-enviadas');
+            container.innerHTML = '';
+            
+            data.mensagens.forEach(mensagem => {
+                const div = document.createElement('div');
+                div.className = 'mensagem-item';
+                div.innerHTML = `
+                    <div class="mensagem-header">
+                        <div>
+                            <span class="badge bg-${getTipoColor(mensagem.tipo)} mensagem-tipo">
+                                ${mensagem.tipo_display}
+                            </span>
+                            <span class="badge bg-${getStatusColor(mensagem.status)} ms-1">
+                                ${mensagem.status_display}
+                            </span>
+                        </div>
+                        <span class="mensagem-data">${mensagem.data_envio}</span>
+                    </div>
+                    
+                    <div class="mensagem-assunto">${mensagem.assunto}</div>
+                    <div class="mensagem-preview">${mensagem.preview}</div>
+                    
+                    <div class="mensagem-footer">
+                        <span class="mensagem-remetente">
+                            <i class="fas fa-user me-1"></i>Para: ${mensagem.destinatario}
+                        </span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="verMensagemCompleta(${mensagem.id})">
+                                <i class="fas fa-eye me-1"></i>Ver
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        });
+}
+
+function carregarAlertas() {
+    fetch('/api/picking/alertas/')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('lista-alertas-sistema');
+            container.innerHTML = '';
+            
+            data.alertas.forEach(alerta => {
+                const div = document.createElement('div');
+                div.className = `alerta-item ${alerta.tipo === 'CRITICO' ? 'alerta-critico' : alerta.tipo === 'INFO' ? 'alerta-info' : ''}`;
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">
+                                <i class="fas fa-${getAlertaIcon(alerta.tipo)} me-2"></i>
+                                ${alerta.titulo}
+                            </h6>
+                            <p class="mb-2">${alerta.descricao}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>${alerta.data_criacao}
+                            </small>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="dispensarAlerta(${alerta.id})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            document.getElementById('count-alertas').textContent = data.alertas.length;
+        });
+}
+
+function getTipoColor(tipo) {
+    const cores = {
+        'PROBLEMA_PRODUTO': 'danger',
+        'FALTA_ESTOQUE': 'warning',
+        'PRODUTO_DANIFICADO': 'danger',
+        'DUVIDA_CLIENTE': 'info',
+        'ALTERACAO_PEDIDO': 'primary',
+        'PROBLEMA_SISTEMA': 'dark',
+        'SOLICITA_AJUDA': 'warning',
+        'INFORMACAO': 'secondary',
+        'URGENTE': 'danger'
+    };
+    return cores[tipo] || 'secondary';
+}
+
+function getStatusColor(status) {
+    const cores = {
+        'ENVIADA': 'info',
+        'ENTREGUE': 'success',
+        'LIDA': 'success',
+        'RESPONDIDA': 'primary'
+    };
+    return cores[status] || 'secondary';
+}
+
+function getAlertaIcon(tipo) {
+    const icones = {
+        'CRITICO': 'exclamation-triangle',
+        'AVISO': 'exclamation-circle',
+        'INFO': 'info-circle'
+    };
+    return icones[tipo] || 'bell';
+}
+
+function marcarComoLida(mensagemId) {
+    fetch(`/api/picking/mensagens/${mensagemId}/marcar-lida/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            carregarMensagensRecebidas();
+        }
+    });
+}
+
+function marcarTodasLidas() {
+    fetch('/api/picking/mensagens/marcar-todas-lidas/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            carregarMensagensRecebidas();
+        }
+    });
+}
+
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function limparFormulario() {
+    document.getElementById('form-nova-mensagem').reset();
+    document.getElementById('preview-anexos').innerHTML = '';
+    document.getElementById('contador-caracteres').textContent = '0';
+}
+
+function salvarRascunho() {
+    // Implementar salvamento de rascunho
+    showToast('info', 'Rascunho salvo com sucesso!');
+}
+
+function showToast(type, message) {
+    // Implementar sistema de toast/notificação
+    alert(message); // Temporário
+}
+</script>

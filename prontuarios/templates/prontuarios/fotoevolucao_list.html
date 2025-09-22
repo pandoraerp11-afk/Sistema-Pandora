@@ -1,0 +1,220 @@
+{% extends "pandora_ultra_modern_base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-2 text-gray-800">Fotos de Evolução</h1>
+    <p class="mb-4">Lista de todas as fotos de evolução registradas.</p>
+
+        <div class="card shadow mb-4" id="galeria-wrapper" data-mode="table">
+                <div class="card-header py-3 d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Fotos de Evolução Registradas</h6>
+                                    <div class="d-flex flex-wrap gap-2 ms-auto align-items-center">
+                                        <div class="btn-group btn-group-sm" role="group" aria-label="Modo visualização">
+                                            <button type="button" class="btn btn-outline-secondary active" id="modo-tabela">Tabela</button>
+                                            <button type="button" class="btn btn-outline-secondary" id="modo-galeria">Galeria</button>
+                                        </div>
+                            <form method="get" class="row row-cols-lg-auto g-2 align-items-end" id="filtros-fotos">
+                                <div class="col">
+                                    <input type="text" name="q" value="{{ request.GET.q }}" class="form-control form-control-sm" placeholder="Buscar texto...">
+                                </div>
+                                <div class="col">
+                                    <input type="date" name="data_ini" value="{{ request.GET.data_ini }}" class="form-control form-control-sm" title="Data inicial">
+                                </div>
+                                <div class="col">
+                                    <input type="date" name="data_fim" value="{{ request.GET.data_fim }}" class="form-control form-control-sm" title="Data final">
+                                </div>
+                                <div class="col">
+                                    <select name="tipo_foto" class="form-select form-select-sm">
+                                        <option value="">Tipo</option>
+                                        <option value="ANTES" {% if request.GET.tipo_foto == 'ANTES' %}selected{% endif %}>Antes</option>
+                                        <option value="DURANTE" {% if request.GET.tipo_foto == 'DURANTE' %}selected{% endif %}>Durante</option>
+                                        <option value="DEPOIS" {% if request.GET.tipo_foto == 'DEPOIS' %}selected{% endif %}>Depois</option>
+                                        <option value="GERAL" {% if request.GET.tipo_foto == 'GERAL' %}selected{% endif %}>Geral</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <select name="momento" class="form-select form-select-sm">
+                                        <option value="">Momento</option>
+                                        <option value="INICIO_TRATAMENTO" {% if request.GET.momento == 'INICIO_TRATAMENTO' %}selected{% endif %}>Início</option>
+                                        <option value="MEIO_TRATAMENTO" {% if request.GET.momento == 'MEIO_TRATAMENTO' %}selected{% endif %}>Meio</option>
+                                        <option value="FIM_TRATAMENTO" {% if request.GET.momento == 'FIM_TRATAMENTO' %}selected{% endif %}>Fim</option>
+                                        <option value="SESSAO_ESPECIFICA" {% if request.GET.momento == 'SESSAO_ESPECIFICA' %}selected{% endif %}>Sessão</option>
+                                        <option value="ACOMPANHAMENTO" {% if request.GET.momento == 'ACOMPANHAMENTO' %}selected{% endif %}>Acomp.</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <select name="order" class="form-select form-select-sm">
+                                        <option value="-data_foto" {% if request.GET.order == '-data_foto' or not request.GET.order %}selected{% endif %}>Mais recentes</option>
+                                        <option value="data_foto" {% if request.GET.order == 'data_foto' %}selected{% endif %}>Mais antigas</option>
+                                        <option value="titulo" {% if request.GET.order == 'titulo' %}selected{% endif %}>Título A-Z</option>
+                                        <option value="-titulo" {% if request.GET.order == '-titulo' %}selected{% endif %}>Título Z-A</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <button class="btn btn-sm btn-primary"><i class="fas fa-filter me-1"></i>Filtrar</button>
+                                </div>
+                                <div class="col">
+                                    <a href="?" class="btn btn-sm btn-light">Limpar</a>
+                                </div>
+                            </form>
+                            <a href="{% url 'prontuarios:fotoevolucao_create' %}" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Nova</a>
+                        </div>
+                </div>
+        <div class="card-body">
+            <div class="table-responsive" id="fotos-container" data-next="{% if fotos_evolucao.has_next %}?page={{ fotos_evolucao.next_page_number }}{% endif %}">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Atendimento</th>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Derivados</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                                        <tbody id="fotos-body">
+                                                {% for fotoevolucao in fotos_evolucao %}
+                        <tr>
+                            <td>{{ fotoevolucao.cliente.nome_razao_social|default:fotoevolucao.cliente.nome_display }}</td>
+                            <td>
+                                {% if fotoevolucao.atendimento %}
+                                    {{ fotoevolucao.atendimento.servico.nome_servico }} - {{ fotoevolucao.atendimento.data_atendimento|date:"d/m/Y" }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ fotoevolucao.data_foto|date:"d/m/Y H:i" }}</td>
+                                <td>{{ fotoevolucao.get_tipo_foto_display }}</td>
+                            <td class="small">
+                                {% if fotoevolucao.imagem_thumbnail %}<span class="badge bg-secondary">thumb</span>{% endif %}
+                                {% if fotoevolucao.imagem_webp %}<span class="badge bg-success">webp</span>{% endif %}
+                                {% if fotoevolucao.video_poster %}<span class="badge bg-dark">poster</span>{% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'prontuarios:fotoevolucao_detail' fotoevolucao.pk %}" class="btn btn-info btn-sm">Detalhes</a>
+                                <a href="{% url 'prontuarios:fotoevolucao_update' fotoevolucao.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                                <a href="{% url 'prontuarios:fotoevolucao_delete' fotoevolucao.pk %}" class="btn btn-danger btn-sm">Excluir</a>
+                                <button type="button" class="btn btn-outline-secondary btn-sm btn-reprocessar" data-id="{{ fotoevolucao.id }}">Reprocessar</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                                                <div id="loading-indicator" class="text-center py-2 d-none"><span class="spinner-border spinner-border-sm"></span></div>
+                                                <div id="galeria-grid" class="row g-3 mt-2 d-none">
+                                                    {% for fotoevolucao in fotos_evolucao %}
+                                                    <div class="col-6 col-md-3 col-xl-2 foto-card" data-id="{{ fotoevolucao.id }}">
+                                                        <div class="card h-100 shadow-sm">
+                                                            <a href="{% url 'prontuarios:fotoevolucao_detail' fotoevolucao.pk %}" class="text-decoration-none">
+                                                                {% if fotoevolucao.video_poster %}
+                                                                    <div class="position-relative">
+                                                                        <img src="{{ fotoevolucao.video_poster.url }}" class="card-img-top" alt="poster">
+                                                                        <span class="position-absolute top-50 start-50 translate-middle badge rounded-pill bg-dark bg-opacity-75"><i class="fas fa-play"></i></span>
+                                                                    </div>
+                                                                {% elif fotoevolucao.imagem_webp %}
+                                                                    <picture>
+                                                                        <source srcset="{{ fotoevolucao.imagem_webp.url }}" type="image/webp">
+                                                                        {% if fotoevolucao.imagem_thumbnail %}
+                                                                            <img src="{{ fotoevolucao.imagem_thumbnail.url }}" class="card-img-top" alt="thumb">
+                                                                        {% else %}
+                                                                            <img src="{{ fotoevolucao.imagem.url }}" class="card-img-top" alt="foto">
+                                                                        {% endif %}
+                                                                    </picture>
+                                                                {% elif fotoevolucao.imagem_thumbnail %}
+                                                                    <img src="{{ fotoevolucao.imagem_thumbnail.url }}" class="card-img-top" alt="thumb">
+                                                                {% else %}
+                                                                    <div class="ratio ratio-1x1 bg-light d-flex align-items-center justify-content-center text-muted small">Preview</div>
+                                                                {% endif %}
+                                                            </a>
+                                                            <div class="card-body p-2 small">
+                                                                <strong class="d-block text-truncate" title="{{ fotoevolucao.titulo }}">{{ fotoevolucao.titulo }}</strong>
+                                                                <span class="text-muted">{{ fotoevolucao.data_foto|date:"d/m" }} · {{ fotoevolucao.get_tipo_foto_display }}</span>
+                                                                <div class="mt-1 small">
+                                                                    {% if fotoevolucao.imagem_thumbnail %}<span class="badge bg-secondary">thumb</span>{% endif %}
+                                                                    {% if fotoevolucao.imagem_webp %}<span class="badge bg-success">webp</span>{% endif %}
+                                                                    {% if fotoevolucao.video_poster %}<span class="badge bg-dark">poster</span>{% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const container = document.getElementById('fotos-container');
+    const grid = document.getElementById('galeria-grid');
+    const wrapper = document.getElementById('galeria-wrapper');
+    const btnTabela = document.getElementById('modo-tabela');
+    const btnGaleria = document.getElementById('modo-galeria');
+    function setMode(mode){
+        if(mode==='galeria'){
+            grid.classList.remove('d-none');
+            container.querySelector('table').classList.add('d-none');
+            btnGaleria.classList.add('active'); btnTabela.classList.remove('active');
+            wrapper.setAttribute('data-mode','galeria');
+        } else {
+            grid.classList.add('d-none');
+            container.querySelector('table').classList.remove('d-none');
+            btnTabela.classList.add('active'); btnGaleria.classList.remove('active');
+            wrapper.setAttribute('data-mode','table');
+        }
+    }
+    if(btnGaleria){
+        btnGaleria.addEventListener('click',()=>setMode('galeria'));
+        btnTabela.addEventListener('click',()=>setMode('table'));
+    }
+    if(!container) return;
+    let loading=false; const tbody=document.getElementById('fotos-body');
+    function loadMore(){
+        if(loading) return; const next = container.getAttribute('data-next'); if(!next) return;
+        loading=true; document.getElementById('loading-indicator').classList.remove('d-none');
+        fetch(next, {headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.text()).then(html=>{
+            // Extrai rows do fragmento retornado (espera-se mesmo template parcial; fallback simples)
+            const temp=document.createElement('div'); temp.innerHTML=html;
+            const newRows=temp.querySelectorAll('#fotos-body tr');
+            newRows.forEach(tr=>tbody.appendChild(tr));
+            // Galeria: anexar cards novos se existir grid
+            const newCards=temp.querySelectorAll('#galeria-grid .foto-card');
+            newCards.forEach(c=>grid.appendChild(c));
+            const newNext=temp.querySelector('#fotos-container')?.getAttribute('data-next');
+            if(newNext) container.setAttribute('data-next', newNext); else container.removeAttribute('data-next');
+        }).catch(()=>{}).finally(()=>{loading=false; document.getElementById('loading-indicator').classList.add('d-none');});
+    }
+    window.addEventListener('scroll',()=>{
+        if((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 150){ loadMore(); }
+    });
+})();
+// Ação de reprocessar derivados via API DRF
+(function(){
+    function getCookie(name){
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    const csrftoken = getCookie('csrftoken');
+    document.querySelectorAll('.btn-reprocessar').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+            const id = btn.getAttribute('data-id');
+            btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            fetch(`/prontuarios/api/fotos-evolucao/${id}/reprocessar/`, {
+                method: 'POST', headers: {'X-CSRFToken': csrftoken}
+            }).then(r=>r.json()).then(data=>{
+                alert('Reprocessamento agendado.');
+            }).catch(()=>{
+                alert('Falha ao agendar reprocessamento.');
+            }).finally(()=>{ btn.disabled=false; btn.innerHTML = old; });
+        });
+    });
+})();
+</script>
+{% endblock %}
+
+

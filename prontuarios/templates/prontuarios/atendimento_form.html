@@ -1,0 +1,293 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load i18n widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}{% trans 'Editar Atendimento' %}{% else %}{% trans 'Novo Atendimento' %}{% endif %}{% endblock %}
+
+{% block form_main %}
+<form id="atendimento-form" method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header d-flex align-items-center"><strong>{% trans 'Dados Principais' %}</strong></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% trans 'Buscar cliente...' as ph_cliente %}
+                        {% trans 'Buscar serviço...' as ph_servico %}
+                        {% trans 'Buscar profissional...' as ph_profissional %}
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Cliente' %}</label>
+                            {% render_field form.cliente class='form-select select2-ajax' data-source='/prontuarios/api/search/clientes/' data-placeholder=ph_cliente %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Serviço' %}</label>
+                            {% render_field form.servico class='form-select select2-ajax' data-source='/prontuarios/api/search/procedimentos/?ativo=1' data-placeholder=ph_servico %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Profissional' %}</label>
+                            {% render_field form.profissional class='form-select select2-ajax' data-source='/prontuarios/api/search/profissionais/' data-placeholder=ph_profissional %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Número Sessão' %}</label>
+                            {% render_field form.numero_sessao class='form-control' %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Slot (opcional)' %}</label>
+                            <select id="slot-select" name="slot" class="form-select">
+                                <option value="">{% trans 'Selecione um slot livre' %}</option>
+                            </select>
+                            <small class="text-muted" id="slot-hint">{% trans 'Selecione profissional e carregue slots.' %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Data/Hora Manual (se sem slot)' %}</label>
+                            {% render_field form.data_atendimento class='form-control' type='datetime-local' %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Valor Cobrado' %}</label>
+                            {% render_field form.valor_cobrado class='form-control' %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Forma Pagamento' %}</label>
+                            {% render_field form.forma_pagamento class='form-select' %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans 'Área Tratada' %}</label>
+                            {% render_field form.area_tratada class='form-control' %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans 'Observações Pré-Serviço' %}</label>
+                            {% render_field form.observacoes_pre_procedimento class='form-control' rows='3' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><strong>{% trans 'Detalhes / Pós' %}</strong></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Desconto' %}</label>
+                            {% render_field form.desconto_aplicado class='form-control' %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{% trans 'Status' %}</label>
+                            {% render_field form.status class='form-select' %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">{% trans 'Observações Pós-Serviço' %}</label>
+                            {% render_field form.observacoes_pos_procedimento class='form-control' rows='3' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><strong>{% trans 'Resumo' %}</strong></div>
+                <div class="card-body small" id="resumo-atendimento">
+                    <p class="mb-1"><strong>{% trans 'Cliente:' %}</strong> <span data-bind="cliente">{{ form.instance.cliente|default:'—' }}</span></p>
+                    <p class="mb-1"><strong>{% trans 'Serviço:' %}</strong> <span data-bind="servico">{{ form.instance.servico|default:'—' }}</span></p>
+                    <p class="mb-1 text-muted"><strong>{% trans 'Duração:' %}</strong> <span data-bind="proc_dur">—</span> <span>min</span></p>
+                    <p class="mb-1 text-muted"><strong>{% trans 'Valor base:' %}</strong> R$ <span data-bind="proc_val">0,00</span></p>
+                    <p class="mb-1"><strong>{% trans 'Profissional:' %}</strong> <span data-bind="profissional">{{ form.instance.profissional|default:'—' }}</span></p>
+                    <p class="mb-1"><strong>{% trans 'Data/Hora:' %}</strong> <span data-bind="data">{{ form.instance.data_atendimento|default:'—' }}</span></p>
+                    <p class="mb-1 text-muted"><strong>{% trans 'Slot:' %}</strong> <span data-bind="slot">—</span></p>
+                    <hr>
+                    <p class="mb-1"><strong>{% trans 'Valor cobrado:' %}</strong> R$ <span data-bind="valor_cobrado">0,00</span></p>
+                    <p class="mb-1"><strong>{% trans 'Desconto:' %}</strong> R$ <span data-bind="desconto">0,00</span></p>
+                    <p class="mb-1"><strong>{% trans 'Total estimado:' %}</strong> R$ <span data-bind="total_estimado">0,00</span></p>
+                    <hr>
+                    <p class="text-muted mb-0">{% trans 'Resumo apenas informativo.' %}</p>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><strong>{% trans 'Ações' %}</strong></div>
+                <div class="card-body small">
+                    <p class="text-muted mb-1">{% trans 'Selecione o serviço para preencher automaticamente duração e valor base.' %}</p>
+                </div>
+            </div>
+            {% include 'prontuarios/partials/_form_actions.html' with object=form.instance cancel_url=cancel_url|default:'/prontuarios/atendimentos/' show_save_continue=False %}
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+// Inicialização Select2 AJAX genérica (assume assets Select2 já globais)
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.jQuery || !jQuery.fn.select2) { return; }
+    $('.select2-ajax').each(function(){
+        const $el = $(this);
+        const src = $el.data('source');
+        const placeholder = $el.data('placeholder') || '';
+        $el.select2({
+            theme: 'bootstrap-5',
+            placeholder: placeholder,
+            allowClear: true,
+            ajax: {
+                url: src,
+                dataType: 'json',
+                delay: 200,
+                data: function (params) {
+                    return { q: params.term || '', page: params.page || 1 };
+                },
+                processResults: function (data, params) {
+                    params.page = params.page || 1;
+                    const res = data.results || data; // suporta lista pura
+                    return { results: res, pagination: { more: data.pagination ? data.pagination.more : false } };
+                },
+                cache: true
+            },
+            width: '100%'
+        });
+    });
+});
+</script>
+<!-- Modal de quick-create de procedimento removido: criação de serviços deve ocorrer no módulo Serviços -->
+<script>
+// Carregar slots livres para o profissional selecionado
+document.addEventListener('DOMContentLoaded', () => {
+    const profSelect = document.getElementById('id_profissional');
+    const slotSelect = document.getElementById('slot-select');
+    // campo cliente já existe no form (id_cliente)
+    const servicoSelect = document.getElementById('id_servico');
+    function getDateFilter(){
+        const dt = document.getElementById('id_data_atendimento');
+        if(!dt || !dt.value) return '';
+        // tenta extrair YYYY-MM-DD de um input datetime-local ou texto
+        try {
+            const v = dt.value;
+            // se formato ISO completo, pega parte da data
+            if (v.includes('T')) return v.split('T')[0];
+            // se contém espaço, pega parte da data
+            if (v.includes(' ')) return v.split(' ')[0];
+            // já é data
+            return v;
+        } catch(e){ return ''; }
+    }
+
+    function setSlotHint(msg, isError){
+        const hint = document.getElementById('slot-hint');
+        if(!hint) return;
+        hint.textContent = msg;
+        hint.classList.toggle('text-danger', !!isError);
+    }
+
+    function loadSlots() {
+         if(!profSelect.value){ slotSelect.innerHTML = '<option value="">{% trans 'Selecione um slot livre' %}</option>'; setSlotHint('{% trans 'Selecione profissional e carregue slots.' %}'); return; }
+         const dataParam = getDateFilter();
+         const url = `/prontuarios/api/slots/?profissional=${profSelect.value}&disponivel=1` + (dataParam ? `&data=${dataParam}` : '');
+         setSlotHint('{% trans 'Carregando slots...' %}');
+         fetch(url)
+             .then(r=>r.json())
+             .then(data => {
+                    slotSelect.innerHTML = '<option value="">{% trans 'Selecione um slot livre' %}</option>';
+                    data.forEach(s => {
+                         const opt = document.createElement('option');
+                         opt.value = s.id; opt.textContent = new Date(s.horario).toLocaleString();
+                    opt.dataset.horario = s.horario;
+                         slotSelect.appendChild(opt);
+                    });
+                    setSlotHint(data.length ? '{% trans 'Selecione um slot livre' %}' : '{% trans 'Nenhum slot livre para os filtros.' %}');
+                // atualizar resumo slot
+                slotSelect.dispatchEvent(new Event('change'));
+              }).catch(()=>{ slotSelect.innerHTML='<option value="">{% trans 'Erro ao carregar' %}</option>'; setSlotHint('{% trans 'Erro ao carregar slots.' %}', true); });
+    }
+    if(profSelect){ profSelect.addEventListener('change', loadSlots); if(profSelect.value) loadSlots(); }
+    const dtInput = document.getElementById('id_data_atendimento');
+    if(dtInput){ dtInput.addEventListener('change', ()=>{ if(profSelect && profSelect.value){ loadSlots(); } }); }
+
+    // Quick-create removido (usar módulo Serviços)
+    function getCSRFToken(){
+        const name='csrftoken='; const cookies=document.cookie.split(';');
+        for(let c of cookies){ c=c.trim(); if(c.startsWith(name)) return c.substring(name.length); }
+        return ''; }
+
+    // Atualização do resumo simples on-change
+    function bindText(sel, key){
+        const el = document.querySelector(`[data-bind="${key}"]`);
+        const selEl = document.querySelector(sel);
+        if(!el || !selEl) return;
+        const update = ()=>{ el.textContent = selEl.options && selEl.selectedIndex >= 0 ? selEl.options[selEl.selectedIndex].text : (selEl.value||'—'); };
+        selEl.addEventListener('change', update);
+        update();
+    }
+    bindText('#id_cliente','cliente');
+    bindText('#id_profissional','profissional');
+    bindText('#id_servico','servico');
+
+    // Atualiza resumo de slot
+    const slotSelectEl = document.getElementById('slot-select');
+    if(slotSelectEl){
+        slotSelectEl.addEventListener('change', ()=>{
+            const el = document.querySelector('[data-bind="slot"]');
+            if(!el) return;
+            const opt = slotSelectEl.options[slotSelectEl.selectedIndex];
+            let horarioISO = opt && opt.dataset && opt.dataset.horario ? opt.dataset.horario : null;
+            el.textContent = horarioISO ? new Date(horarioISO).toLocaleString() : (opt ? opt.text : '—');
+            // Preenche o campo data/hora manual com o horário do slot
+            try {
+                const dtInput = document.getElementById('id_data_atendimento');
+                if (!dtInput) return;
+                if (horarioISO) {
+                    const d = new Date(horarioISO);
+                    const pad = (n)=> String(n).padStart(2,'0');
+                    const localISO = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                    dtInput.value = localISO;
+                    dtInput.setAttribute('disabled','disabled');
+                } else {
+                    // Sem slot, permitir edição manual
+                    dtInput.removeAttribute('disabled');
+                }
+            } catch(e){}
+        });
+    }
+
+    // Helpers monetários
+    const fmtBRL = (v)=>{
+        try { return Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); } catch(e){ return '0,00'; }
+    };
+
+    // Quando escolher procedimento via Select2, buscar dados extras do item selecionado para preencher valor/duração
+    const procSel = $('#id_servico');
+    if (procSel && procSel.on) {
+        procSel.on('select2:select', function (e) {
+            const data = e.params.data || {};
+            const dur = document.querySelector('[data-bind="proc_dur"]');
+            const val = document.querySelector('[data-bind="proc_val"]');
+            if (dur) dur.textContent = (data.duracao_min != null ? data.duracao_min : '—');
+            if (val) val.textContent = fmtBRL(data.valor_base);
+            // Se valor cobrado vazio, sugerir valor base
+            const vc = document.getElementById('id_valor_cobrado');
+            if (vc && (!vc.value || Number(vc.value) === 0) && data.valor_base != null) {
+                vc.value = data.valor_base;
+                document.querySelector('[data-bind="valor_cobrado"]').textContent = fmtBRL(data.valor_base);
+                recomputeTotal();
+            }
+        });
+    }
+
+    // Atualiza resumo de valores
+    function wireValue(id, key){
+        const el = document.getElementById(id);
+        const out = document.querySelector(`[data-bind="${key}"]`);
+        if(!el || !out) return;
+        const upd = ()=>{ out.textContent = fmtBRL(el.value); recomputeTotal(); };
+        el.addEventListener('input', upd); el.addEventListener('change', upd); upd();
+    }
+    function recomputeTotal(){
+        const vc = Number(document.getElementById('id_valor_cobrado')?.value || 0);
+        const d  = Number(document.getElementById('id_desconto_aplicado')?.value || 0);
+        const tot = Math.max(0, vc - d);
+        const out = document.querySelector('[data-bind="total_estimado"]');
+        if(out) out.textContent = fmtBRL(tot);
+    }
+    wireValue('id_valor_cobrado','valor_cobrado');
+    wireValue('id_desconto_aplicado','desconto');
+});
+</script>
+{% endblock %}
+
+

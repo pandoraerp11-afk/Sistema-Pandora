@@ -1,0 +1,36 @@
+{% load i18n %}
+<h5>{% trans "Adicionar Nova Imagem" %}</h5>
+<form action="{% url 'servicos:servico_imagem_add' form.instance.slug %}" method="post" enctype="multipart/form-data" class="mb-4 p-3 border rounded bg-light">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-4"><div class="form-group"><label for="{{ imagem_form.imagem.id_for_label }}">{{ imagem_form.imagem.label }}</label>{{ imagem_form.imagem }}{% if imagem_form.imagem.errors %}<div class="invalid-feedback d-block">{{ imagem_form.imagem.errors }}</div>{% endif %}</div></div>
+        <div class="col-md-3"><div class="form-group"><label for="{{ imagem_form.titulo.id_for_label }}">{{ imagem_form.titulo.label }}</label>{{ imagem_form.titulo }}</div></div>
+        <div class="col-md-3"><div class="form-group"><label for="{{ imagem_form.descricao.id_for_label }}">{{ imagem_form.descricao.label }}</label>{{ imagem_form.descricao }}</div></div>
+        <div class="col-md-2"><div class="form-group"><label for="{{ imagem_form.ordem.id_for_label }}">{{ imagem_form.ordem.label }}</label>{{ imagem_form.ordem }}</div></div>
+    </div>
+    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-plus me-1"></i> {% trans "Adicionar Imagem" %}</button>
+</form>
+<hr>
+<h5>{% trans "Imagens Existentes" %}</h5>
+<div class="row image-gallery">
+    {% for imagem in imagens_existentes %}
+    <div class="col-md-3 mb-3">
+        <div class="card h-100">
+            <a href="{{ imagem.imagem.url }}" data-lightbox="servico-galeria" data-title="{{ imagem.titulo }}">
+                <img src="{{ imagem.imagem.url }}" class="card-img-top object-cover" alt="{{ imagem.titulo }}" height="150">
+            </a>
+            <div class="card-body p-2">
+                <p class="card-text small">{{ imagem.titulo|default:"Sem título" }}</p>
+            </div>
+            <div class="card-footer p-2 text-right">
+                <form class="delete-form d-inline" action="{% url 'servicos:servico_imagem_delete' imagem.pk %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-xs btn-danger" title="Excluir Imagem"><i class="fas fa-trash"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><p class="text-muted">{% trans "Nenhuma imagem adicional cadastrada." %}</p></div>
+    {% endfor %}
+</div>

@@ -1,0 +1,486 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}{% if object %}Editar{% else %}Adicionar{% endif %} Férias{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'plugins/select2/css/select2.min.css' %}">
+<style>
+    /* Estilos modernos para o formulário de férias */
+    .card {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+        border-radius: 1rem;
+        border: none;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-radius: 1rem 1rem 0 0;
+        border-bottom: none;
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .card-body {
+        padding: 2rem;
+        background: #fafbfc;
+    }
+    
+    .card-footer {
+        background: linear-gradient(90deg, #f8fafc 0%, #e3e9f7 100%);
+        border-radius: 0 0 1rem 1rem;
+        border-top: 1px solid #e5e7eb;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .form-control, .custom-select {
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+        transition: all 0.2s ease;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.95rem;
+        background: white;
+    }
+    
+    .form-control:focus, .custom-select:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 0.2rem rgba(16,185,129,0.15);
+        background: white;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        color: white;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+        transition: all 0.3s ease;
+        border-radius: 0.5rem;
+        padding: 0.65rem 1.5rem;
+    }
+    
+    .btn-primary:hover, .btn-primary:focus {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        box-shadow: 0 6px 20px rgba(16,185,129,0.4);
+        transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+        border: none;
+        color: white;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(107,114,128,0.2);
+        transition: all 0.3s ease;
+        border-radius: 0.5rem;
+        padding: 0.65rem 1.5rem;
+    }
+    
+    .btn-secondary:hover, .btn-secondary:focus {
+        background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+        box-shadow: 0 6px 20px rgba(107,114,128,0.3);
+        transform: translateY(-1px);
+    }
+    
+    h5.text-primary {
+        color: #10b981 !important;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e5e7eb;
+        position: relative;
+    }
+    
+    h5.text-primary::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
+    hr.my-4 {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
+        margin: 2.5rem 0;
+    }
+    
+    .input-group-text {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+    
+    .form-check-input:checked {
+        background-color: #10b981;
+        border-color: #10b981;
+    }
+    
+    .form-check-label {
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .invalid-feedback {
+        color: #ef4444;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .form-text {
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-style: italic;
+    }
+    
+    /* Animações suaves */
+    .form-group {
+        transition: all 0.2s ease;
+    }
+    
+    .form-group:hover {
+        transform: translateY(-1px);
+    }
+    
+    /* Select2 customization - Bootstrap 5 */
+    .select2-container--bootstrap-5 .select2-selection {
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+    }
+    
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+        border-color: #10b981;
+        box-shadow: 0 0 0 0.2rem rgba(16,185,129,0.15);
+    }
+    
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-footer .btn {
+            width: auto;
+            margin-bottom: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>{% if object %}Editar{% else %}Adicionar{% endif %} Férias</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Início</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_list' %}">Funcionários</a></li>
+                        {% if funcionario %}
+                            <li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_detail' funcionario.pk %}">{{ funcionario.nome_completo }}</a></li>
+                        {% endif %}
+                        <li class="breadcrumb-item active">{% if object %}Editar{% else %}Adicionar{% endif %} Férias</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <form method="post" enctype="multipart/form-data" id="feriasForm" novalidate>
+                {% csrf_token %}
+                
+                <!-- Informações das Férias -->
+                <div class="card card-success card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-umbrella-beach mr-2"></i>Informações das Férias</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% if not funcionario %}
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.funcionario.id_for_label }}">{{ form.funcionario.label }}</label>
+                                        {{ form.funcionario|add_class:"form-control select2" }}
+                                        {% if form.funcionario.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.funcionario.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                {{ form.funcionario.as_hidden }}
+                                <div class="col-md-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        <strong>Funcionário:</strong> {{ funcionario.nome_completo }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.periodo_aquisitivo_inicio.id_for_label }}">{{ form.periodo_aquisitivo_inicio.label }}</label>
+                                    {{ form.periodo_aquisitivo_inicio|add_class:"form-control datepicker" }}
+                                    {% if form.periodo_aquisitivo_inicio.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.periodo_aquisitivo_inicio.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.periodo_aquisitivo_fim.id_for_label }}">{{ form.periodo_aquisitivo_fim.label }}</label>
+                                    {{ form.periodo_aquisitivo_fim|add_class:"form-control datepicker" }}
+                                    {% if form.periodo_aquisitivo_fim.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.periodo_aquisitivo_fim.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.data_inicio.id_for_label }}">{{ form.data_inicio.label }}</label>
+                                    {{ form.data_inicio|add_class:"form-control datepicker" }}
+                                    {% if form.data_inicio.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.data_inicio.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.data_fim.id_for_label }}">{{ form.data_fim.label }}</label>
+                                    {{ form.data_fim|add_class:"form-control datepicker" }}
+                                    {% if form.data_fim.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.data_fim.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.dias_gozados.id_for_label }}">{{ form.dias_gozados.label }}</label>
+                                    {{ form.dias_gozados|add_class:"form-control" }}
+                                    <small class="form-text text-muted">Máximo 30 dias</small>
+                                    {% if form.dias_gozados.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.dias_gozados.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                                    {{ form.status|add_class:"form-control" }}
+                                    {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.status.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Abono Pecuniário -->
+                <div class="card card-warning card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-money-bill-wave mr-2"></i>Abono Pecuniário</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        {{ form.abono_pecuniario|add_class:"form-check-input" }}
+                                        <label class="form-check-label" for="{{ form.abono_pecuniario.id_for_label }}">
+                                            {{ form.abono_pecuniario.label }}
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">Venda de até 10 dias de férias</small>
+                                    {% if form.abono_pecuniario.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.abono_pecuniario.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.dias_abono.id_for_label }}">{{ form.dias_abono.label }}</label>
+                                    {{ form.dias_abono|add_class:"form-control" }}
+                                    <small class="form-text text-muted">Máximo 10 dias</small>
+                                    {% if form.dias_abono.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.dias_abono.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagamento -->
+                <div class="card card-info card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-dollar-sign mr-2"></i>Pagamento</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.data_pagamento.id_for_label }}">{{ form.data_pagamento.label }}</label>
+                                    {{ form.data_pagamento|add_class:"form-control datepicker" }}
+                                    {% if form.data_pagamento.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.data_pagamento.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.valor_pago.id_for_label }}">{{ form.valor_pago.label }}</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">R$</span>
+                                        </div>
+                                        {{ form.valor_pago|add_class:"form-control" }}
+                                    </div>
+                                    {% if form.valor_pago.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.valor_pago.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div class="card card-light card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-sticky-note mr-2"></i>Observações</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.observacoes.id_for_label }}">{{ form.observacoes.label }}</label>
+                                    {{ form.observacoes|add_class:"form-control" }}
+                                    {% if form.observacoes.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="card-footer bg-white py-3 text-right">
+                    {% if funcionario %}
+                        <a href="{% url 'funcionarios:funcionario_ferias' funcionario.pk %}" class="btn btn-secondary">Cancelar</a>
+                    {% else %}
+                        <a href="{% url 'funcionarios:ferias_list' %}" class="btn btn-secondary">Cancelar</a>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> Salvar Férias
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'plugins/inputmask/jquery.inputmask.min.js' %}"></script>
+<script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
+<script>
+$(function () {
+    // Inicializar plugins
+    $('.select2').select2({ theme: 'bootstrap-5' });
+    $('.datepicker').inputmask('dd/mm/yyyy', { 'placeholder': 'dd/mm/aaaa' });
+
+    // Controla a exibição do campo dias_abono baseado no checkbox abono_pecuniario
+    function toggleDiasAbono() {
+        if ($('#id_abono_pecuniario').is(':checked')) {
+            $('#id_dias_abono').closest('.form-group').show();
+        } else {
+            $('#id_dias_abono').closest('.form-group').hide();
+            $('#id_dias_abono').val('0');
+        }
+    }
+    
+    // Executa na inicialização
+    toggleDiasAbono();
+    
+    // Executa quando o checkbox muda
+    $('#id_abono_pecuniario').change(function() {
+        toggleDiasAbono();
+    });
+    
+    // Calcula automaticamente os dias gozados baseado nas datas
+    function calcularDias() {
+        var dataInicio = $('#id_data_inicio').val();
+        var dataFim = $('#id_data_fim').val();
+        
+        if (dataInicio && dataFim) {
+            // Converte dd/mm/yyyy para yyyy-mm-dd
+            var inicioArray = dataInicio.split('/');
+            var fimArray = dataFim.split('/');
+            
+            if (inicioArray.length === 3 && fimArray.length === 3) {
+                var inicio = new Date(inicioArray[2], inicioArray[1] - 1, inicioArray[0]);
+                var fim = new Date(fimArray[2], fimArray[1] - 1, fimArray[0]);
+                
+                if (fim >= inicio) {
+                    var diffTime = Math.abs(fim - inicio);
+                    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    $('#id_dias_gozados').val(diffDays);
+                }
+            }
+        }
+    }
+    
+    $('#id_data_inicio, #id_data_fim').change(function() {
+        calcularDias();
+    });
+});
+</script>
+{% endblock %}
+

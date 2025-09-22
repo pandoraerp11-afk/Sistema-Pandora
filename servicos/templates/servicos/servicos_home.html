@@ -1,0 +1,250 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{# Título do documento #}
+{% block title %}{{ titulo|default:_('Serviços') }}{% endblock %}
+
+{# Cabeçalho padrão do home (usa blocks do pandora_home_ultra_modern) #}
+{% block home_icon %}<i class="fas fa-concierge-bell me-2 text-primary"></i>{% endblock %}
+{% block home_title %}{% trans "Serviços" %}{% endblock %}
+{% block home_subtitle %}{% trans "Visão geral do módulo de serviços" %}{% endblock %}
+
+{# Seção: Visão Geral / Estatísticas #}
+{% block home_stats %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            {% trans "Visão Geral do Módulo" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                        <i class="fas fa-concierge-bell"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-primary mb-1">{{ total_servicos|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Total de Serviços" %}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-success mb-1">{{ servicos_ofertados|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Serviços Ofertados" %}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-info mb-1">{{ servicos_recebidos|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Serviços Contratados" %}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+            <h3 class="display-6 fw-bold text-warning mb-1">{{ servicos_ativos|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">{% trans "Serviços Ativos" %}</p>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Seção: Ações rápidas #}
+{% block home_actions %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-bolt me-2 text-primary"></i>
+            {% trans "Ações Rápidas" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="col-lg-4 col-md-6">
+        <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">{% trans "Novo Serviço Ofertado" %}</h4>
+                    <p class="text-muted mb-4">{% trans "Cadastre serviços que sua empresa oferece" %}</p>
+                    {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                    <a href="{% url 'servicos:servico_ofertado_create' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus me-1"></i>{% trans "Criar" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+        <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">{% trans "Categorias" %}</h4>
+                    <p class="text-muted mb-4">{% trans "Organize seus serviços por categorias" %}</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        {% if perms_ui_categoria.can_add|default:perms.can_add|default:True %}
+                        <a href="{% url 'servicos:categoria_create' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-plus me-1"></i>{% trans "Criar" %}
+                        </a>
+                        {% endif %}
+                        {% if perms_ui_categoria.can_view|default:perms.can_view|default:True %}
+                        <a href="{% url 'servicos:categoria_list' %}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-layer-group me-1"></i>{% trans "Listar" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+        <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+            <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">{% trans "Regras de Cobrança" %}</h4>
+                    <p class="text-muted mb-4">{% trans "Defina regras de precificação" %}</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        {% if perms_ui_regra.can_add|default:perms.can_add|default:True %}
+                        <a href="{% url 'servicos:regra_cobranca_create' %}" class="btn btn-warning btn-sm text-white">
+                            <i class="fas fa-plus me-1"></i>{% trans "Criar" %}
+                        </a>
+                        {% endif %}
+                        {% if perms_ui_regra.can_view|default:perms.can_view|default:True %}
+                        <a href="{% url 'servicos:regra_cobranca_list' %}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-list me-1"></i>{% trans "Listar" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Seção: Conteúdo adicional (gráficos e listas) #}
+{% block home_content %}
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>{% trans "Ofertados vs Contratados" %}</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartTipos" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0"><i class="fas fa-toggle-on me-2 text-success"></i>{% trans "Ativos vs Inativos" %}</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartStatus" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0"><i class="fas fa-clock me-2 text-info"></i>{% trans "Serviços Recentes" %}</h5>
+            {% if perms_ui.can_view|default:perms.can_view|default:True %}
+            <a href="{% url 'servicos:servico_ofertado_list' %}" class="btn btn-sm btn-outline-primary">{% trans "Ver todos" %}</a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if servicos %}
+                <div class="list-group list-group-flush">
+                    {% for s in servicos %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <h6 class="mb-0">{{ s.nome_servico|default:s.get_absolute_url|default:'-'|truncatechars:50 }}</h6>
+                            <small class="text-muted">{{ s.categoria.nome|default:_('Sem categoria') }} • {{ s.get_tipo_servico_display }}</small>
+                        </div>
+                        <div class="text-end">
+                            {% if s.ativo %}
+                                <span class="badge bg-success">{% trans "Ativo" %}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{% trans "Inativo" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">{% trans "Ainda não há serviços cadastrados" %}</p>
+                    {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                    <a href="{% url 'servicos:servico_ofertado_create' %}" class="btn btn-outline-primary btn-sm">{% trans "Criar Serviço" %}</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{# JS adicional (segue o bloco do base). Protegido caso Chart.js não esteja carregado. #}
+{% block home_extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.Chart) { return; }
+
+    const elTipos = document.getElementById('chartTipos');
+    if (elTipos) {
+        const ctxTipos = elTipos.getContext('2d');
+        new Chart(ctxTipos, {
+            type: 'doughnut',
+            data: {
+                labels: ["{% trans 'Ofertados' %}", "{% trans 'Contratados' %}"],
+                datasets: [{
+                    data: [{{ servicos_ofertados|default:0 }}, {{ servicos_recebidos|default:0 }}],
+                    backgroundColor: ['#198754','#0dcaf0'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    const elStatus = document.getElementById('chartStatus');
+    if (elStatus) {
+        const ctxStatus = elStatus.getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'pie',
+            data: {
+                labels: ["{% trans 'Ativos' %}", "{% trans 'Inativos' %}"],
+                datasets: [{
+                    data: [{{ servicos_ativos|default:0 }}, {{ servicos_inativos|default:0 }}],
+                    backgroundColor: ['#ffc107','#6c757d'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+});
+</script>
+{% endblock %}

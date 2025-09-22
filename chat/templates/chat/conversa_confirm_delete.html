@@ -1,0 +1,215 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{{ page_title }}</h1>
+                    <p class="text-muted">{{ page_subtitle }}</p>
+                </div>
+                <div>
+                    <a href="{{ cancel_url }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            {% for breadcrumb in breadcrumbs %}
+                {% if breadcrumb.active %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+                {% else %}
+                    <li class="breadcrumb-item">
+                        {% if breadcrumb.url %}
+                            <a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>
+                        {% else %}
+                            {{ breadcrumb.title }}
+                        {% endif %}
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Confirmation -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-danger">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmação de Exclusão
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- Informações da conversa -->
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-warning me-2"></i>Atenção!
+                        </h5>
+                        <p>{{ delete_message }}</p>
+                        <hr>
+                        <p class="mb-0">
+                            <strong>{{ warning_message }}</strong>
+                        </p>
+                    </div>
+
+                    <!-- Detalhes da conversa -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Detalhes da Conversa
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Título:</strong><br>
+                                    {{ conversa.titulo|default:"Conversa sem título" }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Tipo:</strong><br>
+                                    {{ conversa.get_tipo_display }}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Criada em:</strong><br>
+                                    {{ conversa.created_at|date:"d/m/Y H:i" }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Participantes:</strong><br>
+                                    {{ conversa.participantes.count }} participante{{ conversa.participantes.count|pluralize }}
+                                </div>
+                            </div>
+                            {% if conversa.descricao %}
+                                <hr>
+                                <div>
+                                    <strong>Descrição:</strong><br>
+                                    {{ conversa.descricao }}
+                                </div>
+                            {% endif %}
+                            <hr>
+                            <div>
+                                <strong>Total de mensagens:</strong><br>
+                                {{ conversa.mensagens.count }} mensagem{{ conversa.mensagens.count|pluralize }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estatísticas -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-comments fa-2x text-warning mb-2"></i>
+                                    <h4 class="mb-0">{{ conversa.mensagens.count }}</h4>
+                                    <small class="text-muted">Mensagens</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-2x text-info mb-2"></i>
+                                    <h4 class="mb-0">{{ conversa.participantes.count }}</h4>
+                                    <small class="text-muted">Participantes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-secondary">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-clock fa-2x text-secondary mb-2"></i>
+                                    <h4 class="mb-0">
+                                        {% if conversa.ultima_atividade %}
+                                            {{ conversa.ultima_atividade|timesince }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </h4>
+                                    <small class="text-muted">Última atividade</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Participantes -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-users me-2"></i>Participantes que perderão acesso
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if conversa.participantes.exists %}
+                                <div class="row">
+                                    {% for participante in conversa.participantes.all %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 32px; height: 32px;">
+                                                <span class="text-white font-weight-bold">
+                                                    {{ participante.username.0|upper }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <strong>{{ participante.get_full_name|default:participante.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {% if participante == conversa.criador %}
+                                                        <i class="fas fa-crown text-warning"></i> Criador
+                                                    {% else %}
+                                                        <i class="fas fa-user"></i> Participante
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">Nenhum participante encontrado.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Formulário de confirmação -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ cancel_url }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Sim, excluir conversa
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Adicionar confirmação extra
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButton = document.querySelector('button[type="submit"]');
+    deleteButton.addEventListener('click', function(e) {
+        if (!confirm('Tem certeza absoluta que deseja excluir esta conversa? Esta ação não pode ser desfeita.')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

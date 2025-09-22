@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>2FA Metrics Dashboard</h1>
+<div class="row">
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Total Perfis</h6><strong>{{ total }}</strong></div></div></div>
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Com TOTP</h6><strong>{{ ativos }}</strong></div></div></div>
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Confirmados</h6><strong>{{ confirmados }} ({{ pct_confirmados }}%)</strong></div></div></div>
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Criptografados</h6><strong>{{ criptografados }} ({{ pct_criptografados }}%)</strong></div></div></div>
+</div>
+<div class="row">
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Lockouts Ativos</h6><strong>{{ lockados }}</strong></div></div></div>
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Sucessos</h6><strong>{{ sucessos }}</strong></div></div></div>
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Falhas</h6><strong>{{ falhas }}</strong></div></div></div>
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Recovery Uses</h6><strong>{{ recovery_uses }}</strong></div></div></div>
+</div>
+<div class="row">
+  <div class="col-md-3"><div class="card mb-3"><div class="card-body"><h6>Rate Limit Blocks</h6><strong>{{ rl_blocks }}</strong></div></div></div>
+</div>
+{% endblock %}

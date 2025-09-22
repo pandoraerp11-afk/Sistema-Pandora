@@ -1,0 +1,13 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+{# Bridge genérico: NÃO remover. Mantém blocos legados list_* funcionando dentro do layout ultra moderno. #}
+{% block page_title %}{{ page_title|default:request.resolver_match.url_name }}{% endblock %}
+{% block page_subtitle %}{{ page_subtitle|default:"Gerencie registros" }}{% endblock %}
+{% block table_content %}
+<div class="legacy-list-wrapper">
+  {% block list_actions %}{% endblock %}
+  {% block list_filters %}{% endblock %}
+  {% block list_table %}{% endblock %}
+  {% block list_pagination %}{% endblock %}
+</div>
+{% endblock table_content %}

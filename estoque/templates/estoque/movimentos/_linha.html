@@ -1,0 +1,309 @@
+{# Linha individual da tabela de movimentos #}
+<tr data-movimento-id="{{ movimento.id }}" class="movimento-row">
+    <td>
+        <div class="datetime-info">
+            <div class="fw-semibold">{{ movimento.data_criacao|date:"d/m/Y" }}</div>
+            <small class="text-muted">{{ movimento.data_criacao|time:"H:i:s" }}</small>
+        </div>
+    </td>
+    
+    <td>
+        <span class="badge bg-{{ movimento.tipo_color|default:'secondary' }} badge-tipo">
+            {% if movimento.tipo == 'ENTRADA' %}
+                <i class="fas fa-arrow-up me-1"></i>Entrada
+            {% elif movimento.tipo == 'SAIDA' %}
+                <i class="fas fa-arrow-down me-1"></i>Saída
+            {% elif movimento.tipo == 'TRANSFERENCIA' %}
+                <i class="fas fa-exchange-alt me-1"></i>Transferência
+            {% elif movimento.tipo == 'AJUSTE_POS' %}
+                <i class="fas fa-plus me-1"></i>Ajuste +
+            {% elif movimento.tipo == 'AJUSTE_NEG' %}
+                <i class="fas fa-minus me-1"></i>Ajuste -
+            {% elif movimento.tipo == 'RESERVA' %}
+                <i class="fas fa-hand-holding me-1"></i>Reserva
+            {% elif movimento.tipo == 'LIB_RESERVA' %}
+                <i class="fas fa-unlock me-1"></i>Lib. Reserva
+            {% elif movimento.tipo == 'CONSUMO_BOM' %}
+                <i class="fas fa-cogs me-1"></i>Consumo BOM
+            {% elif movimento.tipo == 'DESCARTE' %}
+                <i class="fas fa-trash me-1"></i>Descarte
+            {% elif movimento.tipo == 'PERDA' %}
+                <i class="fas fa-exclamation-triangle me-1"></i>Perda
+            {% elif movimento.tipo == 'VENCIMENTO' %}
+                <i class="fas fa-clock me-1"></i>Vencimento
+            {% else %}
+                <i class="fas fa-circle me-1"></i>{{ movimento.get_tipo_display }}
+            {% endif %}
+        </span>
+        
+        {% if movimento.reverso_de %}
+            <small class="d-block text-info mt-1">
+                <i class="fas fa-undo me-1"></i>Reversão de #{{ movimento.reverso_de.id }}
+            </small>
+        {% endif %}
+    </td>
+    
+    <td>
+        <div class="produto-info">
+            {% if movimento.produto.imagem %}
+                <img src="{{ movimento.produto.imagem.url }}" alt="{{ movimento.produto.nome }}" 
+                     class="produto-thumb me-2" width="32" height="32">
+            {% else %}
+                <div class="produto-avatar me-2">
+                    <i class="fas fa-cube"></i>
+                </div>
+            {% endif %}
+            <div>
+                <div class="fw-semibold">{{ movimento.produto.nome|truncatechars:40 }}</div>
+                {% if movimento.produto.codigo %}
+                    <small class="text-muted">{{ movimento.produto.codigo }}</small>
+                {% endif %}
+                {% if movimento.lote %}
+                    <small class="d-block text-info">
+                        <i class="fas fa-barcode me-1"></i>Lote: {{ movimento.lote.codigo }}
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    
+    <td class="text-center">
+        <div class="quantidade-info">
+            <span class="fw-bold fs-5 
+                {% if movimento.tipo in 'ENTRADA,AJUSTE_POS' %}text-success
+                {% elif movimento.tipo in 'SAIDA,AJUSTE_NEG,DESCARTE,PERDA,VENCIMENTO' %}text-danger
+                {% else %}text-primary{% endif %}">
+                {% if movimento.tipo in 'SAIDA,AJUSTE_NEG,DESCARTE,PERDA,VENCIMENTO' %}-{% endif %}{{ movimento.quantidade|floatformat:0 }}
+            </span>
+            <br>
+            <small class="text-muted">{{ movimento.produto.unidade_medida|default:'UN' }}</small>
+            {% if movimento.custo_unitario_snapshot %}
+                <br>
+                <small class="text-muted">@ R$ {{ movimento.custo_unitario_snapshot|floatformat:2 }}</small>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td>
+        <div class="local-info">
+            {% if movimento.tipo == 'TRANSFERENCIA' %}
+                <div class="d-flex align-items-center">
+                    <div class="text-end me-2">
+                        <small class="text-muted">De:</small><br>
+                        <strong>{{ movimento.deposito_origem.nome|truncatechars:15 }}</strong>
+                    </div>
+                    <i class="fas fa-arrow-right text-info mx-2"></i>
+                    <div>
+                        <small class="text-muted">Para:</small><br>
+                        <strong>{{ movimento.deposito_destino.nome|truncatechars:15 }}</strong>
+                    </div>
+                </div>
+            {% else %}
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-warehouse text-muted me-2"></i>
+                    <div>
+                        <strong>{{ movimento.deposito.nome|truncatechars:25 }}</strong>
+                        {% if movimento.deposito.codigo %}
+                            <br><small class="text-muted">{{ movimento.deposito.codigo }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td>
+        <div class="usuario-info">
+            {% if movimento.usuario %}
+                <div class="d-flex align-items-center">
+                    {% if movimento.usuario.profile.avatar %}
+                        <img src="{{ movimento.usuario.profile.avatar.url }}" class="user-avatar me-2" width="24" height="24">
+                    {% else %}
+                        <div class="user-avatar-placeholder me-2">
+                            {{ movimento.usuario.first_name.0|default:movimento.usuario.username.0|upper }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <small class="fw-semibold">{{ movimento.usuario.get_full_name|default:movimento.usuario.username }}</small>
+                        {% if movimento.solicitante_nome_cache %}
+                            <br><small class="text-muted">Solic.: {{ movimento.solicitante_nome_cache|truncatechars:20 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <span class="text-muted">Sistema</span>
+            {% endif %}
+        </div>
+    </td>
+    
+    <td class="text-center">
+        {% if movimento.aprovacao_status %}
+            {% if movimento.aprovacao_status == 'APROVADO' %}
+                <span class="badge bg-success">
+                    <i class="fas fa-check me-1"></i>Aprovado
+                </span>
+            {% elif movimento.aprovacao_status == 'PENDENTE' %}
+                <span class="badge bg-warning">
+                    <i class="fas fa-clock me-1"></i>Pendente
+                </span>
+            {% elif movimento.aprovacao_status == 'REJEITADO' %}
+                <span class="badge bg-danger">
+                    <i class="fas fa-times me-1"></i>Rejeitado
+                </span>
+            {% endif %}
+        {% else %}
+            <span class="badge bg-success">
+                <i class="fas fa-check me-1"></i>Normal
+            </span>
+        {% endif %}
+        
+        {% if movimento.ref_externa %}
+            <small class="d-block text-info mt-1">
+                <i class="fas fa-link me-1"></i>{{ movimento.ref_externa|truncatechars:10 }}
+            </small>
+        {% endif %}
+    </td>
+    
+    <td class="text-center">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-cog"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item" href="#" onclick="verDetalhes({{ movimento.id }})">
+                        <i class="fas fa-eye me-2"></i>Ver Detalhes
+                    </a>
+                </li>
+                
+                {% if movimento.evidencias_count > 0 %}
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="verEvidencias({{ movimento.id }})">
+                            <i class="fas fa-paperclip me-2"></i>Evidências ({{ movimento.evidencias_count }})
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% if movimento.aprovacao_status == 'PENDENTE' and permissoes_usuario.pode_aprovar %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-success" href="#" onclick="aprovarMovimento({{ movimento.id }}, 'aprovar')">
+                            <i class="fas fa-check me-2"></i>Aprovar
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="#" onclick="aprovarMovimento({{ movimento.id }}, 'rejeitar')">
+                            <i class="fas fa-times me-2"></i>Rejeitar
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% if not movimento.reverso_de and permissoes_usuario.pode_reverter and movimento.pode_reverter %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-warning" href="#" onclick="reverterMovimento({{ movimento.id }})">
+                            <i class="fas fa-undo me-2"></i>Reverter
+                        </a>
+                    </li>
+                {% endif %}
+                
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="imprimirComprovante({{ movimento.id }})">
+                        <i class="fas fa-print me-2"></i>Imprimir
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </td>
+</tr>
+
+<style>
+.movimento-row {
+    transition: all 0.3s ease;
+}
+
+.movimento-row:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.datetime-info {
+    min-width: 80px;
+}
+
+.produto-thumb {
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid #e9ecef;
+}
+
+.produto-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+.quantidade-info {
+    min-width: 70px;
+}
+
+.local-info {
+    min-width: 150px;
+}
+
+.user-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-avatar-placeholder {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-tipo {
+    font-size: 0.75rem;
+    min-width: 90px;
+}
+
+/* Animação para linha nova */
+.movimento-row.nova {
+    background-color: rgba(25, 135, 84, 0.1);
+    animation: highlightFade 3s ease-out forwards;
+}
+
+@keyframes highlightFade {
+    0% {
+        background-color: rgba(25, 135, 84, 0.2);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* Linha rejeitada */
+.movimento-row.rejeitado {
+    opacity: 0.7;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* Linha pendente */
+.movimento-row.pendente {
+    background-color: rgba(255, 193, 7, 0.05);
+}
+</style>

@@ -1,0 +1,30 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% block title %}Criar Proposta{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <a href="{% url 'cotacoes:portal-cotacao-detail' cotacao.pk %}" class="btn btn-link">&larr; Voltar</a>
+  <h2>Nova Proposta - {{ cotacao.codigo }}</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-4">
+        <label class="form-label">Validade da Proposta</label>
+        <input type="date" name="validade_proposta" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Prazo Entrega Geral (dias)</label>
+        <input type="number" name="prazo_entrega_geral" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Condições de Pagamento</label>
+        <input type="text" name="condicoes_pagamento" class="form-control">
+      </div>
+    </div>
+    <div class="mt-3">
+      <label class="form-label">Observação</label>
+      <textarea name="observacao" class="form-control" rows="3"></textarea>
+    </div>
+    <button type="submit" class="btn btn-success mt-3">Criar Proposta</button>
+  </form>
+</div>
+{% endblock %}

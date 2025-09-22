@@ -1,0 +1,357 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Formulário de Configurações Ultra Moderno -->
+
+<div id="wizard-configuration-section" data-validate-url="{% url 'core:tenant_wizard_validate_field' %}">
+    <!-- Alerta Informativo -->
+    <div class="alert alert-success border-0 mb-4 wizard-alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-cog text-success me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-success">Configurações e Módulos</h6>
+                <small class="text-muted">Personalize módulos e configurações da empresa</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Identidade e Acesso (cards) -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-id-badge wizard-icon"></i>
+            Identidade e Acesso
+        </h5>
+
+        <div class="modules-grid identity-config-grid">
+            {% if form.subdomain %}
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-globe text-primary me-2"></i>
+                    <span class="module-name" title="{{ form.subdomain.label }}">Subdomínio</span>
+                </div>
+                {% if editing_tenant %}
+                    {% render_field form.subdomain class+="form-control form-control-sm" title="Subdomínio usado no endereço do portal" data-current-step="5" data-editing-pk=editing_tenant.pk %}
+                {% else %}
+                    {% render_field form.subdomain class+="form-control form-control-sm" title="Subdomínio usado no endereço do portal" data-current-step="5" %}
+                {% endif %}
+                <small id="subdomainFeedback" class="form-text mt-1" style="display:none;"></small>
+            </div>
+            {% endif %}
+
+            {% if form.logo %}
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-image text-info me-2"></i>
+                    <span class="module-name" title="{{ form.logo.label }}">Logo/Imagem</span>
+                </div>
+                {{ form.logo|add_class:"form-control form-control-sm"|attr:"title:Envie a imagem do logo (PNG, JPG, SVG)" }}
+                {% if form.logo.help_text %}
+                    <small class="text-muted d-block mt-1">{{ form.logo.help_text }}</small>
+                {% endif %}
+                <div class="mt-2">
+                    <img id="logoPreview" alt="Pré-visualização do logo" class="img-thumbnail" style="max-height:64px; display:none;">
+                </div>
+            </div>
+            {% endif %}
+
+            {% if form.codigo_interno %}
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-hashtag text-secondary me-2"></i>
+                    <span class="module-name" title="{{ form.codigo_interno.label }}">Cód. Interno</span>
+                </div>
+                {{ form.codigo_interno|add_class:"form-control form-control-sm"|attr:"title:Código de identificação interna" }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Seção: Planos e Limites -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-crown wizard-icon"></i>
+            Plano de Assinatura
+        </h5>
+        <div class="modules-grid plan-config-grid">
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-crown text-warning me-2"></i>
+                    <span class="module-name" title="{{ form.plano_assinatura.label }}">Plano</span>
+                </div>
+                {{ form.plano_assinatura|add_class:"form-select form-select-sm"|attr:"title:Plano de Assinatura" }}
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-calendar-day text-primary me-2"></i>
+                    <span class="module-name">Datas do Plano</span>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small" for="{{ form.data_ativacao_plano.id_for_label }}" title="{{ form.data_ativacao_plano.label }}">Data de Ativação</label>
+                        {{ form.data_ativacao_plano|add_class:"form-control form-control-sm"|attr:"title:Data de Ativação do Plano" }}
+                    </div>
+                    {% if form.data_fim_trial %}
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small" for="{{ form.data_fim_trial.id_for_label }}" title="{{ form.data_fim_trial.label }}">Fim do Teste</label>
+                        {{ form.data_fim_trial|add_class:"form-control form-control-sm"|attr:"title:Fim do Período de Teste" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-sliders-h text-info me-2"></i>
+                    <span class="module-name">Limites</span>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small" for="{{ form.max_usuarios.id_for_label }}" title="{{ form.max_usuarios.label }}">Nº Máx. de Usuários</label>
+                        {{ form.max_usuarios|add_class:"form-control form-control-sm"|attr:"title:Nº Máximo de Usuários — Defina 0 para ilimitado." }}
+                        {% if form.max_usuarios.help_text %}
+                            <small class="text-muted d-block mt-1">{{ form.max_usuarios.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small" for="{{ form.max_armazenamento_gb.id_for_label }}" title="{{ form.max_armazenamento_gb.label }}">Arm. Máx. (GB)</label>
+                        {{ form.max_armazenamento_gb|add_class:"form-control form-control-sm"|attr:"title:Armazenamento Máximo em GB — Defina 0 para ilimitado." }}
+                        {% if form.max_armazenamento_gb.help_text %}
+                            <small class="text-muted d-block mt-1">{{ form.max_armazenamento_gb.help_text }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if form.data_proxima_cobranca %}
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-file-invoice-dollar text-success me-2"></i>
+                    <span class="module-name" title="{{ form.data_proxima_cobranca.label }}">Próx. Cobrança</span>
+                </div>
+                {{ form.data_proxima_cobranca|add_class:"form-control form-control-sm"|attr:"title:Data da próxima cobrança" }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Seção: Módulos do Sistema -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-puzzle-piece wizard-icon"></i>
+            Módulos Disponíveis
+        </h5>
+
+        <div class="alert alert-info border-0 mb-3">
+            <small><i class="fas fa-info-circle me-1"></i> Selecione os módulos que sua empresa utilizará. Você pode alterar essa configuração posteriormente.</small>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-3 selected-modules-counter">
+            <span class="badge bg-primary" id="moduleCounter">0 módulos selecionados</span>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Seleção global">
+                <button type="button" class="btn btn-outline-primary" id="btnSelectAllModules"><i class="fas fa-check-double me-1"></i>Selecionar todos</button>
+                <button type="button" class="btn btn-outline-secondary" id="btnClearAllModules"><i class="fas fa-ban me-1"></i>Limpar</button>
+            </div>
+        </div>
+
+        {% if form.module_catalog %}
+            {% for category, modules in form.module_catalog %}
+                <div class="module-category mb-4" data-category="{{ category|slugify }}">
+                    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                        <h6 class="category-title mb-0">
+                            <i class="fas fa-layer-group text-primary me-2"></i>
+                            {{ category }}
+                            <small class="text-muted">{% if category == 'Gestão Básica' %}- Módulos essenciais{% endif %}</small>
+                        </h6>
+                        <div class="form-check form-check-inline m-0">
+                            <input class="form-check-input master-category" type="checkbox" id="cat_select_{{ forloop.counter }}" data-category-target="{{ category|slugify }}">
+                            <label class="form-check-label small" for="cat_select_{{ forloop.counter }}" title="Selecionar / limpar todos desta categoria">Selecionar todos</label>
+                        </div>
+                    </div>
+                    <div class="modules-grid">
+                        {% for m in modules %}
+                        <div class="module-card" data-category-item="{{ category|slugify }}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="enabled_modules" value="{{ m.key }}" id="module_{{ m.key }}">
+                                <label class="form-check-label" for="module_{{ m.key }}">
+                                    <div class="module-header">
+                                        <i class="{{ m.icon }} {{ m.color }} me-2"></i>
+                                        <span class="module-name">{{ m.label }}</span>
+                                        {% if m.premium %}<span class="badge bg-warning text-dark ms-2">Premium</span>{% endif %}
+                                    </div>
+                                    {% if m.description %}
+                                    <small class="module-description text-muted d-block mt-1">
+                                        {{ m.description }}
+                                    </small>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-warning">Nenhum módulo detectado. Verifique configurações.</div>
+        {% endif %}
+    </div>
+
+    <!-- Seção: Configurações de Sistema -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-cogs wizard-icon"></i>
+            Configurações de Sistema
+        </h5>
+        <div class="modules-grid system-config-grid">
+            <div class="module-card">
+                <div class="form-check portal-ativo-wrapper" data-requires-module="portal_cliente" style="display:none;">
+                    {{ form.portal_ativo|add_class:"form-check-input portal-ativo-checkbox" }}
+                    <label class="form-check-label" for="{{ form.portal_ativo.id_for_label }}">
+                        <div class="module-header">
+                            <i class="fas fa-plug text-secondary me-2"></i>
+                            <span class="module-name">{{ form.portal_ativo.label }}</span>
+                        </div>
+                        <small class="module-description text-muted d-block mt-1">
+                            {{ form.portal_ativo.help_text|default:"Publica o portal externo para clientes." }}
+                        </small>
+                        <small class="text-warning d-none" id="portalAtivoWarning">Habilite o módulo Portal do Cliente para ativar este recurso.</small>
+                    </label>
+                </div>
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-toggle-on text-primary me-2"></i>
+                    <span class="module-name">{{ form.status.label }}</span>
+                </div>
+                {{ form.status|add_class:"form-select form-select-sm" }}
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-clock text-primary me-2"></i>
+                    <span class="module-name">{{ form.timezone.label }}</span>
+                </div>
+                {{ form.timezone|add_class:"form-select form-select-sm" }}
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-language text-info me-2"></i>
+                    <span class="module-name">{{ form.idioma_padrao.label }}</span>
+                </div>
+                {{ form.idioma_padrao|add_class:"form-select form-select-sm" }}
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-coins text-success me-2"></i>
+                    <span class="module-name">{{ form.moeda_padrao.label }}</span>
+                </div>
+                {{ form.moeda_padrao|add_class:"form-select form-select-sm" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Configurações Avançadas (opcional) -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-tools wizard-icon"></i>
+            Configurações Avançadas <small class="text-muted ms-2">(opcional)</small>
+        </h5>
+        <div class="modules-grid advanced-config-grid">
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-palette text-primary me-2"></i>
+                    <span class="module-name">Branding</span>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small">Tema</label>
+                        <select class="form-select form-select-sm" name="theme_preview" title="Apenas visual, não salva ainda">
+                            <option value="">Padrão</option>
+                            <option value="light">Claro</option>
+                            <option value="dark">Escuro</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small" for="primaryColorPreview">Cor Primária</label>
+                        <input id="primaryColorPreview" name="primary_color_preview" type="color" class="form-control form-control-color form-control-sm" value="#0d6efd" title="Apenas visual, não salva ainda">
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-1">Ajustes de tema são apenas de pré-visualização neste passo.</small>
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-link text-success me-2"></i>
+                    <span class="module-name">Domínio Customizado</span>
+                </div>
+                <input type="text" class="form-control form-control-sm mb-2" placeholder="ex.: portal.suaempresa.com" disabled>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-info">CNAME: via suporte</span>
+                    <span class="badge bg-info">SSL: gerenciado</span>
+                </div>
+                <small class="text-muted d-block mt-1">Entre em contato com o suporte para configurar um domínio.</small>
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-bell text-warning me-2"></i>
+                    <span class="module-name">Notificações</span>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" disabled id="notifEmail">
+                            <label class="form-check-label" for="notifEmail">E-mail</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" disabled id="notifWhats">
+                            <label class="form-check-label" for="notifWhats">WhatsApp</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small">Silêncio (início)</label>
+                        <input type="time" class="form-control form-control-sm" disabled>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small">Silêncio (fim)</label>
+                        <input type="time" class="form-control form-control-sm" disabled>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-1">Configurações avançadas de notificação em breve.</small>
+            </div>
+
+            <div class="module-card">
+                <div class="module-header">
+                    <i class="fas fa-shield-alt text-danger me-2"></i>
+                    <span class="module-name">Segurança</span>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small">2FA</label>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <a href="{% url 'user_management:meu_perfil' %}" class="btn btn-outline-success btn-sm">
+                                Configurar no Meu Perfil
+                            </a>
+                            <a href="{% url 'user_management:2fa_metrics_dashboard' %}" class="btn btn-outline-primary btn-sm">
+                                Painel e Métricas 2FA
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small">Sessão (min)</label>
+                        <input type="number" min="5" step="5" class="form-control form-control-sm" placeholder="Ex.: 30" disabled>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-1">Tempo de sessão é definido globalmente. Para encerrar sessões ativas, acesse <a href="{% url 'user_management:sessao_list' %}">Gestão de Sessões</a>.</small>
+            </div>
+        </div>
+    </div>
+</div> {# wizard-configuration-section #}
+{% endblock %}

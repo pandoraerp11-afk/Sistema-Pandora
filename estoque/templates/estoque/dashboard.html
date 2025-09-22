@@ -1,0 +1,79 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block home_title %}Dashboard de Estoque{% endblock %}
+{% block home_subtitle %}Visão completa do controle de estoque e movimentações{% endblock %}
+{% block home_icon %}<i class="fas fa-warehouse me-2 text-primary"></i>{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'estoque:estoque_home' %}">Estoque</a></li>
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block home_stats %}
+    {% include 'estoque/partials/_kpi_cards.html' %}
+{% endblock %}
+
+{% block home_content %}
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8" data-aos="fade-up" data-aos-delay="100">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Movimentações (30 dias)</h5>
+                </div>
+                <div class="card-body"><canvas id="movimentacoesChart" height="300"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4" data-aos="fade-up" data-aos-delay="150">
+            {% include 'estoque/partials/_timeline_movimentos.html' %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8" data-aos="fade-up" data-aos-delay="200">
+            {% include 'estoque/partials/_alertas.html' %}
+        </div>
+        <div class="col-lg-4" data-aos="fade-up" data-aos-delay="220">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-white border-0"><h5 class="card-title mb-0"><i class="fas fa-bolt me-2 text-warning"></i>Ações Rápidas</h5></div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'estoque:saldos_list' %}" class="btn btn-outline-primary"><i class="fas fa-chart-bar me-2"></i>Consultar Saldos</a>
+                        <a href="{% url 'estoque:reservas_list' %}" class="btn btn-outline-warning"><i class="fas fa-hand-holding me-2"></i>Gerenciar Reservas</a>
+                        <a href="{% url 'estoque:picking_kanban' %}" class="btn btn-outline-info"><i class="fas fa-shipping-fast me-2"></i>Sistema de Picking</a>
+                        <a href="{% url 'estoque:inventario_ciclico' %}" class="btn btn-outline-secondary"><i class="fas fa-clipboard-check me-2"></i>Inventário Cíclico</a>
+                        <a href="{% url 'estoque:auditoria_logs' %}" class="btn btn-outline-dark"><i class="fas fa-search-plus me-2"></i>Auditoria</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modalContainer"></div>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group me-2">
+    <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-plus me-1"></i> Nova Operação</button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="openModal('entrada')"><i class="fas fa-arrow-up me-2 text-success"></i>Entrada</a></li>
+        <li><a class="dropdown-item" href="#" onclick="openModal('saida')"><i class="fas fa-arrow-down me-2 text-danger"></i>Saída</a></li>
+        <li><a class="dropdown-item" href="#" onclick="openModal('transferencia')"><i class="fas fa-exchange-alt me-2 text-info"></i>Transferência</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'estoque:reserva_add' %}"><i class="fas fa-hand-holding me-2 text-warning"></i>Nova Reserva</a></li>
+    </ul>
+</div>
+<a href="{% url 'estoque:movimentos_list' %}" class="btn btn-outline-secondary me-2"><i class="fas fa-list me-1"></i> Movimentos</a>
+<button class="btn btn-outline-info" onclick="refreshDashboard()"><i class="fas fa-sync-alt me-1"></i> Atualizar</button>
+{% endblock %}
+
+{% block home_extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'estoque/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{EstoqueDashboard.init({wsUrl:`${location.protocol==='https:'?'wss://':'ws://'}${location.host}/ws/estoque/`,refreshInterval:60000,endpoints:{kpis:'/api/estoque/kpis/',movimentos:'/api/estoque/movimentos/',alertas:'/api/estoque/alertas/'}});initMovChart();subWS();});
+function openModal(t){EstoqueDashboard.openModal(t);}function refreshDashboard(){EstoqueDashboard.refreshAll();}
+function initMovChart(){const ctx=document.getElementById('movimentacoesChart');if(!ctx)return;fetch('/api/estoque/grafico-movimentacoes/').then(r=>r.json()).then(d=>{new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:[{label:'Entradas',data:d.entradas,borderColor:'rgb(25,135,84)',backgroundColor:'rgba(25,135,84,.1)',borderWidth:2,fill:true,tension:.4},{label:'Saídas',data:d.saidas,borderColor:'rgb(220,53,69)',backgroundColor:'rgba(220,53,69,.1)',borderWidth:2,fill:true,tension:.4},{label:'Transferências',data:d.transferencias,borderColor:'rgb(13,110,253)',backgroundColor:'rgba(13,110,253,.1)',borderWidth:2,fill:false,tension:.4}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',axis:'x',intersect:false},scales:{y:{beginAtZero:true},x:{}}}});}).catch(e=>console.error('Erro gráfico',e));}
+function subWS(){if(!('WebSocket'in window))return;const ws=new WebSocket(`${location.protocol==='https:'?'wss://':'ws://'}${location.host}/ws/estoque/`);ws.onmessage=e=>{const data=JSON.parse(e.data);switch(data.event){case 'estoque.movimento':EstoqueDashboard.onNovoMovimento(data.data);break;case 'estoque.saldo_atualizado':EstoqueDashboard.onSaldoAtualizado(data.data);break;case 'estoque.alerta':EstoqueDashboard.onAlerta(data.data);break;case 'estoque.reserva':EstoqueDashboard.onReserva(data.data);break;default:}};ws.onclose=()=>setTimeout(subWS,5000);} 
+</script>
+{% endblock %}

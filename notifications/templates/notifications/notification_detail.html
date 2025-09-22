@@ -1,0 +1,99 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% block title %}{{ notificacao.titulo }} - Detalhes da Notificação{% endblock %}
+{# Removido bloco extra_css com CSS extenso legado #}
+{% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
+      <div>
+        <h1 class="h3 mb-1"><i class="fas fa-bell me-2 text-primary"></i>Detalhes da Notificação</h1>
+        <p class="text-muted mb-0 small">Informações completas sobre a notificação selecionada</p>
+      </div>
+      <div class="btn-group">
+        <a href="{% url 'notifications:notification_list' %}" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+        {% if notificacao.status == 'nao_lida' %}
+        <button type="button" class="btn btn-sm btn-success mark-as-read-single" data-id="{{ notificacao.pk }}"><i class="fas fa-check me-1"></i>Lida</button>
+        {% elif notificacao.status == 'lida' %}
+        <button type="button" class="btn btn-sm btn-warning mark-as-unread-single" data-id="{{ notificacao.pk }}"><i class="fas fa-envelope me-1"></i>Não Lida</button>
+        {% endif %}
+        {% if notificacao.status != 'arquivada' %}
+        <button type="button" class="btn btn-sm btn-outline-secondary archive-single" data-id="{{ notificacao.pk }}"><i class="fas fa-box-archive me-1"></i>Arquivar</button>
+        {% endif %}
+        <button type="button" class="btn btn-sm btn-danger delete-single" data-id="{{ notificacao.pk }}"><i class="fas fa-trash me-1"></i>Excluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container-fluid pb-4">
+  <div class="row g-3">
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3"><i class="fas fa-envelope-open-text me-2 text-primary"></i>Conteúdo</h5>
+          <div class="border rounded p-3 bg-light small" style="min-height:80px;">
+            {{ notificacao.mensagem|linebreaks|default:"Nenhuma mensagem adicional." }}
+          </div>
+          {% if notificacao.url_acao %}
+          <div class="mt-3">
+            <a href="{{ notificacao.url_acao }}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-external-link-alt me-1"></i>Ação Relacionada</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header py-2"><strong class="small mb-0"><i class="fas fa-info-circle me-1"></i>Metadados</strong></div>
+        <div class="card-body small">
+          <dl class="row mb-0">
+            <dt class="col-5">Tipo</dt><dd class="col-7">{{ notificacao.get_tipo_display }}</dd>
+            <dt class="col-5">Prioridade</dt><dd class="col-7">{{ notificacao.get_prioridade_display }}</dd>
+            <dt class="col-5">Status</dt><dd class="col-7">{{ notificacao.get_status_display }}</dd>
+            <dt class="col-5">Criada</dt><dd class="col-7">{{ notificacao.created_at|date:"d/m/Y H:i" }}</dd>
+            {% if notificacao.data_leitura %}<dt class="col-5">Lida</dt><dd class="col-7">{{ notificacao.data_leitura|date:"d/m/Y H:i" }}</dd>{% endif %}
+            {% if notificacao.data_expiracao %}<dt class="col-5">Expira</dt><dd class="col-7">{{ notificacao.data_expiracao|date:"d/m/Y H:i" }}</dd>{% endif %}
+          </dl>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-header py-2"><strong class="small mb-0"><i class="fas fa-stream me-1"></i>Logs</strong></div>
+        <div class="card-body small" style="max-height:220px;overflow:auto;">
+          {% for log in logs %}
+            <div class="border-start ps-2 mb-2">
+              <div class="text-muted">{{ log.data_hora|date:"d/m/Y H:i" }}</div>
+              <div>{{ log.acao }}</div>
+            </div>
+          {% empty %}
+            <div class="text-muted">Sem logs.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{# Containers globais fornecidos pelo partial #}
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+(function(){
+  if(!window.PandoraNotif){console.error('PandoraNotif util não carregado'); return;}
+  const {toast, postJSON} = PandoraNotif;
+  function doAction(action){
+    postJSON('{% url "notifications:api_action" %}', {notification_id: {{ notificacao.id }}, action: action}).then(data=>{
+      if(data.error){toast(data.error,'error');return;}
+      if(action==='marcar_lida'){toast('Marcada como lida');}
+      if(action==='arquivar'){toast('Arquivada'); setTimeout(()=>location.href='{% url "notifications:notification_list" %}',500);}    
+    }).catch(()=>toast('Erro na ação','error'));
+  }
+  document.addEventListener('click', e=>{
+    if(e.target.closest('.mark-as-read-single')) doAction('marcar_lida');
+    if(e.target.closest('.mark-as-unread-single')) toast('Use a lista para reverter','error');
+    if(e.target.closest('.archive-single')) doAction('arquivar');
+    if(e.target.closest('.delete-single')) if(confirm('Excluir?')) post('{% url "notifications:notification-batch-action" %}', {operation:'delete', ids:[{{ notificacao.id }}]}).then(()=>{toast('Excluída'); setTimeout(()=>location.href='{% url "notifications:notification_list" %}',400);});
+  });
+})();
+</script>
+{% endblock %}
+

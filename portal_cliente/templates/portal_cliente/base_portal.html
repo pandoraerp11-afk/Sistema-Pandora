@@ -1,0 +1,113 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal do Cliente - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block navbar %}
+<!-- Portal Cliente - Navbar Customizada -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand fw-bold" href="{% url 'portal_cliente:dashboard' %}">
+            <i class="fas fa-user-circle me-2"></i>Portal Cliente
+        </a>
+        
+        <!-- Toggler para mobile -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#portalNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <!-- Menu items -->
+        <div class="collapse navbar-collapse" id="portalNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'portal_cliente:dashboard' %}">
+                        <i class="fas fa-home me-1"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'agendamentos' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'portal_cliente:agendamentos_lista' %}">
+                        <i class="fas fa-calendar-alt me-1"></i>Agendamentos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'historico_atendimentos' %}active{% endif %}" 
+                       href="{% url 'portal_cliente:historico_atendimentos' %}">
+                        <i class="fas fa-history me-1"></i>Histórico
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'galeria_fotos' %}active{% endif %}" 
+                       href="{% url 'portal_cliente:galeria_fotos' %}">
+                        <i class="fas fa-images me-1"></i>Galeria
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'documentos' %}active{% endif %}" 
+                       href="{% url 'portal_cliente:documentos' %}">
+                        <i class="fas fa-file-alt me-1"></i>Documentos
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- User info e logout -->
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i>{{ user.get_full_name|default:user.username }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <h6 class="dropdown-header">
+                                <i class="fas fa-user-circle me-2"></i>{{ user.get_full_name|default:user.username }}
+                            </h6>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'portal_cliente:dashboard' %}">
+                                <i class="fas fa-home me-2"></i>Meu Portal
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'admin:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Sair
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Content será fornecido pelos templates filhos -->
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/portal_cliente.js' %}"></script>
+
+<!-- Configurações globais do portal -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Marcar item de menu ativo
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+        }
+    });
+});
+</script>
+{% endblock %}

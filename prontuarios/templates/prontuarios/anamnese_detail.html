@@ -1,0 +1,22 @@
+{% extends 'pandora_base.html' %}
+{% load i18n %}
+{% block title %}{% trans 'Anamnese' %} #{{ object.pk }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h3 class="mb-0">{% trans 'Anamnese' %} #{{ object.pk }}</h3>
+  <a href="{% url 'prontuarios:anamnese_list' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left"></i> {% trans 'Voltar' %}</a>
+</div>
+<div class="card shadow-sm">
+  <div class="card-body">
+    <dl class="row mb-0 small">
+  <dt class="col-sm-3">{% trans 'Cliente' %}</dt><dd class="col-sm-9">{{ object.cliente.nome_razao_social|default:object.cliente.nome_display }}</dd>
+  <dt class="col-sm-3">{% trans 'Serviço' %}</dt><dd class="col-sm-9">{{ object.servico.nome_servico }}</dd>
+      <dt class="col-sm-3">{% trans 'Tipo' %}</dt><dd class="col-sm-9">{{ object.get_tipo_anamnese_display }}</dd>
+      <dt class="col-sm-3">{% trans 'Profissional' %}</dt><dd class="col-sm-9">{{ object.profissional_responsavel.get_full_name|default:object.profissional_responsavel.username }}</dd>
+      <dt class="col-sm-3">{% trans 'Data' %}</dt><dd class="col-sm-9">{{ object.data_preenchimento|date:'d/m/Y H:i' }}</dd>
+      <dt class="col-sm-3">{% trans 'Respostas' %}</dt><dd class="col-sm-9"><pre class="mb-0 bg-light p-2 rounded small">{{ object.respostas|json_script:'anam_resps' }}</pre></dd>
+      <dt class="col-sm-3">{% trans 'Observações' %}</dt><dd class="col-sm-9">{{ object.observacoes_profissional|linebreaksbr }}</dd>
+    </dl>
+  </div>
+</div>
+{% endblock %}

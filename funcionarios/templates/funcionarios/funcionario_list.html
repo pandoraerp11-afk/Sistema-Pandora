@@ -1,0 +1,245 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Funcionários{% endblock %}
+
+{% block page_title %}Funcionários{% endblock %}
+{% block page_subtitle %}Gerencie todos os funcionários da sua empresa{% endblock %}
+{% block page_icon %}fas fa-users{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Funcionários</li>
+{% endblock %}
+
+{% block stats_cards %}
+<div class="col-lg-3 col-md-6">
+    <div class="stats-card bg-primary">
+        <div class="stats-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stats-content">
+            <h3 class="stats-number">{{ total_count|default:0 }}</h3>
+            <p class="stats-label">Total de Funcionários</p>
+        </div>
+    </div>
+</div>
+<div class="col-lg-3 col-md-6">
+    <div class="stats-card bg-success">
+        <div class="stats-icon">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stats-content">
+            <h3 class="stats-number">{{ active_count|default:0 }}</h3>
+            <p class="stats-label">Funcionários Ativos</p>
+        </div>
+    </div>
+</div>
+<div class="col-lg-3 col-md-6">
+    <div class="stats-card bg-danger">
+        <div class="stats-icon">
+            <i class="fas fa-user-times"></i>
+        </div>
+        <div class="stats-content">
+            <h3 class="stats-number">{{ inactive_count|default:0 }}</h3>
+            <p class="stats-label">Funcionários Inativos</p>
+        </div>
+    </div>
+</div>
+<div class="col-lg-3 col-md-6">
+    <div class="stats-card bg-info">
+        <div class="stats-icon">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="stats-content">
+            <h3 class="stats-number">{{ recent_count|default:0 }}</h3>
+            <p class="stats-label">Novos (30 dias)</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block action_buttons %}
+{% if perms_ui.can_add|default:perms.can_add|default:True %}
+<a href="{% url 'funcionarios:funcionario_wizard_create' %}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i> Novo Funcionário
+</a>
+{% endif %}
+{% endblock %}
+
+{% block filters_form %}
+<form method="get" class="filters-form">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label for="search" class="form-label">Buscar</label>
+            <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Nome, CPF ou Cargo">
+        </div>
+        <div class="col-md-3">
+            <label for="departamento" class="form-label">Departamento</label>
+            <select class="form-select" id="departamento" name="departamento">
+                <option value="">Todos os departamentos</option>
+                {% for dept in departamentos %}
+                <option value="{{ dept.id }}" {% if departamento_selected == dept.id|stringformat:"s" %}selected{% endif %}>
+                    {{ dept.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="ativo" class="form-label">Status</label>
+            <select class="form-select" id="ativo" name="ativo">
+                <option value="">Todos</option>
+                <option value="true" {% if ativo_selected == 'true' %}selected{% endif %}>Ativos</option>
+                <option value="false" {% if ativo_selected == 'false' %}selected{% endif %}>Inativos</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-outline-primary me-2">
+                <i class="fas fa-search me-1"></i> Filtrar
+            </button>
+            <a href="{% url 'funcionarios:funcionario_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i> Limpar
+            </a>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block table_content %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 50px;">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAll">
+                        <label class="form-check-label" for="selectAll"></label>
+                    </div>
+                </th>
+                <th>Funcionário</th>
+                <th>CPF</th>
+                <th>Cargo</th>
+                <th>Departamento</th>
+                <th>Admissão</th>
+                <th>Status</th>
+                <th style="width: 120px;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for funcionario in object_list %}
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="{{ funcionario.id }}">
+                        <label class="form-check-label"></label>
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle me-3">
+                            {% if funcionario.foto %}
+                            <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}">
+                            {% else %}
+                            <span>{{ funcionario.nome_completo|first|upper }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ funcionario.nome_completo }}</h6>
+                            {% if funcionario.email_pessoal %}
+                            <small class="text-muted">{{ funcionario.email_pessoal }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="font-monospace">{{ funcionario.cpf|default:"-" }}</span>
+                </td>
+                <td>
+                    <span class="text-primary fw-medium">{{ funcionario.cargo|default:"-" }}</span>
+                </td>
+                <td>
+                    {% if funcionario.departamento %}
+                    <span class="badge bg-light text-dark">{{ funcionario.departamento.name }}</span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="text-muted">{{ funcionario.data_admissao|date:"d/m/Y" }}</span>
+                </td>
+                <td>
+                    {% if funcionario.ativo %}
+                    <span class="badge bg-success">Ativo</span>
+                    {% else %}
+                    <span class="badge bg-danger">Inativo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                                <a href="{% url 'funcionarios:funcionario_detail' funcionario.pk %}" 
+                                    class="btn btn-outline-primary" title="Visualizar">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                                {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                                <a href="{% url 'funcionarios:funcionario_update' funcionario.pk %}" 
+                                    class="btn btn-outline-warning" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                                {% endif %}
+                                {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+                                <a href="{% url 'funcionarios:funcionario_delete' funcionario.pk %}" 
+                                    class="btn btn-outline-danger" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                                {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="empty-state">
+                        <div class="empty-icon mb-3">
+                            <i class="fas fa-user-friends fa-3x text-muted"></i>
+                        </div>
+                        <h5 class="mb-3">Nenhum funcionário encontrado</h5>
+                        <p class="text-muted mb-4">Comece cadastrando o primeiro funcionário ou ajuste os filtros.</p>
+                        {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                        <a href="{% url 'funcionarios:funcionario_wizard_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i> Novo Funcionário
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+                    <td>
+                        <span class="text-muted">{{ funcionario.cargo.nome|default:"Não informado" }}</span>
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ funcionario.departamento.nome|default:"Não informado" }}</span>
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ funcionario.data_admissao|date:"d/m/Y" }}</span>
+                    </td>
+                    <td>
+                        {% if funcionario.ativo %}
+                        <span class="badge badge-success">
+                            <i class="ph-duotone ph-check-circle"></i>
+                            Ativo
+                        </span>
+                        {% else %}
+                        <span class="badge badge-secondary">
+                            <i class="ph-duotone ph-pause-circle"></i>
+                            Inativo
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'funcionarios:funcionario_detail' funcionario.pk %}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Visualizar">
+                                <i class="ph-duotone ph-eye"></i>
+                            </a>
+                            <a href="{% url 'funcionarios:funcionario_update' funcionario.pk %}" 
+

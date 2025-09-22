@@ -1,0 +1,438 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{# Título e configurações da página #}
+{% block title %}Reservas de Estoque{% endblock %}
+
+{# Header da lista #}
+{% block list_icon %}<i class="fas fa-hand-holding me-2 text-warning"></i>{% endblock %}
+{% block list_title %}Gerenciar Reservas{% endblock %}
+{% block list_subtitle %}Controle e monitore todas as reservas de estoque ativas{% endblock %}
+
+{# Botões de ação no header #}
+{% block list_header_actions %}
+    <a href="{% url 'estoque:reserva_add' %}" class="btn btn-gradient-warning me-2" data-bs-toggle="tooltip" title="Nova Reserva">
+        <i class="fas fa-plus me-1"></i>Nova Reserva
+    </a>
+    <a href="{% url 'estoque:estoque_home' %}" class="btn btn-gradient-secondary" data-bs-toggle="tooltip" title="Voltar ao Home">
+        <i class="fas fa-home me-1"></i>Home
+    </a>
+{% endblock %}
+
+{# Filtros personalizados #}
+{% block list_filters %}
+    <div class="filter-card" data-aos="fade-up">
+        <div class="card-body">
+            <form method="get" class="row g-3" id="filtros-reservas">
+                <div class="col-md-3">
+                    <label for="produto" class="form-label fw-semibold">Produto</label>
+                    <select class="form-select form-select-modern" name="produto" id="produto">
+                        <option value="">Todos os produtos</option>
+                        {% for produto in produtos %}
+                            <option value="{{ produto.id }}" {% if request.GET.produto == produto.id|stringformat:"s" %}selected{% endif %}>
+                                {{ produto.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="status" class="form-label fw-semibold">Status</label>
+                    <select class="form-select form-select-modern" name="status" id="status">
+                        <option value="">Todos os status</option>
+                        <option value="ATIVA" {% if request.GET.status == "ATIVA" %}selected{% endif %}>Ativa</option>
+                        <option value="UTILIZADA" {% if request.GET.status == "UTILIZADA" %}selected{% endif %}>Utilizada</option>
+                        <option value="CANCELADA" {% if request.GET.status == "CANCELADA" %}selected{% endif %}>Cancelada</option>
+                        <option value="EXPIRADA" {% if request.GET.status == "EXPIRADA" %}selected{% endif %}>Expirada</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="urgencia" class="form-label fw-semibold">Urgência</label>
+                    <select class="form-select form-select-modern" name="urgencia" id="urgencia">
+                        <option value="">Todas</option>
+                        <option value="expirando" {% if request.GET.urgencia == "expirando" %}selected{% endif %}>Expirando (24h)</option>
+                        <option value="alta" {% if request.GET.urgencia == "alta" %}selected{% endif %}>Alta Prioridade</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="responsavel" class="form-label fw-semibold">Responsável</label>
+                    <select class="form-select form-select-modern" name="responsavel" id="responsavel">
+                        <option value="">Todos</option>
+                        {% for user in responsaveis %}
+                            <option value="{{ user.id }}" {% if request.GET.responsavel == user.id|stringformat:"s" %}selected{% endif %}>
+                                {{ user.get_full_name|default:user.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-gradient-primary">
+                        <i class="fas fa-search me-1"></i>Filtrar
+                    </button>
+                    <a href="{% url 'estoque:reservas_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Limpar
+                    </a>
+                    <button type="button" class="btn btn-gradient-success" onclick="exportarReservas()">
+                        <i class="fas fa-file-excel me-1"></i>Exportar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{# Cards de resumo #}
+{% block list_summary %}
+    <div class="row g-3 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-warning">
+                <div class="summary-icon">
+                    <i class="fas fa-hand-holding"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.ativas|default:0 }}</h3>
+                    <p>Reservas Ativas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-danger">
+                <div class="summary-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.expirando|default:0 }}</h3>
+                    <p>Expirando Hoje</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-success">
+                <div class="summary-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.utilizadas_mes|default:0 }}</h3>
+                    <p>Utilizadas no Mês</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="summary-card bg-gradient-info">
+                <div class="summary-icon">
+                    <i class="fas fa-hashtag"></i>
+                </div>
+                <div class="summary-content">
+                    <h3>{{ resumo.total_quantidade|default:0 }}</h3>
+                    <p>Total Reservado</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Tabela de dados #}
+{% block list_table %}
+    <div class="table-card" data-aos="fade-up" data-aos-delay="200">
+        <div class="table-responsive">
+            <table class="table table-modern" id="reservas-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="codigo">
+                            <i class="fas fa-hashtag me-1"></i>Código
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-sort="produto">
+                            <i class="fas fa-cube me-1"></i>Produto
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-center" data-sort="quantidade">
+                            <i class="fas fa-hashtag me-1"></i>Quantidade
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-sort="responsavel">
+                            <i class="fas fa-user me-1"></i>Responsável
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-center" data-sort="data_criacao">
+                            <i class="fas fa-calendar me-1"></i>Criação
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable text-center" data-sort="data_expiracao">
+                            <i class="fas fa-clock me-1"></i>Expiração
+                            <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in reservas %}
+                        <tr {% if reserva.is_expirando %}class="table-warning"{% elif reserva.is_expirada %}class="table-danger"{% endif %}>
+                            <td>
+                                <strong class="text-primary">#{{ reserva.codigo }}</strong>
+                                {% if reserva.prioridade == 'ALTA' %}
+                                    <span class="badge bg-danger ms-2">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if reserva.produto.imagem %}
+                                        <img src="{{ reserva.produto.imagem.url }}" alt="{{ reserva.produto.nome }}" 
+                                             class="rounded me-2" width="32" height="32" style="object-fit: cover;">
+                                    {% else %}
+                                        <div class="product-avatar me-2">
+                                            <i class="fas fa-cube"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ reserva.produto.nome }}</strong><br>
+                                        <small class="text-muted">{{ reserva.deposito.nome }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge-quantity">{{ reserva.quantidade|floatformat:0 }}</span>
+                                <br><small class="text-muted">{{ reserva.produto.unidade_medida|default:"UN" }}</small>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2">
+                                        {% if reserva.responsavel.profile.avatar %}
+                                            <img src="{{ reserva.responsavel.profile.avatar.url }}" class="rounded-circle" width="24" height="24">
+                                        {% else %}
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 24px; height: 24px; font-size: 12px;">
+                                                {{ reserva.responsavel.first_name.0|default:reserva.responsavel.username.0|upper }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <small class="fw-semibold">{{ reserva.responsavel.get_full_name|default:reserva.responsavel.username }}</small><br>
+                                        <small class="text-muted">{{ reserva.responsavel.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div>{{ reserva.data_criacao|date:"d/m/Y" }}</div>
+                                <small class="text-muted">{{ reserva.data_criacao|time:"H:i" }}</small>
+                            </td>
+                            <td class="text-center">
+                                {% if reserva.data_expiracao %}
+                                    <div class="{% if reserva.is_expirada %}text-danger{% elif reserva.is_expirando %}text-warning{% endif %}">
+                                        {{ reserva.data_expiracao|date:"d/m/Y" }}
+                                    </div>
+                                    <small class="text-muted">{{ reserva.data_expiracao|time:"H:i" }}</small>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if reserva.status == 'ATIVA' %}
+                                    {% if reserva.is_expirada %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>Expirada
+                                        </span>
+                                    {% elif reserva.is_expirando %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>Expirando
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Ativa
+                                        </span>
+                                    {% endif %}
+                                {% elif reserva.status == 'UTILIZADA' %}
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-check-double me-1"></i>Utilizada
+                                    </span>
+                                {% elif reserva.status == 'CANCELADA' %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-ban me-1"></i>Cancelada
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'estoque:reserva_detail' reserva.id %}">
+                                                <i class="fas fa-eye me-2"></i>Visualizar
+                                            </a>
+                                        </li>
+                                        {% if reserva.status == 'ATIVA' and not reserva.is_expirada %}
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'estoque:reserva_edit' reserva.id %}">
+                                                    <i class="fas fa-edit me-2"></i>Editar
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-success" href="{% url 'estoque:reserva_utilizar' reserva.id %}">
+                                                    <i class="fas fa-check me-2"></i>Utilizar
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="{% url 'estoque:reserva_cancelar' reserva.id %}">
+                                                    <i class="fas fa-times me-2"></i>Cancelar
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'estoque:reserva_historico' reserva.id %}">
+                                                <i class="fas fa-history me-2"></i>Histórico
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="fas fa-hand-holding fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Nenhuma reserva encontrada</h5>
+                                    <p class="text-muted mb-3">Tente ajustar os filtros ou crie uma nova reserva</p>
+                                    <a href="{% url 'estoque:reserva_add' %}" class="btn btn-gradient-warning">
+                                        <i class="fas fa-plus me-1"></i>Nova Reserva
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{# Scripts personalizados #}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Auto-submit do formulário de filtros
+    const selects = document.querySelectorAll('#filtros-reservas select');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            setTimeout(() => {
+                document.getElementById('filtros-reservas').submit();
+            }, 100);
+        });
+    });
+    
+    // Função de exportação
+    window.exportarReservas = function() {
+        const form = document.getElementById('filtros-reservas');
+        const formData = new FormData(form);
+        formData.append('export', 'excel');
+        
+        const params = new URLSearchParams(formData);
+        const downloadUrl = `{% url 'estoque:reservas_export' %}?${params.toString()}`;
+        
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `reservas_estoque_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    // Atualizar reservas expiradas em tempo real
+    function atualizarStatusReservas() {
+        const agora = new Date();
+        const linhas = document.querySelectorAll('#reservas-table tbody tr');
+        
+        linhas.forEach(linha => {
+            const dataExpiracaoCell = linha.cells[5]; // Coluna de expiração
+            const statusCell = linha.cells[6]; // Coluna de status
+            
+            if (dataExpiracaoCell && statusCell) {
+                const textoData = dataExpiracaoCell.querySelector('div')?.textContent.trim();
+                const textoHora = dataExpiracaoCell.querySelector('small')?.textContent.trim();
+                
+                if (textoData && textoHora && textoData !== '—') {
+                    const [dia, mes, ano] = textoData.split('/');
+                    const [hora, minuto] = textoHora.split(':');
+                    const dataExpiracao = new Date(ano, mes - 1, dia, hora, minuto);
+                    
+                    const statusBadge = statusCell.querySelector('.badge');
+                    if (statusBadge && statusBadge.textContent.includes('Ativa')) {
+                        const diffHoras = (dataExpiracao - agora) / (1000 * 60 * 60);
+                        
+                        if (diffHoras <= 0) {
+                            // Expirada
+                            statusBadge.className = 'badge bg-danger';
+                            statusBadge.innerHTML = '<i class="fas fa-times me-1"></i>Expirada';
+                            linha.className = 'table-danger';
+                        } else if (diffHoras <= 24) {
+                            // Expirando
+                            statusBadge.className = 'badge bg-warning';
+                            statusBadge.innerHTML = '<i class="fas fa-clock me-1"></i>Expirando';
+                            linha.className = 'table-warning';
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Atualizar status a cada minuto
+    setInterval(atualizarStatusReservas, 60000);
+    
+    // WebSocket para atualizações em tempo real
+    if ('WebSocket' in window) {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${protocol}${window.location.host}/ws/estoque/`;
+        
+        try {
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                
+                if (data.event && data.event.startsWith('reserva.')) {
+                    // Atualizar contadores
+                    if (data.event === 'reserva.criada') {
+                        if (window.PandoraNotif) {
+                            PandoraNotif.toast('Nova reserva criada', 'success', 3000);
+                        }
+                    } else if (data.event === 'reserva.utilizada') {
+                        if (window.PandoraNotif) {
+                            PandoraNotif.toast('Reserva utilizada', 'info', 3000);
+                        }
+                    } else if (data.event === 'reserva.cancelada') {
+                        if (window.PandoraNotif) {
+                            PandoraNotif.toast('Reserva cancelada', 'warning', 3000);
+                        }
+                    }
+                    
+                    // Recarregar página após alguns segundos para mostrar mudanças
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            };
+        } catch (error) {
+            console.error('Erro ao conectar WebSocket:', error);
+        }
+    }
+});
+</script>
+{% endblock %}

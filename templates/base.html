@@ -1,0 +1,7 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{# Base legacy shim: alguns templates antigos estendem 'base.html'. Mantém blocos principais. #}
+{% block title %}{% block legacy_title %}Pandora ERP{% endblock %}{% endblock %}
+{% block extra_css %}{{ block.super }}{% endblock %}
+{% block extra_js %}{{ block.super }}{% endblock %}
+{% block breadcrumb %}{{ block.super }}{% endblock %}
+{% block content %}{% block legacy_content %}{% endblock %}{% endblock %}

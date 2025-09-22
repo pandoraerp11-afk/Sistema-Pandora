@@ -1,0 +1,46 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% block page_icon %}fas fa-user-clock{% endblock %}
+{% block page_title %}Lista de Espera{% endblock %}
+{% block page_subtitle %}Prioridades para encaixe de vagas{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'agendamentos:dashboard' %}" class="btn btn-outline-secondary btn-sm" title="Dashboard"><i class="fas fa-chart-line"></i></a>
+{% endblock %}
+{% block list_filters %}
+  <form method="get" class="row g-2">
+    <div class="col-md-3">
+      <select name="profissional" class="form-select form-select-sm">
+        <option value="">Profissional...</option>
+        {% for p in profissionais %}
+          <option value="{{ p.0 }}" {% if request.GET.profissional == p.0|stringformat:'s' %}selected{% endif %}>{{ p.1 }} {{ p.2 }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid"><button class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+  </form>
+{% endblock %}
+{% block list_table %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light"><tr><th>Pos</th><th>Cliente</th><th>Profissional</th><th>Slot</th><th>Data Slot</th><th>Desde</th></tr></thead>
+      <tbody>
+      {% for w in object_list %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ w.cliente }}</td>
+          <td>{{ w.slot.profissional }}</td>
+          <td><a href="{% url 'agendamentos:slot-detail' w.slot_id %}">#{{ w.slot_id }}</a></td>
+          <td>{{ w.slot.horario|date:'d/m/Y H:i' }}</td>
+          <td>{{ w.created_at|date:'d/m/Y H:i' }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">Sem entradas.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+{% block list_pagination %}
+  {% if is_paginated %}
+    <ul class="pagination pagination-sm">{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>{% endif %}{% for num in paginator.page_range %}<li class="page-item {% if num == page_obj.number %}active{% endif %}"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>{% endfor %}{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>{% endif %}</ul>
+  {% endif %}
+{% endblock %}

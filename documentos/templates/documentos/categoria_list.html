@@ -1,0 +1,104 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Categorias de Documento" %} - {{ block.super }}{% endblock %}
+{% block page_title %}{% trans "Categorias de Documento" %}{% endblock %}
+{% block page_subtitle %}{% trans "Gerencie as categorias para os tipos de documentos" %}{% endblock %}
+{% block add_button_url %}{% if perms_ui.can_add|default:perms.can_add|default:True %}{% url 'documentos:categoria_create' %}{% endif %}{% endblock %}
+{% block add_button_text %}{% if perms_ui.can_add|default:perms.can_add|default:True %}{% trans "Nova Categoria" %}{% endif %}{% endblock %}
+
+{% block table_content %}
+{% if object_list %}
+<div class="table-responsive">
+  <table class="table table-hover" id="categoriasTable">
+    <thead>
+      <tr>
+        <th>{% trans "Nome" %}</th>
+  <th>{% trans "Descrição" %}</th>
+  <th class="text-center">{% trans "Ativo" %}</th>
+  <th class="text-center" style="width:55px;">#</th>
+        <th class="col-acoes">{% trans "Ações" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for categoria in object_list %}
+      <tr>
+        <td>
+          <div class="d-flex align-items-center">
+            <div class="avatar-sm me-2">
+              <div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">
+                {{ categoria.nome|first|upper }}
+              </div>
+            </div>
+            <div>
+              <h6 class="mb-0">{{ categoria.nome }}</h6>
+              <small class="text-muted text-truncate d-block" style="max-width:240px">{{ categoria.descricao|default:"" }}</small>
+            </div>
+          </div>
+        </td>
+  <td>{{ categoria.descricao|default:"-" }}</td>
+  <td class="text-center">
+          {% if categoria.ativo %}
+            <span class="badge badge-ultra-modern badge-status-compact badge-status-ativo"><i class="fas fa-check-circle"></i> {% trans "Ativo" %}</span>
+          {% else %}
+            <span class="badge badge-ultra-modern badge-status-compact badge-status-inativo"><i class="fas fa-times-circle"></i> {% trans "Inativo" %}</span>
+          {% endif %}
+        </td>
+  <td class="text-center drag-handle" draggable="true" data-id="{{ categoria.id }}" title="{% trans 'Arraste para reordenar' %}"><i class="fas fa-grip-vertical text-muted"></i></td>
+        <td class="col-acoes">
+          <div class="d-flex gap-1 justify-content-center">
+            {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+            <a href="{% url 'documentos:categoria_edit' categoria.pk %}" class="btn btn-outline-primary btn-action-sm" title="{% trans 'Editar' %}"><i class="fas fa-edit"></i></a>
+            {% endif %}
+            {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+            <a href="{% url 'documentos:categoria_delete' categoria.pk %}" class="btn btn-outline-danger btn-action-sm" title="{% trans 'Excluir' %}" onclick="return confirm('{% trans 'Confirmar exclusão?' %}');"><i class="fas fa-trash"></i></a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  {{ block.super }}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+(function(){
+  const table=document.getElementById('categoriasTable');
+  if(!table) return;
+  let draggingEl=null;
+  let active=false;
+  const originalOrder=[...table.querySelectorAll('tbody tr .drag-handle')].map(h=>h.dataset.id);
+  // cria barra de confirmação
+  const bar=document.createElement('div');
+  bar.id='reorderBar';
+  bar.className='reorder-bar shadow-sm d-none';
+  bar.innerHTML=`<div class="d-flex align-items-center gap-2">
+    <span class="small text-muted"><i class="fas fa-arrows-alt me-1"></i>{% trans 'Ordem modificada' %}</span>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-act="cancel">{% trans 'Cancelar' %}</button>
+    <button type="button" class="btn btn-sm btn-primary" data-act="save">{% trans 'Salvar' %}</button>
+  </div>`;
+  document.body.appendChild(bar);
+  function showBar(){ bar.classList.remove('d-none'); }
+  function hideBar(){ bar.classList.add('d-none'); }
+  function currentIds(){ return [...table.querySelectorAll('tbody tr .drag-handle')].map(h=>h.dataset.id); }
+  function restoreOriginal(){ const map={}; table.querySelectorAll('tbody tr').forEach(tr=>{ map[tr.querySelector('.drag-handle').dataset.id]=tr; }); const tbody=table.querySelector('tbody'); originalOrder.forEach(id=>{ const tr=map[id]; tr && tbody.appendChild(tr); }); }
+  bar.addEventListener('click', e=>{ const act=e.target.closest('button')?.dataset.act; if(!act) return; if(act==='cancel'){ restoreOriginal(); hideBar(); active=false; } if(act==='save'){ const ids=currentIds(); fetch('{{ reorder_url }}', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':(document.cookie.match(/csrftoken=([^;]+)/)||[])[1]}, body: JSON.stringify({ids})}) .then(r=>r.json()).then(d=>{ console.log('Reorder saved', d); window.Pandora?.toast && Pandora.toast('{% trans "Ordem salva" %}'); hideBar(); active=false; }).catch(err=>console.error(err)); } });
+  // estilizar handles (aparecem só no hover)
+  const style=document.createElement('style');
+  style.textContent=`#categoriasTable .drag-handle{opacity:.15;transition:opacity .15s;cursor:grab;}#categoriasTable tbody tr:hover .drag-handle{opacity:1}#categoriasTable .drag-handle.dragging{opacity:.4}`;
+  document.head.appendChild(style);
+  table.addEventListener('dragstart', e=>{ const h=e.target.closest('.drag-handle'); if(!h) return; draggingEl=h.closest('tr'); h.classList.add('dragging'); if(!active){ active=true; showBar(); } });
+  table.addEventListener('dragend', e=>{ const h=e.target.closest('.drag-handle'); if(h) h.classList.remove('dragging'); draggingEl=null; });
+  table.addEventListener('dragover', e=>{ if(!draggingEl) return; e.preventDefault(); const tr=e.target.closest('tr'); if(tr && tr!==draggingEl && tr.parentNode===draggingEl.parentNode){ const rows=[...tr.parentNode.children]; const draggingIndex=rows.indexOf(draggingEl); const targetIndex=rows.indexOf(tr); if(draggingIndex<targetIndex){ tr.after(draggingEl);} else { tr.before(draggingEl);} } });
+})();
+</script>
+<style>
+  .reorder-bar{position:fixed;bottom:1rem;right:1rem;background:#fff;border:1px solid var(--bs-border-color);border-radius:.5rem;padding:.5rem .75rem;z-index:1050;}
+</style>
+{% endblock %}

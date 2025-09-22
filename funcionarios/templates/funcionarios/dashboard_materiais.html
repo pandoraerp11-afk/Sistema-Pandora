@@ -1,0 +1,238 @@
+<!-- funcionarios/templates/funcionarios/dashboard_materiais.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Dashboard de Materiais" %}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css" rel="stylesheet">
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 15px;
+    }
+    .stats-card.danger { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); }
+    .stats-card.success { background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); }
+    .stats-card.warning { background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%); }
+    .stats-card.info { background: linear-gradient(135deg, #48cae4 0%, #0077b6 100%); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{% trans "Dashboard de Materiais" %}</h1>
+            <p class="text-muted">{% trans "Visão geral do controle de materiais e ferramentas" %}</p>
+        </div>
+        <div>
+            <a href="{% url 'funcionarios_estoque:solicitacao_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> {% trans "Nova Solicitação" %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-white-50">{% trans "Pendentes" %}</h6>
+                            <h2 class="mb-0">{{ stats.solicitacoes_pendentes }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-white-50">{% trans "Solicitações Este Mês" %}</h6>
+                            <h2 class="mb-0">{{ stats.solicitacoes_mes }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-white-50">{% trans "Materiais sob Responsabilidade" %}</h6>
+                            <h2 class="mb-0">{{ stats.materiais_responsabilidade }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card {% if stats.materiais_em_atraso > 0 %}danger{% else %}success{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-white-50">{% trans "Em Atraso" %}</h6>
+                            <h2 class="mb-0">{{ stats.materiais_em_atraso }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Últimas Solicitações -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{% trans "Últimas Solicitações" %}</h5>
+                    <a href="{% url 'funcionarios_estoque:solicitacao_list' %}" class="btn btn-sm btn-outline-primary">
+                        {% trans "Ver Todas" %}
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{% trans "Número" %}</th>
+                                    <th>{% trans "Funcionário" %}</th>
+                                    <th>{% trans "Tipo" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                    <th>{% trans "Data" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for solicitacao in ultimas_solicitacoes %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'funcionarios_estoque:solicitacao_detail' solicitacao.pk %}">
+                                            {{ solicitacao.numero_solicitacao }}
+                                        </a>
+                                    </td>
+                                    <td>{{ solicitacao.funcionario_solicitante.nome_completo }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ solicitacao.get_tipo_display }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ solicitacao.status_display_class }}">
+                                            {{ solicitacao.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        {% trans "Nenhuma solicitação encontrada" %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Funcionários -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Funcionários Mais Ativos" %}</h5>
+                    <small class="text-muted">{% trans "Solicitações este mês" %}</small>
+                </div>
+                <div class="card-body">
+                    {% for funcionario in top_funcionarios %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>{{ funcionario.nome_completo }}</strong><br>
+                            <small class="text-muted">{{ funcionario.cargo }}</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">
+                            {{ funcionario.total_solicitacoes }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted">
+                        {% trans "Nenhum dado disponível" %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{% trans "Ações Rápidas" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'funcionarios_estoque:solicitacao_create' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus-circle"></i><br>
+                                {% trans "Nova Solicitação" %}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'funcionarios_estoque:solicitacao_list' %}?status=PENDENTE" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-clock"></i><br>
+                                {% trans "Aprovar Pendentes" %}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'funcionarios_estoque:responsabilidade_list' %}?status=ATIVO" class="btn btn-outline-success w-100">
+                                <i class="fas fa-tools"></i><br>
+                                {% trans "Ver Responsabilidades" %}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'funcionarios_estoque:responsabilidade_list' %}?status=ATIVO&em_atraso=1" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-exclamation-triangle"></i><br>
+                                {% trans "Materiais em Atraso" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Implementar gráficos se necessário
+    console.log('Dashboard de Materiais carregado');
+});
+</script>
+{% endblock %}

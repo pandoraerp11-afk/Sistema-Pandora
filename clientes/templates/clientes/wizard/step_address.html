@@ -1,0 +1,112 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Formulário de Endereço do Cliente -->
+
+    <!-- Alerta Informativo -->
+    <div class="alert alert-info border-0 mb-4 wizard-alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-map-marker-alt text-info me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-info">Endereço Principal do Cliente</h6>
+                <small class="text-muted">Digite o CEP para preenchimento automático dos campos</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Endereço Principal -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-home wizard-icon"></i>
+            Dados do Endereço
+        </h5>
+        
+        <div class="row">
+            <!-- CEP -->
+            {% include 'core/wizard/wizard_field.html' with field=form.cep field_size='sm' %}
+            
+            <!-- Logradouro -->
+            {% include 'core/wizard/wizard_field.html' with field=form.logradouro field_size='lg' %}
+            
+            <!-- Número -->
+            {% include 'core/wizard/wizard_field.html' with field=form.numero field_size='xs' %}
+            
+            <!-- Complemento -->
+            {% include 'core/wizard/wizard_field.html' with field=form.complemento field_size='md' %}
+            
+            <!-- Bairro -->
+            {% include 'core/wizard/wizard_field.html' with field=form.bairro field_size='md' %}
+            
+            <!-- Cidade -->
+            {% include 'core/wizard/wizard_field.html' with field=form.cidade field_size='md' %}
+            
+            <!-- Estado -->
+            {% include 'core/wizard/wizard_field.html' with field=form.estado field_size='sm' %}
+            
+            <!-- País -->
+            {% include 'core/wizard/wizard_field.html' with field=form.pais field_size='sm' %}
+        </div>
+    </div>
+
+    <!-- Seção: Informações Complementares -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-info-circle wizard-icon"></i>
+            Informações Complementares
+        </h5>
+        
+        <div class="row">
+            <!-- Ponto de Referência -->
+            {% include 'core/wizard/wizard_field.html' with field=form.ponto_referencia field_size='lg' %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Busca automática de CEP
+    const cepField = document.getElementById('{{ form.cep.id_for_label }}');
+    
+    if (cepField) {
+        cepField.addEventListener('blur', function() {
+            const cep = this.value.replace(/\D/g, '');
+            
+            if (cep.length === 8) {
+                fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.erro) {
+                            // Preencher campos automaticamente
+                            const logradouroField = document.getElementById('{{ form.logradouro.id_for_label }}');
+                            const bairroField = document.getElementById('{{ form.bairro.id_for_label }}');
+                            const cidadeField = document.getElementById('{{ form.cidade.id_for_label }}');
+                            const estadoField = document.getElementById('{{ form.estado.id_for_label }}');
+                            
+                            if (logradouroField && data.logradouro) logradouroField.value = data.logradouro;
+                            if (bairroField && data.bairro) bairroField.value = data.bairro;
+                            if (cidadeField && data.localidade) cidadeField.value = data.localidade;
+                            if (estadoField && data.uf) estadoField.value = data.uf;
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Erro ao buscar CEP:', error);
+                    });
+            }
+        });
+    }
+    
+    // Aplicar máscara de CEP
+    const cepMaskFields = document.querySelectorAll('.cep-mask');
+    cepMaskFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.substring(0, 8);
+            e.target.value = value.replace(/(\d{5})(\d{3})/, '$1-$2');
+        });
+    });
+});
+</script>
+{% endblock %}

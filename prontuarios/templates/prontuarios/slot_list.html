@@ -1,0 +1,24 @@
+{% extends 'pandora_base.html' %}{% load i18n %}
+{% block title %}{% trans 'Slots' %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">{% trans 'Slots' %}</h3>
+  <span class="badge bg-success">{% trans 'Disponíveis:' %} {{ total_disponiveis }}</span>
+</div>
+<table class="table table-sm table-hover align-middle">
+  <thead class="table-light"><tr><th>{% trans 'Profissional' %}</th><th>{% trans 'Horário' %}</th><th>{% trans 'Capacidade' %}</th><th>{% trans 'Usada' %}</th><th>{% trans 'Livre' %}</th></tr></thead>
+  <tbody>
+  {% for s in slots %}
+    <tr class="{% if s.capacidade_utilizada >= s.capacidade_total %}table-danger{% elif s.capacidade_utilizada > 0 %}table-warning{% else %}table-success{% endif %}">
+      <td>{{ s.profissional.get_full_name|default:s.profissional.username }}</td>
+      <td>{{ s.horario|date:'d/m/Y H:i' }}</td>
+      <td>{{ s.capacidade_total }}</td>
+      <td>{{ s.capacidade_utilizada }}</td>
+      <td>{{ s.capacidade_total|add:-s.capacidade_utilizada }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="text-center text-muted py-4">{% trans 'Nenhum slot.' %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

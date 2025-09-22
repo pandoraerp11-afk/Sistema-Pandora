@@ -1,0 +1,55 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Documentos Associados" %}{% endblock %}
+{% block page_title %}{% trans "Documentos Associados" %}{% endblock %}
+{% block page_subtitle %}{% trans "Visualize e gerencie os documentos associados à entidade." %}{% endblock %}
+
+{% block list_content %}
+<div class="card card-ultra-modern mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0"><i class="fas fa-paperclip me-2"></i> {% trans "Documentos Associados" %}</h5>
+  {% if perms_ui.can_add|default:perms.can_add|default:True %}
+    <a href="{% url 'documentos:documento_create' entidade._meta.app_label entidade.pk %}" class="btn btn-success float-end">
+      <i class="fas fa-plus"></i> {% trans "Associar Documento" %}
+    </a>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>{% trans "Tipo" %}</th>
+          <th>{% trans "Obrigatório" %}</th>
+          <th>{% trans "Observação" %}</th>
+          <th>{% trans "Última Versão" %}</th>
+          <th class="text-end">{% trans "Ações" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for documento in documentos %}
+        <tr>
+          <td>{{ documento.tipo.nome }}</td>
+          <td>{% if documento.obrigatorio %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-danger">Não</span>{% endif %}</td>
+          <td>{{ documento.observacao|default:'-' }}</td>
+          <td>
+            {% if documento.versoes.first %}
+              <a href="{% url 'documentos:versao_list' documento.pk %}" class="badge bg-info text-dark">v{{ documento.versoes.first.versao }}</a>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if perms_ui.can_view|default:perms.can_view|default:True %}
+            <a href="{% url 'documentos:versao_list' documento.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted">{% trans "Nenhum documento associado." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

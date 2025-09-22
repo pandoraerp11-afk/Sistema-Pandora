@@ -1,0 +1,312 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:'Agenda - Calendário' }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
+<style>
+    .fc-toolbar-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #374151;
+    }
+    .fc-button-primary {
+        background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 8px 16px;
+        transition: all 0.3s ease;
+    }
+    .fc-button-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    .fc-button-primary:active {
+        transform: translateY(0);
+    }
+    .fc-event {
+        border: none;
+        border-radius: 8px;
+        padding: 2px 8px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .fc-event-title {
+        font-weight: 600;
+    }
+    .fc-daygrid-day {
+        transition: background-color 0.3s ease;
+    }
+    .fc-daygrid-day:hover {
+        background-color: #f8fafc;
+    }
+    .fc-day-today {
+        background-color: #eef2ff !important;
+        border: 2px solid #6366f1;
+    }
+    .fc-scrollgrid {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .fc-col-header-cell {
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e5e7eb;
+        font-weight: 600;
+        color: #374151;
+    }
+    .event-priorities {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .priority-badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .priority-alta {
+        background-color: #fef2f2;
+        color: #dc2626;
+    }
+    .priority-media {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+    .priority-baixa {
+        background-color: #f0f9ff;
+        color: #0284c7;
+    }
+    .calendar-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .btn-calendar {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+    .btn-calendar-primary {
+        background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+        color: white;
+    }
+    .btn-calendar-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        color: white;
+    }
+    .btn-calendar-secondary {
+        background: white;
+        color: #6366f1;
+        border: 2px solid #6366f1;
+    }
+    .btn-calendar-secondary:hover {
+        background: #6366f1;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header -->
+    <div class="row g-0 mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-gray-800">{{ page_title|default:'Agenda' }}</h1>
+                    <p class="text-gray-600 mb-0">{{ page_subtitle|default:'Visualização em calendário dos eventos e compromissos' }}</p>
+                </div>
+                <div class="calendar-actions">
+                    <a href="{% url 'agenda:evento_create' %}" class="btn-calendar btn-calendar-primary">
+                        <i class="fas fa-plus"></i>
+                        Novo Evento
+                    </a>
+                    <a href="{% url 'agenda:evento_list' %}" class="btn-calendar btn-calendar-secondary">
+                        <i class="fas fa-list"></i>
+                        Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legendas de Prioridade -->
+    <div class="row g-0 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <h6 class="mb-2">Prioridades:</h6>
+                    <div class="event-priorities">
+                        <span class="priority-badge priority-alta">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Alta
+                        </span>
+                        <span class="priority-badge priority-media">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Média
+                        </span>
+                        <span class="priority-badge priority-baixa">
+                            <i class="fas fa-info-circle"></i>
+                            Baixa
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendário -->
+    <div class="row g-0">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Eventos -->
+<div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalLabel">Detalhes do Evento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="eventDetails"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="#" id="editEventBtn" class="btn btn-primary">Editar</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/pt-br.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        buttonText: {
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            day: 'Dia'
+        },
+        events: '{% url "agenda:api_eventos" %}',
+        eventClick: function(info) {
+            showEventDetails(info.event);
+        },
+        eventColor: '#6366f1',
+        eventTextColor: '#ffffff',
+        eventDisplay: 'block',
+        displayEventTime: true,
+        displayEventEnd: true,
+        eventDidMount: function(info) {
+            // Aplicar cores baseadas na prioridade
+            var prioridade = info.event.extendedProps.prioridade;
+            if (prioridade === 'alta') {
+                info.el.style.backgroundColor = '#dc2626';
+                info.el.style.borderColor = '#dc2626';
+            } else if (prioridade === 'media') {
+                info.el.style.backgroundColor = '#d97706';
+                info.el.style.borderColor = '#d97706';
+            } else if (prioridade === 'baixa') {
+                info.el.style.backgroundColor = '#0284c7';
+                info.el.style.borderColor = '#0284c7';
+            }
+            
+            // Adicionar tooltip
+            info.el.setAttribute('title', info.event.title + '\n' + (info.event.extendedProps.description || ''));
+        },
+        selectable: true,
+        selectMirror: true,
+        select: function(arg) {
+            // Criar novo evento na data selecionada
+            var startDate = arg.start.toISOString().split('T')[0];
+            var endDate = arg.end.toISOString().split('T')[0];
+            
+            // Redirecionar para formulário de criação com datas pré-preenchidas
+            window.location.href = "{% url 'agenda:evento_create' %}?start_date=" + startDate + "&end_date=" + endDate;
+        }
+    });
+    
+    calendar.render();
+    
+    function showEventDetails(event) {
+        var details = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Título:</h6>
+                    <p>${event.title}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Status:</h6>
+                    <p>${event.extendedProps.status || 'N/A'}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Prioridade:</h6>
+                    <p>${event.extendedProps.prioridade || 'N/A'}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Local:</h6>
+                    <p>${event.extendedProps.local || 'N/A'}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Responsável:</h6>
+                    <p>${event.extendedProps.responsavel || 'N/A'}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Data/Hora:</h6>
+                    <p>${event.start.toLocaleString('pt-BR')}</p>
+                </div>
+                <div class="col-12">
+                    <h6>Descrição:</h6>
+                    <p>${event.extendedProps.description || 'Sem descrição'}</p>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('eventDetails').innerHTML = details;
+        document.getElementById('editEventBtn').href = event.extendedProps.url;
+        
+        var eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+        eventModal.show();
+    }
+});
+</script>
+{% endblock %}

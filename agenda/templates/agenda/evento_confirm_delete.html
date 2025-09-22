@@ -1,0 +1,489 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Excluir {{ evento.titulo }} - Pandora ERP{% endblock %}
+{% block page_title %}Excluir Evento{% endblock %}
+{% block page_subtitle %}Confirmação de exclusão{% endblock %}
+{% block page_icon %}fas fa-trash-alt{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'agenda:evento_list' %}">Agenda</a></li>
+<li class="breadcrumb-item"><a href="{% url 'agenda:evento_detail' evento.pk %}">{{ evento.titulo }}</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .delete-card {
+        background: var(--card-bg);
+        border: 1px solid var(--danger-color);
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(220, 53, 69, 0.1);
+    }
+    
+    .delete-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .delete-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(220, 53, 69, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: var(--danger-color);
+        font-size: 2rem;
+    }
+    
+    .delete-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--danger-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .delete-message {
+        color: var(--text-color);
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    
+    .event-summary {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    .event-summary-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .event-details {
+        display: grid;
+        gap: 0.75rem;
+    }
+    
+    .event-detail {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-color);
+    }
+    
+    .detail-icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(var(--primary-color-rgb), 0.1);
+        border-radius: 4px;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+    }
+    
+    .detail-content {
+        flex: 1;
+    }
+    
+    .detail-label {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+        margin-bottom: 0.125rem;
+    }
+    
+    .detail-value {
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    .warning-section {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .warning-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #ffc107;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .warning-text {
+        color: var(--text-color);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    .warning-list {
+        margin: 0.5rem 0 0 1.5rem;
+        color: var(--text-color);
+    }
+    
+    .warning-list li {
+        margin-bottom: 0.25rem;
+    }
+    
+    .delete-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .btn-delete {
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .btn-delete:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+    
+    .btn-cancel {
+        background: transparent;
+        color: var(--muted-color);
+        border: 1px solid var(--border-color);
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+    
+    .btn-cancel:hover {
+        background: var(--muted-bg);
+        color: var(--text-color);
+        text-decoration: none;
+    }
+    
+    .participants-info {
+        background: rgba(13, 202, 240, 0.1);
+        border: 1px solid rgba(13, 202, 240, 0.3);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .participants-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #0dcaf0;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .participants-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .participant-tag {
+        background: rgba(var(--primary-color-rgb), 0.1);
+        color: var(--primary-color);
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .checkbox-confirmation {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+    }
+    
+    .checkbox-confirmation input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--danger-color);
+    }
+    
+    .checkbox-confirmation label {
+        color: var(--text-color);
+        font-weight: 500;
+        cursor: pointer;
+        margin: 0;
+    }
+    
+    .btn-delete:disabled {
+        background: var(--muted-color);
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .btn-delete:disabled:hover {
+        background: var(--muted-color);
+        transform: none;
+        box-shadow: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="delete-container">
+        <div class="delete-card">
+            <div class="delete-header">
+                <div class="delete-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2 class="delete-title">Excluir Evento</h2>
+                <p class="delete-message">
+                    Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            
+            <!-- Resumo do Evento -->
+            <div class="event-summary">
+                <h3 class="event-summary-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    Evento a ser excluído
+                </h3>
+                
+                <div class="event-details">
+                    <div class="event-detail">
+                        <div class="detail-icon">
+                            <i class="fas fa-heading"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Título</div>
+                            <div class="detail-value">{{ evento.titulo }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="event-detail">
+                        <div class="detail-icon">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Data de Início</div>
+                            <div class="detail-value">{{ evento.data_inicio|date:"d/m/Y às H:i" }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if evento.data_fim and not evento.dia_inteiro %}
+                        <div class="event-detail">
+                            <div class="detail-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Data de Fim</div>
+                                <div class="detail-value">{{ evento.data_fim|date:"d/m/Y às H:i" }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if evento.local %}
+                        <div class="event-detail">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Local</div>
+                                <div class="detail-value">{{ evento.local }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="event-detail">
+                        <div class="detail-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">{{ evento.get_status_display }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="event-detail">
+                        <div class="detail-icon">
+                            <i class="fas fa-exclamation"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Prioridade</div>
+                            <div class="detail-value">{{ evento.get_prioridade_display }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if evento.responsavel %}
+                        <div class="event-detail">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Responsável</div>
+                                <div class="detail-value">
+                                    {{ evento.responsavel.get_full_name|default:evento.responsavel.username }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Informações sobre Participantes -->
+            {% if evento.participantes.exists %}
+                <div class="participants-info">
+                    <div class="participants-header">
+                        <i class="fas fa-users"></i>
+                        Este evento tem {{ evento.participantes.count }} participante{{ evento.participantes.count|pluralize }}
+                    </div>
+                    <div class="participants-list">
+                        {% for participante in evento.participantes.all %}
+                            <span class="participant-tag">
+                                {{ participante.get_full_name|default:participante.username }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Avisos -->
+            <div class="warning-section">
+                <div class="warning-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Atenção
+                </div>
+                <div class="warning-text">
+                    Ao excluir este evento, as seguintes ações serão realizadas:
+                </div>
+                <ul class="warning-list">
+                    <li>O evento será removido permanentemente do sistema</li>
+                    <li>Todo o histórico de atividades será perdido</li>
+                    {% if evento.participantes.exists %}
+                        <li>Os participantes não receberão notificação sobre a exclusão</li>
+                    {% endif %}
+                    <li>Esta ação não pode ser desfeita</li>
+                </ul>
+            </div>
+            
+            <!-- Formulário de Confirmação -->
+            <form method="post" id="delete-form">
+                {% csrf_token %}
+                
+                <div class="checkbox-confirmation">
+                    <input type="checkbox" id="confirm-delete" required>
+                    <label for="confirm-delete">
+                        Eu entendo que esta ação é irreversível e desejo excluir o evento
+                    </label>
+                </div>
+                
+                <div class="delete-actions">
+                    <a href="{% url 'agenda:evento_detail' evento.pk %}" class="btn-cancel">
+                        <i class="fas fa-times me-1"></i>
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn-delete" id="btn-confirm-delete" disabled>
+                        <i class="fas fa-trash me-1"></i>
+                        Excluir Definitivamente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    
+    // Controlar habilitação do botão de exclusão
+    $('#confirm-delete').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        $('#btn-confirm-delete').prop('disabled', !isChecked);
+    });
+    
+    // Confirmação adicional antes da submissão
+    $('#delete-form').on('submit', function(e) {
+        if (!$('#confirm-delete').is(':checked')) {
+            e.preventDefault();
+            alert('Por favor, confirme que deseja excluir o evento.');
+            return false;
+        }
+        
+        const confirmed = confirm('ÚLTIMA CONFIRMAÇÃO: Tem absoluta certeza que deseja excluir este evento?');
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar loading no botão
+        $('#btn-confirm-delete').html('<i class="fas fa-spinner fa-spin me-1"></i> Excluindo...').prop('disabled', true);
+    });
+    
+    // Atalhos de teclado
+    $(document).on('keydown', function(e) {
+        if (e.keyCode === 27) { // ESC
+            window.location.href = '{% url "agenda:evento_detail" evento.pk %}';
+        }
+        
+        if (e.ctrlKey && e.keyCode === 13) { // Ctrl+Enter
+            if ($('#confirm-delete').is(':checked')) {
+                $('#delete-form').submit();
+            }
+        }
+    });
+    
+    // Auto-focus no checkbox após 2 segundos
+    setTimeout(function() {
+        $('#confirm-delete').focus();
+    }, 2000);
+    
+    // Animação de atenção no botão cancelar
+    let blinkCount = 0;
+    const blinkInterval = setInterval(function() {
+        $('.btn-cancel').toggleClass('btn-primary btn-outline-primary');
+        blinkCount++;
+        if (blinkCount >= 6) {
+            clearInterval(blinkInterval);
+            $('.btn-cancel').removeClass('btn-primary').addClass('btn-outline-secondary');
+        }
+    }, 500);
+});
+</script>
+{% endblock %}

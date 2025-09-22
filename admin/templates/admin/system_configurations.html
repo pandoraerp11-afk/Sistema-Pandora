@@ -1,0 +1,431 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block home_title %}
+    <i class="fas fa-cogs me-2 text-primary"></i>
+    Configurações do Sistema
+{% endblock %}
+
+{% block home_subtitle %}
+    Gerenciamento de configurações globais e parâmetros do sistema
+{% endblock %}
+
+{% block home_stats %}
+<div class="row" data-aos="fade-up" data-aos-delay="100">
+    <div class="col-12">
+        <h3 class="section-title">
+            <i class="fas fa-chart-line me-2"></i>
+            Estatísticas do Sistema
+        </h3>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card primary">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-primary bg-opacity-10 text-primary mx-auto">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h5 class="card-title mb-1">{{ total_configs|default:0 }}</h5>
+                <p class="card-text text-muted mb-0">Configurações Ativas</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card success">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-success bg-opacity-10 text-success mx-auto">
+                    <i class="fas fa-building"></i>
+                </div>
+                <h5 class="card-title mb-1">{{ total_tenants|default:0 }}</h5>
+                <p class="card-text text-muted mb-0">Empresas Ativas</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card info">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-info bg-opacity-10 text-info mx-auto">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h5 class="card-title mb-1">{{ backup_configs|default:0 }}</h5>
+                <p class="card-text text-muted mb-0">Backups Ativos</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card warning">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-warning bg-opacity-10 text-warning mx-auto">
+                    <i class="fas fa-key"></i>
+                </div>
+                <h5 class="card-title mb-1">{{ security_configs|default:0 }}</h5>
+                <p class="card-text text-muted mb-0">Config. Segurança</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card purple">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-purple bg-opacity-10 text-purple mx-auto">
+                    <i class="fas fa-users-cog"></i>
+                </div>
+                <h5 class="card-title mb-1">{{ api_configs|default:0 }}</h5>
+                <p class="card-text text-muted mb-0">Config. de API</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card danger">
+            <div class="card-body text-center">
+                <div class="stats-icon bg-danger bg-opacity-10 text-danger mx-auto">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h5 class="card-title mb-1">{{ critical_configs|default:0 }}</h5>
+                <p class="card-text text-muted mb-0">Alertas Críticos</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_actions %}
+<div class="row" data-aos="fade-up" data-aos-delay="200">
+    <div class="col-12">
+        <h3 class="section-title">
+            <i class="fas fa-tools me-2"></i>
+            Ações Rápidas
+        </h3>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card quick-action-card h-100" style="--accent-color: #0d6efd;">
+            <div class="card-body text-center d-flex flex-column">
+                <div class="quick-action-icon bg-primary bg-opacity-10 text-primary mx-auto">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <h6 class="card-title flex-grow-1">Nova Configuração</h6>
+                <p class="card-text text-muted small mb-3">Adicionar nova configuração do sistema</p>
+                <button class="btn btn-primary action-btn w-100" onclick="createSystemConfig()">
+                    <i class="fas fa-plus me-1"></i>
+                    Criar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card quick-action-card h-100" style="--accent-color: #198754;">
+            <div class="card-body text-center d-flex flex-column">
+                <div class="quick-action-icon bg-success bg-opacity-10 text-success mx-auto">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <h6 class="card-title flex-grow-1">Gerais</h6>
+                <p class="card-text text-muted small mb-3">Configurações gerais do sistema</p>
+                <button class="btn btn-success action-btn w-100" onclick="manageGeneralConfigs()">
+                    <i class="fas fa-cog me-1"></i>
+                    Gerenciar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card quick-action-card h-100" style="--accent-color: #0dcaf0;">
+            <div class="card-body text-center d-flex flex-column">
+                <div class="quick-action-icon bg-info bg-opacity-10 text-info mx-auto">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h6 class="card-title flex-grow-1">Segurança</h6>
+                <p class="card-text text-muted small mb-3">Configurações de segurança</p>
+                <button class="btn btn-info action-btn w-100" onclick="manageSecurityConfigs()">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Configurar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card quick-action-card h-100" style="--accent-color: #ffc107;">
+            <div class="card-body text-center d-flex flex-column">
+                <div class="quick-action-icon bg-warning bg-opacity-10 text-warning mx-auto">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h6 class="card-title flex-grow-1">Backup</h6>
+                <p class="card-text text-muted small mb-3">Configurações de backup</p>
+                <button class="btn btn-warning action-btn w-100" onclick="manageBackupConfigs()">
+                    <i class="fas fa-database me-1"></i>
+                    Backup
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card quick-action-card h-100" style="--accent-color: #6f42c1;">
+            <div class="card-body text-center d-flex flex-column">
+                <div class="quick-action-icon bg-purple bg-opacity-10 text-purple mx-auto">
+                    <i class="fas fa-plug"></i>
+                </div>
+                <h6 class="card-title flex-grow-1">API</h6>
+                <p class="card-text text-muted small mb-3">Configurações de API</p>
+                <button class="btn btn-purple action-btn w-100" onclick="manageApiConfigs()">
+                    <i class="fas fa-plug me-1"></i>
+                    API
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-4">
+        <div class="card quick-action-card h-100" style="--accent-color: #dc3545;">
+            <div class="card-body text-center d-flex flex-column">
+                <div class="quick-action-icon bg-danger bg-opacity-10 text-danger mx-auto">
+                    <i class="fas fa-sync-alt"></i>
+                </div>
+                <h6 class="card-title flex-grow-1">Reset</h6>
+                <p class="card-text text-muted small mb-3">Resetar configurações</p>
+                <button class="btn btn-danger action-btn w-100" onclick="resetConfigs()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_recent %}
+<div class="row" data-aos="fade-up" data-aos-delay="300">
+    <div class="col-lg-6">
+        <h3 class="section-title">
+            <i class="fas fa-clock me-2"></i>
+            Configurações Recentes
+        </h3>
+        <div class="recent-configs-list">
+            {% for config in recent_configs %}
+            <div class="recent-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ config.key }}</h6>
+                        <p class="text-muted mb-1 small">{{ config.description|truncatechars:50 }}</p>
+                        <div class="d-flex align-items-center">
+                            <span class="badge badge-modern me-2">{{ config.category|title }}</span>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                {{ config.updated_at|timesince }} atrás
+                            </small>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="editConfig('{{ config.id }}')">
+                                <i class="fas fa-edit me-2"></i>Editar
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="viewConfig('{{ config.id }}')">
+                                <i class="fas fa-eye me-2"></i>Visualizar
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteConfig('{{ config.id }}')">
+                                <i class="fas fa-trash me-2"></i>Excluir
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhuma configuração recente</h5>
+                <p class="text-muted">Configurações modificadas aparecerão aqui</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <h3 class="section-title">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Alertas do Sistema
+        </h3>
+        <div class="system-alerts-list">
+            {% for alert in system_alerts %}
+            <div class="recent-item border-start border-{{ alert.severity|lower }} border-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ alert.title }}</h6>
+                        <p class="text-muted mb-1 small">{{ alert.description|truncatechars:60 }}</p>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-{{ alert.severity|lower }} me-2">{{ alert.get_severity_display }}</span>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                {{ alert.created_at|timesince }} atrás
+                            </small>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="viewAlert('{{ alert.id }}')">
+                                <i class="fas fa-eye me-2"></i>Visualizar
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="resolveAlert('{{ alert.id }}')">
+                                <i class="fas fa-check me-2"></i>Resolver
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5 class="text-success">Tudo funcionando bem!</h5>
+                <p class="text-muted">Nenhum alerta do sistema no momento</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block home_extra_css %}
+<style>
+/* Cores personalizadas para variantes não-padrão do Bootstrap */
+.bg-purple { background-color: #6f42c1 !important; }
+.text-purple { color: #6f42c1 !important; }
+.btn-purple {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: white;
+}
+.btn-purple:hover {
+    background-color: #5a2d91;
+    border-color: #5a2d91;
+    color: white;
+}
+
+.border-low { border-color: #28a745 !important; }
+.border-medium { border-color: #ffc107 !important; }
+.border-high { border-color: #fd7e14 !important; }
+.border-critical { border-color: #dc3545 !important; }
+
+.bg-low { background-color: #28a745 !important; }
+.bg-medium { background-color: #ffc107 !important; }
+.bg-high { background-color: #fd7e14 !important; }
+.bg-critical { background-color: #dc3545 !important; }
+
+/* Animações adicionais para configurações */
+.recent-configs-list, .system-alerts-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.recent-configs-list::-webkit-scrollbar,
+.system-alerts-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.recent-configs-list::-webkit-scrollbar-track,
+.system-alerts-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.recent-configs-list::-webkit-scrollbar-thumb,
+.system-alerts-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.recent-configs-list::-webkit-scrollbar-thumb:hover,
+.system-alerts-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+{% endblock %}
+
+{% block home_extra_js %}
+<script>
+// Funções para ações rápidas
+function createSystemConfig() {
+    // Implementar modal ou redirecionamento para criação
+    console.log('Criar nova configuração');
+    // Exemplo: window.location.href = '{% url "admin:system-configurations" %}?action=create';
+}
+
+function manageGeneralConfigs() {
+    console.log('Gerenciar configurações gerais');
+    // Filtrar por categoria 'general'
+}
+
+function manageSecurityConfigs() {
+    console.log('Gerenciar configurações de segurança');
+    // Filtrar por categoria 'security'
+}
+
+function manageBackupConfigs() {
+    console.log('Gerenciar configurações de backup');
+    // Filtrar por categoria 'backup'
+}
+
+function manageApiConfigs() {
+    console.log('Gerenciar configurações de API');
+    // Filtrar por categoria 'api'
+}
+
+function resetConfigs() {
+    if(confirm('Tem certeza que deseja resetar as configurações? Esta ação não pode ser desfeita.')) {
+        console.log('Reset de configurações');
+        // Implementar reset
+    }
+}
+
+// Funções para configurações recentes
+function editConfig(configId) {
+    console.log('Editar configuração:', configId);
+    // Implementar edição
+}
+
+function viewConfig(configId) {
+    console.log('Visualizar configuração:', configId);
+    // Implementar visualização
+}
+
+function deleteConfig(configId) {
+    if(confirm('Tem certeza que deseja excluir esta configuração?')) {
+        console.log('Excluir configuração:', configId);
+        // Implementar exclusão
+    }
+}
+
+// Funções para alertas
+function viewAlert(alertId) {
+    console.log('Visualizar alerta:', alertId);
+    // Implementar visualização
+}
+
+function resolveAlert(alertId) {
+    if(confirm('Marcar este alerta como resolvido?')) {
+        console.log('Resolver alerta:', alertId);
+        // Implementar resolução
+    }
+}
+
+// Auto-refresh para alertas a cada 30 segundos
+setInterval(function() {
+    // Implementar refresh automático dos alertas se necessário
+    console.log('Auto-refresh de alertas');
+}, 30000);
+</script>
+{% endblock %}

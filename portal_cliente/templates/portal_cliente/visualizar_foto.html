@@ -1,0 +1,110 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Portal Cliente - Visualizar Foto{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
+<style>
+.foto-viewer {
+    max-height: 80vh;
+    object-fit: contain;
+}
+.foto-container {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-image me-2"></i>Visualizar Foto</h2>
+            <p class="text-muted">Foto do atendimento - {{ foto.atendimento.data_atendimento|date:"d \d\e F \d\e Y" }}</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'portal_cliente:galeria_fotos' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar à Galeria
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Foto principal -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body foto-container text-center">
+                    <img src="{{ foto.imagem_thumbnail.url }}" 
+                         class="img-fluid rounded foto-viewer" 
+                         alt="Foto do atendimento">
+                </div>
+            </div>
+
+            <!-- Informações da foto -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Atendimento</h6>
+                            <p class="fw-bold">{{ foto.atendimento.servico.nome_servico }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Profissional</h6>
+                            <p class="fw-bold">{{ foto.atendimento.profissional.nome }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Data do Atendimento</h6>
+                            <p class="fw-bold">{{ foto.atendimento.data_atendimento|date:"d/m/Y \à\s H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Foto Registrada em</h6>
+                            <p class="fw-bold">{{ foto.created_at|date:"d/m/Y \à\s H:i" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if foto.descricao %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-muted">Descrição</h6>
+                            <div class="alert alert-light">{{ foto.descricao }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Aviso de privacidade -->
+            <div class="alert alert-info mt-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-shield-alt fa-2x me-3"></i>
+                    <div>
+                        <h6 class="mb-1">Proteção de Privacidade</h6>
+                        <p class="mb-0">
+                            Esta é uma versão otimizada (thumbnail) da imagem para proteção da sua privacidade. 
+                            A foto original é mantida segura em nosso sistema e acessível apenas aos profissionais autorizados.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="text-center mt-4">
+                <a href="{% url 'portal_cliente:detalhe_atendimento' foto.atendimento.id %}" 
+                   class="btn btn-primary me-3">
+                    <i class="fas fa-eye me-2"></i>Ver Detalhes do Atendimento
+                </a>
+                <a href="{% url 'portal_cliente:galeria_fotos' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-images me-2"></i>Ver Todas as Fotos
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

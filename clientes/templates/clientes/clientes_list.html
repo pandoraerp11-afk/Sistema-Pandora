@@ -1,0 +1,234 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Clientes" %} - {{ block.super }}{% endblock %}
+{% block page_title %}{% trans "Clientes" %}{% endblock %}
+{% block page_subtitle %}{% trans "Gestão completa de clientes" %}{% endblock %}
+
+{% block add_button %}
+<a href="{% url 'clientes:clientes_create' %}" class="btn btn-outline-secondary" title="{% trans 'Novo Cliente' %}">
+        <i class="fas fa-plus"></i>
+</a>
+{% endblock %}
+
+{% block table_content %}
+{% if clientes %}
+<div class="table-responsive">
+    <table class="table table-hover table-sm">
+        <thead class="table-header">
+            <tr>
+                <th width="40"></th>
+                <th>{% trans "Cliente" %}</th>
+                <th>{% trans "Documento" %}</th>
+                <th>{% trans "Contato" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Cadastro" %}</th>
+                <th width="160">{% trans "Ações" %}</th>
+            </tr>
+        </thead>
+            <tbody>
+                {% for c in clientes %}
+                {% with pj=c.pessoajuridica pf=c.pessoafisica %}
+                <tr>
+                <td></td>
+                <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2">
+                                        <div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">
+                                    <strong>
+                                        {% if pj and pj.nome_fantasia %}{{ pj.nome_fantasia|first|upper }}
+                                        {% elif pj and pj.razao_social %}{{ pj.razao_social|first|upper }}
+                                        {% elif pf and pf.nome_completo %}{{ pf.nome_completo|first|upper }}
+                                        {% else %}?{% endif %}
+                                    </strong>
+                                        </div>
+                                    </div>
+                                    <div class="ms-1">
+                                <div class="fw-semibold">
+                                    {% if pj and pj.nome_fantasia %}
+                                        {{ pj.nome_fantasia }}
+                                    {% elif pj and pj.razao_social %}
+                                        {{ pj.razao_social }}
+                                    {% elif pf and pf.nome_completo %}
+                                        {{ pf.nome_completo }}
+                                    {% else %}
+                                        {{ c.nome_display }}
+                                    {% endif %}
+                                </div>
+                                {% if pj and pj.razao_social %}<small class="text-muted">{{ pj.razao_social }}</small>{% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                        {% if c.tipo == 'PJ' and pj %}
+                            <div class="text-truncate"><small class="text-muted d-block">CNPJ</small><span class="text-monospace">{{ pj.cnpj|default:'-' }}</span></div>
+                        {% elif c.tipo == 'PF' and pf %}
+                            <div class="text-truncate"><small class="text-muted d-block">CPF</small><span class="text-monospace">{{ pf.cpf|default:'-' }}</span></div>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                </td>
+                <td>
+                    <div class="small text-muted">
+                        {% if c.email %}<div><i class="fas fa-envelope me-1"></i>{{ c.email }}</div>{% endif %}
+                        {% if c.telefone %}<div><i class="fas fa-phone me-1"></i>{{ c.telefone }}</div>{% endif %}
+                    </div>
+                </td>
+                <td>
+                        {% if c.status == 'active' %}
+                            <span class="badge badge-ultra-modern badge-status-compact badge-status-ativo"><i class="fas fa-check-circle"></i> {% trans 'Ativo' %}</span>
+                        {% elif c.status == 'inactive' %}
+                            <span class="badge badge-ultra-modern badge-status-compact badge-status-inativo"><i class="fas fa-times-circle"></i> {% trans 'Inativo' %}</span>
+                        {% else %}
+                            <span class="badge badge-ultra-modern badge-status-compact badge-status-pendente"><i class="fas fa-clock"></i> {% trans 'Suspenso' %}</span>
+                        {% endif %}
+                </td>
+                <td>
+                        <span class="text-muted">{{ c.data_cadastro|date:"d/m/Y" }}</span>
+                </td>
+            <td width="160">
+                    <div class="d-flex gap-1 justify-content-center">
+                        <a href="{% url 'clientes:clientes_detail' c.pk %}" class="btn btn-outline-info btn-action-sm" title="{% trans 'Visualizar' %}"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'clientes:clientes_update' c.pk %}" class="btn btn-outline-primary btn-action-sm" title="{% trans 'Editar' %}"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'clientes:clientes_delete' c.pk %}" class="btn btn-outline-danger btn-action-sm" title="{% trans 'Excluir' %}"><i class="fas fa-trash"></i></a>
+                    </div>
+                </td>
+                </tr>
+                {% endwith %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    {{ block.super }}
+
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Alternar visualização
+    const viewToggle = document.querySelectorAll('[data-view]');
+    const tableView = document.querySelector('.table-view');
+    const cardsView = document.querySelector('.cards-view');
+    
+    viewToggle.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const view = this.dataset.view;
+            
+            viewToggle.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            if (view === 'table') {
+                tableView.style.display = 'block';
+                cardsView.style.display = 'none';
+            } else {
+                tableView.style.display = 'none';
+                cardsView.style.display = 'block';
+            }
+        });
+    });
+    
+    // Seleção em lote
+    const selectAll = document.getElementById('selectAll');
+    const rowSelects = document.querySelectorAll('.row-select');
+    const bulkActions = document.querySelector('.bulk-actions');
+    
+    selectAll.addEventListener('change', function() {
+        rowSelects.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        toggleBulkActions();
+    });
+    
+    rowSelects.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const checkedCount = document.querySelectorAll('.row-select:checked').length;
+            selectAll.checked = checkedCount === rowSelects.length;
+            selectAll.indeterminate = checkedCount > 0 && checkedCount < rowSelects.length;
+            toggleBulkActions();
+        });
+    });
+    
+    function toggleBulkActions() {
+        const checkedCount = document.querySelectorAll('.row-select:checked').length;
+        bulkActions.style.display = checkedCount > 0 ? 'flex' : 'none';
+    }
+    
+    // Executar ações em lote
+    document.getElementById('executeBulkAction').addEventListener('click', function() {
+        const action = document.getElementById('bulkAction').value;
+        const selected = Array.from(document.querySelectorAll('.row-select:checked')).map(cb => cb.value);
+        
+        if (!action || selected.length === 0) {
+            alert('Selecione uma ação e pelo menos um cliente.');
+            return;
+        }
+        
+        if (confirm(`Tem certeza que deseja executar esta ação em ${selected.length} cliente(s)?`)) {
+            // Aqui você implementaria a lógica de ações em lote
+            console.log('Ação:', action, 'Clientes:', selected);
+        }
+    });
+    
+    // Limpar filtros
+    document.getElementById('clearFilters').addEventListener('click', function() {
+        document.querySelector('.filters-form').reset();
+        window.location.href = window.location.pathname;
+    });
+    
+    // Auto-submit dos filtros
+    const filterInputs = document.querySelectorAll('.filters-form input, .filters-form select');
+    filterInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.type !== 'text') {
+                this.form.submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

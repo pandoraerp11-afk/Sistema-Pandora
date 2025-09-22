@@ -1,0 +1,887 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}{{ evento.titulo }} - Pandora ERP{% endblock %}
+{% block page_title %}{{ evento.titulo }}{% endblock %}
+{% block page_subtitle %}Detalhes do evento{% endblock %}
+{% block page_icon %}fas fa-calendar-check{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'agenda:evento_list' %}">Agenda</a></li>
+<li class="breadcrumb-item active">{{ evento.titulo }}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .event-detail-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .event-header {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .event-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+    
+    .event-header.prioridade-baixa::before {
+        background: #28a745;
+    }
+    
+    .event-header.prioridade-media::before {
+        background: #ffc107;
+    }
+    
+    .event-header.prioridade-alta::before {
+        background: #dc3545;
+    }
+    
+    .event-title-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+    
+    .event-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin: 0;
+        flex: 1;
+    }
+    
+    .event-status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border-radius: 50px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-left: 1rem;
+    }
+    
+    .event-status-badge.pendente {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+    
+    .event-status-badge.realizado {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+    
+    .event-status-badge.cancelado {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+    
+    .event-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-color);
+    }
+    
+    .meta-icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(var(--primary-color-rgb), 0.1);
+        border-radius: 6px;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+    }
+    
+    .meta-content {
+        flex: 1;
+    }
+    
+    .meta-label {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+        margin-bottom: 0.125rem;
+    }
+    
+    .meta-value {
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    .event-description {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .event-description h4 {
+        color: var(--text-color);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .event-description p {
+        color: var(--text-color);
+        line-height: 1.6;
+        margin: 0;
+        white-space: pre-wrap;
+    }
+    
+    .event-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    .participants-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .participants-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .participants-header h3 {
+        color: var(--text-color);
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .participants-count {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .participants-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .participant-card {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .participant-card:hover {
+        background: rgba(var(--primary-color-rgb), 0.05);
+        border-color: var(--primary-color);
+    }
+    
+    .participant-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .participant-info {
+        flex: 1;
+    }
+    
+    .participant-name {
+        font-weight: 500;
+        color: var(--text-color);
+        margin-bottom: 0.125rem;
+    }
+    
+    .participant-email {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+    }
+    
+    .logs-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .logs-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .logs-header h3 {
+        color: var(--text-color);
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .log-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .log-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border-color);
+    }
+    
+    .log-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        padding-left: 1rem;
+    }
+    
+    .log-item::before {
+        content: '';
+        position: absolute;
+        left: -0.375rem;
+        top: 0.25rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        background: var(--primary-color);
+        border-radius: 50%;
+        border: 2px solid var(--card-bg);
+    }
+    
+    .log-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .log-content {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .log-user {
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    .log-date {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+    }
+    
+    .log-action {
+        color: var(--text-color);
+    }
+    
+    .quick-actions {
+        position: sticky;
+        top: 100px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+    
+    .quick-actions h4 {
+        color: var(--text-color);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .quick-actions .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .quick-actions .btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    .priority-indicator {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .priority-indicator.baixa {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+    
+    .priority-indicator.media {
+        background: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+    }
+    
+    .priority-indicator.alta {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    .responsible-card {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .responsible-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    
+    .responsible-info {
+        flex: 1;
+    }
+    
+    .responsible-name {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.25rem;
+    }
+    
+    .responsible-role {
+        font-size: 0.9rem;
+        color: var(--muted-color);
+    }
+    .reminders-section { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
+    .reminders-list table { width: 100%; }
+    .reminders-list th, .reminders-list td { padding: 8px; border-bottom: 1px solid var(--border-color); }
+    .reminders-actions { display: flex; gap: .5rem; align-items: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="event-detail-container">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Cabeçalho do Evento -->
+                <div class="event-header prioridade-{{ evento.prioridade }}">
+                    <div class="event-title-section">
+                        <h1 class="event-title">{{ evento.titulo }}</h1>
+                        <span class="event-status-badge {{ evento.status }}">
+                            {{ evento.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="event-meta">
+                        <div class="meta-item">
+                            <div class="meta-icon">
+                                <i class="fas fa-calendar"></i>
+                            </div>
+                            <div class="meta-content">
+                                <div class="meta-label">Data de Início</div>
+                                <div class="meta-value">{{ evento.data_inicio|date:"d/m/Y às H:i" }}</div>
+                            </div>
+                        </div>
+                        
+                        {% if evento.data_fim and not evento.dia_inteiro %}
+                            <div class="meta-item">
+                                <div class="meta-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="meta-content">
+                                    <div class="meta-label">Data de Fim</div>
+                                    <div class="meta-value">{{ evento.data_fim|date:"d/m/Y às H:i" }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if evento.dia_inteiro %}
+                            <div class="meta-item">
+                                <div class="meta-icon">
+                                    <i class="fas fa-sun"></i>
+                                </div>
+                                <div class="meta-content">
+                                    <div class="meta-label">Duração</div>
+                                    <div class="meta-value">Dia Inteiro</div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if evento.local %}
+                            <div class="meta-item">
+                                <div class="meta-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="meta-content">
+                                    <div class="meta-label">Local</div>
+                                    <div class="meta-value">{{ evento.local }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="meta-item">
+                            <div class="meta-icon">
+                                <i class="fas fa-flag"></i>
+                            </div>
+                            <div class="meta-content">
+                                <div class="meta-label">Prioridade</div>
+                                <div class="meta-value">
+                                    <span class="priority-indicator {{ evento.prioridade }}">
+                                        {{ evento.get_prioridade_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="meta-item">
+                            <div class="meta-icon">
+                                <i class="fas fa-calendar-plus"></i>
+                            </div>
+                            <div class="meta-content">
+                                <div class="meta-label">Criado em</div>
+                                <div class="meta-value">{{ evento.data_criacao|date:"d/m/Y às H:i" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if evento.responsavel %}
+                        <div class="responsible-card">
+                            <div class="responsible-avatar">
+                                {{ evento.responsavel.first_name|first|upper|default:evento.responsavel.username|first|upper }}
+                            </div>
+                            <div class="responsible-info">
+                                <div class="responsible-name">
+                                    {{ evento.responsavel.get_full_name|default:evento.responsavel.username }}
+                                </div>
+                                <div class="responsible-role">Responsável pelo evento</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if evento.descricao %}
+                        <div class="event-description">
+                            <h4>
+                                <i class="fas fa-align-left me-2"></i>
+                                Descrição
+                            </h4>
+                            <p>{{ evento.descricao }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Participantes -->
+                {% if evento.participantes.exists %}
+                    <div class="participants-section">
+                        <div class="participants-header">
+                            <i class="fas fa-users text-primary"></i>
+                            <h3>Participantes</h3>
+                            <span class="participants-count">{{ evento.participantes.count }}</span>
+                        </div>
+                        
+                        <div class="participants-grid">
+                            {% for participante in evento.participantes.all %}
+                                <div class="participant-card">
+                                    <div class="participant-avatar">
+                                        {{ participante.first_name|first|upper|default:participante.username|first|upper }}
+                                    </div>
+                                    <div class="participant-info">
+                                        <div class="participant-name">
+                                            {{ participante.get_full_name|default:participante.username }}
+                                        </div>
+                                        <div class="participant-email">{{ participante.email }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="reminders-section">
+                    <div class="participants-header">
+                        <i class="fas fa-bell text-primary"></i>
+                        <h3>Lembretes por participante</h3>
+                    </div>
+                    <div class="reminders-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Minutos antes</th>
+                                    <th>Ativo</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reminders-body">
+                                {% for lemb in lembretes_participantes %}
+                                <tr data-user="{{ lemb.usuario_id }}" data-minutos="{{ lemb.minutos_antes }}">
+                                    <td>{{ lemb.usuario.get_full_name|default:lemb.usuario.username }}</td>
+                                    <td>{{ lemb.minutos_antes }}</td>
+                                    <td><input type="checkbox" class="toggle-ativo" {% if lemb.ativo %}checked{% endif %}></td>
+                                    <td class="reminders-actions">
+                                        <button type="button" class="btn btn-sm btn-outline-primary salvar">Salvar</button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4">Nenhum lembrete configurado.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3">
+                        <form id="novo-lembrete-form" class="row g-2">
+                            {% csrf_token %}
+                            <div class="col-md-6">
+                                <label class="form-label">Participante</label>
+                                <select class="form-select" name="user_id" required>
+                                    {% if evento.responsavel %}
+                                    <option value="{{ evento.responsavel_id }}">{{ evento.responsavel.get_full_name|default:evento.responsavel.username }} (Responsável)</option>
+                                    {% endif %}
+                                    {% for p in evento.participantes.all %}
+                                    <option value="{{ p.id }}">{{ p.get_full_name|default:p.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Minutos antes</label>
+                                <input type="number" min="1" class="form-control" name="minutos" value="15" required>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">Adicionar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Histórico de Atividades -->
+                {% if evento.logs.exists %}
+                    <div class="logs-section">
+                        <div class="logs-header">
+                            <i class="fas fa-history text-primary"></i>
+                            <h3>Histórico de Atividades</h3>
+                        </div>
+                        
+                        <div class="log-timeline">
+                            {% for log in evento.logs.all %}
+                                <div class="log-item">
+                                    <div class="log-content">
+                                        <div class="log-header">
+                                            <span class="log-user">
+                                                {{ log.usuario.get_full_name|default:log.usuario.username|default:"Sistema" }}
+                                            </span>
+                                            <span class="log-date">{{ log.data_hora|date:"d/m/Y às H:i" }}</span>
+                                        </div>
+                                        <div class="log-action">{{ log.acao }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Sidebar com Ações Rápidas -->
+            <div class="col-lg-4">
+                <div class="quick-actions">
+                    <h4>
+                        <i class="fas fa-bolt me-2"></i>
+                        Ações Rápidas
+                    </h4>
+                    
+                    <a href="{% url 'agenda:evento_update' evento.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i>
+                        Editar Evento
+                    </a>
+                    
+                    {% if evento.status == 'pendente' %}
+                        <button class="btn btn-success" onclick="updateStatus('realizado')">
+                            <i class="fas fa-check"></i>
+                            Marcar como Realizado
+                        </button>
+                        
+                        <button class="btn btn-warning" onclick="updateStatus('cancelado')">
+                            <i class="fas fa-times"></i>
+                            Cancelar Evento
+                        </button>
+                    {% endif %}
+                    
+                    {% if evento.status == 'realizado' %}
+                        <button class="btn btn-warning" onclick="updateStatus('pendente')">
+                            <i class="fas fa-undo"></i>
+                            Marcar como Pendente
+                        </button>
+                    {% endif %}
+                    
+                    {% if evento.status == 'cancelado' %}
+                        <button class="btn btn-success" onclick="updateStatus('pendente')">
+                            <i class="fas fa-undo"></i>
+                            Reativar Evento
+                        </button>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-primary" onclick="duplicateEvent()">
+                        <i class="fas fa-copy"></i>
+                        Duplicar Evento
+                    </button>
+                    
+                    <button class="btn btn-outline-secondary" onclick="exportEvent()">
+                        <i class="fas fa-download"></i>
+                        Exportar para ICS
+                    </button>
+                    
+                    <button class="btn btn-outline-info" onclick="shareEvent()">
+                        <i class="fas fa-share"></i>
+                        Compartilhar
+                    </button>
+                    
+                    <hr>
+                    
+                    <a href="{% url 'agenda:evento_delete' evento.pk %}" class="btn btn-outline-danger" 
+                       onclick="return confirm('Tem certeza que deseja excluir este evento?')">
+                        <i class="fas fa-trash"></i>
+                        Excluir Evento
+                    </a>
+                    
+                    <a href="{% url 'agenda:evento_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Voltar para Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    
+    // Função para atualizar status do evento
+    window.updateStatus = function(newStatus) {
+        const statusLabels = {
+            'pendente': 'Pendente',
+            'realizado': 'Realizado',
+            'cancelado': 'Cancelado'
+        };
+        
+        if (confirm(`Deseja marcar este evento como ${statusLabels[newStatus]}?`)) {
+            $.ajax({
+                url: '{% url "agenda:evento_update" evento.pk %}',
+                method: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val(),
+                    'status': newStatus,
+                    'ajax': true
+                },
+                success: function(response) {
+                    location.reload();
+                },
+                error: function() {
+                    alert('Erro ao atualizar status do evento');
+                }
+            });
+        }
+    };
+    
+    // Função para duplicar evento
+    window.duplicateEvent = function() {
+        if (confirm('Deseja criar uma cópia deste evento?')) {
+            $.ajax({
+                url: '{% url "agenda:evento_create" %}',
+                method: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val(),
+                    'duplicate_from': {{ evento.pk }},
+                    'ajax': true
+                },
+                success: function(response) {
+                    if (response.success) {
+                        window.location.href = response.edit_url;
+                    }
+                },
+                error: function() {
+                    alert('Erro ao duplicar evento');
+                }
+            });
+        }
+    };
+    
+    // Função para exportar evento
+    window.exportEvent = function() {
+        // Criar arquivo ICS
+        const event = {
+            title: '{{ evento.titulo|escapejs }}',
+            start: '{{ evento.data_inicio|date:"Y-m-d H:i:s" }}',
+            end: '{{ evento.data_fim|date:"Y-m-d H:i:s"|default:"" }}',
+            description: '{{ evento.descricao|escapejs }}',
+            location: '{{ evento.local|escapejs }}'
+        };
+        
+        let icsContent = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Pandora ERP//Agenda//PT\n';
+        icsContent += 'BEGIN:VEVENT\n';
+        icsContent += `SUMMARY:${event.title}\n`;
+        icsContent += `DTSTART:${event.start.replace(/[-:\s]/g, '').replace('T', '')}00\n`;
+        if (event.end) {
+            icsContent += `DTEND:${event.end.replace(/[-:\s]/g, '').replace('T', '')}00\n`;
+        }
+        if (event.description) {
+            icsContent += `DESCRIPTION:${event.description}\n`;
+        }
+        if (event.location) {
+            icsContent += `LOCATION:${event.location}\n`;
+        }
+        icsContent += 'END:VEVENT\n';
+        icsContent += 'END:VCALENDAR';
+        
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `evento-${event.title.replace(/\s+/g, '-').toLowerCase()}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
+    
+    // Função para compartilhar evento
+    window.shareEvent = function() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ evento.titulo|escapejs }}',
+                text: 'Confira este evento: {{ evento.titulo|escapejs }}',
+                url: window.location.href
+            });
+        } else {
+            // Fallback para navegadores sem suporte
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(function() {
+                alert('Link copiado para a área de transferência!');
+            });
+        }
+    };
+    
+    // Atalhos de teclado
+    $(document).on('keydown', function(e) {
+        if (e.ctrlKey && e.keyCode === 69) { // Ctrl+E
+            e.preventDefault();
+            window.location.href = '{% url "agenda:evento_update" evento.pk %}';
+        }
+        
+        if (e.keyCode === 27) { // ESC
+            window.location.href = '{% url "agenda:evento_list" %}';
+        }
+    });
+    
+    // Smooth scroll para âncoras
+    $('a[href^="#"]').on('click', function(e) {
+        e.preventDefault();
+        const target = $(this.getAttribute('href'));
+        if (target.length) {
+            $('html, body').animate({
+                scrollTop: target.offset().top - 100
+            }, 300);
+        }
+    });
+
+    // Lembretes por participante
+    const endpointLembrete = "{% url 'agenda:evento_lembretes_gerenciar' evento.pk %}";
+    function lembretePost(data) {
+        const fd = new FormData();
+        fd.append('user_id', data.user_id);
+        fd.append('minutos', data.minutos);
+        fd.append('ativo', data.ativo ? 'true' : 'false');
+        fd.append('csrfmiddlewaretoken', $('#novo-lembrete-form [name=csrfmiddlewaretoken]').val());
+        return fetch(endpointLembrete, { method: 'POST', body: fd }).then(r => r.json());
+    }
+    $('#reminders-body').on('click', '.salvar', function() {
+        const tr = $(this).closest('tr');
+        const uid = tr.data('user');
+        const minutos = tr.data('minutos');
+        const ativo = tr.find('.toggle-ativo').is(':checked');
+        lembretePost({ user_id: uid, minutos: minutos, ativo: ativo }).then(res => {
+            if (!res.ok) alert(res.error || 'Erro ao salvar');
+        });
+    });
+    $('#novo-lembrete-form').on('submit', function(e) {
+        e.preventDefault();
+        const uid = this.user_id.value;
+        const minutos = this.minutos.value;
+        lembretePost({ user_id: uid, minutos: minutos, ativo: true }).then(res => {
+            if (!res || !res.ok) { alert(res?.error || 'Erro'); return; }
+            window.location.reload();
+        });
+    });
+});
+</script>
+{% endblock %}

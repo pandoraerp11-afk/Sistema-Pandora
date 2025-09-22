@@ -1,0 +1,152 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+
+{% block title %}Configurações - Assistente IA{% endblock %}
+
+{% block page_title %}Configurações do Assistente{% endblock %}
+{% block page_subtitle %}Personalize o comportamento do seu assistente de IA{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Configurações do Assistente IA
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Modo Preferido -->
+                        <div class="mb-4">
+                            <h5>Modo de Entrada Preferido</h5>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modo_preferido" 
+                                       id="modoTexto" value="text" 
+                                       {% if config.modo_preferido == 'text' %}checked{% endif %}>
+                                <label class="form-check-label" for="modoTexto">
+                                    <i class="fas fa-keyboard me-2"></i>
+                                    Texto (Recomendado)
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    Digite suas mensagens usando o teclado
+                                </small>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modo_preferido" 
+                                       id="modoVoz" value="voice" 
+                                       {% if config.modo_preferido == 'voice' %}checked{% endif %}>
+                                <label class="form-check-label" for="modoVoz">
+                                    <i class="fas fa-microphone me-2"></i>
+                                    Voz (Experimental)
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    Use comandos de voz para interagir
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Auto Speak -->
+                        <div class="mb-4">
+                            <h5>Reprodução de Áudio</h5>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="auto_speak" 
+                                       id="autoSpeak" {% if config.auto_speak %}checked{% endif %}>
+                                <label class="form-check-label" for="autoSpeak">
+                                    <i class="fas fa-volume-up me-2"></i>
+                                    Reproduzir respostas em voz automaticamente
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    O assistente falará as respostas em voz alta
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Skills Habilitadas -->
+                        <div class="mb-4">
+                            <h5>Funcionalidades Habilitadas</h5>
+                            <small class="text-muted mb-3 d-block">
+                                Selecione quais funcionalidades o assistente pode executar
+                            </small>
+                            
+                            {% for skill_id, skill_name in skills_disponiveis %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="skills_habilitadas" 
+                                       value="{{ skill_id }}" id="skill_{{ skill_id }}"
+                                       {% if skill_id in config.skills_habilitadas %}checked{% endif %}>
+                                <label class="form-check-label" for="skill_{{ skill_id }}">
+                                    {% if skill_id == 'consultar_funcionario' %}
+                                        <i class="fas fa-users me-2"></i>
+                                    {% elif skill_id == 'consultar_cliente' %}
+                                        <i class="fas fa-handshake me-2"></i>
+                                    {% elif skill_id == 'consultar_obra' %}
+                                        <i class="fas fa-building me-2"></i>
+                                    {% elif skill_id == 'consultar_estoque' %}
+                                        <i class="fas fa-boxes me-2"></i>
+                                    {% elif skill_id == 'consultar_financeiro' %}
+                                        <i class="fas fa-chart-line me-2"></i>
+                                    {% elif skill_id == 'gerar_relatorio' %}
+                                        <i class="fas fa-file-alt me-2"></i>
+                                    {% elif skill_id == 'abrir_dashboard' %}
+                                        <i class="fas fa-tachometer-alt me-2"></i>
+                                    {% elif skill_id == 'help' %}
+                                        <i class="fas fa-question-circle me-2"></i>
+                                    {% endif %}
+                                    {{ skill_name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Botões de ação -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'assistente_web:home' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                Salvar Configurações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Informações adicionais -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informações Importantes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-microphone me-2"></i>Sobre o Modo de Voz:</h6>
+                        <ul class="mb-0">
+                            <li>Requer microfone funcional</li>
+                            <li>Necessita conexão com internet para reconhecimento</li>
+                            <li>Funciona melhor em ambientes silenciosos</li>
+                            <li>Suporte ao português brasileiro</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-shield-alt me-2"></i>Segurança e Privacidade:</h6>
+                        <ul class="mb-0">
+                            <li>Suas conversas são privadas e criptografadas</li>
+                            <li>Apenas você tem acesso às suas memórias</li>
+                            <li>Dados sensíveis não são armazenados permanentemente</li>
+                            <li>Você pode limpar seu histórico a qualquer momento</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

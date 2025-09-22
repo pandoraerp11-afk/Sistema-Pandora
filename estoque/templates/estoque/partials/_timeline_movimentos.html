@@ -1,0 +1,211 @@
+{# Partial para timeline de movimentações recentes #}
+{% load i18n %}
+
+<div class="action-card h-100" data-aos="fade-up" data-aos-delay="300">
+    <div class="card-header border-0">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-history me-2 text-info"></i>
+            Movimentações Recentes
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="timeline-container" id="timeline-movimentos">
+            {% for movimento in movimentos_recentes|default:movimentos_placeholder %}
+                <div class="timeline-item" data-movimento-id="{{ movimento.id }}">
+                    <div class="timeline-marker bg-{{ movimento.tipo|default:'primary' }}">
+                        {% if movimento.tipo == 'ENTRADA' %}
+                            <i class="fas fa-arrow-up"></i>
+                        {% elif movimento.tipo == 'SAIDA' %}
+                            <i class="fas fa-arrow-down"></i>
+                        {% elif movimento.tipo == 'TRANSFERENCIA' %}
+                            <i class="fas fa-exchange-alt"></i>
+                        {% elif movimento.tipo == 'AJUSTE_POS' %}
+                            <i class="fas fa-plus"></i>
+                        {% elif movimento.tipo == 'AJUSTE_NEG' %}
+                            <i class="fas fa-minus"></i>
+                        {% elif movimento.tipo == 'RESERVA' %}
+                            <i class="fas fa-hand-holding"></i>
+                        {% elif movimento.tipo == 'DESCARTE' %}
+                            <i class="fas fa-trash"></i>
+                        {% elif movimento.tipo == 'PERDA' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <h6 class="timeline-title">{{ movimento.produto.nome|default:'Produto'|truncatechars:30 }}</h6>
+                            <span class="timeline-time">{{ movimento.data_criacao|date:"H:i"|default:'--:--' }}</span>
+                        </div>
+                        <div class="timeline-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-{{ movimento.tipo_color|default:'secondary' }}">
+                                        {{ movimento.get_tipo_display|default:movimento.tipo }}
+                                    </span>
+                                    {% if movimento.deposito_origem and movimento.deposito_destino %}
+                                        <small class="text-muted d-block">
+                                            {{ movimento.deposito_origem.nome|truncatechars:15 }} → {{ movimento.deposito_destino.nome|truncatechars:15 }}
+                                        </small>
+                                    {% elif movimento.deposito %}
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-warehouse me-1"></i>{{ movimento.deposito.nome|truncatechars:20 }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold">{{ movimento.quantidade|floatformat:0|default:'0' }}</div>
+                                    <small class="text-muted">{{ movimento.produto.unidade_medida|default:'UN' }}</small>
+                                </div>
+                            </div>
+                            {% if movimento.usuario %}
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ movimento.usuario.get_full_name|default:movimento.usuario.username }}
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-timeline text-center py-4">
+                    <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">Nenhuma movimentação recente</p>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshTimeline()">
+                        <i class="fas fa-sync-alt me-1"></i>Atualizar
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="timeline-footer mt-3 text-center">
+            <a href="{% url 'estoque:movimentos_list' %}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-list me-1"></i>Ver Todos os Movimentos
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-container {
+    position: relative;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 40px;
+    bottom: -16px;
+    width: 2px;
+    background: linear-gradient(to bottom, #e9ecef, #dee2e6);
+}
+
+.timeline-marker {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    margin-right: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 1;
+    position: relative;
+}
+
+.timeline-content {
+    flex: 1;
+    background: rgba(255,255,255,0.8);
+    border-radius: 8px;
+    padding: 12px 16px;
+    border: 1px solid #e9ecef;
+    min-width: 0;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+    color: #2c3e50;
+}
+
+.timeline-time {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.timeline-body {
+    font-size: 13px;
+}
+
+/* Cores para diferentes tipos */
+.bg-ENTRADA { background-color: #28a745 !important; }
+.bg-SAIDA { background-color: #dc3545 !important; }
+.bg-TRANSFERENCIA { background-color: #17a2b8 !important; }
+.bg-AJUSTE_POS { background-color: #28a745 !important; }
+.bg-AJUSTE_NEG { background-color: #ffc107 !important; }
+.bg-RESERVA { background-color: #fd7e14 !important; }
+.bg-DESCARTE { background-color: #6c757d !important; }
+.bg-PERDA { background-color: #dc3545 !important; }
+
+.empty-timeline {
+    color: #6c757d;
+}
+
+/* Animação para novos itens */
+.timeline-item.novo {
+    animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Scrollbar personalizada */
+.timeline-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.timeline-container::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 3px;
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.timeline-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>

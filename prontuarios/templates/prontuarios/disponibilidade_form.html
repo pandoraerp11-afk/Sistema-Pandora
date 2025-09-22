@@ -1,0 +1,29 @@
+{% extends 'pandora_form_ultra_modern.html' %}{% load i18n widget_tweaks %}
+{% block title %}{% trans 'Nova Disponibilidade' %}{% endblock %}
+{% block form_main %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header"><strong>{% trans 'Janela de Disponibilidade' %}</strong></div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+              <label class="form-label" for="id_{{ field.name }}">{{ field.label }}</label>
+              {% render_field field class='form-control' %}
+              {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+              {% if field.errors %}<div class="invalid-feedback d-block small">{{ field.errors|join:', ' }}</div>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+  {% include 'prontuarios/partials/_form_actions.html' with object=form.instance cancel_url=cancel_url|default:'/prontuarios/atendimentos/' show_save_continue=False %}
+    </div>
+  </div>
+</form>
+{% endblock %}

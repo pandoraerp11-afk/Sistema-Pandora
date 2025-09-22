@@ -1,0 +1,318 @@
+{% load static %}
+
+<style>
+.floating-actions {
+    position: fixed;
+    top: 45px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toggle-main-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    z-index: 1002;
+}
+
+.toggle-main-btn:hover {
+    transform: scale(1.1) rotate(180deg);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+}
+
+.toggle-main-btn.active {
+    background: linear-gradient(135deg, #dc3545, #b02a37);
+    transform: rotate(45deg);
+}
+
+.toggle-main-btn.active:hover {
+    transform: scale(1.1) rotate(45deg);
+}
+
+.actions-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: none;
+}
+
+.actions-group.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.action-btn-minimal {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.action-btn-minimal:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    color: white;
+}
+
+.btn-view { background: linear-gradient(135deg, #0d6efd, #0056b3); }
+.btn-export { background: linear-gradient(135deg, #198754, #146c43); }
+.btn-search { background: linear-gradient(135deg, #0dcaf0, #0a9ac4); }
+.btn-add { background: linear-gradient(135deg, #ffc107, #cc9a06); }
+.btn-dashboard { background: linear-gradient(135deg, #6f42c1, #4b278a); }
+
+.dropdown-minimal {
+    position: relative;
+}
+
+.dropdown-minimal-menu {
+    position: absolute;
+    right: 100%;
+    top: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 8px;
+    margin-right: 10px;
+    min-width: 120px;
+    display: none;
+    z-index: 1001;
+}
+
+.dropdown-minimal-menu.show {
+    display: block;
+}
+
+.dropdown-minimal-item {
+    display: block;
+    padding: 8px 12px;
+    color: #333;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.dropdown-minimal-item:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+@media (max-width: 768px) {
+    .floating-actions {
+        position: static;
+        flex-direction: row;
+        justify-content: center;
+        margin: 20px 0;
+        gap: 15px;
+    }
+    
+    .toggle-main-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .actions-group {
+        flex-direction: row;
+        transform: translateX(-20px);
+    }
+    
+    .actions-group.show {
+        transform: translateX(0);
+    }
+}
+</style>
+
+<div class="floating-actions">
+    <!-- Botão Principal Toggle -->
+    <button class="toggle-main-btn" id="toggle-actions" title="Menu de Ações">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <!-- Grupo de Ações (inicialmente oculto) -->
+    <div class="actions-group" id="actions-group">
+        {% if dashboard_url %}
+        <!-- Dashboard -->
+        <a href="{{ dashboard_url }}" class="action-btn-minimal btn-dashboard" title="Dashboard">
+            <i class="fas fa-chart-line"></i>
+        </a>
+        {% endif %}
+        <!-- Visualização -->
+        <div class="dropdown-minimal">
+            <button class="action-btn-minimal btn-view" title="Visualização" data-toggle="view-dropdown">
+                <i class="fas fa-eye"></i>
+            </button>
+            <div class="dropdown-minimal-menu" id="view-dropdown">
+                <button class="dropdown-minimal-item view-switcher-btn active" data-view="table">
+                    <i class="fas fa-table me-2"></i>Tabela
+                </button>
+                <button class="dropdown-minimal-item view-switcher-btn" data-view="grid">
+                    <i class="fas fa-th me-2"></i>Cards
+                </button>
+            </div>
+        </div>
+
+        <!-- Exportar -->
+        <div class="dropdown-minimal">
+            <button class="action-btn-minimal btn-export" title="Exportar" data-toggle="export-dropdown">
+                <i class="fas fa-download"></i>
+            </button>
+            <div class="dropdown-minimal-menu" id="export-dropdown">
+                <a href="?export=excel" class="dropdown-minimal-item">
+                    <i class="fas fa-file-excel me-2 text-success"></i>Excel
+                </a>
+                <a href="?export=pdf" class="dropdown-minimal-item">
+                    <i class="fas fa-file-pdf me-2 text-danger"></i>PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- Buscar -->
+        <button class="action-btn-minimal btn-search" id="toggle-search" title="Buscar">
+            <i class="fas fa-search"></i>
+        </button>
+
+        <!-- Adicionar -->
+        {% if perms_ui.can_add|default:perms.can_add|default:True %}
+        <a href="{% block add_url %}#{% endblock %}" class="action-btn-minimal btn-add" title="Adicionar">
+            <i class="fas fa-plus"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle principal para mostrar/esconder ações
+    const toggleBtn = document.getElementById('toggle-actions');
+    const actionsGroup = document.getElementById('actions-group');
+    
+    toggleBtn.addEventListener('click', function() {
+        const isVisible = actionsGroup.classList.contains('show');
+        
+        if (isVisible) {
+            actionsGroup.classList.remove('show');
+            this.classList.remove('active');
+            // Fecha todos os dropdowns quando esconde
+            document.querySelectorAll('.dropdown-minimal-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        } else {
+            actionsGroup.classList.add('show');
+            this.classList.add('active');
+        }
+    });
+
+    // Dropdown toggles
+    document.querySelectorAll('[data-toggle]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const dropdownId = this.getAttribute('data-toggle');
+            const dropdown = document.getElementById(dropdownId);
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown-minimal-menu').forEach(menu => {
+                if (menu.id !== dropdownId) {
+                    menu.classList.remove('show');
+                }
+            });
+            
+            // Toggle current dropdown
+            dropdown.classList.toggle('show');
+        });
+    });
+
+    // Close dropdowns when clicking outside (but not the actions group)
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.floating-actions')) {
+            document.querySelectorAll('.dropdown-minimal-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    });
+
+    // View Switcher
+    document.querySelectorAll('.view-switcher-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const view = this.dataset.view;
+            
+            // Update active button
+            document.querySelectorAll('.view-switcher-btn').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Switch views
+            const tableView = document.getElementById('table-view');
+            const gridView = document.getElementById('grid-view');
+            
+            if (view === 'table') {
+                if (tableView) tableView.style.display = 'block';
+                if (gridView) gridView.style.display = 'none';
+            } else {
+                if (tableView) tableView.style.display = 'none';
+                if (gridView) gridView.style.display = 'block';
+            }
+            
+            // Save preference
+            localStorage.setItem('list_view_preference', view);
+            
+            // Close dropdown
+            this.closest('.dropdown-minimal-menu').classList.remove('show');
+        });
+    });
+
+    // Search Toggle
+    const searchToggle = document.getElementById('toggle-search');
+    const searchContainer = document.getElementById('search-container');
+    
+    if (searchToggle && searchContainer) {
+        searchToggle.addEventListener('click', function() {
+            const isVisible = searchContainer.style.display !== 'none';
+            
+            if (isVisible) {
+                searchContainer.style.display = 'none';
+                this.innerHTML = '<i class="fas fa-search"></i>';
+                this.classList.remove('btn-success');
+                this.classList.add('btn-search');
+            } else {
+                searchContainer.style.display = 'block';
+                this.innerHTML = '<i class="fas fa-search-minus"></i>';
+                this.classList.remove('btn-search');
+                this.classList.add('btn-success');
+            }
+        });
+    }
+
+    // Load saved view preference
+    const savedView = localStorage.getItem('list_view_preference');
+    if (savedView) {
+        const savedButton = document.querySelector(`[data-view="${savedView}"]`);
+        if (savedButton) {
+            savedButton.click();
+        }
+    }
+});
+</script>

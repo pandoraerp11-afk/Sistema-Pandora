@@ -1,0 +1,509 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+    .import-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e3e9f7;
+        overflow: hidden;
+    }
+    .import-card .card-header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 1.5rem;
+        border: none;
+    }
+    .import-card .card-header h4 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .import-card .card-body {
+        padding: 2rem;
+    }
+    .upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: #f9fafb;
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+    }
+    .upload-area:hover {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    .upload-area.dragover {
+        border-color: #10b981;
+        background: #f0fdf4;
+        transform: scale(1.02);
+    }
+    .upload-area .upload-icon {
+        font-size: 3rem;
+        color: #10b981;
+        margin-bottom: 1rem;
+    }
+    .upload-area h5 {
+        color: #374151;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .upload-area p {
+        color: #6b7280;
+        margin: 0;
+    }
+    .file-input {
+        display: none;
+    }
+    .file-selected {
+        background: #f0fdf4;
+        border: 2px solid #10b981;
+        border-radius: 12px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .file-selected .file-icon {
+        font-size: 2rem;
+        color: #10b981;
+        margin-right: 1rem;
+    }
+    .file-selected .file-info h6 {
+        margin: 0;
+        color: #374151;
+    }
+    .file-selected .file-info p {
+        margin: 0;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    .file-selected .remove-file {
+        margin-left: auto;
+        color: #dc2626;
+        cursor: pointer;
+        font-size: 1.2rem;
+    }
+    .instructions-card {
+        background: #f0f9ff;
+        border: 1px solid #0ea5e9;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .instructions-card h6 {
+        color: #0c4a6e;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    .instructions-card ul {
+        color: #0c4a6e;
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+    .instructions-card li {
+        margin-bottom: 0.5rem;
+    }
+    .example-card {
+        background: #fefce8;
+        border: 1px solid #eab308;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .example-card h6 {
+        color: #a16207;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    .example-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+    }
+    .example-table table {
+        width: 100%;
+        margin: 0;
+    }
+    .example-table th {
+        background: #f59e0b;
+        color: white;
+        padding: 0.5rem;
+        text-align: left;
+    }
+    .example-table td {
+        padding: 0.5rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+    .btn-secondary {
+        background: #6b7280;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+        background: #4b5563;
+        transform: translateY(-2px);
+    }
+    .form-actions {
+        background: #f8fafc;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid #e3e9f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .alert {
+        border-radius: 12px;
+        border: none;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .alert-info {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        color: #1e40af;
+    }
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        transition: width 0.3s ease;
+    }
+    .upload-progress {
+        display: none;
+        background: #f0fdf4;
+        border: 1px solid #10b981;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .upload-progress.show {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            {% for breadcrumb in breadcrumbs %}
+                {% if breadcrumb.active %}
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <i class="fas fa-chevron-right me-2"></i>{{ breadcrumb.title }}
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item">
+                        {% if breadcrumb.url %}
+                            <a href="{{ breadcrumb.url }}" class="text-decoration-none">
+                                {{ breadcrumb.title }}
+                            </a>
+                        {% else %}
+                            {{ breadcrumb.title }}
+                        {% endif %}
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">{{ page_title }}</h1>
+            <p class="text-muted mb-0">{{ page_subtitle }}</p>
+        </div>
+        <div>
+            <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Import Card -->
+            <div class="import-card">
+                <div class="card-header">
+                    <h4>
+                        <i class="fas fa-cloud-upload-alt me-2"></i>
+                        {{ form_title }}
+                    </h4>
+                </div>
+                
+                <form method="post" enctype="multipart/form-data" id="importForm">
+                    {% csrf_token %}
+                    
+                    <div class="card-body">
+                        <!-- Instructions -->
+                        <div class="instructions-card">
+                            <h6>
+                                <i class="fas fa-info-circle me-2"></i>
+                                Instruções para Importação
+                            </h6>
+                            <ul>
+                                {% for instruction in instructions %}
+                                    <li>{{ instruction }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Example -->
+                        <div class="example-card">
+                            <h6>
+                                <i class="fas fa-file-alt me-2"></i>
+                                Exemplo de Arquivo CSV
+                            </h6>
+                            <div class="example-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Símbolo</th>
+                                            <th>Descrição</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Metro</td>
+                                            <td>m</td>
+                                            <td>Unidade de medida de comprimento</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Quilograma</td>
+                                            <td>kg</td>
+                                            <td>Unidade de medida de massa</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Litro</td>
+                                            <td>l</td>
+                                            <td>Unidade de medida de volume</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Upload Area -->
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h5>Arraste e solte seu arquivo CSV aqui</h5>
+                            <p>ou clique para selecionar um arquivo</p>
+                            <input type="file" 
+                                   name="arquivo" 
+                                   id="fileInput" 
+                                   class="file-input" 
+                                   accept=".csv"
+                                   required>
+                        </div>
+
+                        <!-- File Selected -->
+                        <div class="file-selected" id="fileSelected" style="display: none;">
+                            <div class="file-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="file-info">
+                                <h6 id="fileName"></h6>
+                                <p id="fileSize"></p>
+                            </div>
+                            <div class="remove-file" id="removeFile">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                        </div>
+
+                        <!-- Upload Progress -->
+                        <div class="upload-progress" id="uploadProgress">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-success">Processando arquivo...</span>
+                                <span class="text-success">0%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Form Errors -->
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        {{ error }}<br>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Additional Info -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Importante:</strong> O arquivo deve ser codificado em UTF-8 para garantir que caracteres especiais sejam importados corretamente.
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <div>
+                            <small class="text-muted">
+                                <i class="fas fa-shield-check me-1"></i>
+                                Seus dados estão seguros e serão processados localmente
+                            </small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ cancel_url }}" class="btn btn-secondary">
+                                <i class="fas fa-times-circle me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success" id="submitBtn" disabled>
+                                <i class="fas fa-upload me-2"></i>{{ submit_text }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileSelected = document.getElementById('fileSelected');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFile = document.getElementById('removeFile');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const importForm = document.getElementById('importForm');
+
+        // File input change event
+        fileInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0]);
+        });
+
+        // Upload area click event
+        uploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        // Drag and drop events
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // Remove file event
+        removeFile.addEventListener('click', function() {
+            fileInput.value = '';
+            fileSelected.style.display = 'none';
+            uploadArea.style.display = 'block';
+            submitBtn.disabled = true;
+        });
+
+        // Handle file selection
+        function handleFileSelect(file) {
+            if (file) {
+                // Validate file type
+                if (!file.name.endsWith('.csv')) {
+                    alert('Por favor, selecione apenas arquivos CSV.');
+                    return;
+                }
+
+                // Update UI
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                
+                uploadArea.style.display = 'none';
+                fileSelected.style.display = 'flex';
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Form submission
+        importForm.addEventListener('submit', function(e) {
+            if (!fileInput.files.length) {
+                e.preventDefault();
+                alert('Por favor, selecione um arquivo CSV.');
+                return;
+            }
+
+            // Show progress
+            uploadProgress.classList.add('show');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processando...';
+
+            // Simulate progress (since we can't track actual upload progress easily)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 90) {
+                    clearInterval(interval);
+                    progress = 90;
+                }
+                progressBar.style.width = progress + '%';
+                progressBar.parentElement.nextElementSibling.querySelector('span:last-child').textContent = Math.round(progress) + '%';
+            }, 200);
+        });
+    });
+</script>
+{% endblock %}

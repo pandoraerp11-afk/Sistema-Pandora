@@ -1,0 +1,541 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}Confirmar Exclusão - BI | Pandora ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-confirmation-card {
+        max-width: 600px;
+        margin: 0 auto;
+        border: 2px solid #e3f2fd;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .delete-header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        padding: 1.5rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .delete-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M20 20c0-11.046-8.954-20-20-20v20h20z'/%3E%3C/g%3E%3C/svg%3E") repeat;
+        opacity: 0.3;
+    }
+
+    .delete-header h2 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+    }
+
+    .delete-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #ff6b6b;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .delete-content {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .warning-message {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border: 1px solid #ffc107;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-weight: 500;
+        color: #856404;
+    }
+
+    .item-details {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        text-align: left;
+    }
+
+    .item-details h5 {
+        color: #495057;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        font-weight: 500;
+        color: #6c757d;
+    }
+
+    .detail-value {
+        color: #495057;
+        font-weight: 500;
+    }
+
+    .type-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .type-financeiro {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .type-produtividade {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+
+    .type-qualidade {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .type-eficiencia {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #856404;
+    }
+
+    .type-vendas {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+
+    .type-marketing {
+        background: linear-gradient(135deg, #6f42c1, #563d7c);
+        color: white;
+    }
+
+    .type-operacional {
+        background: linear-gradient(135deg, #343a40, #23272b);
+        color: white;
+    }
+
+    .type-rh {
+        background: linear-gradient(135deg, #6c757d, #545b62);
+        color: white;
+    }
+
+    .type-outro {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        color: #495057;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-ativo {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .status-inativo {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #856404;
+    }
+
+    .status-arquivado {
+        background: linear-gradient(135deg, #6c757d, #545b62);
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .btn-confirm-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-confirm-delete:hover {
+        background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+    }
+
+    .btn-confirm-delete::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-confirm-delete:hover::before {
+        left: 100%;
+    }
+
+    .btn-cancel {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-cancel:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .consequences {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border: 1px solid #f5c6cb;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        color: #721c24;
+    }
+
+    .consequences h6 {
+        color: #721c24;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .consequences ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .consequences li {
+        margin-bottom: 0.25rem;
+    }
+
+    .value-display {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border: 1px solid #2196f3;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        text-align: center;
+    }
+
+    .value-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1976d2;
+        margin-bottom: 0.5rem;
+    }
+
+    .value-label {
+        color: #0d47a1;
+        font-weight: 500;
+    }
+
+    .meta-display {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .meta-item {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .meta-item h6 {
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .meta-item .value {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .breadcrumb-item a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .breadcrumb-item a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-item.active {
+        color: #6c757d;
+    }
+
+    @media (max-width: 768px) {
+        .delete-confirmation-card {
+            margin: 1rem;
+        }
+        
+        .delete-content {
+            padding: 1rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn-confirm-delete,
+        .btn-cancel {
+            width: 100%;
+        }
+        
+        .meta-display {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bi:bi_home' %}">BI</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bi:bi_detail' object.pk %}">{{ object.nome }}</a></li>
+            <li class="breadcrumb-item active">Confirmar Exclusão</li>
+        </ol>
+    </nav>
+
+    <div class="delete-confirmation-card">
+        <div class="delete-header">
+            <div class="delete-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2>Confirmar Exclusão</h2>
+        </div>
+
+        <div class="delete-content">
+            <div class="warning-message">
+                <i class="fas fa-warning me-2"></i>
+                <strong>Atenção:</strong> Esta ação não pode ser desfeita!
+            </div>
+
+            <p class="mb-3">Tem certeza de que deseja excluir este indicador?</p>
+
+            <div class="item-details">
+                <h5><i class="fas fa-chart-line me-2"></i>Detalhes do Indicador</h5>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Nome:</span>
+                    <span class="detail-value">{{ object.nome }}</span>
+                </div>
+                
+                {% if object.descricao %}
+                <div class="detail-row">
+                    <span class="detail-label">Descrição:</span>
+                    <span class="detail-value">{{ object.descricao|truncatewords:10 }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="detail-row">
+                    <span class="detail-label">Tipo:</span>
+                    <span class="detail-value">
+                        <span class="type-badge type-{{ object.tipo }}">
+                            {{ object.get_tipo_display }}
+                        </span>
+                    </span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge status-{{ object.status }}">
+                            {{ object.get_status_display }}
+                        </span>
+                    </span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Período:</span>
+                    <span class="detail-value">{{ object.get_periodo_display }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Data:</span>
+                    <span class="detail-value">{{ object.data|date:"d/m/Y" }}</span>
+                </div>
+                
+                {% if object.responsavel %}
+                <div class="detail-row">
+                    <span class="detail-label">Responsável:</span>
+                    <span class="detail-value">{{ object.responsavel.get_full_name|default:object.responsavel.username }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.criado_por %}
+                <div class="detail-row">
+                    <span class="detail-label">Criado por:</span>
+                    <span class="detail-value">{{ object.criado_por.get_full_name|default:object.criado_por.username }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Exibição do Valor -->
+            <div class="value-display">
+                <div class="value-number">
+                    {{ object.valor|floatformat:2 }}
+                    {% if object.unidade_medida %}{{ object.unidade_medida }}{% endif %}
+                </div>
+                <div class="value-label">Valor Atual</div>
+            </div>
+
+            <!-- Meta e Progresso -->
+            {% if object.meta %}
+                <div class="meta-display">
+                    <div class="meta-item">
+                        <h6>Meta Definida</h6>
+                        <div class="value">
+                            {{ object.meta|floatformat:2 }}
+                            {% if object.unidade_medida %}{{ object.unidade_medida }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <h6>Progresso</h6>
+                        <div class="value">{{ object.get_progresso_meta|floatformat:1 }}%</div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Observações -->
+            {% if object.observacoes %}
+                <div class="item-details">
+                    <h5><i class="fas fa-sticky-note me-2"></i>Observações</h5>
+                    <div style="color: #6c757d; font-style: italic;">
+                        {{ object.observacoes|truncatewords:20 }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="consequences">
+                <h6><i class="fas fa-exclamation-circle me-2"></i>Consequências da Exclusão:</h6>
+                <ul>
+                    <li>Todos os dados relacionados a este indicador serão perdidos</li>
+                    <li>O histórico de valores e metas será removido permanentemente</li>
+                    <li>Relatórios que incluem este indicador podem ser afetados</li>
+                    <li>Esta ação não poderá ser desfeita</li>
+                </ul>
+            </div>
+
+            <form method="post" class="mb-0">
+                {% csrf_token %}
+                <div class="action-buttons">
+                    <button type="submit" class="btn-confirm-delete">
+                        <i class="fas fa-trash me-2"></i>Sim, Excluir
+                    </button>
+                    <a href="{% url 'bi:bi_home' %}" class="btn-cancel">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar confirmação adicional no clique do botão
+    const deleteBtn = document.querySelector('.btn-confirm-delete');
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Mostrar uma segunda confirmação
+            const confirmed = confirm('CONFIRMAÇÃO FINAL: Tem certeza absoluta de que deseja excluir este indicador? Esta ação é irreversível!');
+            
+            if (confirmed) {
+                // Submeter o formulário
+                this.closest('form').submit();
+            }
+        });
+    }
+    
+    // Adicionar efeito de hover nos botões
+    const buttons = document.querySelectorAll('.btn-confirm-delete, .btn-cancel');
+    
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

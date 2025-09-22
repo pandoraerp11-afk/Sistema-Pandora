@@ -1,0 +1,69 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header">
+    <div class="row">
+        <div class="col-md-6">
+            <h3 class="card-title">Modelos de Formulário</h3>
+        </div>
+        <div class="col-md-6 text-right">
+            <a href="#" class="btn btn-success">
+                <i class="fas fa-plus"></i> Adicionar
+            </a>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-12">
+            <form method="get" class="form-inline">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{ request.GET.q }">
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+                <div class="card-body">
+                    {% if templates %}
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Descrição</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for template in templates %}
+                                    <tr>
+                                        <td>{{ template.titulo }}</td>
+                                        <td>{{ template.descricao }}</td>
+                                        <td>
+                                            <a href="{% url 'formularios_dinamicos:form_from_template' template_pk=template.pk %}" class="btn btn-success btn-sm">Usar Modelo</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>Nenhum modelo de formulário disponível.</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'formularios_dinamicos:form_list' %}" class="btn btn-secondary">Voltar para a Lista de Formulários</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

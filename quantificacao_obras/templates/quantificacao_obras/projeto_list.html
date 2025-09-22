@@ -1,0 +1,524 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static %}
+
+{% block title %}Quantificação de Obras - Pandora ERP{% endblock %}
+{% block page_title %}Quantificação de Obras{% endblock %}
+{% block page_subtitle %}Gerencie seus projetos de quantificação de obras{% endblock %}
+{% block page_icon %}fas fa-calculator{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Quantificação de Obras</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-card {
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        backdrop-filter: blur(10px);
+    }
+    
+    .project-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border-color: var(--primary-color);
+    }
+    
+    .project-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-rascunho {
+        background: rgba(108, 117, 125, 0.1);
+        color: var(--text-muted);
+    }
+    
+    .status-em_andamento {
+        background: rgba(13, 110, 253, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .status-concluido {
+        background: rgba(25, 135, 84, 0.1);
+        color: var(--success-color);
+    }
+    
+    .status-cancelado {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger-color);
+    }
+    
+    .project-progress {
+        height: 4px;
+        background: var(--border-color);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+        transition: width 0.3s ease;
+    }
+    
+    .metric-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .cost-display {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--success-color);
+    }
+    
+    .view-toggle {
+        display: flex;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 4px;
+    }
+    
+    .view-toggle button {
+        background: none;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+    }
+    
+    .view-toggle button.active {
+        background: var(--primary-color);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Métricas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ projetos_count|default:0 }}</div>
+                <div class="metric-label">Total de Projetos</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ projetos_em_andamento|default:0 }}</div>
+                <div class="metric-label">Em Andamento</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ projetos_concluidos|default:0 }}</div>
+                <div class="metric-label">Concluídos</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">R$ {{ valor_total|floatformat:2|default:"0,00" }}</div>
+                <div class="metric-label">Valor Total</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Controles -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Buscar projetos..." id="searchInput">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Todos os Status</option>
+                        <option value="rascunho">Rascunho</option>
+                        <option value="em_andamento">Em Andamento</option>
+                        <option value="concluido">Concluído</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="view-toggle">
+                        <button type="button" class="active" data-view="grid">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button type="button" data-view="list">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 text-end">
+                    <a href="{% url 'quantificacao_obras:projeto_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Novo Projeto
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid View -->
+    <div id="gridView" class="row">
+        {% for projeto in object_list %}
+        <div class="col-lg-4 col-md-6 mb-4 project-item" data-name="{{ projeto.nome|lower }}" data-status="{{ projeto.status }}">
+            <div class="project-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="card-title mb-0">{{ projeto.nome }}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-link btn-sm" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'quantificacao_obras:projeto_detail' projeto.pk %}">
+                                    <i class="fas fa-eye"></i> Visualizar
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'quantificacao_obras:projeto_update' projeto.pk %}">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'quantificacao_obras:projeto_delete' projeto.pk %}">
+                                    <i class="fas fa-trash"></i> Excluir
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <span class="project-status status-{{ projeto.status }}">
+                            {% if projeto.status == 'rascunho' %}
+                                <i class="fas fa-file-alt"></i> Rascunho
+                            {% elif projeto.status == 'em_andamento' %}
+                                <i class="fas fa-play-circle"></i> Em Andamento
+                            {% elif projeto.status == 'concluido' %}
+                                <i class="fas fa-check-circle"></i> Concluído
+                            {% elif projeto.status == 'cancelado' %}
+                                <i class="fas fa-times-circle"></i> Cancelado
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if projeto.descricao %}
+                    <p class="card-text text-muted mb-3">{{ projeto.descricao|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="fw-bold">{{ projeto.itens_quantificacao.count }}</div>
+                                <small class="text-muted">Itens</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold">{{ projeto.data_inicio|date:"d/m/Y" }}</div>
+                                <small class="text-muted">Início</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold">
+                                    {% if projeto.data_previsao_conclusao %}
+                                        {{ projeto.data_previsao_conclusao|date:"d/m/Y" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Previsão</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if projeto.responsavel %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar me-2">
+                            <img src="{% static 'img/default-avatar.png' %}" alt="{{ projeto.responsavel.get_full_name }}" class="rounded-circle" width="24" height="24">
+                        </div>
+                        <small class="text-muted">{{ projeto.responsavel.get_full_name }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Progresso (simulado baseado no status) -->
+                    <div class="project-progress mb-2">
+                        <div class="progress-bar" style="width: 
+                            {% if projeto.status == 'rascunho' %}15%
+                            {% elif projeto.status == 'em_andamento' %}50%
+                            {% elif projeto.status == 'concluido' %}100%
+                            {% elif projeto.status == 'cancelado' %}0%
+                            {% endif %}"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            {% if projeto.status == 'rascunho' %}15% completo
+                            {% elif projeto.status == 'em_andamento' %}50% completo
+                            {% elif projeto.status == 'concluido' %}100% completo
+                            {% elif projeto.status == 'cancelado' %}Cancelado
+                            {% endif %}
+                        </small>
+                        <div class="cost-display">
+                            R$ {{ projeto.valor_total|floatformat:2|default:"0,00" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-calculator fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Nenhum projeto encontrado</h4>
+                <p class="text-muted">Comece criando seu primeiro projeto de quantificação.</p>
+                <a href="{% url 'quantificacao_obras:projeto_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Criar Primeiro Projeto
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Table View -->
+    <div id="tableView" class="d-none">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Projeto</th>
+                            <th>Status</th>
+                            <th>Responsável</th>
+                            <th>Datas</th>
+                            <th>Itens</th>
+                            <th>Valor Total</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for projeto in object_list %}
+                        <tr class="project-item" data-name="{{ projeto.nome|lower }}" data-status="{{ projeto.status }}">
+                            <td>
+                                <div>
+                                    <strong>{{ projeto.nome }}</strong>
+                                    {% if projeto.descricao %}
+                                        <br><small class="text-muted">{{ projeto.descricao|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="project-status status-{{ projeto.status }}">
+                                    {% if projeto.status == 'rascunho' %}
+                                        <i class="fas fa-file-alt"></i> Rascunho
+                                    {% elif projeto.status == 'em_andamento' %}
+                                        <i class="fas fa-play-circle"></i> Em Andamento
+                                    {% elif projeto.status == 'concluido' %}
+                                        <i class="fas fa-check-circle"></i> Concluído
+                                    {% elif projeto.status == 'cancelado' %}
+                                        <i class="fas fa-times-circle"></i> Cancelado
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {% if projeto.responsavel %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar me-2">
+                                            <img src="{% static 'img/default-avatar.png' %}" alt="{{ projeto.responsavel.get_full_name }}" class="rounded-circle" width="24" height="24">
+                                        </div>
+                                        {{ projeto.responsavel.get_full_name }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">Não atribuído</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>Início:</strong> {{ projeto.data_inicio|date:"d/m/Y" }}
+                                    {% if projeto.data_previsao_conclusao %}
+                                        <br><strong>Previsão:</strong> {{ projeto.data_previsao_conclusao|date:"d/m/Y" }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ projeto.itens_quantificacao.count }} itens</span>
+                            </td>
+                            <td>
+                                <div class="cost-display">R$ {{ projeto.valor_total|floatformat:2|default:"0,00" }}</div>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'quantificacao_obras:projeto_detail' projeto.pk %}" class="btn btn-sm btn-outline-primary" title="Visualizar">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'quantificacao_obras:projeto_update' projeto.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'quantificacao_obras:projeto_delete' projeto.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="fas fa-calculator fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">Nenhum projeto encontrado</h4>
+                                <p class="text-muted">Comece criando seu primeiro projeto de quantificação.</p>
+                                <a href="{% url 'quantificacao_obras:projeto_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Criar Primeiro Projeto
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    {% if is_paginated %}
+    <nav aria-label="Paginação" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">Primeira</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Busca em tempo real
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const projectItems = document.querySelectorAll('.project-item');
+    
+    function filterProjects() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        
+        projectItems.forEach(item => {
+            const name = item.getAttribute('data-name');
+            const status = item.getAttribute('data-status');
+            
+            const matchesSearch = name.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            
+            if (matchesSearch && matchesStatus) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterProjects);
+    statusFilter.addEventListener('change', filterProjects);
+    
+    // Alternância entre visualizações
+    const viewToggleButtons = document.querySelectorAll('.view-toggle button');
+    const gridView = document.getElementById('gridView');
+    const tableView = document.getElementById('tableView');
+    
+    viewToggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const view = this.getAttribute('data-view');
+            
+            // Atualizar botões ativos
+            viewToggleButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Mostrar/ocultar visualizações
+            if (view === 'grid') {
+                gridView.classList.remove('d-none');
+                tableView.classList.add('d-none');
+            } else {
+                gridView.classList.add('d-none');
+                tableView.classList.remove('d-none');
+            }
+        });
+    });
+    
+    // Salvamento automático da preferência de visualização
+    const savedView = localStorage.getItem('quantificacao_view');
+    if (savedView) {
+        const button = document.querySelector(`[data-view="${savedView}"]`);
+        if (button) {
+            button.click();
+        }
+    }
+    
+    // Salvar preferência quando mudar
+    viewToggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            localStorage.setItem('quantificacao_view', this.getAttribute('data-view'));
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'pandora_wizard_form_ultra_modern.html' %}
+
+{% block step_content %}
+  <p>Ao concluir, o fornecedor será salvo. Você pode retornar para ajustar qualquer etapa.</p>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" value="1" id="id_main-confirmacao" name="main-confirmacao" required>
+    <label class="form-check-label" for="id_main-confirmacao">
+      Confirmo que revisei os dados.
+    </label>
+  </div>
+  <button type="submit" class="btn btn-success mt-3" name="wizard_finish" value="1">
+    <i class="fas fa-check"></i> Concluir
+  </button>
+{% endblock %}

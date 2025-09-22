@@ -1,0 +1,44 @@
+{# Renderizador de formulário único com cabeçalho de ações (atualizar/salvar) #}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-compact">
+        <h4 class="card-title mb-0">
+            <i class="{{ form_icon|default:'fas fa-file-alt' }}"></i>
+            {{ form_title|default:"Informações" }}
+        </h4>
+        {% if form_subtitle %}
+        <small class="card-subtitle text-muted">{{ form_subtitle }}</small>
+        {% endif %}
+    </div>
+    <div class="card-body card-body-compact">
+        <div class="row g-3">
+            {% for field in form %}
+                {% if field.is_hidden %}
+                    {{ field }}
+                {% else %}
+                    {% with wstr=field.field.widget|stringformat:'s'|lower wtype=field.field.widget.input_type|default:'' %}
+                        {% if 'textarea' in wstr %}
+                            {% include 'core/wizard/wizard_field.html' with field=field field_size='xl' %}
+                        {% elif wtype == 'checkbox' or wtype == 'radio' %}
+                            {% include 'core/wizard/wizard_field.html' with field=field field_size='sm' %}
+                        {% elif 'select' in wstr %}
+                            {% include 'core/wizard/wizard_field.html' with field=field field_size='lg' %}
+                        {% elif wtype == 'number' or wtype == 'date' %}
+                            {% include 'core/wizard/wizard_field.html' with field=field field_size='sm' %}
+                        {% else %}
+                            {% include 'core/wizard/wizard_field.html' with field=field field_size='lg' %}
+                        {% endif %}
+                    {% endwith %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary btn-sm" title="Atualizar" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+        <button type="submit" form="main-form" class="btn btn-primary btn-sm" title="Salvar">
+            <i class="fas fa-save"></i>
+        </button>
+    </div>
+</div>

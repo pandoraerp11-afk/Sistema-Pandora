@@ -1,0 +1,209 @@
+{% extends "pandora_detail_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if fornecedor.pessoajuridica %}
+        {{ fornecedor.pessoajuridica.nome_fantasia|default:fornecedor.pessoajuridica.razao_social }}
+    {% elif fornecedor.pessoafisica %}
+        {{ fornecedor.pessoafisica.nome_completo }}
+    {% else %}
+        {% trans "Fornecedor" %}
+    {% endif %}
+    - {{ block.super }}
+{% endblock %}
+
+{% block page_title %}
+    {% if fornecedor.pessoajuridica %}
+        {{ fornecedor.pessoajuridica.nome_fantasia|default:fornecedor.pessoajuridica.razao_social }}
+    {% elif fornecedor.pessoafisica %}
+        {{ fornecedor.pessoafisica.nome_completo }}
+    {% else %}
+        {% trans "Fornecedor" %}
+    {% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+    {% if fornecedor.pessoajuridica %}
+        {% trans "CNPJ:" %} {{ fornecedor.pessoajuridica.cnpj }}
+    {% elif fornecedor.pessoafisica %}
+        {% trans "CPF:" %} {{ fornecedor.pessoafisica.cpf }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid detail-page">
+    <div class="detail-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    {% if fornecedor.logo %}
+                    <img src="{{ fornecedor.logo.url }}" alt="Logo" class="me-3" style="max-height: 60px;">
+                    {% endif %}
+                    <div>
+                        <h2 class="mb-1">
+                            {% if fornecedor.pessoajuridica %}
+                                {{ fornecedor.pessoajuridica.nome_fantasia|default:fornecedor.pessoajuridica.razao_social }}
+                            {% elif fornecedor.pessoafisica %}
+                                {{ fornecedor.pessoafisica.nome_completo }}
+                            {% endif %}
+                        </h2>
+                        <span class="badge bg-{% if fornecedor.status == 'active' %}success{% else %}secondary{% endif %}">
+                            {{ fornecedor.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="detail-actions">
+                    {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                    <a href="{% url 'fornecedores:fornecedor_wizard_edit' fornecedor.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> {% trans "Editar" %}
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'fornecedores:fornecedor_documents' fornecedor.pk %}" class="btn btn-info">
+                        <i class="fas fa-file-alt"></i> {% trans "Documentos" %}
+                    </a>
+                    <a href="{% url 'documentos:regra_list' 'fornecedores' fornecedor.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-sliders"></i> {% trans "Regras de Documentos" %}
+                    </a>
+                    {% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+                    <a href="{% url 'fornecedores:fornecedor_delete' fornecedor.pk %}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> {% trans "Excluir" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-content">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">{% trans "Informações Básicas" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            {% if fornecedor.pessoajuridica %}
+                            <dt class="col-sm-4">{% trans "Razão Social" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.pessoajuridica.razao_social }}</dd>
+                            <dt class="col-sm-4">{% trans "Nome Fantasia" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.pessoajuridica.nome_fantasia|default:"-" }}</dd>
+                            <dt class="col-sm-4">{% trans "CNPJ" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.pessoajuridica.cnpj }}</dd>
+                            <dt class="col-sm-4">{% trans "Inscrição Estadual" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.pessoajuridica.inscricao_estadual|default:"-" }}</dd>
+                            {% elif fornecedor.pessoafisica %}
+                            <dt class="col-sm-4">{% trans "Nome Completo" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.pessoafisica.nome_completo }}</dd>
+                            <dt class="col-sm-4">{% trans "CPF" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.pessoafisica.cpf }}</dd>
+                            <dt class="col-sm-4">{% trans "RG" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.pessoafisica.rg|default:"-" }}</dd>
+                            {% endif %}
+                            <dt class="col-sm-4">{% trans "Tipo" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.get_tipo_pessoa_display }}</dd>
+                            <dt class="col-sm-4">{% trans "Categoria" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.categoria|default:"-" }}</dd>
+                            <dt class="col-sm-4">{% trans "Tipo de Fornecimento" %}</dt>
+                            <dd class="col-sm-8">{{ fornecedor.get_tipo_fornecimento_display|default:"-" }}</dd>
+                            <dt class="col-sm-4">{% trans "Status de Homologação" %}</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-{% if fornecedor.status_homologacao == 'aprovado' %}success{% elif fornecedor.status_homologacao == 'pendente' %}warning{% else %}danger{% endif %}">
+                                    {{ fornecedor.get_status_homologacao_display }}
+                                </span>
+                            </dd>
+                            {% if fornecedor.avaliacao %}
+                            <dt class="col-sm-4">{% trans "Avaliação" %}</dt>
+                            <dd class="col-sm-8">
+                                {% for i in "12345" %}
+                                    <i class="fas fa-star{% if forloop.counter <= fornecedor.avaliacao %} text-warning{% else %} text-muted{% endif %}"></i>
+                                {% endfor %}
+                                ({{ fornecedor.avaliacao }}/5)
+                            </dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+
+                {% if fornecedor.contatos.exists %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title">{% trans "Contatos" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for contato in fornecedor.contatos.all %}
+                        <div class="contact-item mb-3">
+                            <h6>{{ contato.nome }}</h6>
+                            {% if contato.cargo %}<p class="text-muted mb-1">{{ contato.cargo }}</p>{% endif %}
+                            {% if contato.email %}<p class="mb-1"><i class="fas fa-envelope"></i> {{ contato.email }}</p>{% endif %}
+                            {% if contato.telefone %}<p class="mb-1"><i class="fas fa-phone"></i> {{ contato.telefone }}</p>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                {% if fornecedor.enderecos.exists %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">{% trans "Endereços" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for endereco in fornecedor.enderecos.all %}
+                        <div class="address-item mb-3">
+                            <p class="mb-1">{{ endereco.logradouro }}, {{ endereco.numero }}</p>
+                            {% if endereco.complemento %}<p class="mb-1">{{ endereco.complemento }}</p>{% endif %}
+                            <p class="mb-1">{{ endereco.bairro }}</p>
+                            <p class="mb-1">{{ endereco.cidade }} - {{ endereco.estado }}</p>
+                            <p class="mb-0">{% trans "CEP:" %} {{ endereco.cep }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if fornecedor.dados_bancarios.exists %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title">{% trans "Dados Bancários" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for banco in fornecedor.dados_bancarios.all %}
+                        <div class="bank-item mb-3">
+                            <h6>{{ banco.banco }}</h6>
+                            <p class="mb-1">{% trans "Agência:" %} {{ banco.agencia }}</p>
+                            <p class="mb-1">{% trans "Conta:" %} {{ banco.conta }}</p>
+                            {% if banco.chave_pix %}
+                            <p class="mb-0">{% trans "PIX:" %} {{ banco.chave_pix }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="detail-actions-bottom mt-4 pt-4 border-top">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <a href="{% url 'fornecedores:fornecedores_list' %}" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> {% trans "Voltar para Lista" %}
+                    </a>
+                    {% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+                    <a href="{% url 'fornecedores:fornecedor_wizard_edit' fornecedor.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> {% trans "Editar Fornecedor" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

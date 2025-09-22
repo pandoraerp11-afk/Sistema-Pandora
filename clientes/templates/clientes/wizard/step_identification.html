@@ -1,0 +1,290 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+
+<!-- Bloco de Resumo de Erros -->
+{% if forms.main.errors or forms.pj.errors or forms.pf.errors %}
+    <div class="alert alert-danger wizard-errors-summary" role="alert">
+        <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrija os erros abaixo:</h6>
+        <ul>
+            <!-- Erros não associados a campos específicos -->
+            {% for error in forms.main.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            {% if forms.pj %}{% for error in forms.pj.non_field_errors %}<li>{{ error }}</li>{% endfor %}{% endif %}
+            {% if forms.pf %}{% for error in forms.pf.non_field_errors %}<li>{{ error }}</li>{% endfor %}{% endif %}
+
+            <!-- Erros de campos específicos -->
+            {% for form in forms.values %}
+                {% if form %}
+                    {% for field in form %}
+                        {% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<!-- Debug: Verificação FINAL do problema resolvido -->
+<div class="alert alert-success" style="margin: 20px 0;">
+    <h6>✅ Status dos Formulários:</h6>
+    <ul>
+        {% if debug_forms_info %}
+        {% for form_key, info in debug_forms_info.items %}
+        <li><strong>{{ form_key }}:</strong> {{ info.class_name }} 
+            {% if info.has_email %}
+                - 📧 Label: "{{ info.email_label }}"
+            {% endif %}
+        </li>
+        {% endfor %}
+        {% else %}
+        <li>❌ Debug info não disponível</li>
+        {% endif %}
+    </ul>
+</div>
+
+{% comment %}
+DEBUG INFO:
+- forms disponível: {{ forms|yesno:"SIM,NÃO" }}
+- forms.main disponível: {{ forms.main|yesno:"SIM,NÃO" }}
+- Chaves do forms: {% for key in forms.keys %}{{ key }} {% endfor %}
+{% endcomment %}
+
+<!-- Formulário de Identificação de Cliente -->
+
+    <!-- Tooltip de Identificação Inteligente -->
+    <div class="wizard-smart-icon" 
+         data-bs-toggle="tooltip" 
+         data-bs-placement="top" 
+         title="Identificação de Cliente - Sistema se adapta automaticamente ao tipo de pessoa selecionado">
+        <i class="fas fa-user-plus"></i>
+    </div>
+
+    <!-- Seção 1: Dados Básicos do Cliente -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-id-card wizard-icon"></i>
+            Dados Básicos do Cliente
+        </h5>
+        
+        <div class="row">
+            <!-- Tipo de Pessoa -->
+            {% if forms.main.tipo %}
+            <div class="col-6 col-md-3 mb-2">
+                <div class="compact-field">
+                    <label for="{{ forms.main.tipo.id_for_label }}" class="form-label">
+                        {{ forms.main.tipo.label }}
+                        {% if forms.main.tipo.field.required %}<span class="wizard-required">*</span>{% endif %}
+                    </label>
+                    {{ forms.main.tipo|add_class:"form-select wizard-field" }}
+                    {% if forms.main.tipo.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in forms.main.tipo.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Nome Principal -->
+            {% if forms.main.nome_principal %}
+            <div class="col-12 col-md-6 mb-2">
+                <div class="compact-field">
+                    <label for="{{ forms.main.nome_principal.id_for_label }}" class="form-label">
+                        {{ forms.main.nome_principal.label }}
+                        {% if forms.main.nome_principal.field.required %}<span class="wizard-required">*</span>{% endif %}
+                    </label>
+                    {{ forms.main.nome_principal|add_class:"form-control wizard-field" }}
+                    {% if forms.main.nome_principal.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in forms.main.nome_principal.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Email -->
+            {% if forms.main.email %}
+            <div class="col-12 col-md-3 mb-2">
+                <div class="compact-field">
+                    <label for="{{ forms.main.email.id_for_label }}" class="form-label">
+                        {{ forms.main.email.label }}
+                        {% if forms.main.email.field.required %}<span class="wizard-required">*</span>{% endif %}
+                    </label>
+                    {{ forms.main.email|add_class:"form-control wizard-field" }}
+                    {% if forms.main.email.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in forms.main.email.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Telefone -->
+            {% if forms.main.telefone %}
+            <div class="col-6 col-md-3 mb-2">
+                <div class="compact-field">
+                    <label for="{{ forms.main.telefone.id_for_label }}" class="form-label">
+                        {{ forms.main.telefone.label }}
+                    </label>
+                    {{ forms.main.telefone|add_class:"form-control wizard-field phone-mask" }}
+                    {% if forms.main.telefone.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in forms.main.telefone.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Telefone Secundário -->
+            {% if forms.main.telefone_secundario %}
+            <div class="col-6 col-md-3 mb-2">
+                <div class="compact-field">
+                    <label for="{{ forms.main.telefone_secundario.id_for_label }}" class="form-label">
+                        {{ forms.main.telefone_secundario.label }}
+                    </label>
+                    {{ forms.main.telefone_secundario|add_class:"form-control wizard-field phone-mask" }}
+                    {% if forms.main.telefone_secundario.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in forms.main.telefone_secundario.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Status -->
+            {% if forms.main.status %}
+            <div class="col-6 col-md-3 mb-2">
+                <div class="compact-field">
+                    <label for="{{ forms.main.status.id_for_label }}" class="form-label">
+                        {{ forms.main.status.label }}
+                    </label>
+                    {{ forms.main.status|add_class:"form-select wizard-field" }}
+                    {% if forms.main.status.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in forms.main.status.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Seção Condicional: Pessoa Jurídica -->
+    <div id="wizard-pj-section" class="wizard-section wizard-conditional-section" style="display: none;">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-building wizard-icon"></i>
+            Dados da Pessoa Jurídica
+        </h5>
+        
+        <div class="row">
+            {% for field in forms.pj %}
+                {% include 'core/wizard/wizard_field.html' with field=field %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Seção Condicional: Pessoa Física -->
+    <div id="wizard-pf-section" class="wizard-section wizard-conditional-section" style="display: none;">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-user wizard-icon"></i>
+            Dados da Pessoa Física
+        </h5>
+        
+        <div class="row">
+            {% for field in forms.pf %}
+                {% include 'core/wizard/wizard_field.html' with field=field %}
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Inicializando step_identification.html para CLIENTES...');
+    
+    const tipoSelect = document.getElementById('{{ forms.main.tipo.id_for_label }}');
+    const pjSection = document.getElementById('wizard-pj-section');
+    const pfSection = document.getElementById('wizard-pf-section');
+    
+    console.log('📝 Elementos encontrados:', {
+        tipoSelect: tipoSelect,
+        pjSection: pjSection,
+        pfSection: pfSection,
+        tipoSelectId: '{{ forms.main.tipo.id_for_label }}'
+    });
+    
+    // USAR A FUNÇÃO GLOBAL wizardTogglePersonType do template core
+    // Removida implementação duplicada para evitar conflitos
+    
+    if (tipoSelect) {
+        console.log('✅ Campo tipo encontrado, adicionando eventos...');
+        
+        // Adiciona uma transição suave para as seções condicionais
+        if(pfSection) pfSection.style.transition = 'opacity 0.3s ease-in-out';
+        if(pjSection) pjSection.style.transition = 'opacity 0.3s ease-in-out';
+
+        tipoSelect.addEventListener('change', function() {
+            console.log('📋 Mudança detectada:', this.value);
+            // Usar função global definida no template core
+            if (window.wizardTogglePersonType) {
+                window.wizardTogglePersonType(this.value);
+            }
+        });
+        
+        // Inicialização para garantir que o estado correto seja exibido ao carregar a página
+        const valorInicial = tipoSelect.value;
+        console.log('🔄 Valor inicial do select:', valorInicial);
+        if (window.wizardTogglePersonType) {
+            window.wizardTogglePersonType(valorInicial);
+        }
+    } else {
+        console.error('❌ Campo tipo NÃO encontrado! ID esperado: {{ forms.main.tipo.id_for_label }}');
+    }
+    
+    // Aplicar máscaras de telefone
+    const phoneFields = document.querySelectorAll('.phone-mask');
+    phoneFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            // Máscara para celular (XX) XXXXX-XXXX
+            if (value.length >= 11) {
+                value = '(' + value.substring(0, 2) + ') ' + value.substring(2, 7) + '-' + value.substring(7, 11);
+            } else if (value.length >= 7) {
+                value = '(' + value.substring(0, 2) + ') ' + value.substring(2, 6) + '-' + value.substring(6);
+            } else if (value.length >= 3) {
+                value = '(' + value.substring(0, 2) + ') ' + value.substring(2);
+            }
+            e.target.value = value;
+        });
+    });
+    
+    // Aplicar máscara de CPF
+    const cpfFields = document.querySelectorAll('.cpf-mask');
+    cpfFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.substring(0, 11);
+            e.target.value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        });
+    });
+    
+    // Aplicar máscara de CNPJ
+    const cnpjFields = document.querySelectorAll('.cnpj-mask');
+    cnpjFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.substring(0, 14);
+            e.target.value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+        });
+    });
+});
+</script>
+{% endblock %}

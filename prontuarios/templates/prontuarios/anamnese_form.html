@@ -1,0 +1,46 @@
+{% extends 'pandora_form_ultra_modern.html' %}
+{% load i18n widget_tweaks %}
+{% block title %}{% if form.instance.pk %}{% trans 'Editar Anamnese' %}{% else %}{% trans 'Nova Anamnese' %}{% endif %}{% endblock %}
+{% block form_main %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header"><strong>{% trans 'Dados da Anamnese' %}</strong></div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">{% trans 'Cliente' %}</label>
+              {% render_field form.cliente class='form-select' %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{% trans 'Serviço' %}</label>
+              {% render_field form.servico class='form-select' %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{% trans 'Tipo' %}</label>
+              {% render_field form.tipo_anamnese class='form-select' %}
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">{% trans 'Profissional Responsável' %}</label>
+              {% render_field form.profissional_responsavel class='form-select' %}
+            </div>
+            <div class="col-12">
+              <label class="form-label">{% trans 'Respostas (JSON)' %}</label>
+              {% render_field form.respostas class='form-control' rows='6' %}
+            </div>
+            <div class="col-12">
+              <label class="form-label">{% trans 'Observações do Profissional' %}</label>
+              {% render_field form.observacoes_profissional class='form-control' rows='3' %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+  {% include 'prontuarios/partials/_form_actions.html' with object=form.instance cancel_url=cancel_url|default:'/prontuarios/atendimentos/' show_save_continue=False %}
+    </div>
+  </div>
+</form>
+{% endblock %}

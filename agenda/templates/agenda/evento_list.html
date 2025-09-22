@@ -1,0 +1,334 @@
+{% extends "pandora_list_ultra_modern.html" %}
+
+{% block title %}Lista de Eventos{% endblock %}
+
+{% block content_header %}
+<div class="container-fluid">
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1><i class="fas fa-calendar-alt mr-2"></i>{{ titulo }}</h1>
+        </div>
+        <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Início</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'agenda:agenda_home' %}">Dashboard Agenda</a></li>
+                <li class="breadcrumb-item active">Eventos</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block list_actions %}
+<a href="{% url 'agenda:evento_create' %}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Novo Evento
+</a>
+<a href="{% url 'agenda:agenda_calendar' %}" class="btn btn-info">
+    <i class="fas fa-calendar"></i> Calendário
+</a>
+<a href="{% url 'agenda:agenda_home' %}" class="btn btn-success">
+    <i class="fas fa-tachometer-alt"></i> Dashboard
+</a>
+{% endblock %}
+
+{% block search_form %}
+<div class="card card-outline card-primary collapsed-card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-search mr-1"></i>
+            Busca Avançada
+        </h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body" style="display: none;">
+        <form method="get" action="">
+            <div class="row">
+                <div class="col-md-4">
+                    {{ form_busca.search.label_tag }}
+                    {{ form_busca.search }}
+                </div>
+                <div class="col-md-2">
+                    {{ form_busca.status.label_tag }}
+                    {{ form_busca.status }}
+                </div>
+                <div class="col-md-2">
+                    {{ form_busca.prioridade.label_tag }}
+                    {{ form_busca.prioridade }}
+                </div>
+                <div class="col-md-2">
+                    {{ form_busca.data_inicio.label_tag }}
+                    {{ form_busca.data_inicio }}
+                </div>
+                <div class="col-md-2">
+                    {{ form_busca.data_fim.label_tag }}
+                    {{ form_busca.data_fim }}
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    {{ form_busca.responsavel.label_tag }}
+                    {{ form_busca.responsavel }}
+                </div>
+                <div class="col-md-8 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'agenda:evento_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block statistics_cards %}
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ total_count }}</h3>
+                <p>Total de Eventos</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ eventos_hoje }}</h3>
+                <p>Eventos Hoje</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ eventos_pendentes }}</h3>
+                <p>Eventos Pendentes</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>{{ eventos_realizados }}</h3>
+                <p>Eventos Realizados</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block table_content %}
+<div class="card">
+    <div class="card-body p-0">
+        <form method="post" style="display:none;">
+            {% csrf_token %}
+        </form>
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Evento</th>
+                    <th>Data/Hora</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th>Prioridade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for evento in eventos %}
+                <tr>
+                    <td>
+                        <div>
+                            <strong>{{ evento.titulo }}</strong>
+                            {% if evento.tipo_evento %}
+                                <br><small class="text-muted"><i class="fas fa-tag"></i> {{ evento.get_tipo_evento_display }}</small>
+                            {% endif %}
+                            {% if evento.local %}
+                                <br><small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> {{ evento.local|truncatechars:30 }}
+                                </small>
+                            {% endif %}
+                            {% if evento.descricao %}
+                                <br><small class="text-muted">{{ evento.descricao|truncatechars:50 }}</small>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            {{ evento.data_inicio|date:"d/m/Y" }}
+                            <br><small class="text-muted">{{ evento.data_inicio|date:"H:i" }}</small>
+                            {% if evento.data_fim and not evento.dia_inteiro %}
+                                <br><small class="text-muted">até {{ evento.data_fim|date:"H:i" }}</small>
+                            {% endif %}
+                            {% if evento.dia_inteiro %}
+                                <br><small class="badge badge-info">Dia inteiro</small>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if evento.responsavel %}
+                            {{ evento.responsavel.first_name }} {{ evento.responsavel.last_name }}
+                        {% else %}
+                            <span class="text-muted">Não definido</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if evento.status == 'pendente' %}
+                            <span class="badge bg-warning">Pendente</span>
+                        {% elif evento.status == 'realizado' or evento.status == 'concluido' %}
+                            <span class="badge bg-success">Realizado</span>
+                        {% elif evento.status == 'cancelado' %}
+                            <span class="badge bg-danger">Cancelado</span>
+                        {% elif evento.status == 'confirmado' %}
+                            <span class="badge bg-info">Confirmado</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if evento.prioridade == 'alta' %}
+                            <span class="badge bg-danger">Alta</span>
+                        {% elif evento.prioridade == 'media' %}
+                            <span class="badge bg-warning">Média</span>
+                        {% elif evento.prioridade == 'baixa' %}
+                            <span class="badge bg-success">Baixa</span>
+                        {% elif evento.prioridade == 'urgente' %}
+                            <span class="badge bg-danger">Urgente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'agenda:evento_detail' evento.pk %}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Ver detalhes">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'agenda:evento_update' evento.pk %}" 
+                               class="btn btn-sm btn-outline-warning" 
+                               title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'agenda:evento_delete' evento.pk %}" 
+                               class="btn btn-sm btn-outline-danger" 
+                               title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                        
+                        {% if evento.status == 'pendente' %}
+                        <div class="btn-group mt-1" role="group">
+                            <button class="btn btn-xs btn-success status-btn" 
+                                    data-evento-id="{{ evento.pk }}" 
+                                    data-status="realizado" 
+                                    title="Marcar como realizado">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-xs btn-danger status-btn" 
+                                    data-evento-id="{{ evento.pk }}" 
+                                    data-status="cancelado" 
+                                    title="Marcar como cancelado">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center p-5">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhum evento encontrado</h5>
+                            <p class="text-muted">Comece criando seu primeiro evento.</p>
+                            <a href="{% url 'agenda:evento_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus mr-1"></i>Criar Primeiro Evento
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if is_paginated %}
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ paginator.count }} eventos
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm m-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">&laquo; Primeira</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ page_obj.number }} de {{ paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ paginator.num_pages }}">Última &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+$(document).ready(function() {
+    // Atualização de status via AJAX
+    $('.status-btn').click(function() {
+        var eventoId = $(this).data('evento-id');
+        var novoStatus = $(this).data('status');
+        var btn = $(this);
+        
+        $.post('{% url "agenda:evento_ajax_update_status" 0 %}'.replace('0', eventoId), {
+            'status': novoStatus,
+            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+        })
+        .done(function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        })
+        .fail(function() {
+            alert('Erro ao atualizar status');
+        });
+    });
+});
+</script>
+{% endblock %}

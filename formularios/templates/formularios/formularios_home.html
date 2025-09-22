@@ -1,0 +1,93 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">{% trans "Início" %}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'formularios:formularios_home' %}">{% trans "Módulo Formulários" %}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% trans "Dashboard" %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block dashboard_config %}
+<script>
+    // Configuração específica do dashboard de formularios
+    window.dashboardConfig = {
+        module: 'formularios',
+        apiEndpoint: '{% url "formularios:formularios_home" %}',
+        refreshInterval: 300000, // 5 minutos
+    };
+</script>
+{% endblock %}
+
+{% block dashboard_widgets %}
+<!-- Widget de Métricas Principais -->
+<div class="grid-stack-item" gs-w="12" gs-h="4" gs-id="formularios-metrics">
+    <div class="grid-stack-item-content widget-card">
+        <div class="widget-header">
+            <h5 class="widget-title">
+                <i class="fas fa-chart-line text-primary me-2"></i>
+                {% trans "Dashboard de Formulários" %}
+            </h5>
+            <div class="widget-actions">
+                <button class="widget-action" onclick="dashboardEngine.refreshWidget('formularios-metrics')">
+                    <i class="fas fa-sync"></i>
+                </button>
+            </div>
+        </div>
+        <div class="widget-content">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <div class="metric-card bg-primary">
+                        <div class="metric-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>{% trans "Em Desenvolvimento" %}</h3>
+                            <p>{% trans "Dashboard do módulo Formulários está sendo desenvolvido" %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Widget de Informações -->
+<div class="grid-stack-item" gs-w="12" gs-h="4" gs-id="formularios-info">
+    <div class="grid-stack-item-content widget-card">
+        <div class="widget-header">
+            <h5 class="widget-title">
+                <i class="fas fa-info-circle text-info me-2"></i>
+                {% trans "Informações do Módulo" %}
+            </h5>
+        </div>
+        <div class="widget-content">
+            <div class="alert alert-info">
+                <h5>{% trans "Módulo Formulários" %}</h5>
+                <p>{% trans "Este é o dashboard principal do módulo Formulários. Aqui você encontrará as principais métricas e informações relevantes para este módulo." %}</p>
+                <hr>
+                <p class="mb-0">{% trans "Em breve, este dashboard será expandido com widgets específicos e funcionalidades avançadas." %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block dashboard_scripts %}
+<script>
+function initializeFormulariosDashboard() {
+    console.log('Inicializando dashboard de formularios...');
+    // Funcionalidades específicas do dashboard serão adicionadas aqui
+}
+
+// Inicializar quando o documento estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFormulariosDashboard();
+});
+</script>
+{% endblock %}

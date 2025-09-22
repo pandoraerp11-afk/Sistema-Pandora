@@ -1,0 +1,38 @@
+<div id="setup-preview-list" class="small" v-cloak>
+  <ul class="list-unstyled mb-2">
+    <li class="d-flex align-items-center mb-1">
+      <span class="flex-grow-1">Categorias</span>
+      <span class="badge bg-secondary me-1" v-if="cats.length">[[ cats.length ]]</span>
+      <span class="badge bg-danger" v-if="cats.some(c=>c.errors)">Erros</span>
+    </li>
+    <li class="d-flex align-items-center mb-1">
+      <span class="flex-grow-1">Tipos</span>
+      <span class="badge bg-secondary me-1" v-if="tipos.length">[[ tipos.length ]]</span>
+      <span class="badge bg-danger" v-if="tipos.some(t=>t.errors)">Erros</span>
+    </li>
+    <li class="d-flex align-items-center mb-1">
+      <span class="flex-grow-1">Regras</span>
+      <span class="badge bg-secondary me-1" v-if="regras.length">[[ regras.length ]]</span>
+      <span class="badge bg-danger" v-if="regras.some(r=>r.errors)">Erros</span>
+    </li>
+  </ul>
+  <div class="progress mb-2" style="height:6px;" v-if="totalCount()>0">
+    <div class="progress-bar bg-primary" role="progressbar" :style="'width:'+ completionPercent()+'%'"></div>
+  </div>
+  <small class="text-muted" v-if="totalCount()==0">Nenhum item ainda.</small>
+  <small class="text-muted" v-else>[[ totalCount() ]] itens preparados.</small>
+</div>
+<script>
+// Anexa helpers ao app principal após montagem
+(function(){
+  function attach(){
+    if(!window.__setupInteligenteApp) { return setTimeout(attach,150); }
+    const app = window.__setupInteligenteApp;
+    if(app._context && !app.config.globalProperties.totalCount){
+      app.config.globalProperties.totalCount = function(){ return this.cats.length + this.tipos.length + this.regras.length; };
+      app.config.globalProperties.completionPercent = function(){ const max = Math.min(this.totalCount(), 30); return (max/30*100).toFixed(0); };
+    }
+  }
+  attach();
+})();
+</script>

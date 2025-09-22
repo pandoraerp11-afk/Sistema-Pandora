@@ -1,0 +1,44 @@
+{% extends 'pandora_home_ultra_modern.html' %}
+{% load core_tags %}
+{% block home_title %}Perfis Clínicos{% endblock %}
+{% block home_subtitle %}Extensão clínica dos clientes (PF){% endblock %}
+{% block home_actions %}
+{% if is_module_enabled 'prontuarios' %}
+<a href="{% url 'prontuarios:perfils_clinicos_create' %}" class="btn btn-primary">Novo Perfil Clínico</a>
+{% endif %}
+{% endblock %}
+{% block home_content %}
+<table class="table table-striped table-sm align-middle">
+  <thead>
+    <tr>
+      <th>Cliente</th>
+      <th>Tipo Sanguíneo</th>
+      <th>Fototipo</th>
+      <th>Alergias</th>
+      <th>Ativo</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for perfil in perfis %}
+    <tr>
+      <td>{{ perfil.cliente.nome_display }}</td>
+      <td>{{ perfil.tipo_sanguineo|default:'-' }}</td>
+      <td>{{ perfil.fototipo|default:'-' }}</td>
+      <td>{% if perfil.alergias %}✔{% else %}-{% endif %}</td>
+      <td>{% if perfil.ativo %}<span class="badge bg-success">Ativo</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</td>
+      <td class="text-end">
+        {% if is_module_enabled 'prontuarios' %}
+        <div class="btn-group btn-group-sm">
+          <a href="{% url 'prontuarios:perfils_clinicos_detail' perfil.pk %}" class="btn btn-outline-primary">Ver</a>
+          <a href="{% url 'prontuarios:perfils_clinicos_update' perfil.pk %}" class="btn btn-outline-secondary">Editar</a>
+        </div>
+        {% else %}-{% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-center text-muted">Nenhum perfil clínico ainda.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

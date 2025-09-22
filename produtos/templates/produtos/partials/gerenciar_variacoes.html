@@ -1,0 +1,42 @@
+<div class="card">
+    <div class="card-header"><h5 class="card-title">Adicionar Nova Variação</h5></div>
+    <div class="card-body">
+        <form action="{% url 'produtos:produto_variacao_add' produto_id=object.pk %}" method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="form-group col-md-4">{{ variacao_form.nome.label_tag }}{{ variacao_form.nome }}</div>
+                <div class="form-group col-md-4">{{ variacao_form.preco_adicional.label_tag }}{{ variacao_form.preco_adicional }}</div>
+                <div class="form-group col-md-2">{{ variacao_form.estoque.label_tag }}{{ variacao_form.estoque }}</div>
+                 <div class="form-group col-md-2 align-self-center"><div class="form-check">{{ variacao_form.ativo }} {{ variacao_form.ativo.label_tag }}</div></div>
+            </div>
+            <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Adicionar Variação</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header"><h5 class="card-title">Variações Existentes</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead><tr><th>Nome</th><th>Preço Adicional</th><th>Estoque</th><th>Ativo</th><th>Ações</th></tr></thead>
+            <tbody>
+                {% for variacao in variacoes_existentes %}
+                <tr>
+                    <td>{{ variacao.nome }}</td>
+                    <td>R$ {{ variacao.preco_adicional|stringformat:".2f" }}</td>
+                    <td>{{ variacao.estoque }}</td>
+                    <td>{% if variacao.ativo %}<span class="badge badge-success">Sim</span>{% else %}<span class="badge badge-danger">Não</span>{% endif %}</td>
+                    <td>
+                        <form action="{% url 'produtos:produto_variacao_delete' variacao.pk %}" method="post" onsubmit="return confirmarExclusao(this);">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-xs"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">Nenhuma variação cadastrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

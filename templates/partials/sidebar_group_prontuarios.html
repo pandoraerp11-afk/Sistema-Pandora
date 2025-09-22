@@ -1,0 +1,19 @@
+{% load i18n %}
+<li class="nav-item has-treeview {% if request.path|startswith:'/prontuarios/' %}menu-open{% endif %}">
+  <a href="#" class="nav-link {% if request.path|startswith:'/prontuarios/' %}active{% endif %}">
+    <i class="nav-icon fas fa-heart-pulse"></i>
+    <p>Saúde / Prontuários<i class="right fas fa-angle-left"></i>
+      {% if saude_atendimentos_hoje %}<span class="badge bg-success ms-2">{{ saude_atendimentos_hoje }}</span>{% endif %}
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item"><a href="{% url 'prontuarios:home' %}" class="nav-link {% if request.path == '/prontuarios/' or request.path == '/prontuarios/home/' %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Visão Geral' %}</p></a></li>
+    <li class="nav-item"><a href="{% url 'prontuarios:atendimentos_list' %}" class="nav-link {% if '/prontuarios/atendimentos/' in request.path %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Atendimentos' %}</p></a></li>
+    <li class="nav-item"><a href="{% url 'prontuarios:slots_list' %}" class="nav-link {% if '/prontuarios/slots/' in request.path %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Agenda & Slots' %}{% if saude_slots_futuros_livres %}<span class="badge bg-info ms-2">{{ saude_slots_futuros_livres }}</span>{% endif %}</p></a></li>
+  <li class="nav-item"><a href="{% url 'servicos:servico_list' %}" class="nav-link {% if '/servicos/' in request.path %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Serviços Clínicos' %}</p></a></li>
+    <li class="nav-item"><a href="{% url 'prontuarios:anamneses_list' %}" class="nav-link {% if '/prontuarios/anamneses/' in request.path %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Anamneses' %}</p></a></li>
+    <li class="nav-item"><a href="{% url 'prontuarios:perfils_clinicos_list' %}" class="nav-link {% if '/prontuarios/perfis-clinicos/' in request.path %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Perfis Clínicos' %}</p></a></li>
+    <li class="nav-item"><a href="{% url 'prontuarios:fotos_evolucao_list' %}" class="nav-link {% if '/prontuarios/fotos-evolucao/' in request.path %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Fotos Evolução' %}</p></a></li>
+    <li class="nav-item"><a href="{% url 'prontuarios:disponibilidades_list' %}" class="nav-link {% if '/prontuarios/disponibilidades/' in request.path %}active{% endif %}"><i class="far fa-circle nav-icon"></i><p>{% trans 'Disponibilidades' %}</p></a></li>
+  </ul>
+</li>

@@ -1,0 +1,289 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Detalhes da Conta a Pagar - {{ conta.descricao }}{% endblock %}
+
+{% block page_title %}Detalhes da Conta a Pagar{% endblock %}
+{% block page_subtitle %}{{ conta.descricao }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:financeiro_list' %}">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'financeiro:conta_pagar_list' %}">Contas a Pagar</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ conta.descricao }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="page-actions">
+    <a href="{% url 'financeiro:conta_pagar_edit' conta.pk %}" 
+       class="btn btn-primary btn-modern">
+        <i class="fas fa-pencil-alt"></i>
+        Editar
+    </a>
+    {% if conta.status == 'pendente' %}
+    <a href="{% url 'financeiro:conta_pagar_pagar' conta.pk %}" 
+       class="btn btn-success btn-modern">
+        <i class="fas fa-check-circle"></i>
+        Marcar como Paga
+    </a>
+    {% endif %}
+    <a href="{% url 'financeiro:conta_pagar_delete' conta.pk %}" 
+       class="btn btn-danger btn-modern">
+        <i class="fas fa-trash"></i>
+        Excluir
+    </a>
+    <a href="{% url 'financeiro:conta_pagar_list' %}" 
+       class="btn btn-outline-secondary btn-modern">
+        <i class="fas fa-arrow-left"></i>
+        Voltar
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 col-md-12">
+        <div class="card card-modern">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-receipt me-2"></i>
+                    Informações da Conta a Pagar
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Descrição</label>
+                        <p class="form-control-plaintext fw-medium">{{ conta.descricao }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Fornecedor</label>
+                        <p class="form-control-plaintext">
+                            <a href="{{ conta.fornecedor.get_absolute_url }}" class="text-primary text-decoration-none">
+                                {{ conta.fornecedor }}
+                            </a>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Valor</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge bg-danger fs-6">
+                                R$ {{ conta.valor|floatformat:2 }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Data de Vencimento</label>
+                        <p class="form-control-plaintext">
+                            {{ conta.data_vencimento|date:"d/m/Y" }}
+                            {% if conta.status == 'pendente' %}
+                                {% now "Y-m-d" as today %}
+                                {% if conta.data_vencimento|date:"Y-m-d" < today %}
+                                    <span class="badge bg-danger ms-2">Vencida</span>
+                                {% elif conta.data_vencimento|date:"Y-m-d" == today %}
+                                    <span class="badge bg-warning ms-2">Vence Hoje</span>
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Data de Pagamento</label>
+                        <p class="form-control-plaintext">
+                            {% if conta.data_pagamento %}
+                                {{ conta.data_pagamento|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted">Não pago</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Status</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge 
+                                {% if conta.status == 'pago' %}bg-success
+                                {% elif conta.status == 'pendente' %}bg-warning
+                                {% else %}bg-danger{% endif %}">
+                                {{ conta.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    {% if conta.observacoes %}
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Observações</label>
+                        <p class="form-control-plaintext">{{ conta.observacoes|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if conta.status == 'pendente' %}
+        <div class="card card-modern mt-3 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Conta Pendente
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Esta conta ainda está pendente de pagamento.</p>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'financeiro:conta_pagar_pagar' conta.pk %}" 
+                       class="btn btn-success btn-modern">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Marcar como Paga
+                    </a>
+                    <a href="{% url 'financeiro:conta_pagar_edit' conta.pk %}" 
+                       class="btn btn-outline-primary btn-modern">
+                        <i class="fas fa-pencil-alt me-1"></i>
+                        Editar Conta
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-lg-4 col-md-12">
+        <div class="card card-modern">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informações do Sistema
+                </h5>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">ID:</span>
+                        <span class="fw-medium">#{{ conta.pk }}</span>
+                    </div>
+                    {% if conta.criado_em %}
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Criado em:</span>
+                        <span class="fw-medium">{{ conta.criado_em|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if conta.atualizado_em %}
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Atualizado em:</span>
+                        <span class="fw-medium">{{ conta.atualizado_em|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card card-modern mt-3">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-building me-2"></i>
+                    Dados do Fornecedor
+                </h5>
+                <div class="d-flex flex-column gap-2">
+                    <div>
+                        <span class="text-muted d-block">Nome:</span>
+                        <span class="fw-medium">{{ conta.fornecedor.nome }}</span>
+                    </div>
+                    {% if conta.fornecedor.cnpj %}
+                    <div>
+                        <span class="text-muted d-block">CNPJ:</span>
+                        <span class="fw-medium">{{ conta.fornecedor.cnpj }}</span>
+                    </div>
+                    {% endif %}
+                    {% if conta.fornecedor.telefone %}
+                    <div>
+                        <span class="text-muted d-block">Telefone:</span>
+                        <span class="fw-medium">{{ conta.fornecedor.telefone }}</span>
+                    </div>
+                    {% endif %}
+                    {% if conta.fornecedor.email %}
+                    <div>
+                        <span class="text-muted d-block">E-mail:</span>
+                        <a href="mailto:{{ conta.fornecedor.email }}" 
+                           class="text-primary text-decoration-none fw-medium">
+                            {{ conta.fornecedor.email }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card card-modern mt-3">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="fas fa-cog me-2"></i>
+                    Ações Rápidas
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'financeiro:conta_pagar_edit' conta.pk %}" 
+                       class="btn btn-outline-primary btn-modern">
+                        <i class="fas fa-pencil-alt me-1"></i>
+                        Editar Conta
+                    </a>
+                    <a href="{% url 'financeiro:conta_pagar_add' %}" 
+                       class="btn btn-outline-success btn-modern">
+                        <i class="fas fa-plus-lg me-1"></i>
+                        Nova Conta a Pagar
+                    </a>
+                    <a href="{% url 'financeiro:conta_pagar_list' %}" 
+                       class="btn btn-outline-secondary btn-modern">
+                        <i class="fas fa-bars me-1"></i>
+                        Listar Todas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card-modern {
+    border: none;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.card-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 25px rgba(0,0,0,0.15);
+}
+
+.form-control-plaintext {
+    padding: 0.375rem 0;
+    margin-bottom: 0;
+    line-height: 1.5;
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.btn-modern {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.text-decoration-none:hover {
+    text-decoration: underline !important;
+}
+</style>
+{% endblock %}

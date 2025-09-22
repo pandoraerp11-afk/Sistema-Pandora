@@ -1,0 +1,745 @@
+{% load widget_tweaks %}
+
+<!-- Modal para Transferência de Estoque -->
+<div class="modal fade" id="modalTransferencia" tabindex="-1" aria-labelledby="modalTransferenciaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalTransferenciaLabel">
+                    <i class="fas fa-exchange-alt me-2"></i>Nova Transferência de Estoque
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="formTransferencia" data-url="{% url 'estoque:movimento_transferencia' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Tipo de Transferência -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="id_tipo_transferencia" class="form-label">
+                                <i class="fas fa-list me-1"></i>Tipo de Transferência *
+                            </label>
+                            <select name="tipo_transferencia" id="id_tipo_transferencia" class="form-select" required>
+                                <option value="">Selecione o tipo...</option>
+                                <option value="REPOSICAO">Reposição de Estoque</option>
+                                <option value="BALANCEAMENTO">Balanceamento entre Depósitos</option>
+                                <option value="REORGANIZACAO">Reorganização Interna</option>
+                                <option value="EMERGENCIAL">Transferência Emergencial</option>
+                                <option value="MANUTENCAO">Manutenção de Depósito</option>
+                                <option value="OTIMIZACAO">Otimização de Espaço</option>
+                                <option value="OUTRO">Outro Motivo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="id_prioridade_transf" class="form-label">
+                                <i class="fas fa-flag me-1"></i>Prioridade
+                            </label>
+                            <select name="prioridade" id="id_prioridade_transf" class="form-select">
+                                <option value="NORMAL">Normal</option>
+                                <option value="ALTA">Alta</option>
+                                <option value="URGENTE">Urgente</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="id_modalidade" class="form-label">
+                                <i class="fas fa-truck me-1"></i>Modalidade
+                            </label>
+                            <select name="modalidade" id="id_modalidade" class="form-select">
+                                <option value="IMEDIATA">Imediata</option>
+                                <option value="AGENDADA">Agendada</option>
+                                <option value="FRACIONADA">Fracionada</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Depósitos Origem e Destino -->
+                    <div class="card border-primary mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-route me-1"></i>Rota de Transferência
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <label for="id_deposito_origem" class="form-label">
+                                        <i class="fas fa-warehouse me-1"></i>Depósito Origem *
+                                    </label>
+                                    <select name="deposito_origem" id="id_deposito_origem" class="form-select" required>
+                                        <option value="">Selecione o depósito origem...</option>
+                                        {% for deposito in depositos %}
+                                            <option value="{{ deposito.id }}" data-endereco="{{ deposito.endereco_completo }}">
+                                                {{ deposito.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small id="endereco-origem" class="form-text text-muted"></small>
+                                </div>
+                                
+                                <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                            onclick="inverterDepositos()" title="Inverter origem e destino">
+                                        <i class="fas fa-exchange-alt fa-2x"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="col-md-5">
+                                    <label for="id_deposito_destino" class="form-label">
+                                        <i class="fas fa-warehouse me-1"></i>Depósito Destino *
+                                    </label>
+                                    <select name="deposito_destino" id="id_deposito_destino" class="form-select" required>
+                                        <option value="">Selecione o depósito destino...</option>
+                                        {% for deposito in depositos %}
+                                            <option value="{{ deposito.id }}" data-endereco="{{ deposito.endereco_completo }}">
+                                                {{ deposito.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small id="endereco-destino" class="form-text text-muted"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de Produtos para Transferência -->
+                    <div class="card border-secondary mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-boxes me-1"></i>Produtos para Transferência
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success" onclick="adicionarProduto()">
+                                <i class="fas fa-plus me-1"></i>Adicionar Produto
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="lista-produtos">
+                                <!-- Produtos serão adicionados dinamicamente -->
+                            </div>
+                            
+                            <div id="produto-template" style="display: none;">
+                                <div class="produto-item border rounded p-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Produto *</label>
+                                            <select name="produtos[{{index}}][produto_id]" class="form-select produto-select-transf" required>
+                                                <option value="">Selecione um produto...</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-2">
+                                            <label class="form-label">Quantidade *</label>
+                                            <input type="number" name="produtos[{{index}}][quantidade]" 
+                                                   class="form-control quantidade-transf" min="0.01" step="0.01" required>
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <label class="form-label">Lote</label>
+                                            <select name="produtos[{{index}}][lote_id]" class="form-select lote-select">
+                                                <option value="">Selecionar lote...</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removerProduto(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Informações do produto selecionado -->
+                                    <div class="produto-info-transf mt-3" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="info-produto">
+                                                    <strong class="nome-produto"></strong>
+                                                    <br><small class="codigo-produto text-muted"></small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="estoque-info">
+                                                    <div class="row text-center">
+                                                        <div class="col-6">
+                                                            <div class="fw-semibold text-primary">Origem</div>
+                                                            <div class="estoque-origem fs-5">0</div>
+                                                            <small class="unidade-produto text-muted">UN</small>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <div class="fw-semibold text-success">Destino</div>
+                                                            <div class="estoque-destino fs-5">0</div>
+                                                            <small class="unidade-produto text-muted">UN</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="alerta-estoque-transf mt-2" style="display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informações Adicionais -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_responsavel_transf" class="form-label">
+                                <i class="fas fa-user-tie me-1"></i>Responsável pela Transferência *
+                            </label>
+                            <input type="text" name="responsavel_nome" id="id_responsavel_transf" class="form-control" 
+                                   required value="{{ request.user.get_full_name }}" 
+                                   placeholder="Nome do responsável">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="id_transportador" class="form-label">
+                                <i class="fas fa-truck me-1"></i>Transportador
+                            </label>
+                            <input type="text" name="transportador" id="id_transportador" class="form-control" 
+                                   placeholder="Empresa ou pessoa responsável pelo transporte">
+                        </div>
+                    </div>
+                    
+                    <!-- Agendamento (se modalidade agendada) -->
+                    <div id="secao-agendamento" class="card border-warning mb-3" style="display: none;">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-calendar-alt me-1"></i>Agendamento da Transferência
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="id_data_agendada_transf" class="form-label">
+                                        Data e Hora *
+                                    </label>
+                                    <input type="datetime-local" name="data_agendada" id="id_data_agendada_transf" 
+                                           class="form-control">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="id_prazo_execucao" class="form-label">
+                                        Prazo para Execução
+                                    </label>
+                                    <input type="datetime-local" name="prazo_execucao" id="id_prazo_execucao" 
+                                           class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Motivo e Observações -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="id_motivo_transf" class="form-label">
+                                <i class="fas fa-comment-alt me-1"></i>Motivo da Transferência *
+                            </label>
+                            <textarea name="motivo" id="id_motivo_transf" class="form-control" rows="2" required
+                                    placeholder="Descreva o motivo da transferência..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="id_observacoes_transf" class="form-label">
+                                <i class="fas fa-sticky-note me-1"></i>Observações e Instruções Especiais
+                            </label>
+                            <textarea name="observacoes" id="id_observacoes_transf" class="form-control" 
+                                    rows="3" placeholder="Instruções especiais, cuidados no transporte, etc..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumo da Transferência -->
+                    <div id="resumo-transferencia" class="card border-info mb-3" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <i class="fas fa-clipboard-list me-1"></i>Resumo da Transferência
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Total de Produtos: <span id="total-produtos">0</span></h6>
+                                    <h6>Total de Itens: <span id="total-itens">0</span></h6>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Valor Total Estimado: R$ <span id="valor-total-transf">0,00</span></h6>
+                                    <h6>Status: <span id="status-transferencia" class="badge bg-secondary">Rascunho</span></h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                
+                <div class="btn-group">
+                    <button type="button" class="btn btn-warning" onclick="processarTransferencia('rascunho')">
+                        <i class="fas fa-save me-1"></i>Salvar Rascunho
+                    </button>
+                    
+                    <button type="button" class="btn btn-info" onclick="processarTransferencia('agendar')" 
+                            id="btn-agendar" style="display: none;">
+                        <i class="fas fa-calendar-plus me-1"></i>Agendar
+                    </button>
+                    
+                    <button type="button" class="btn btn-info" onclick="processarTransferencia('processar')">
+                        <i class="fas fa-check me-1"></i>Processar Transferência
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.produto-item {
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.produto-item:hover {
+    background: #e9ecef;
+}
+
+.produto-info-transf {
+    background: white;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.estoque-info {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.produto-item.erro {
+    border-color: #dc3545 !important;
+    background-color: #f8d7da !important;
+}
+
+.rota-transferencia {
+    position: relative;
+}
+
+.rota-transferencia::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, #0d6efd 0%, #20c997 100%);
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.btn-inverter {
+    z-index: 2;
+    background: white;
+    border: 2px solid #0d6efd;
+}
+
+.modalidade-urgente {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+}
+</style>
+
+<script>
+let contadorProdutos = 0;
+let produtosSelecionados = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Eventos de mudança nos depósitos
+    $('#id_deposito_origem, #id_deposito_destino').on('change', function() {
+        const origem = $('#id_deposito_origem option:selected');
+        const destino = $('#id_deposito_destino option:selected');
+        
+        $('#endereco-origem').text(origem.data('endereco') || '');
+        $('#endereco-destino').text(destino.data('endereco') || '');
+        
+        // Atualizar informações de estoque dos produtos
+        atualizarEstoqueProdutos();
+        validarDepositos();
+    });
+    
+    // Mudança na modalidade
+    $('#id_modalidade').on('change', function() {
+        if (this.value === 'AGENDADA') {
+            $('#secao-agendamento').show();
+            $('#btn-agendar').show();
+            definirDataMinima();
+        } else {
+            $('#secao-agendamento').hide();
+            $('#btn-agendar').hide();
+        }
+        
+        if (this.value === 'FRACIONADA') {
+            mostrarInfoModalidadeFracionada();
+        }
+    });
+    
+    // Adicionar primeiro produto automaticamente
+    adicionarProduto();
+});
+
+function adicionarProduto() {
+    const template = document.getElementById('produto-template').innerHTML;
+    const html = template.replace(/{{index}}/g, contadorProdutos);
+    
+    document.getElementById('lista-produtos').insertAdjacentHTML('beforeend', html);
+    
+    // Inicializar Select2 para o novo produto
+    const novoSelect = $(`[name="produtos[${contadorProdutos}][produto_id]"]`);
+    novoSelect.select2({
+        dropdownParent: $('#modalTransferencia'),
+        ajax: {
+            url: '{% url "estoque:api_produtos_search" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    search: params.term,
+                    page: params.page,
+                    excluir_ids: produtosSelecionados
+                };
+            },
+            processResults: function (data, params) {
+                return {
+                    results: data.results.map(item => ({
+                        id: item.id,
+                        text: `${item.nome} (${item.codigo || 'S/C'})`,
+                        produto: item
+                    }))
+                };
+            }
+        },
+        placeholder: 'Selecione um produto...',
+        minimumInputLength: 2
+    });
+    
+    // Event listeners para o novo produto
+    novoSelect.on('select2:select', function (e) {
+        const produto = e.params.data.produto;
+        const index = this.name.match(/\[(\d+)\]/)[1];
+        
+        mostrarInfoProdutoTransferencia(produto, index);
+        carregarLotesTransferencia(produto.id, index);
+        produtosSelecionados.push(produto.id);
+        atualizarResumo();
+    });
+    
+    // Event listener para quantidade
+    $(`[name="produtos[${contadorProdutos}][quantidade]"]`).on('input', function() {
+        const index = this.name.match(/\[(\d+)\]/)[1];
+        validarQuantidadeTransferencia(index);
+        atualizarResumo();
+    });
+    
+    contadorProdutos++;
+}
+
+function removerProduto(btn) {
+    const produtoItem = btn.closest('.produto-item');
+    const select = produtoItem.querySelector('.produto-select-transf');
+    
+    if (select.value) {
+        const index = produtosSelecionados.indexOf(parseInt(select.value));
+        if (index > -1) {
+            produtosSelecionados.splice(index, 1);
+        }
+    }
+    
+    produtoItem.remove();
+    atualizarResumo();
+    
+    // Se não há produtos, adicionar um novo
+    if (document.querySelectorAll('.produto-item').length === 0) {
+        adicionarProduto();
+    }
+}
+
+function mostrarInfoProdutoTransferencia(produto, index) {
+    const container = document.querySelector(`[name="produtos[${index}][produto_id]"]`).closest('.produto-item');
+    const infoDiv = container.querySelector('.produto-info-transf');
+    
+    infoDiv.querySelector('.nome-produto').textContent = produto.nome;
+    infoDiv.querySelector('.codigo-produto').textContent = produto.codigo || 'Sem código';
+    infoDiv.querySelector('.unidade-produto').textContent = produto.unidade_medida || 'UN';
+    
+    infoDiv.style.display = 'block';
+    
+    // Buscar estoque nos depósitos
+    buscarEstoqueDepositos(produto.id, index);
+}
+
+function carregarLotesTransferencia(produtoId, index) {
+    const loteSelect = document.querySelector(`[name="produtos[${index}][lote_id]"]`);
+    
+    fetch(`{% url 'estoque:api_lotes_produto' 0 %}`.replace('0', produtoId))
+        .then(response => response.json())
+        .then(data => {
+            loteSelect.innerHTML = '<option value="">Todos os lotes</option>';
+            
+            if (data.results && data.results.length > 0) {
+                data.results.forEach(lote => {
+                    const option = new Option(
+                        `${lote.codigo} (Qtd: ${lote.quantidade_disponivel})`,
+                        lote.id
+                    );
+                    loteSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar lotes:', error);
+        });
+}
+
+function buscarEstoqueDepositos(produtoId, index) {
+    const depositoOrigem = $('#id_deposito_origem').val();
+    const depositoDestino = $('#id_deposito_destino').val();
+    
+    if (!depositoOrigem || !depositoDestino) return;
+    
+    const container = document.querySelector(`[name="produtos[${index}][produto_id]"]`).closest('.produto-item');
+    const estoqueOrigemEl = container.querySelector('.estoque-origem');
+    const estoqueDestinoEl = container.querySelector('.estoque-destino');
+    
+    // Buscar estoque origem
+    fetch(`{% url 'estoque:api_estoque_produto_deposito' 0 0 %}`.replace(/0/g, `${produtoId}/${depositoOrigem}`))
+        .then(response => response.json())
+        .then(data => {
+            estoqueOrigemEl.textContent = data.estoque_disponivel || 0;
+        });
+    
+    // Buscar estoque destino
+    fetch(`{% url 'estoque:api_estoque_produto_deposito' 0 0 %}`.replace(/0/g, `${produtoId}/${depositoDestino}`))
+        .then(response => response.json())
+        .then(data => {
+            estoqueDestinoEl.textContent = data.estoque_disponivel || 0;
+        });
+}
+
+function validarQuantidadeTransferencia(index) {
+    const container = document.querySelector(`[name="produtos[${index}][produto_id]"]`).closest('.produto-item');
+    const quantidadeInput = container.querySelector('.quantidade-transf');
+    const estoqueOrigem = parseInt(container.querySelector('.estoque-origem').textContent) || 0;
+    const alertaEl = container.querySelector('.alerta-estoque-transf');
+    
+    const quantidade = parseFloat(quantidadeInput.value) || 0;
+    
+    if (quantidade > estoqueOrigem) {
+        quantidadeInput.classList.add('is-invalid');
+        container.classList.add('erro');
+        
+        alertaEl.innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Quantidade superior ao estoque disponível no depósito origem (${estoqueOrigem})
+            </div>
+        `;
+        alertaEl.style.display = 'block';
+        return false;
+    } else {
+        quantidadeInput.classList.remove('is-invalid');
+        container.classList.remove('erro');
+        alertaEl.style.display = 'none';
+        return true;
+    }
+}
+
+function atualizarEstoqueProdutos() {
+    document.querySelectorAll('.produto-item').forEach((container, index) => {
+        const select = container.querySelector('.produto-select-transf');
+        if (select.value) {
+            buscarEstoqueDepositos(select.value, index);
+        }
+    });
+}
+
+function validarDepositos() {
+    const origem = $('#id_deposito_origem').val();
+    const destino = $('#id_deposito_destino').val();
+    
+    if (origem && destino && origem === destino) {
+        alert('Depósito origem e destino não podem ser iguais!');
+        $('#id_deposito_destino').val('').trigger('change');
+        return false;
+    }
+    return true;
+}
+
+function inverterDepositos() {
+    const origem = $('#id_deposito_origem').val();
+    const destino = $('#id_deposito_destino').val();
+    
+    $('#id_deposito_origem').val(destino).trigger('change');
+    $('#id_deposito_destino').val(origem).trigger('change');
+}
+
+function atualizarResumo() {
+    const produtos = document.querySelectorAll('.produto-item');
+    let totalProdutos = 0;
+    let totalItens = 0;
+    let valorTotal = 0;
+    
+    produtos.forEach(container => {
+        const select = container.querySelector('.produto-select-transf');
+        const quantidadeInput = container.querySelector('.quantidade-transf');
+        
+        if (select.value && quantidadeInput.value) {
+            totalProdutos++;
+            totalItens += parseFloat(quantidadeInput.value) || 0;
+            // Valor seria calculado com base no custo médio
+        }
+    });
+    
+    $('#total-produtos').text(totalProdutos);
+    $('#total-itens').text(totalItens.toFixed(0));
+    $('#valor-total-transf').text('0,00'); // Implementar cálculo real
+    
+    if (totalProdutos > 0) {
+        $('#resumo-transferencia').show();
+    } else {
+        $('#resumo-transferencia').hide();
+    }
+}
+
+function definirDataMinima() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    $('#id_data_agendada_transf').attr('min', now.toISOString().slice(0, 16));
+    
+    // Prazo padrão: 24 horas após agendamento
+    const prazo = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    $('#id_prazo_execucao').attr('min', now.toISOString().slice(0, 16));
+}
+
+function processarTransferencia(acao) {
+    const form = $('#formTransferencia');
+    const formData = new FormData(form[0]);
+    
+    // Validações
+    if (!validarFormularioTransferencia()) {
+        return;
+    }
+    
+    formData.append('acao', acao);
+    
+    // Mostrar loading
+    mostrarLoadingTransferencia();
+    
+    fetch(form.data('url'), {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        esconderLoadingTransferencia();
+        
+        if (data.success) {
+            $('#modalTransferencia').modal('hide');
+            mostrarMensagem('success', data.message);
+            
+            if (typeof recarregarMovimentos === 'function') {
+                recarregarMovimentos();
+            }
+            
+            limparFormularioTransferencia();
+        } else {
+            mostrarMensagem('error', data.message || 'Erro ao processar transferência');
+        }
+    })
+    .catch(error => {
+        esconderLoadingTransferencia();
+        console.error('Erro:', error);
+        mostrarMensagem('error', 'Erro interno do sistema');
+    });
+}
+
+function validarFormularioTransferencia() {
+    const form = document.getElementById('formTransferencia');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+    }
+    
+    // Validar se há pelo menos um produto
+    const produtos = document.querySelectorAll('.produto-item .produto-select-transf');
+    let temProdutoValido = false;
+    
+    produtos.forEach(select => {
+        if (select.value) {
+            temProdutoValido = true;
+        }
+    });
+    
+    if (!temProdutoValido) {
+        alert('Adicione pelo menos um produto para transferência');
+        return false;
+    }
+    
+    // Validar depósitos diferentes
+    if (!validarDepositos()) {
+        return false;
+    }
+    
+    // Validar quantidades
+    let quantidadesValidas = true;
+    document.querySelectorAll('.produto-item').forEach((container, index) => {
+        if (!validarQuantidadeTransferencia(index)) {
+            quantidadesValidas = false;
+        }
+    });
+    
+    if (!quantidadesValidas) {
+        alert('Corrija as quantidades inválidas antes de continuar');
+        return false;
+    }
+    
+    return true;
+}
+
+function mostrarLoadingTransferencia() {
+    $('.modal-content').append(`
+        <div class="loading-overlay">
+            <div class="spinner-border text-info" role="status">
+                <span class="visually-hidden">Processando transferência...</span>
+            </div>
+        </div>
+    `);
+}
+
+function esconderLoadingTransferencia() {
+    $('.loading-overlay').remove();
+}
+
+function limparFormularioTransferencia() {
+    $('#formTransferencia')[0].reset();
+    $('#lista-produtos').empty();
+    $('#resumo-transferencia').hide();
+    $('#secao-agendamento').hide();
+    produtosSelecionados = [];
+    contadorProdutos = 0;
+    adicionarProduto();
+}
+
+// Limpar ao fechar modal
+$('#modalTransferencia').on('hidden.bs.modal', function() {
+    limparFormularioTransferencia();
+});
+</script>

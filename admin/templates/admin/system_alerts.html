@@ -1,0 +1,517 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Alertas do Sistema - Pandora ERP{% endblock %}
+{% block page_title %}Alertas do Sistema{% endblock %}
+{% block page_subtitle %}Monitoramento e alertas críticos do sistema{% endblock %}
+{% block page_icon %}fas fa-exclamation-triangle{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'admin:dashboard' %}">Admin Dashboard</a></li>
+<li class="breadcrumb-item active">Alertas do Sistema</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alert-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .alert-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .alert-card.alert-critical {
+        border-left: 4px solid #dc3545;
+    }
+    
+    .alert-card.alert-warning {
+        border-left: 4px solid #ffc107;
+    }
+    
+    .alert-card.alert-info {
+        border-left: 4px solid #0dcaf0;
+    }
+    
+    .alert-card.alert-success {
+        border-left: 4px solid #198754;
+    }
+    
+    .alert-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    
+    .alert-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0;
+    }
+    
+    .alert-time {
+        font-size: 0.85rem;
+        color: var(--muted-color);
+        white-space: nowrap;
+    }
+    
+    .alert-description {
+        color: var(--text-color);
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+    
+    .alert-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border-radius: 50px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .alert-badge.critical {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    .alert-badge.warning {
+        background: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+    }
+    
+    .alert-badge.info {
+        background: rgba(13, 202, 240, 0.1);
+        color: #0dcaf0;
+    }
+    
+    .alert-badge.success {
+        background: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+    
+    .alert-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: var(--muted-color);
+        font-size: 0.9rem;
+    }
+    
+    .filters-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .filters-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .loading-skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
+        background-size: 400% 100%;
+        animation: loading 1.4s ease infinite;
+    }
+    
+    @keyframes loading {
+        0% { background-position: 100% 50%; }
+        100% { background-position: -100% 50%; }
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--muted-color);
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+    
+    .refresh-button {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .refresh-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+    
+    .refresh-button.loading {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Estatísticas dos Alertas -->
+    <div class="alert-stats">
+        <div class="stat-card">
+            <div class="stat-number" id="critical-alerts">-</div>
+            <div class="stat-label">Críticos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="warning-alerts">-</div>
+            <div class="stat-label">Avisos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="info-alerts">-</div>
+            <div class="stat-label">Informativos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="resolved-alerts">-</div>
+            <div class="stat-label">Resolvidos</div>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="filters-section">
+        <div class="filters-title">
+            <i class="fas fa-filter me-2"></i>
+            Filtros
+        </div>
+        <div class="filters-grid">
+            <div class="form-group">
+                <label for="severity-filter">Severidade</label>
+                <select id="severity-filter" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="critical">Crítico</option>
+                    <option value="warning">Aviso</option>
+                    <option value="info">Informativo</option>
+                    <option value="success">Sucesso</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="status-filter">Status</label>
+                <select id="status-filter" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="active">Ativo</option>
+                    <option value="resolved">Resolvido</option>
+                    <option value="acknowledged">Reconhecido</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="date-filter">Data</label>
+                <input type="date" id="date-filter" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="search-filter">Buscar</label>
+                <input type="text" id="search-filter" class="form-control" placeholder="Buscar alertas...">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de Alertas -->
+    <div class="row">
+        <div class="col-12">
+            <div id="alerts-container">
+                <!-- Skeleton loading -->
+                <div class="alert-card loading-skeleton" style="height: 120px; margin-bottom: 1rem;"></div>
+                <div class="alert-card loading-skeleton" style="height: 120px; margin-bottom: 1rem;"></div>
+                <div class="alert-card loading-skeleton" style="height: 120px; margin-bottom: 1rem;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botão de Refresh -->
+<button class="refresh-button" id="refresh-alerts" title="Atualizar alertas">
+    <i class="fas fa-sync-alt"></i>
+</button>
+
+<!-- Templates para alertas -->
+<script type="text/template" id="alert-template">
+    <div class="alert-card alert-<%- severity %>">
+        <div class="alert-header">
+            <h5 class="alert-title"><%- title %></h5>
+            <div class="alert-time"><%- created_at %></div>
+        </div>
+        <div class="alert-description"><%- description %></div>
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="alert-badge <%- severity %>"><%- severity %></span>
+            <div class="alert-actions">
+                <% if (status === 'active') { %>
+                    <button class="btn btn-sm btn-outline-primary acknowledge-btn" data-id="<%- id %>">
+                        <i class="fas fa-check me-1"></i>
+                        Reconhecer
+                    </button>
+                <% } %>
+                <% if (status !== 'resolved') { %>
+                    <button class="btn btn-sm btn-outline-success resolve-btn" data-id="<%- id %>">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Resolver
+                    </button>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/template" id="empty-state-template">
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-bell-slash"></i>
+        </div>
+        <h5>Nenhum alerta encontrado</h5>
+        <p>Não há alertas que correspondem aos filtros selecionados.</p>
+    </div>
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let alertsData = [];
+    let currentFilters = {
+        severity: '',
+        status: '',
+        date: '',
+        search: ''
+    };
+    
+    // Carregar alertas
+    function loadAlerts() {
+        const $refreshBtn = $('#refresh-alerts');
+        $refreshBtn.addClass('loading');
+        
+        $.ajax({
+            url: '{% url "admin:alerts" %}api/',
+            method: 'GET',
+            success: function(data) {
+                alertsData = data.results || [];
+                updateStats();
+                renderAlerts();
+            },
+            error: function() {
+                showError('Erro ao carregar alertas');
+            },
+            complete: function() {
+                $refreshBtn.removeClass('loading');
+            }
+        });
+    }
+    
+    // Atualizar estatísticas
+    function updateStats() {
+        const stats = {
+            critical: 0,
+            warning: 0,
+            info: 0,
+            resolved: 0
+        };
+        
+        alertsData.forEach(alert => {
+            if (alert.status === 'resolved') {
+                stats.resolved++;
+            } else {
+                stats[alert.severity]++;
+            }
+        });
+        
+        $('#critical-alerts').text(stats.critical);
+        $('#warning-alerts').text(stats.warning);
+        $('#info-alerts').text(stats.info);
+        $('#resolved-alerts').text(stats.resolved);
+    }
+    
+    // Renderizar alertas
+    function renderAlerts() {
+        const $container = $('#alerts-container');
+        const filteredAlerts = applyFilters(alertsData);
+        
+        if (filteredAlerts.length === 0) {
+            $container.html($('#empty-state-template').html());
+            return;
+        }
+        
+        const template = _.template($('#alert-template').html());
+        let html = '';
+        
+        filteredAlerts.forEach(alert => {
+            html += template(alert);
+        });
+        
+        $container.html(html);
+    }
+    
+    // Aplicar filtros
+    function applyFilters(alerts) {
+        return alerts.filter(alert => {
+            if (currentFilters.severity && alert.severity !== currentFilters.severity) {
+                return false;
+            }
+            if (currentFilters.status && alert.status !== currentFilters.status) {
+                return false;
+            }
+            if (currentFilters.date && !alert.created_at.includes(currentFilters.date)) {
+                return false;
+            }
+            if (currentFilters.search && !alert.title.toLowerCase().includes(currentFilters.search.toLowerCase())) {
+                return false;
+            }
+            return true;
+        });
+    }
+    
+    // Event listeners para filtros
+    $('#severity-filter').on('change', function() {
+        currentFilters.severity = $(this).val();
+        renderAlerts();
+    });
+    
+    $('#status-filter').on('change', function() {
+        currentFilters.status = $(this).val();
+        renderAlerts();
+    });
+    
+    $('#date-filter').on('change', function() {
+        currentFilters.date = $(this).val();
+        renderAlerts();
+    });
+    
+    $('#search-filter').on('input', function() {
+        currentFilters.search = $(this).val();
+        renderAlerts();
+    });
+    
+    // Refresh button
+    $('#refresh-alerts').on('click', function() {
+        loadAlerts();
+    });
+    
+    // Ações dos alertas
+    $(document).on('click', '.acknowledge-btn', function() {
+        const alertId = $(this).data('id');
+        acknowledgeAlert(alertId);
+    });
+    
+    $(document).on('click', '.resolve-btn', function() {
+        const alertId = $(this).data('id');
+        resolveAlert(alertId);
+    });
+    
+    // Reconhecer alerta
+    function acknowledgeAlert(alertId) {
+        $.ajax({
+            url: `{% url "admin:alerts" %}api/${alertId}/acknowledge/`,
+            method: 'POST',
+            success: function() {
+                showSuccess('Alerta reconhecido com sucesso');
+                loadAlerts();
+            },
+            error: function() {
+                showError('Erro ao reconhecer alerta');
+            }
+        });
+    }
+    
+    // Resolver alerta
+    function resolveAlert(alertId) {
+        $.ajax({
+            url: `{% url "admin:alerts" %}api/${alertId}/resolve/`,
+            method: 'POST',
+            success: function() {
+                showSuccess('Alerta resolvido com sucesso');
+                loadAlerts();
+            },
+            error: function() {
+                showError('Erro ao resolver alerta');
+            }
+        });
+    }
+    
+    // Funções de notificação
+    function showSuccess(message) {
+        // Implementar notificação de sucesso
+        console.log('Success:', message);
+    }
+    
+    function showError(message) {
+        // Implementar notificação de erro
+        console.log('Error:', message);
+    }
+    
+    // Carregar alertas iniciais
+    loadAlerts();
+    
+    // Auto-refresh a cada 30 segundos
+    setInterval(loadAlerts, 30000);
+});
+</script>
+{% endblock %}

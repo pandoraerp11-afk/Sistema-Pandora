@@ -1,0 +1,27 @@
+{% extends 'pandora_base.html' %}{% load i18n %}
+{% block title %}{% trans 'Disponibilidades' %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">{% trans 'Disponibilidades' %}</h3>
+  <a href="{% url 'prontuarios:disponibilidades_create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> {% trans 'Nova' %}</a>
+</div>
+<table class="table table-sm table-striped align-middle">
+  <thead class="table-light">
+    <tr><th>{% trans 'Data' %}</th><th>{% trans 'Horário' %}</th><th>{% trans 'Granularidade' %}</th><th>{% trans 'Capacidade/Slot' %}</th><th>{% trans 'Slots' %}</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for d in disponibilidades %}
+    <tr>
+      <td>{{ d.data|date:'d/m/Y' }}</td>
+      <td>{{ d.hora_inicio }} - {{ d.hora_fim }}</td>
+      <td>{{ d.duracao_slot_minutos }} min</td>
+      <td>{{ d.capacidade_por_slot }}</td>
+      <td>{{ d.slots.count }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-danger" href="{% url 'prontuarios:disponibilidades_delete' d.pk %}"><i class="fas fa-trash"></i></a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-center text-muted py-4">{% trans 'Nenhuma disponibilidade cadastrada.' %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

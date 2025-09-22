@@ -1,0 +1,300 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static %}
+{% load i18n %}
+
+{# Título do documento #}
+{% block title %}{{ titulo|default:'Dashboard de Produtos' }}{% endblock %}
+
+{# Cabeçalho padrão do home (usa blocks do pandora_home_ultra_modern) #}
+{% block home_icon %}<i class="fas fa-boxes me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Produtos{% endblock %}
+{% block home_subtitle %}Visão geral do módulo de produtos{% endblock %}
+
+{# Seção: Visão Geral / Estatísticas #}
+{% block home_stats %}
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-chart-bar me-2 text-primary"></i>
+        Visão Geral do Módulo
+    </h2>
+    <div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-primary mb-1">{{ total_produtos|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Total de Produtos</p>
+                    <small class="text-muted"><i class="fas fa-plus me-1"></i>{{ produtos_recentes|default:0 }} novos na semana</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-success mb-1">{{ produtos_ativos|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Produtos Ativos</p>
+                    <small class="text-muted"><i class="fas fa-percentage me-1"></i>{{ percentual_ativos|floatformat:1 }}% do total</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-info mb-1">R$ {{ valor_total_estoque|floatformat:0|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Valor do Estoque</p>
+                    <small class="text-muted">Médio: R$ {{ valor_medio_produto|floatformat:2|default:0 }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="display-6 fw-bold text-warning mb-1">{{ produtos_estoque_baixo|default:0 }}</h3>
+                    <p class="text-muted mb-1 fw-semibold">Alertas de Estoque</p>
+                    <small class="text-muted">{{ percentual_estoque_baixo|floatformat:1 }}% dos produtos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Seção: Ações rápidas no padrão de cards #}
+{% block home_actions %}
+    <h2 class="section-title" data-aos="fade-up">
+        <i class="fas fa-bolt me-2 text-primary"></i>
+        Ações Rápidas
+    </h2>
+    <div class="row g-4 mb-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">Cadastrar Produto</h4>
+                    <p class="text-muted mb-4">Crie novos produtos no catálogo</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        {% if perms_ui.can_add|default:perms.can_add|default:True %}
+                        <a href="{% url 'produtos:produto_create' %}" class="btn btn-primary btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-plus me-1"></i>Criar
+                        </a>
+                        {% endif %}
+                        {% if perms_ui.can_view|default:perms.can_view|default:True %}
+                        <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-primary btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-list me-1"></i>Listar
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">Categorias</h4>
+                    <p class="text-muted mb-4">Gerencie categorias de produtos</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        {% with can_add_cat=perms_ui_categoria.can_add|default:perms.can_add|default:True %}
+                        {% with can_view_cat=perms_ui_categoria.can_view|default:perms.can_view|default:True %}
+                            {% if can_add_cat %}
+                            <a href="{% url 'produtos:categoria_create' %}" class="btn btn-success btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-plus me-1"></i>Criar
+                            </a>
+                            {% endif %}
+                            {% if can_view_cat %}
+                            <a href="{% url 'produtos:categoria_list' %}" class="btn btn-outline-success btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-layer-group me-1"></i>Listar
+                            </a>
+                            {% endif %}
+                        {% endwith %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="action-card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-3">Importar/Exportar</h4>
+                    <p class="text-muted mb-4">Sincronize seu catálogo com planilhas</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{% url 'produtos:produto_import' %}" class="btn btn-info btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-upload me-1"></i>Importar
+                        </a>
+                        <a href="{% url 'produtos:produto_export_excel' %}" class="btn btn-outline-info btn-sm" style="min-width: 110px;">
+                            <i class="fas fa-download me-1"></i>Exportar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Seção: Conteúdo adicional (gráficos e widgets) #}
+{% block home_content %}
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>Produtos por Categoria</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartCategorias" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2 text-info"></i>Status do Estoque</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartEstoque" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-star me-2 text-warning"></i>Produtos em Destaque</h5>
+                    <a href="{% url 'produtos:produto_list' %}?destaque=1" class="btn btn-sm btn-outline-primary">Ver todos</a>
+                </div>
+                <div class="card-body">
+                    {% if produtos_destaque %}
+                        <div class="list-group list-group-flush">
+                            {% for produto in produtos_destaque %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div class="d-flex align-items-center">
+                                    {% if produto.imagem_principal %}
+                                        <img src="{{ produto.imagem_principal.url }}" alt="{{ produto.nome }}" class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-box text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">{{ produto.nome|truncatechars:30 }}</h6>
+                                        <small class="text-muted">{{ produto.categoria.nome }}</small>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="fw-semibold text-success">R$ {{ produto.preco_unitario|floatformat:2 }}</span><br>
+                                    <small class="text-muted">Est: {{ produto.estoque_atual }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhum produto em destaque</p>
+                            <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-primary btn-sm">Gerenciar Produtos</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Alertas de Estoque</h5>
+                    <a href="{% url 'produtos:produto_list' %}?estoque=baixo" class="btn btn-sm btn-outline-warning">Ver todos</a>
+                </div>
+                <div class="card-body">
+                    {% if produtos_alerta_estoque %}
+                        <div class="list-group list-group-flush">
+                            {% for produto in produtos_alerta_estoque %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <h6 class="mb-0">{{ produto.nome|truncatechars:30 }}</h6>
+                                    <small class="text-muted">{{ produto.categoria.nome }}</small>
+                                </div>
+                                <div class="text-end">
+                                      <span class="badge bg-{{ produto.estoque_atual|yesno:'danger,warning' }}">{{ produto.estoque_atual }} un.</span><br>
+                                    <small class="text-muted">Mín: {{ produto.estoque_minimo }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <p class="text-muted">Todos os estoques estão em níveis adequados</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# JS adicional (segue o bloco do base). Protegido caso Chart.js não esteja carregado. #}
+{% block home_extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.Chart) { return; }
+
+    const elCategorias = document.getElementById('chartCategorias');
+    if (elCategorias) {
+        const ctxCategorias = elCategorias.getContext('2d');
+        new Chart(ctxCategorias, {
+            type: 'doughnut',
+            data: {
+                labels: {{ chart_categorias_labels|safe }},
+                datasets: [{
+                    data: {{ chart_categorias_data|safe }},
+                    backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#fd7e14','#20c997','#6c757d'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    const elEstoque = document.getElementById('chartEstoque');
+    if (elEstoque) {
+        const ctxEstoque = elEstoque.getContext('2d');
+        new Chart(ctxEstoque, {
+            type: 'pie',
+            data: {
+                labels: {{ estoque_status_labels|safe }},
+                datasets: [{
+                    data: {{ estoque_status_data|safe }},
+                    backgroundColor: ['#ffc107','#dc3545','#0dcaf0','#198754'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+});
+</script>
+{% endblock %}

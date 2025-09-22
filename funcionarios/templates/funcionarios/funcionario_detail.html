@@ -1,0 +1,458 @@
+{% extends "pandora_detail_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}{{ object.nome_completo }} - Detalhes{% endblock %}
+
+{% block page_title %}{{ object.nome_completo }}{% endblock %}
+{% block page_subtitle %}Informações detalhadas do funcionário{% endblock %}
+{% block page_icon %}fas fa-user{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'funcionarios:funcionario_list' %}">Funcionários</a></li>
+<li class="breadcrumb-item active">{{ object.nome_completo }}</li>
+{% endblock %}
+
+{% block detail_actions %}
+<a href="{% url 'funcionarios:funcionario_list' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i> Voltar
+</a>
+{% if perms_ui.can_edit|default:perms.can_edit|default:True %}
+<a href="{% url 'funcionarios:funcionario_update' object.pk %}" class="btn btn-primary">
+    <i class="fas fa-edit me-2"></i> Editar
+</a>
+{% endif %}
+{% if perms_ui.can_delete|default:perms.can_delete|default:True %}
+<a href="{% url 'funcionarios:funcionario_delete' object.pk %}" class="btn btn-danger">
+    <i class="fas fa-trash me-2"></i> Excluir
+</a>
+{% endif %}
+{% if object.data_demissao %}
+<form method="post" action="{% url 'funcionarios:funcionario_reativar' object.pk %}" class="d-inline">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success"><i class="fas fa-undo me-2"></i> Reativar</button>
+</form>
+{% else %}
+<button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDesligar"><i class="fas fa-user-slash me-2"></i> Desligar</button>
+{% endif %}
+{% endblock %}
+
+{% block detail_content %}
+<!-- Seção Principal -->
+<div class="row">
+    <div class="col-lg-4">
+        <!-- Card do Funcionário -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h5><i class="fas fa-user me-2"></i> Informações Básicas</h5>
+            </div>
+            <div class="detail-card-body text-center">
+                <div class="profile-avatar mb-3">
+                    {% if object.foto %}
+                    <img src="{{ object.foto.url }}" alt="{{ object.nome_completo }}">
+                    {% else %}
+                    <div class="avatar-placeholder">
+                        {{ object.nome_completo|first|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+                <h4 class="mb-1">{{ object.nome_completo }}</h4>
+                <p class="text-muted mb-3">{{ object.cargo|default:"Cargo não informado" }}</p>
+                
+                <div class="status-badge mb-3">
+                    {% if object.data_demissao %}
+                        <span class="badge bg-danger">Desligado</span>
+                    {% else %}
+                        <span class="badge bg-success">Ativo</span>
+                    {% endif %}
+                </div>
+                
+                <div class="detail-stats">
+                    <div class="stat-item">
+                        <strong>{{ object.data_admissao|date:"d/m/Y" }}</strong>
+                        <small>Data de Admissão</small>
+                    </div>
+                    {% if object.departamento %}
+                    <div class="stat-item">
+                        <strong>{{ object.departamento.name }}</strong>
+                        <small>Departamento</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Card de Contato -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h6><i class="fas fa-address-card me-2"></i> Contato</h6>
+            </div>
+            <div class="detail-card-body">
+                {% if object.email_pessoal %}
+                <div class="detail-item">
+                    <label>E-mail Pessoal:</label>
+                    <span>{{ object.email_pessoal }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.telefone_pessoal %}
+                <div class="detail-item">
+                    <label>Telefone:</label>
+                    <span>{{ object.telefone_pessoal }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.telefone_emergencia %}
+                <div class="detail-item">
+                    <label>Emergência:</label>
+                    <span>{{ object.telefone_emergencia }}</span>
+                </div>
+                {% endif %}
+                
+                {% if object.contato_emergencia %}
+                <div class="detail-item">
+                    <label>Contato de Emergência:</label>
+                    <span>{{ object.contato_emergencia }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <!-- Dados Pessoais -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h5><i class="fas fa-id-card me-2"></i> Dados Pessoais</h5>
+            </div>
+            <div class="detail-card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>CPF:</label>
+                            <span>{{ object.cpf|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>RG:</label>
+                            <span>{{ object.rg|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Data de Nascimento:</label>
+                            <span>{{ object.data_nascimento|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Sexo:</label>
+                            <span>{{ object.get_sexo_display|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Estado Civil:</label>
+                            <span>{{ object.get_estado_civil_display|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Escolaridade:</label>
+                            <span>{{ object.get_escolaridade_display|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="detail-item">
+                            <label>Nacionalidade:</label>
+                            <span>{{ object.nacionalidade|default:"-" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Endereço -->
+        {% if object.endereco_logradouro %}
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h6><i class="fas fa-map-marker-alt me-2"></i> Endereço</h6>
+            </div>
+            <div class="detail-card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="detail-item">
+                            <label>Logradouro:</label>
+                            <span>{{ object.endereco_logradouro }}, {{ object.endereco_numero|default:"s/n" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="detail-item">
+                            <label>CEP:</label>
+                            <span>{{ object.endereco_cep|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="detail-item">
+                            <label>Bairro:</label>
+                            <span>{{ object.endereco_bairro|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Cidade:</label>
+                            <span>{{ object.endereco_cidade|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="detail-item">
+                            <label>UF:</label>
+                            <span>{{ object.endereco_uf|default:"-" }}</span>
+                        </div>
+                    </div>
+                    {% if object.endereco_complemento %}
+                    <div class="col-12">
+                        <div class="detail-item">
+                            <label>Complemento:</label>
+                            <span>{{ object.endereco_complemento }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Informações Trabalhistas -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h6><i class="fas fa-briefcase me-2"></i> Informações Trabalhistas</h6>
+            </div>
+            <div class="detail-card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Cargo:</label>
+                            <span>{{ object.cargo|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Tipo de Contrato:</label>
+                            <span>{{ object.get_tipo_contrato_display|default:"-" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Data de Admissão:</label>
+                            <span>{{ object.data_admissao|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+                    {% if object.data_demissao %}
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Data de Demissão:</label>
+                            <span>{{ object.data_demissao|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if object.motivo_demissao %}
+                    <div class="col-12">
+                        <div class="detail-item">
+                            <label>Motivo do Desligamento:</label>
+                            <span>{{ object.motivo_demissao }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if object.salario_base %}
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Salário Base:</label>
+                            <span>R$ {{ object.salario_base|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if object.pis_pasep %}
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>PIS/PASEP:</label>
+                            <span>{{ object.pis_pasep }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if object.carteira_trabalho %}
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Carteira de Trabalho:</label>
+                            <span>{{ object.carteira_trabalho }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if object.titulo_eleitor %}
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label>Título de Eleitor:</label>
+                            <span>{{ object.titulo_eleitor }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dependentes -->
+{% if dependentes %}
+<div class="detail-card">
+    <div class="detail-card-header">
+        <h6><i class="fas fa-users me-2"></i> Dependentes</h6>
+    </div>
+    <div class="detail-card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Parentesco</th>
+                        <th>Data de Nascimento</th>
+                        <th>Idade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dependente in dependentes %}
+                    <tr>
+                        <td>{{ dependente.nome }}</td>
+                        <td>{{ dependente.get_parentesco_display }}</td>
+                        <td>{{ dependente.data_nascimento|date:"d/m/Y" }}</td>
+                        <td>{{ dependente.idade }} anos</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Horários de Trabalho (Novo Modelo) -->
+{% if horarios_trabalho %}
+<div class="detail-card">
+    <div class="detail-card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-clock me-2"></i> Horários de Trabalho</h6>
+    </div>
+    <div class="detail-card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Dia</th>
+                        <th>Bloco</th>
+                        <th>Entrada</th>
+                        <th>Intervalo Início</th>
+                        <th>Intervalo Fim</th>
+                        <th>Saída</th>
+                        <th>Horas Previstas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in horarios_trabalho %}
+                    <tr>
+                        <td>{{ h.get_dia_semana_display }}</td>
+                        <td>{{ h.ordem }}</td>
+                        <td>{{ h.entrada|time:"H:i"|default:"-" }}</td>
+                        <td>{{ h.intervalo_inicio|time:"H:i"|default:"-" }}</td>
+                        <td>{{ h.intervalo_fim|time:"H:i"|default:"-" }}</td>
+                        <td>{{ h.saida|time:"H:i"|default:"-" }}</td>
+                        <td>{% if h.horas_previstas %}{{ h.horas_previstas }}h{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Regras de Remuneração -->
+<div class="detail-card">
+    <div class="detail-card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-hand-holding-usd me-2"></i> Regras de Remuneração</h6>
+        <a href="{% url 'funcionarios:remuneracao_regra_create' object.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Adicionar</a>
+    </div>
+    <div class="detail-card-body">
+        {% if regras_remuneracao %}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                        <th>Valor Base</th>
+                        <th>Percentual</th>
+                        <th>Procedimento</th>
+                        <th>Vigência</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in regras_remuneracao %}
+                    <tr>
+                        <td>{{ r.get_tipo_regra_display }}</td>
+                        <td>{{ r.descricao|default:"-" }}</td>
+                        <td>{% if r.valor_base %}R$ {{ r.valor_base|floatformat:2 }}{% else %}-{% endif %}</td>
+                        <td>{% if r.percentual %}{{ r.percentual }}%{% else %}-{% endif %}</td>
+                        <td>{{ r.codigo_procedimento|default:"-" }}</td>
+                        <td>
+                            {% if r.vigencia_inicio %}{{ r.vigencia_inicio|date:"d/m/Y" }}{% endif %}
+                            {% if r.vigencia_fim %} - {{ r.vigencia_fim|date:"d/m/Y" }}{% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'funcionarios:remuneracao_regra_delete' r.pk %}" class="btn btn-xs btn-outline-danger" title="Remover"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhuma regra cadastrada.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+<!-- Modal Desligar -->
+<div class="modal fade" id="modalDesligar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-slash me-2"></i> Desligar Funcionário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'funcionarios:funcionario_desligar' object.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Data de Desligamento</label>
+                        <input type="date" name="data_demissao" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo</label>
+                        <textarea name="motivo_demissao" class="form-control" rows="3" placeholder="Opcional"></textarea>
+                    </div>
+                    <div class="alert alert-warning small mb-0">
+                        Esta ação marcará o funcionário como desligado e ocultará em listagens de ativos.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Desligamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+

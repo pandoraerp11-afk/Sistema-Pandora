@@ -1,0 +1,405 @@
+{% extends "pandora_wizard_form_ultra_modern.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+<!-- Formulário de Confirmação Final do Cliente -->
+
+    <!-- Alerta de Confirmação -->
+    <div class="alert alert-primary border-0 mb-4 wizard-alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-check-circle text-primary me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-primary">Confirmação dos Dados do Cliente</h6>
+                <small class="text-muted">Revise todas as informações antes de finalizar o cadastro</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progresso do Cadastro -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-tasks wizard-icon"></i>
+            Progresso do Cadastro
+        </h5>
+        
+        <div class="row">
+            <div class="col-12">
+                <div class="step-summary">
+                    <div class="step-icon text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6>Step 1: Identificação</h6>
+                        <small class="text-success">
+                            {% if wizard_data.step_1.main.tipo == 'PJ' %}
+                                Pessoa Jurídica: {{ wizard_data.step_1.pj.razao_social|default:"[Nome não informado]" }}
+                            {% else %}
+                                Pessoa Física: {{ wizard_data.step_1.pf.nome_completo|default:"[Nome não informado]" }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="step-summary">
+                    <div class="step-icon text-success">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6>Step 2: Endereço</h6>
+                        <small class="text-success">
+                            {{ wizard_data.step_2.main.logradouro|default:"[Endereço não informado]" }}, 
+                            {{ wizard_data.step_2.main.cidade|default:"[Cidade]" }} - 
+                            {{ wizard_data.step_2.main.estado|default:"[Estado]" }}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="step-summary">
+                    <div class="step-icon text-success">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6>Step 3: Contatos</h6>
+                        <small class="text-success">
+                            Email: {{ wizard_data.step_1.main.email|default:"[Email não informado]" }} | 
+                            Telefone: {{ wizard_data.step_1.main.telefone|default:"[Telefone não informado]" }}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="step-summary">
+                    <div class="step-icon text-info">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="step-info">
+                        <h6>Step 4: Documentos</h6>
+                        <small class="text-info">Documentos anexados (opcional)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo dos Dados Principais -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-user wizard-icon"></i>
+            Resumo dos Dados Principais
+        </h5>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-id-card me-2"></i>
+                            Dados de Identificação
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Tipo:</strong> 
+                            {% if wizard_data.step_1.main.tipo == 'PJ' %}
+                                Pessoa Jurídica
+                            {% else %}
+                                Pessoa Física
+                            {% endif %}
+                        </p>
+                        <p><strong>Email:</strong> {{ wizard_data.step_1.main.email|default:"Não informado" }}</p>
+                        <p><strong>Telefone:</strong> {{ wizard_data.step_1.main.telefone|default:"Não informado" }}</p>
+                        <p><strong>Status:</strong> {{ wizard_data.step_1.main.status|default:"Ativo" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            Endereço Principal
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>CEP:</strong> {{ wizard_data.step_2.main.cep|default:"Não informado" }}</p>
+                        <p><strong>Logradouro:</strong> {{ wizard_data.step_2.main.logradouro|default:"Não informado" }}</p>
+                        <p><strong>Cidade:</strong> {{ wizard_data.step_2.main.cidade|default:"Não informado" }}</p>
+                        <p><strong>Estado:</strong> {{ wizard_data.step_2.main.estado|default:"Não informado" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Confirmações Obrigatórias -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-shield-alt wizard-icon"></i>
+            Confirmações Obrigatórias
+        </h5>
+        
+        <div class="wizard-terms">
+            <div class="form-check">
+                {% include 'core/wizard/wizard_field.html' with field=form.confirmar_dados %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Campo de Observações -->
+    <div class="wizard-section">
+        <h5 class="wizard-section-title">
+            <i class="fas fa-sticky-note wizard-icon"></i>
+            Observações Finais (Opcional)
+        </h5>
+        
+        <div class="row">
+            {% include 'core/wizard/wizard_field.html' with field=form.observacoes_finais field_size='xl' %}
+        </div>
+    </div>
+    
+    <!-- Alerta Final -->
+    <div class="alert alert-success border-0 mt-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-thumbs-up text-success me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h6 class="mb-1 text-success">Pronto para Finalizar!</h6>
+                <small class="text-muted">Clique em "Finalizar Cadastro" para criar o cliente no sistema.</small>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Step Confirmation de Cliente carregado');
+    
+    // Campos do formulário real
+    const confirmarDadosCheckbox = document.getElementById('{{ form.confirmar_dados.id_for_label }}');
+    const submitButton = document.querySelector('button[name="wizard_finish"]');
+    
+    function updateSubmitButton() {
+        const dadosConfirmados = confirmarDadosCheckbox ? confirmarDadosCheckbox.checked : false;
+        
+        if (submitButton) {
+            if (dadosConfirmados) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('btn-secondary');
+                submitButton.classList.add('btn-success');
+                submitButton.innerHTML = '<i class="fas fa-check me-2"></i>Finalizar Cadastro do Cliente';
+            } else {
+                submitButton.disabled = true;
+                submitButton.classList.remove('btn-success');
+                submitButton.classList.add('btn-secondary');
+                submitButton.innerHTML = '<i class="fas fa-lock me-2"></i>Confirme os dados para continuar';
+            }
+        }
+    }
+    
+    // Aplicar listeners aos checkboxes obrigatórios
+    if (confirmarDadosCheckbox) {
+        confirmarDadosCheckbox.addEventListener('change', updateSubmitButton);
+    }
+    
+    // Chamada inicial
+    updateSubmitButton();
+    
+    // Animação de entrada das seções
+    const sections = document.querySelectorAll('.wizard-section');
+    sections.forEach((section, index) => {
+        setTimeout(() => {
+            section.style.opacity = '1';
+            section.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Validação final antes do submit
+    const form = document.querySelector('.wizard-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirmarDadosCheckbox || !confirmarDadosCheckbox.checked) {
+                e.preventDefault();
+                alert('Por favor, confirme que os dados estão corretos antes de finalizar.');
+                return false;
+            }
+            
+            // Mostrar loading no botão
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Criando cliente...';
+            }
+        });
+    }
+    
+    console.log('✅ Validação de confirmação de cliente configurada');
+});
+</script>
+
+<style>
+/* Estilos Ultra Modernos para Confirmação de Cliente */
+.step-summary {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.step-summary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    transform: scaleX(1);
+}
+
+.step-summary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border-color: #28a745;
+}
+
+.step-icon {
+    margin-right: 1rem;
+    font-size: 1.5rem;
+}
+
+.step-info h6 {
+    margin-bottom: 0.25rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.step-info small {
+    font-weight: 500;
+}
+
+.wizard-terms {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.wizard-terms .form-check {
+    display: flex;
+    align-items: flex-start;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    min-height: auto;
+}
+
+.wizard-terms .form-check:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1);
+    transform: translateY(-1px);
+}
+
+.wizard-terms .form-check-input {
+    width: 1.2rem !important;
+    height: 1.2rem !important;
+    margin-top: 0.2rem !important;
+    margin-right: 0.75rem !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 4px !important;
+    background-color: #fff !important;
+    transition: all 0.2s ease !important;
+}
+
+.wizard-terms .form-check-input:focus {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+    outline: 0 !important;
+}
+
+.wizard-terms .form-check-input:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.wizard-terms .form-check-label {
+    flex: 1;
+    line-height: 1.5;
+    margin-bottom: 0;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.wizard-terms .form-check-input:checked ~ .form-check-label {
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.card {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 12px 12px 0 0;
+    padding: 1rem 1.25rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* Animações */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-summary {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.step-summary:nth-child(1) { animation-delay: 0.1s; }
+.step-summary:nth-child(2) { animation-delay: 0.2s; }
+.step-summary:nth-child(3) { animation-delay: 0.3s; }
+.step-summary:nth-child(4) { animation-delay: 0.4s; }
+
+/* Melhorias no textarea */
+textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+textarea.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load static %}
+
+{% block title %}Agendamentos - Home{% endblock %}
+
+{% block home_icon %}<i class="fas fa-calendar-check me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Agendamentos{% endblock %}
+{% block home_subtitle %}Visão geral e navegação do módulo de agendamentos{% endblock %}
+
+{% block home_stats %}
+  <h2 class="section-title"><i class="fas fa-chart-line me-2 text-primary"></i>Métricas Principais</h2>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-primary text-white mx-auto mb-3"><i class="fas fa-calendar-plus"></i></div>
+          <h3 class="display-6 fw-bold text-primary mb-1">{{ total_agendamentos|default:0 }}</h3>
+          <p class="text-muted mb-1 fw-semibold">Total Agendamentos</p>
+          <small class="text-muted">{{ agendamentos_semana|default:0 }} novos na semana</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-success text-white mx-auto mb-3"><i class="fas fa-check-circle"></i></div>
+          <h3 class="display-6 fw-bold text-success mb-1">{{ confirmados_futuros|default:0 }}</h3>
+          <p class="text-muted mb-1 fw-semibold">Confirmados Futuros</p>
+          <small class="text-muted">Hoje: {{ confirmados_hoje|default:0 }}</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-warning text-white mx-auto mb-3"><i class="fas fa-hourglass-half"></i></div>
+          <h3 class="display-6 fw-bold text-warning mb-1">{{ pendentes_futuros|default:0 }}</h3>
+          <p class="text-muted mb-1 fw-semibold">Pendentes Futuros</p>
+          <small class="text-muted">Hoje: {{ pendentes_hoje|default:0 }}</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-danger text-white mx-auto mb-3"><i class="fas fa-user-slash"></i></div>
+          <h3 class="display-6 fw-bold text-danger mb-1">{{ no_show_total|default:0 }}</h3>
+          <p class="text-muted mb-1 fw-semibold">No-Show Total</p>
+          <small class="text-muted">Taxa: {{ taxa_no_show|floatformat:1|default:'0.0' }}%</small>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block home_actions %}
+  <h2 class="section-title"><i class="fas fa-bolt me-2 text-primary"></i>Ações Rápidas</h2>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4 col-md-6">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-primary text-white mx-auto mb-3"><i class="fas fa-plus"></i></div>
+          <h4 class="h5 fw-bold mb-3">Novo Agendamento</h4>
+            <p class="text-muted mb-4">Crie um agendamento manualmente</p>
+            <div class="d-flex gap-2 justify-content-center">
+              <a href="{% url 'agendamentos:agendamento-create' %}" class="btn btn-primary btn-sm" style="min-width:110px"><i class="fas fa-plus me-1"></i>Criar</a>
+              <a href="{% url 'agendamentos:agendamento-list' %}" class="btn btn-outline-primary btn-sm" style="min-width:110px"><i class="fas fa-list me-1"></i>Listar</a>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-info text-white mx-auto mb-3"><i class="fas fa-clock"></i></div>
+          <h4 class="h5 fw-bold mb-3">Slots & Disponibilidades</h4>
+          <p class="text-muted mb-4">Gerencie horários e geração de slots</p>
+          <div class="d-flex gap-2 justify-content-center">
+            <a href="{% url 'agendamentos:slot-list' %}" class="btn btn-info btn-sm" style="min-width:110px"><i class="fas fa-clock me-1"></i>Slots</a>
+            <a href="{% url 'agendamentos:disponibilidade-list' %}" class="btn btn-outline-info btn-sm" style="min-width:110px"><i class="fas fa-calendar-plus me-1"></i>Disp.</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+      <div class="action-card h-100">
+        <div class="card-body text-center p-4">
+          <div class="action-icon bg-gradient-success text-white mx-auto mb-3"><i class="fas fa-user-clock"></i></div>
+          <h4 class="h5 fw-bold mb-3">Waitlist & Auditoria</h4>
+          <p class="text-muted mb-4">Fila de espera e histórico detalhado</p>
+          <div class="d-flex gap-2 justify-content-center">
+            <a href="{% url 'agendamentos:waitlist-list' %}" class="btn btn-success btn-sm" style="min-width:110px"><i class="fas fa-user-clock me-1"></i>Waitlist</a>
+            <a href="{% url 'agendamentos:auditoria-list' %}" class="btn btn-outline-success btn-sm" style="min-width:110px"><i class="fas fa-history me-1"></i>Auditoria</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block home_content %}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0"><i class="fas fa-forward text-primary me-2"></i>Próximos 10 Agendamentos</h5>
+          <a href="{% url 'agendamentos:agendamento-list' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush small">
+            {% for a in proximos_agendamentos %}
+            <a href="{% url 'agendamentos:agendamento-detail' a.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+              <div class="d-flex flex-column">
+                <span class="fw-semibold">{{ a.data_inicio|date:'d/m H:i' }} - {{ a.cliente }}</span>
+                <small class="text-muted">{% if a.servico_id %}{{ a.servico.nome_servico }}{% else %}—{% endif %}</small>
+              </div>
+              <span>{% include 'agendamentos/_status_badge.html' with status=a.status %}</span>
+            </a>
+            {% empty %}
+            <div class="p-3 text-muted">Nenhum agendamento futuro.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-light"><h5 class="card-title mb-0"><i class="fas fa-layer-group text-info me-2"></i>Status Hoje</h5></div>
+        <div class="card-body">
+          <div class="row g-3 text-center">
+            {% for k,v in status_hoje.items %}
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 h-100">
+                <div class="fw-semibold">{{ k }}</div>
+                <div class="display-6 fw-bold" style="font-size:1.75rem;">{{ v }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block home_extra %}
+  {% if CLIENT_PORTAL_URL %}
+  <div class="alert alert-info d-flex align-items-center" role="alert">
+    <i class="fas fa-external-link-alt me-2"></i>
+    Acesse o <a href="{{ CLIENT_PORTAL_URL }}" target="_blank" class="ms-1 fw-semibold">Portal do Cliente</a> para validar a experiência do usuário final.
+  </div>
+  {% endif %}
+{% endblock %}

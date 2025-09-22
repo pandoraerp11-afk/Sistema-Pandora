@@ -1,0 +1,91 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header">
+    <div class="row">
+        <div class="col-md-6">
+            <h3 class="card-title">Respostas para: {{ formulario.titulo }}</h3>
+        </div>
+        <div class="col-md-6 text-right">
+            <a href="#" class="btn btn-success">
+                <i class="fas fa-plus"></i> Adicionar
+            </a>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-12">
+            <form method="get" class="form-inline">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{ request.GET.q }">
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+                <div class="card-body">
+                    <form method="get" class="form-inline mb-3">
+                        {{ form|crispy }}
+                        <button type="submit" class="btn btn-primary ml-2">Filtrar</button>
+                        <a href="{% url 'formularios_dinamicos:resposta_list' form_pk=formulario.pk %}" class="btn btn-secondary ml-2">Limpar Filtros</a>
+                    </form>
+
+                    {% if respostas %}
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID Resposta</th>
+                                    <th>Usuário</th>
+                                    <th>Status</th>
+                                    <th>Enviado em</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for resposta in respostas %}
+                                    <tr>
+                                        <td>{{ resposta.pk }}</td>
+                                        <td>{{ resposta.usuario.username|default:"Anônimo" }}</td>
+                                        <td>{{ resposta.get_status_display }}</td>
+                                        <td>{{ resposta.enviado_em }}</td>
+                                        <td>
+                                            <a href="{% url 'formularios_dinamicos:resposta_detail' form_slug=formulario.slug token=resposta.token %}" class="btn btn-info btn-sm">Ver Detalhes</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        <nav aria-label="Page navigation example">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                                {% endif %}
+                                <li class="page-item disabled"><a class="page-link" href="#">Página {{ page_obj.number }} de {{ page_obj.num_pages }}</a></li>
+                                {% if page_obj.has_next %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a></li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% else %}
+                        <p>Nenhuma resposta encontrada para este formulário.</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'formularios_dinamicos:form_detail' pk=formulario.pk %}" class="btn btn-secondary">Voltar para Detalhes do Formulário</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,95 @@
+{% extends "pandora_list_ultra_modern.html" %}
+{% load humanize %}
+{% block page_icon %}fas fa-clock{% endblock %}
+{% block page_title %}Slots{% endblock %}
+{% block page_subtitle %}Unidades de agendamento e ocupação{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'agendamentos:dashboard' %}" class="btn btn-outline-secondary btn-sm" title="Dashboard"><i class="fas fa-chart-line"></i></a>
+{% endblock %}
+{% block add_url %}{% url 'agendamentos:slot-gerar' %}{% endblock %}
+{% block list_filters %}
+  <form method="get" class="row g-2">
+    <div class="col-md-2"><input type="date" name="data" value="{{ request.GET.data }}" class="form-control form-control-sm" /></div>
+    <div class="col-md-2">
+      <select name="profissional" class="form-select form-select-sm">
+        <option value="">Profissional...</option>
+        {% for p in profissionais %}<option value="{{ p.id }}" {% if request.GET.profissional == p.id|stringformat:'s' %}selected{% endif %}>{{ p }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="servico" class="form-select form-select-sm">
+        <option value="">Serviço...</option>
+        {% if servicos %}
+          {% for s in servicos %}
+            <option value="{{ s.id }}" {% if request.GET.servico == s.id|stringformat:'s' %}selected{% endif %}>{{ s.nome_servico }}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid"><button class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+  </form>
+{% endblock %}
+{% block list_extra_top %}
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-white fw-semibold"><i class="fas fa-magic me-2"></i>Gerar Slots</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'agendamentos:slot-gerar' %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-2">
+          <label class="form-label small">Profissional</label>
+          <select name="profissional_id" class="form-select form-select-sm" required>
+            <option value="">...</option>
+            {% for p in profissionais %}<option value="{{ p.id }}">{{ p }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">Data</label>
+          <input type="date" class="form-control form-control-sm" name="data" required />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">Início (HH:MM)</label>
+          <input type="time" class="form-control form-control-sm" name="hora_inicio" required />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">Fim (HH:MM)</label>
+          <input type="time" class="form-control form-control-sm" name="hora_fim" required />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">Duração (min)</label>
+          <input type="number" class="form-control form-control-sm" name="duracao_minutos" value="30" />
+        </div>
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-primary btn-sm"><i class="fas fa-cogs me-1"></i>Gerar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+{% block list_table %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light"><tr><th>Horário</th><th>Profissional</th><th>Cap.</th><th>Uso</th><th>Ocupação</th><th></th></tr></thead>
+      <tbody>
+      {% for s in slots %}
+        <tr class="{% if not s.disponivel %}table-secondary{% endif %}">
+          <td>{{ s.horario|date:'d/m/Y H:i' }}</td>
+          <td>{{ s.profissional }}</td>
+          <td>{{ s.capacidade_total }}</td>
+          <td>{{ s.capacidade_utilizada }}</td>
+          <td>
+            {% if s.capacidade_total %}{% widthratio s.capacidade_utilizada s.capacidade_total 100 as perc %}{% else %}{% with 0 as perc %}{% endwith %}{% endif %}
+            <div class="progress" style="height:6px">
+              <div class="progress-bar bg-{% if perc|floatformat:0 >= 100 %}danger{% elif perc|floatformat:0 >= 80 %}warning{% else %}success{% endif %}" style="width:{{ perc }}%"></div>
+            </div>
+            <small class="text-muted">{{ s.capacidade_utilizada }}/{{ s.capacidade_total }}{% if s.capacidade_total %} ({{ perc|floatformat:0 }}%){% endif %}</small>
+            {% if s.waitlist.count %}<span class="badge bg-info ms-1">WL {{ s.waitlist.count }}</span>{% endif %}
+          </td>
+          <td class="text-end"><a href="{% url 'agendamentos:slot-detail' s.id %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-3">Nenhum slot.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

@@ -1,0 +1,165 @@
+# REQUIREMENTS.TXT CORRIGIDO E COMPLETO
+# Compatível com Python 3.13.3
+
+# Django e extensões core
+Django>=5.1,<6.0
+django-extensions>=3.2.0
+
+# Autenticação e Permissões
+django-guardian>=2.4.0
+
+# APIs REST e CORS
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0
+drf-yasg>=1.21.0
+
+# Banco de Dados PostgreSQL (produção)
+psycopg2-binary>=2.9.9
+
+# Formulários e UI (CONFIGURADO PARA BOOTSTRAP 5)
+django-crispy-forms>=2.0
+crispy-bootstrap5>=0.7
+django-widget-tweaks>=1.5.0
+
+# Tabelas e Filtros
+django-tables2>=2.7.0
+django-filter>=23.0
+
+# WebSockets e Channels
+channels>=4.0.0
+daphne>=4.0.0
+channels-redis>=4.2.0
+django-redis>=5.4.0  # Cache backend Redis (opcional, mas recomendado)
+redis>=5.0.0  # Explicitado (já vem como dependência transitiva, mas usado com import redis)
+celery>=5.3.0
+prometheus-client>=0.20.0
+pyotp>=2.9.0  # TOTP para 2FA
+
+# Processamento de dados
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+
+# Geração de PDFs e documentos
+reportlab>=4.0.0
+weasyprint>=60.0
+xhtml2pdf>=0.2.15
+fpdf2>=2.7.0
+
+# Gráficos e visualizações
+matplotlib>=3.7.0
+plotly>=5.15.0
+seaborn>=0.12.0
+
+# Imagens
+Pillow>=10.0.0
+
+# Utilitários de data e tempo
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# Validação e parsing
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Dependências do Assistente de IA (versões compatíveis com Python 3.13)
+SpeechRecognition>=3.10.0
+# PyAudio substituído por sounddevice (compatível com Python 3.13)
+sounddevice>=0.4.6
+pyttsx3>=2.90
+python-dotenv>=1.0.0
+
+# Dependências opcionais do Assistente de IA
+gtts>=2.3.0
+# playsound removido - incompatível com Python 3.13
+keyboard>=0.13.0
+nltk>=3.8.0
+yfinance>=0.2.28
+
+# Servidor web para desenvolvimento
+whitenoise>=6.5.0
+
+# Outras dependências já presentes (versões flexíveis para evitar conflitos)
+annotated-types
+anyio
+arabic-reshaper
+asn1crypto
+blinker
+Brotli
+certifi
+cffi
+charset-normalizer
+click
+contourpy
+cryptography
+cssselect2
+cycler
+defusedxml
+distro
+et_xmlfile
+fonttools
+greenlet
+h11
+html5lib
+idna
+itsdangerous
+Jinja2
+kiwisolver
+Markdown
+MarkupSafe
+narwhals
+oscrypto
+packaging
+pdf2image
+pycparser
+pydantic
+pydantic_core
+pydyf
+pyee
+pyHanko
+pyhanko-certvalidator
+pyparsing
+pypdf
+pyphen
+python-bidi
+PyYAML
+requests
+six
+sniffio
+soupsieve
+svglib
+tabulate
+tinycss2
+tinyhtml5
+tqdm
+typing-inspection
+typing_extensions
+tzdata
+tzlocal
+uritools
+urllib3
+uvicorn
+webencodings
+Werkzeug
+zopfli
+
+# Ferramentas de gestão de dependências / desenvolvimento (opcionais, descomente se quiser usar)
+# pip-tools>=7.4.0  # Para manter requirements compilados (pip-compile)
+# pipdeptree>=2.13.0  # Visualizar árvore de dependências
+
+# Testes
+pytest>=8.2.0
+pytest-django>=4.8.0
+pytest-cov>=4.1.0
+mypy>=1.10.0
+
+# Integração com Docker (NÃO necessário dentro do app; docker compose v2 já vem com Docker Desktop)
+# Somente inclua abaixo se realmente precisar chamar APIs Docker via Python
+# docker>=7.0.0
+# docker-compose  # Evitar: compose v2 é plugin embutido ("docker compose"). Use apenas se ambiente legado exige 'docker-compose' via Python.
+
+# REMOVIDAS: FastAPI, Flask, supervisor (não são necessárias para este projeto Django)
+
+# Exportação para Excel
+xlwt
+

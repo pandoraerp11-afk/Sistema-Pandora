@@ -1,0 +1,423 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}🛡️ Administração - Pandora ERP{% endblock %}
+
+{% block home_icon %}<i class="fas fa-shield-alt me-2 text-primary"></i>{% endblock %}
+{% block home_title %}Administração da Empresa{% endblock %}
+{% block home_subtitle %}Gerencie módulos contratados, usuários, configurações e recursos da sua empresa{% endblock %}
+
+{% block home_stats %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-line me-2 text-primary"></i>
+            Visão Geral da Empresa
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <!-- Card Módulos Contratados -->
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stats-card primary h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="stats-icon bg-primary text-white mx-auto">
+                            <i class="fas fa-cube"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-primary mb-1">{{ modulos_contratados|default:12 }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Módulos Contratados" %}</p>
+                        <small class="text-muted">Ativos na empresa</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Usuários da Empresa -->
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stats-card success h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="stats-icon bg-success text-white mx-auto">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-success mb-1">{{ usuarios_empresa|default:0 }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Usuários da Empresa" %}</p>
+                        <small class="text-muted">Funcionários cadastrados</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Licenças Disponíveis -->
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stats-card warning h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="stats-icon bg-warning text-white mx-auto">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-warning mb-1">{{ licencas_disponiveis|default:25 }}</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Licenças Disponíveis" %}</p>
+                        <small class="text-muted">Para novos usuários</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Uso de Armazenamento -->
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="stats-card info h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="stats-icon bg-info text-white mx-auto">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h3 class="display-6 fw-bold text-info mb-1">{{ uso_armazenamento|floatformat:1|default:"65.2" }}%</h3>
+                        <p class="text-muted mb-1 fw-semibold">{% trans "Armazenamento Usado" %}</p>
+                        <small class="text-muted">Do plano contratado</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_actions %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-tools me-2 text-primary"></i>
+            {% trans "Gestão da Empresa" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="200">
+            <!-- Gestão de Módulos -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Módulos Contratados" %}</h4>
+                        <p class="text-muted mb-4">Gerencie módulos e serviços contratados pela empresa</p>
+                        <a href="{% url 'administration:modules_page' %}" class="action-btn btn-outline-primary">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            {% trans "Gerenciar Módulos" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gestão de Usuários -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                            <i class="fas fa-users-cog"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Usuários e Permissões" %}</h4>
+                        <p class="text-muted mb-4">Gerencie funcionários, licenças e permissões de acesso</p>
+                        <a href="{% url 'user_management:user_management_home' %}" class="action-btn btn-outline-success">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            {% trans "Gerenciar Usuários" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Configurações da Empresa -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                            <i class="fas fa-building-flag"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Configurações da Empresa" %}</h4>
+                        <p class="text-muted mb-4">Configure dados, preferências e integrações da empresa</p>
+                        <a href="{% url 'administration:configurations_page' %}" class="action-btn btn-outline-info">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            {% trans "Configurar Empresa" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Relatórios e Métricas -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-warning text-white mx-auto mb-3">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Relatórios e Métricas" %}</h4>
+                        <p class="text-muted mb-4">Analise uso, performance e métricas da empresa</p>
+                        <a href="{% url 'administration:reports_page' %}" class="action-btn btn-outline-warning">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            {% trans "Ver Relatórios" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Plano e Faturamento -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="700">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-secondary text-white mx-auto mb-3">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Plano e Faturamento" %}</h4>
+                        <p class="text-muted mb-4">Gerencie plano contratado, faturas e pagamentos</p>
+                        <a href="{% url 'administration:billing_page' %}" class="action-btn btn-outline-secondary">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            {% trans "Ver Faturamento" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suporte e Tickets -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="800">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-danger text-white mx-auto mb-3">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Suporte Técnico" %}</h4>
+                        <p class="text-muted mb-4">Abra tickets, acesse documentação e suporte</p>
+                        <a href="{% url 'administration:support_page' %}" class="action-btn btn-outline-danger">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            {% trans "Abrir Suporte" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_recent %}
+    {% if atividades_recentes %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-history me-2 text-primary"></i>
+            {% trans "Atividades Recentes da Empresa" %}
+        </h2>
+        <div class="row g-4">
+            <div class="col-12" data-aos="fade-up" data-aos-delay="100">
+                <div class="action-card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        {% for atividade in atividades_recentes %}
+                        <div class="recent-item">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-3" style="width: 48px; height: 48px;">
+                                        <i class="fas fa-{% if atividade.action == 'create' %}plus{% elif atividade.action == 'update' %}edit{% elif atividade.action == 'delete' %}trash{% else %}eye{% endif %}"></i>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h6 class="mb-2 fw-bold">
+                                        {{ atividade.admin_user.get_full_name|default:atividade.admin_user.username }}
+                                        <span class="text-muted ms-1">{{ atividade.get_action_display|lower }}</span>
+                                        {{ atividade.resource_type }}
+                                    </h6>
+                                    <div class="d-flex align-items-center gap-4">
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            {{ atividade.description|truncatechars:80 }}
+                                        </small>
+                                        <small class="text-muted d-flex align-items-center">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ atividade.created_at|naturaltime }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="d-flex flex-column align-items-end gap-2">
+                                        <span class="badge-modern">
+                                            <i class="fas fa-{% if atividade.action == 'create' %}plus-circle{% elif atividade.action == 'update' %}edit{% elif atividade.action == 'delete' %}times-circle{% else %}eye{% endif %} me-1"></i>
+                                            {{ atividade.get_action_display }}
+                                        </span>
+                                        {% if atividade.tenant %}
+                                        <span class="badge bg-light text-dark border">
+                                            <i class="fas fa-building me-1"></i>
+                                            {{ atividade.tenant.name|truncatechars:20 }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-history fa-3x mb-3 opacity-25"></i>
+                                <h5 class="mb-2">Nenhuma atividade recente</h5>
+                                <p class="mb-3">As atividades da empresa aparecerão aqui</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-history me-2 text-primary"></i>
+            {% trans "Atividades Recentes da Empresa" %}
+        </h2>
+        <div class="row g-4">
+            <div class="col-12 text-center py-4" data-aos="fade-up">
+                <div class="text-muted">
+                    <i class="fas fa-history fa-3x mb-3 opacity-25"></i>
+                    <h5 class="mb-2">Nenhuma atividade registrada</h5>
+                    <p class="mb-3">As atividades da empresa aparecerão aqui quando houver movimentação</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.stats-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+
+.stats-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.action-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.action-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.action-btn {
+    border: 2px solid;
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.recent-activity-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    flex-shrink: 0;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 4px;
+}
+
+.activity-description {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.activity-time {
+    font-size: 12px;
+}
+
+.section-title {
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    font-size: 1.35rem;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+}
+
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+}
+
+.bg-gradient-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+}
+</style>
+{% endblock %}

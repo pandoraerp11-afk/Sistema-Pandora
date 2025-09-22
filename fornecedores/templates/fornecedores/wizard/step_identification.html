@@ -1,0 +1,55 @@
+{% extends 'pandora_wizard_form_ultra_modern.html' %}
+{% load widget_tweaks %}
+
+{% block step_content %}
+  {# Cabeçalho compacto do passo #}
+  <div class="row g-3">
+    <div class="col-md-4">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.tipo_pessoa label='Tipo de Pessoa' %}
+    </div>
+    <div class="col-md-4">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.status label='Status' %}
+    </div>
+    <div class="col-md-4">
+      {% include 'core/wizard/wizard_field.html' with field=forms.main.status_homologacao label='Homologação' %}
+    </div>
+  </div>
+
+  {# Bloco PF essencial #}
+  <div id="sec-pf" class="mt-3" style="display:none;">
+    <div class="section-title h6 mb-2">Pessoa Física</div>
+    <div class="row g-3">
+      <div class="col-md-8">{% include 'core/wizard/wizard_field.html' with field=forms.pf.nome_completo label='Nome Completo' %}</div>
+      <div class="col-md-4">{% include 'core/wizard/wizard_field.html' with field=forms.pf.cpf label='CPF' %}</div>
+    </div>
+  </div>
+
+  {# Bloco PJ essencial #}
+  <div id="sec-pj" class="mt-3" style="display:none;">
+    <div class="section-title h6 mb-2">Pessoa Jurídica</div>
+    <div class="row g-3">
+      <div class="col-md-6">{% include 'core/wizard/wizard_field.html' with field=forms.pj.razao_social label='Razão Social' %}</div>
+      <div class="col-md-6">{% include 'core/wizard/wizard_field.html' with field=forms.pj.nome_fantasia label='Nome Fantasia' %}</div>
+      <div class="col-md-4">{% include 'core/wizard/wizard_field.html' with field=forms.pj.cnpj label='CNPJ' %}</div>
+      <div class="col-md-4">{% include 'core/wizard/wizard_field.html' with field=forms.pj.inscricao_estadual label='Inscrição Estadual' %}</div>
+      <div class="col-md-4">{% include 'core/wizard/wizard_field.html' with field=forms.pj.inscricao_municipal label='Inscrição Municipal' %}</div>
+    </div>
+  </div>
+
+  <script>
+    function togglePF_PJ(){
+      const tipo = document.getElementById('id_main-tipo_pessoa');
+      if(!tipo) return;
+      const isPF = tipo.value === 'PF';
+      document.getElementById('sec-pf').style.display = isPF ? 'block' : 'none';
+      document.getElementById('sec-pj').style.display = isPF ? 'none' : 'block';
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+      const tipo = document.getElementById('id_main-tipo_pessoa');
+      if(tipo){
+        tipo.addEventListener('change', togglePF_PJ);
+        togglePF_PJ();
+      }
+    });
+  </script>
+{% endblock %}

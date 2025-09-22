@@ -1,0 +1,598 @@
+{% extends 'pandora_ultra_modern_base.html' %}
+{% load static %}
+
+{% block title %}{{ indicador.nome }} - BI | Pandora ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .detail-header {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .detail-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M20 20c0-11.046-8.954-20-20-20v20h20z'/%3E%3C/g%3E%3C/svg%3E") repeat;
+        opacity: 0.3;
+    }
+
+    .detail-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .detail-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .type-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: rgba(255, 255, 255, 0.2);
+        position: relative;
+        z-index: 1;
+    }
+
+    .main-content {
+        padding: 2rem;
+    }
+
+    .value-display {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .value-display::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 49%, rgba(255, 255, 255, 0.1) 50%, transparent 51%);
+    }
+
+    .current-value {
+        font-size: 4rem;
+        font-weight: 700;
+        color: #007bff;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .value-unit {
+        font-size: 1.5rem;
+        color: #6c757d;
+        margin-left: 0.5rem;
+    }
+
+    .value-description {
+        font-size: 1.1rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .meta-section {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .meta-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #28a745, #20c997);
+    }
+
+    .meta-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #28a745;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .meta-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #28a745;
+        margin-bottom: 1rem;
+    }
+
+    .progress-section {
+        margin-bottom: 1rem;
+    }
+
+    .progress-bar-container {
+        background: #e9ecef;
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.8s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    .progress-text {
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        margin-top: 0.5rem;
+    }
+
+    .achievement-badge {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 1rem;
+    }
+
+    .achievement-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .achievement-warning {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #856404;
+    }
+
+    .achievement-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-item {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .info-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-ativo {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .status-inativo {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #856404;
+    }
+
+    .status-arquivado {
+        background: linear-gradient(135deg, #6c757d, #545b62);
+        color: white;
+    }
+
+    .observations-section {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border: 1px solid #ffc107;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .observations-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #856404;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .observations-text {
+        color: #856404;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+    }
+
+    .breadcrumb-item a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .breadcrumb-item a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-item.active {
+        color: #6c757d;
+    }
+
+    @media (max-width: 768px) {
+        .detail-title {
+            font-size: 1.5rem;
+        }
+        
+        .current-value {
+            font-size: 3rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bi:bi_home' %}">BI</a></li>
+            <li class="breadcrumb-item active">{{ indicador.nome }}</li>
+        </ol>
+    </nav>
+
+    <div class="detail-card">
+        <div class="detail-header">
+            <h1 class="detail-title">{{ indicador.nome }}</h1>
+            {% if indicador.descricao %}
+                <p class="detail-subtitle">{{ indicador.descricao }}</p>
+            {% endif %}
+            <div class="type-badge">
+                {{ indicador.get_tipo_display }}
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Valor Atual -->
+            <div class="value-display">
+                <div class="current-value">
+                    {{ indicador.valor|floatformat:2 }}
+                    {% if indicador.unidade_medida %}
+                        <span class="value-unit">{{ indicador.unidade_medida }}</span>
+                    {% endif %}
+                </div>
+                <div class="value-description">Valor Atual do Indicador</div>
+                <div class="status-badge status-{{ indicador.status }}">
+                    {{ indicador.get_status_display }}
+                </div>
+            </div>
+
+            <!-- Meta e Progresso -->
+            {% if indicador.meta %}
+                <div class="meta-section">
+                    <div class="meta-title">
+                        <i class="fas fa-target"></i>
+                        Meta Definida
+                    </div>
+                    <div class="meta-value">
+                        {{ indicador.meta|floatformat:2 }}
+                        {% if indicador.unidade_medida %}{{ indicador.unidade_medida }}{% endif %}
+                    </div>
+                    
+                    <div class="progress-section">
+                        {% with progress=indicador.get_progresso_meta %}
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill {% if progress >= 100 %}bg-success{% elif progress >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     style="width: {{ progress|floatformat:0 }}%"></div>
+                            </div>
+                            <div class="progress-text">
+                                {{ progress|floatformat:1 }}% da meta atingida
+                            </div>
+                            
+                            <div class="text-center">
+                                {% if indicador.is_meta_atingida %}
+                                    <div class="achievement-badge achievement-success">
+                                        <i class="fas fa-trophy me-2"></i>Meta Atingida!
+                                    </div>
+                                {% elif progress >= 70 %}
+                                    <div class="achievement-badge achievement-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Próximo da Meta
+                                    </div>
+                                {% else %}
+                                    <div class="achievement-badge achievement-danger">
+                                        <i class="fas fa-arrow-up me-2"></i>Precisa Melhorar
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endwith %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Informações Detalhadas -->
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Data</div>
+                    <div class="info-value">{{ indicador.data|date:"d/m/Y" }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Período</div>
+                    <div class="info-value">{{ indicador.get_periodo_display }}</div>
+                </div>
+                
+                {% if indicador.responsavel %}
+                    <div class="info-item">
+                        <div class="info-label">Responsável</div>
+                        <div class="info-value">{{ indicador.responsavel.get_full_name|default:indicador.responsavel.username }}</div>
+                    </div>
+                {% endif %}
+                
+                {% if indicador.criado_por %}
+                    <div class="info-item">
+                        <div class="info-label">Criado por</div>
+                        <div class="info-value">{{ indicador.criado_por.get_full_name|default:indicador.criado_por.username }}</div>
+                    </div>
+                {% endif %}
+                
+                <div class="info-item">
+                    <div class="info-label">Data de Criação</div>
+                    <div class="info-value">{{ indicador.data_criacao|date:"d/m/Y H:i" }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Última Atualização</div>
+                    <div class="info-value">{{ indicador.data_atualizacao|date:"d/m/Y H:i" }}</div>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            {% if indicador.observacoes %}
+                <div class="observations-section">
+                    <div class="observations-title">
+                        <i class="fas fa-sticky-note"></i>
+                        Observações
+                    </div>
+                    <div class="observations-text">
+                        {{ indicador.observacoes|linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Indicadores Relacionados -->
+            {% if indicadores_relacionados %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-link me-2"></i>Indicadores Relacionados
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for relacionado in indicadores_relacionados %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ relacionado.nome }}</h6>
+                                            <p class="card-text">
+                                                <strong>{{ relacionado.valor|floatformat:2 }}</strong>
+                                                {% if relacionado.unidade_medida %}{{ relacionado.unidade_medida }}{% endif %}
+                                            </p>
+                                            <small class="text-muted">{{ relacionado.data|date:"d/m/Y" }}</small>
+                                            <div class="mt-2">
+                                                <a href="{% url 'bi:bi_detail' relacionado.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    Ver Detalhes
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Botões de Ação -->
+            <div class="action-buttons">
+                <a href="{% url 'bi:bi_update' indicador.pk %}" class="btn btn-success">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+                <a href="{% url 'bi:bi_home' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+                <a href="{% url 'bi:bi_delete' indicador.pk %}" class="btn btn-danger">
+                    <i class="fas fa-trash me-2"></i>Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animação da barra de progresso
+    const progressBar = document.querySelector('.progress-bar-fill');
+    if (progressBar) {
+        const width = progressBar.style.width;
+        progressBar.style.width = '0%';
+        setTimeout(() => {
+            progressBar.style.width = width;
+        }, 500);
+    }
+    
+    // Animação dos cards de informação
+    const infoItems = document.querySelectorAll('.info-item');
+    infoItems.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            item.style.transition = 'all 0.5s ease';
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{# Sidebar widgets reutilizável #}
+
+{% if sidebar_widgets %}
+<div class="sidebar-widgets">
+    {% for widget in sidebar_widgets %}
+    <div class="widget card mb-4">
+        <div class="card-header">
+            <h4 class="card-title">
+                <i class="{{ widget.icon|default:'fas fa-cube' }}"></i>
+                {{ widget.title }}
+            </h4>
+        </div>
+        <div class="card-body">
+            {% if widget.template %}
+                {% include widget.template %}
+            {% else %}
+                {{ widget.content|safe }}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

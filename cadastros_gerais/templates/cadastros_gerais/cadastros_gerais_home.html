@@ -1,0 +1,169 @@
+{% extends "pandora_home_ultra_modern.html" %}
+{% load i18n %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}🗂️ Módulo Cadastros Gerais - Pandora ERP{% endblock %}
+
+{% block home_icon %}<i class="fas fa-cogs me-2 text-primary"></i>{% endblock %}
+{% block home_title %}{% trans "Módulo Cadastros Gerais" %}{% endblock %}
+{% block home_subtitle %}{% trans "Central de cadastros básicos e auxiliares do sistema" %}{% endblock %}
+
+{% block home_stats %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            {% trans "Visão Geral dos Cadastros" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-lg-4 col-md-6 col-sm-6">
+                <a href="{% url 'cadastros_gerais:unidade_medida_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                                <i class="fas fa-balance-scale"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-primary mb-1">{{ total_unidades|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Unidades de Medida" %}</p>
+                            <small class="text-muted">{% trans "Cadastradas" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-4 col-md-6 col-sm-6">
+                <a href="{% url 'cadastros_gerais:categoria_aux_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-success mb-1">{{ total_categorias_aux|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Categorias Auxiliares" %}</p>
+                            <small class="text-muted">{% trans "Disponíveis" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-4 col-md-6 col-sm-6">
+                <a href="{% url 'cadastros_gerais:item_aux_list' %}" class="text-decoration-none">
+                    <div class="action-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <h3 class="display-6 fw-bold text-info mb-1">{{ total_itens_aux|default:0 }}</h3>
+                            <p class="text-muted mb-1 fw-semibold">{% trans "Itens Auxiliares" %}</p>
+                            <small class="text-muted">{% trans "Cadastrados" %}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block home_actions %}
+    <div class="mb-5">
+        <h2 class="section-title" data-aos="fade-up">
+            <i class="fas fa-bolt me-2 text-primary"></i>
+            {% trans "Ações Rápidas" %}
+        </h2>
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="200">
+            <!-- Unidades de Medida -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-primary text-white mx-auto mb-3">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Unidades de Medida" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Cadastre, importe e gerencie unidades de medida" %}</p>
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            <a href="{% url 'cadastros_gerais:unidade_medida_create' %}" class="btn btn-primary btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-plus me-1"></i>{% trans "Criar" %}
+                            </a>
+                            <a href="{% url 'cadastros_gerais:unidade_medida_list' %}" class="btn btn-outline-primary btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-list me-1"></i>{% trans "Listar" %}
+                            </a>
+                            <a href="{% url 'cadastros_gerais:unidade_medida_import' %}" class="btn btn-secondary btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-file-import me-1"></i>{% trans "Importar" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categorias Auxiliares -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-success text-white mx-auto mb-3">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Categorias Auxiliares" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Organize categorias para dados auxiliares" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'cadastros_gerais:categoria_aux_create' %}" class="btn btn-success btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-plus me-1"></i>{% trans "Criar" %}
+                            </a>
+                            <a href="{% url 'cadastros_gerais:categoria_aux_list' %}" class="btn btn-outline-success btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-list me-1"></i>{% trans "Listar" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Itens Auxiliares -->
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-info text-white mx-auto mb-3">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Itens Auxiliares" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Cadastre itens vinculados às categorias auxiliares" %}</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="{% url 'cadastros_gerais:item_aux_create' %}" class="btn btn-info btn-sm text-white" style="min-width: 110px;">
+                                <i class="fas fa-plus me-1"></i>{% trans "Criar" %}
+                            </a>
+                            <a href="{% url 'cadastros_gerais:item_aux_list' %}" class="btn btn-outline-info btn-sm" style="min-width: 110px;">
+                                <i class="fas fa-list me-1"></i>{% trans "Listar" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-1" data-aos="fade-up" data-aos-delay="900">
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon bg-gradient-secondary text-white mx-auto mb-3">
+                            <i class="fas fa-magic"></i>
+                        </div>
+                        <h4 class="h5 fw-bold mb-3">{% trans "Presets de Documentos" %}</h4>
+                        <p class="text-muted mb-4">{% trans "Cria categorias e itens padrão (Empresa, Fornecedor, Cliente) com um clique" %}</p>
+                        <a href="{% url 'cadastros_gerais:presets_documentos' %}" class="btn btn-secondary btn-sm" style="min-width: 160px;">
+                            <i class="fas fa-wand-magic-sparkles me-1"></i>{% trans "Criar Presets" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-4">
+            <i class="fas fa-info-circle me-1"></i>
+            {% trans "Ao criar um Item Auxiliar você pode marcar vários módulos em 'Aplicar em'. O sistema salva as regras internamente (sem JSON para o usuário)." %}
+        </div>
+
+        <div class="text-end mt-3">
+            <a href="{% url 'cadastros_gerais:presets_documentos' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-wand-magic-sparkles me-1"></i>{% trans "Criar Presets de Documentos" %}
+            </a>
+        </div>
+    </div>
+{% endblock %}

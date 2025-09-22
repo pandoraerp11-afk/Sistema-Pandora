@@ -1,0 +1,155 @@
+{% extends "pandora_form_ultra_modern.html" %}
+{% load i18n widget_tweaks humanize %}
+
+{# ===== Cabeçalho Dinâmico ===== #}
+{% block title %}{% if form.instance.pk %}{% trans "Editar Procedimento" %}{% else %}{% trans "Novo Procedimento" %}{% endif %}{% endblock %}
+{% block page_title %}{% if form.instance.pk %}{% trans "Editar Procedimento" %}{% else %}{% trans "Cadastrar Procedimento" %}{% endif %}{% endblock %}
+{% block page_subtitle %}{{ form.instance.nome|default:_('Defina os dados clínicos e financeiros') }}{% endblock %}
+
+{# ===== CSS Extra (somente libs externas se necessário) ===== #}
+{% block extra_css %}{{ block.super }}{% endblock %}
+
+{# ===== Form Principal ===== #}
+{% block form_main %}
+<form id="main-form" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            {# Card: Dados Principais #}
+            <div class="card shadow-sm mb-4" data-aos="fade-up">
+                <div class="card-header card-header-compact d-flex align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-syringe me-2"></i>{% trans "Dados do Procedimento" %}</h5>
+                </div>
+                <div class="card-body card-body-compact">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label" for="id_nome">{% trans "Nome" %}</label>
+                              {% render_field form.nome class="form-control" placeholder="Ex: Peeling Químico" title="Ex: Peeling Químico" %}
+                            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors|join:', ' }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="id_categoria">{% trans "Categoria" %}</label>
+                            {% render_field form.categoria class="form-select" %}
+                            {% if form.categoria.errors %}<div class="invalid-feedback d-block">{{ form.categoria.errors|join:', ' }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label" for="id_descricao">{% trans "Descrição Detalhada" %}</label>
+                              {% render_field form.descricao class="form-control" rows="3" placeholder="Indicações, objetivos, técnicas..." %}
+                            {% if form.descricao.errors %}<div class="invalid-feedback d-block">{{ form.descricao.errors|join:', ' }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="id_duracao_estimada">{% trans "Duração Estimada" %}</label>
+                            {% render_field form.duracao_estimada class="form-control" placeholder="HH:MM:SS" %}
+                            <small class="text-muted">{% trans "Formato: horas:minutos:segundos" %}</small>
+                            {% if form.duracao_estimada.errors %}<div class="invalid-feedback d-block">{{ form.duracao_estimada.errors|join:', ' }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="id_valor_base">{% trans "Valor Base" %}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                {% render_field form.valor_base class="form-control" %}
+                            </div>
+                            {% if form.valor_base.errors %}<div class="invalid-feedback d-block">{{ form.valor_base.errors|join:', ' }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="id_ativo">{% trans "Ativo" %}</label>
+                            <div class="form-switch">
+                                {% render_field form.ativo class="form-check-input" %}
+                            </div>
+                            {% if form.ativo.errors %}<div class="invalid-feedback d-block">{{ form.ativo.errors|join:', ' }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="id_requisitos_pre_procedimento">{% trans "Requisitos Pré-Procedimento" %}</label>
+                              {% render_field form.requisitos_pre_procedimento class="form-control" rows="3" placeholder="Jejum, cuidados de pele, etc." %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="id_contraindicacoes">{% trans "Contraindicações" %}</label>
+                              {% render_field form.contraindicacoes class="form-control" rows="3" placeholder="Hipertensão, alergias..." %}
+                        </div>
+                                                <div class="col-md-6">
+                                                        <label class="form-label" for="id_cuidados_pos_procedimento">{% trans "Cuidados Pós-Procedimento" %}</label>
+                                                            {% render_field form.cuidados_pos_procedimento class="form-control" rows="3" placeholder="Hidratação, evitar sol, etc." %}
+                                                </div>
+                                                <div class="col-md-6">
+                                                        <label class="form-label" for="id_intervalo_minimo_sessoes">{% trans "Intervalo Mínimo entre Sessões (dias)" %}</label>
+                                                        {% render_field form.intervalo_minimo_sessoes class="form-control" %}
+                                                </div>
+                                                <div class="col-md-4">
+                                                        <div class="form-check mt-2">
+                                                            {% render_field form.requer_anamnese class="form-check-input" %}
+                                                            <label class="form-check-label" for="id_requer_anamnese">{% trans "Requer Anamnese" %}</label>
+                                                        </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                        <div class="form-check mt-2">
+                                                            {% render_field form.requer_termo_consentimento class="form-check-input" %}
+                                                            <label class="form-check-label" for="id_requer_termo_consentimento">{% trans "Termo Consentimento" %}</label>
+                                                        </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                        <div class="form-check mt-2">
+                                                            {% render_field form.permite_fotos_evolucao class="form-check-input" %}
+                                                            <label class="form-check-label" for="id_permite_fotos_evolucao">{% trans "Permite Fotos Evolução" %}</label>
+                                                        </div>
+                                                </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Card adicional futuro (ex: Materiais / Steps) pode ser inserido aqui #}
+        </div>
+
+        <div class="col-lg-4">
+            {# Sidebar: Resumo Dinâmico #}
+            <div class="card shadow-sm mb-4" data-aos="fade-left">
+                <div class="card-header card-header-compact d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-eye me-1"></i>{% trans "Resumo" %}</h6>
+                    <span class="badge bg-primary">{% if form.instance.pk %}{% trans "Edição" %}{% else %}NEW{% endif %}</span>
+                </div>
+                <div class="card-body small" id="procedimento-preview">
+                    <p class="mb-1"><strong>{% trans "Nome:" %}</strong> <span data-bind="nome">{{ form.instance.nome|default:'—' }}</span></p>
+                    <p class="mb-1"><strong>{% trans "Categoria:" %}</strong> <span data-bind="categoria">{{ form.instance.get_categoria_display|default:'—' }}</span></p>
+                    <p class="mb-1"><strong>{% trans "Valor Base:" %}</strong> <span data-bind="valor_base">{{ form.instance.valor_base|default:'0,00' }}</span></p>
+                    <p class="mb-1"><strong>{% trans "Duração:" %}</strong> <span data-bind="duracao">{{ form.instance.duracao_estimada|default:'--:--:--' }}</span></p>
+                    <p class="mb-1"><strong>{% trans "Status:" %}</strong> <span data-bind="ativo">{% if form.instance.pk and not form.instance.ativo %}{% trans "Inativo" %}{% else %}{% trans "Ativo" %}{% endif %}</span></p>
+                    <hr>
+                    <p class="text-muted mb-0">{% trans "O resumo atualiza conforme você digita." %}</p>
+                </div>
+            </div>
+
+            {% include 'prontuarios/partials/_form_actions.html' with object=form.instance cancel_url=cancel_url|default:'/prontuarios/atendimentos/' show_save_continue=False %}
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+// Atualização simples do preview
+document.addEventListener('DOMContentLoaded', () => {
+    const bindings = {
+        'id_nome': 'nome',
+        'id_categoria': 'categoria',
+        'id_valor_base': 'valor_base',
+        'id_duracao_estimada': 'duracao'
+    };
+    Object.keys(bindings).forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+            const target = document.querySelector(`[data-bind="${bindings[id]}"]`);
+            if (target) target.textContent = el.value || '—';
+        });
+    });
+    const ativo = document.getElementById('id_ativo');
+    if (ativo) ativo.addEventListener('change', () => {
+        const t = document.querySelector('[data-bind="ativo"]');
+        if (t) t.textContent = ativo.checked ? '{% trans "Ativo" %}' : '{% trans "Inativo" %}';
+    });
+});
+</script>
+{% endblock %}
+
+

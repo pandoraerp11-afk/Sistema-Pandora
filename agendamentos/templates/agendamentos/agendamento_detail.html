@@ -1,0 +1,112 @@
+{% extends "pandora_ultra_modern_base.html" %}
+{% load static humanize agendamento_extras %}
+{% block title %}Agendamento #{{ agendamento.id }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="fw-semibold mb-0"><i class="fas fa-calendar-day me-2 text-primary"></i>Agendamento #{{ object.id }}</h2>
+    <div class="btn-group btn-group-sm">
+      <a href="{% url 'agendamentos:agendamento-list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i></a>
+  {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}
+        <a href="{% url 'agendamentos:agendamento-edit' object.id %}" class="btn btn-outline-primary"><i class="fas fa-edit"></i></a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span>Dados</span>
+          <span class="badge bg-{% if object.status == 'CONFIRMADO' %}success{% elif object.status == 'PENDENTE' %}secondary{% elif object.status == 'CANCELADO' %}danger{% elif object.status == 'EM_ANDAMENTO' %}info{% elif object.status == 'CONCLUIDO' %}primary{% elif object.status == 'NO_SHOW' %}warning text-dark{% else %}light{% endif %}">{{ object.status }}</span>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-3">Início</dt><dd class="col-sm-9">{{ object.data_inicio|date:'d/m/Y H:i' }}</dd>
+            <dt class="col-sm-3">Fim</dt><dd class="col-sm-9">{{ object.data_fim|date:'d/m/Y H:i' }}</dd>
+            <dt class="col-sm-3">Profissional</dt><dd class="col-sm-9">{{ object.profissional }}</dd>
+            <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">{{ object.cliente }}</dd>
+            <dt class="col-sm-3">Origem</dt><dd class="col-sm-9">{{ object.origem|default:'-' }}</dd>
+            <dt class="col-sm-3">Serviço</dt><dd class="col-sm-9">{% if object.servico_id %}{{ object.servico.nome_servico }} ({{ object.servico.categoria }}){% else %}-{% endif %}</dd>
+            <dt class="col-sm-3">Pendências</dt>
+            <dd class="col-sm-9">
+              {% with p=object.metadata.pendencias %}
+                {% if p %}
+                  <span class="badge bg-warning text-dark">{{ p|join:', ' }}</span>
+                {% else %}-{% endif %}
+              {% endwith %}
+            </dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold"><i class="fas fa-history me-2"></i>Histórico / Auditoria</div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr><th>Data</th><th>Evento</th><th>Usuário</th><th>Diff</th></tr>
+              </thead>
+              <tbody>
+                {% for a in auditorias %}
+                <tr>
+                  <td>{{ a.created_at|date:'d/m/Y H:i' }}</td>
+                  <td>{{ a.tipo_evento }}</td>
+                  <td>{{ a.user|default:'-' }}</td>
+                  <td>
+                    {% if a.diff %}
+                      <code class="small text-wrap" style="white-space: pre-line;">{{ a.diff|json_script:"d" }}{{ a.diff }}</code>
+                    {% else %}-{% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-3">Sem registros.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+  {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:'AGENDAMENTOS_SECRETARIA' %}
+  <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold"><i class="fas fa-tools me-2"></i>Ações</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'agendamentos:agendamento-action' object.id 'checkin' %}" class="mb-2 d-grid">
+            {% csrf_token %}
+            <button class="btn btn-outline-info btn-sm" {% if object.status != 'CONFIRMADO' %}disabled{% endif %}><i class="fas fa-door-open me-1"></i>Check-in</button>
+          </form>
+          <form method="post" action="{% url 'agendamentos:agendamento-action' object.id 'concluir' %}" class="mb-2 d-grid">
+            {% csrf_token %}
+            <button class="btn btn-outline-success btn-sm" {% if object.status != 'EM_ANDAMENTO' %}disabled{% endif %}><i class="fas fa-flag-checkered me-1"></i>Concluir</button>
+          </form>
+          <form method="post" action="{% url 'agendamentos:agendamento-action' object.id 'resolver_pendencias' %}" class="mb-2 d-grid">
+            {% csrf_token %}
+            <button class="btn btn-outline-warning btn-sm" {% if not object.metadata.pendencias %}disabled{% endif %}><i class="fas fa-check-double me-1"></i>Resolver Pendências</button>
+          </form>
+          <form method="post" action="{% url 'agendamentos:agendamento-action' object.id 'cancelar' %}" class="mb-2 d-grid" onsubmit="return confirm('Confirmar cancelamento?');">
+            {% csrf_token %}
+            <input type="hidden" name="motivo" value="cancelado via UI" />
+            <button class="btn btn-outline-danger btn-sm" {% if object.status in 'CANCELADO,CONCLUIDO' %}disabled{% endif %}><i class="fas fa-ban me-1"></i>Cancelar</button>
+          </form>
+        </div>
+      </div>
+  {% endif %}
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold"><i class="fas fa-info-circle me-2"></i>Meta</div>
+        <div class="card-body small text-muted">
+          <p class="mb-1">Status orientam as ações disponíveis:</p>
+          <ul class="mb-0 ps-3">
+            <li><strong>PENDENTE</strong>: aguardando confirmação.</li>
+            <li><strong>CONFIRMADO</strong>: pode realizar check-in.</li>
+            <li><strong>EM_ANDAMENTO</strong>: pode concluir.</li>
+            <li><strong>CONCLUIDO</strong>: finalizado.</li>
+            <li><strong>CANCELADO</strong>: bloqueado.</li>
+            <li><strong>NO_SHOW</strong>: ausência registrada.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
