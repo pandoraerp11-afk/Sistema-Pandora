@@ -1,36 +1,42 @@
 """Decorators reutilizáveis para portais (fornecedor e cliente)."""
 
+from collections.abc import Callable
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 
 from portal_cliente.models import ContaCliente
 from portal_fornecedor.models import AcessoFornecedor
 
 
-def fornecedor_required(func):
+def fornecedor_required(func: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
+    """Exigir acesso fornecedor ativo ou retornar 404."""
+
     @login_required
     @wraps(func)
-    def wrapper(request, *args, **kwargs):
+    def wrapper(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
         try:
             acesso = AcessoFornecedor.objects.select_related("fornecedor").get(usuario=request.user, ativo=True)
-        except AcessoFornecedor.DoesNotExist:
-            raise Http404("Acesso fornecedor não encontrado")
+        except AcessoFornecedor.DoesNotExist as exc:  # pragma: no cover - fluxo negativo
+            msg = "Fornecedor sem acesso ativo"
+            raise Http404(msg) from exc
         request.acesso_fornecedor = acesso
         return func(request, *args, **kwargs)
 
     return wrapper
 
 
-def cliente_portal_required(func):
+def cliente_portal_required(func: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
+    """Exigir contas cliente ativas ou retornar 404."""
+
     @login_required
     @wraps(func)
-    def wrapper(request, *args, **kwargs):
+    def wrapper(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
         contas = ContaCliente.objects.filter(usuario=request.user, ativo=True).select_related("cliente")
-        if not contas.exists():
-            raise Http404("Nenhuma conta cliente ativa")
-        # Se o tenant ainda não estiver na sessão (usuário portal puro), tenta definir a partir da primeira conta
+        if not contas.exists():  # pragma: no cover - cenário negativo simples
+            msg = "Nenhuma conta cliente ativa"
+            raise Http404(msg)
         if "tenant_id" not in request.session:
             first = contas.first()
             if first and getattr(first.cliente, "tenant_id", None):

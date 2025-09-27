@@ -1,30 +1,68 @@
-# core/templatetags/menu_tags.py (VERSÃO ULTRA MODERNA - Refatorada)
+"""Tags de template para renderização do menu lateral (sidebar).
+
+Integra autorização unificada quando habilitada e possui um fallback HTML
+para ambientes sem template.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from django import template
 from django.conf import settings
+from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse
 from django.utils.safestring import mark_safe
 
-from ..models import TenantUser
-from ..utils import get_current_tenant
+from core.models import TenantUser
+from core.utils import get_current_tenant
 
 try:
-    from ..authorization import AccessDecision, can_access_module
-except Exception:  # caso arquivo ainda não carregado/migração inicial
-    can_access_module = None  # type: ignore
-    AccessDecision = None  # type: ignore
+    from core.authorization import can_access_module
+except ImportError:  # caso arquivo ainda não carregado/migração inicial
+    can_access_module = None
 
 register = template.Library()
 
 
+def _can_view_module(
+    user: object,
+    tenant: object,
+    module_config: dict[str, object],
+    is_admin_of_tenant: bool,  # noqa: FBT001
+    can_access_module_fn: Callable[..., Any] | None,
+) -> bool:
+    """Retorna True se o usuário pode visualizar o módulo informado."""
+    if module_config.get("is_header"):
+        return True
+
+    module_name = module_config.get("module_name")
+    allowed = False
+
+    if getattr(settings, "FEATURE_UNIFIED_ACCESS", False) and can_access_module_fn:
+        decision = can_access_module_fn(user, tenant, module_name)
+        allowed = bool(getattr(decision, "allowed", False))
+    elif getattr(user, "is_superuser", False):
+        allowed = True
+    elif (module_config.get("tenant_admin_only") and not is_admin_of_tenant) or (not module_name or not tenant):
+        allowed = False
+    elif hasattr(tenant, "is_module_enabled"):
+        allowed = bool(tenant.is_module_enabled(module_name))
+    else:
+        allowed = False
+
+    return allowed
+
+
 @register.simple_tag(takes_context=True)
-def render_sidebar_menu(context):
-    """Renderiza o menu lateral dinamicamente usando templates modernos
-    compatível com o design ultra moderno e Bootstrap 5.
+def render_sidebar_menu(context: dict[str, Any]) -> str:  # noqa: C901
+    """Renderiza o menu lateral dinamicamente.
+
+    Compatível com o design moderno e Bootstrap 5.
     """
     request = context.get("request")
-    if not request or not request.user.is_authenticated:
+    if not request or not getattr(request.user, "is_authenticated", False):
         return ""
 
     user = request.user
@@ -37,51 +75,32 @@ def render_sidebar_menu(context):
 
     # Verificar se é admin do tenant
     is_admin_of_tenant = False
-    if tenant and not user.is_superuser:
-        is_admin_of_tenant = TenantUser.objects.filter(tenant=tenant, user=user, is_tenant_admin=True).exists()
+    if tenant and not getattr(user, "is_superuser", False):
+        is_admin_of_tenant = TenantUser.objects.filter(
+            tenant=tenant,
+            user=user,
+            is_tenant_admin=True,
+        ).exists()
 
-    def can_view_module(module_config):
-        """Verifica se o usuário pode visualizar o módulo.
-        Se FEATURE_UNIFIED_ACCESS estiver ativa e authorization disponível, usa a função central.
-        Caso contrário, mantém lógica legada (com hardcode somente se FEATURE_REMOVE_MENU_HARDCODE for False).
-        """
-        if module_config.get("is_header"):
-            return True
-
-        module_name = module_config.get("module_name")
-
-        # Caminho novo unificado
-        if getattr(settings, "FEATURE_UNIFIED_ACCESS", False) and can_access_module:
-            decision = can_access_module(user, tenant, module_name)
-            return decision.allowed
-
-        # Lógica legada reduzida (hardcode removido)
-        if user.is_superuser:
-            return True
-        if module_config.get("tenant_admin_only") and not is_admin_of_tenant:
-            return False
-        if not module_name or not tenant:
-            return False
-        try:
-            return tenant.is_module_enabled(module_name)
-        except Exception:
-            return False
-
-    # Se usuário não tem tenant e não é superuser, provavelmente é usuário somente portal -> não renderiza menu corporativo
-    if not tenant and not user.is_superuser:
+    # Se usuário não tem tenant e não é superuser, provavelmente é usuário somente portal
+    if not tenant and not getattr(user, "is_superuser", False):
         return ""
 
     # Processar módulos disponíveis
-    available_modules = [m for m in settings.PANDORA_MODULES if isinstance(m, dict) and can_view_module(m)]
+    available_modules = [
+        m
+        for m in settings.PANDORA_MODULES
+        if isinstance(m, dict) and _can_view_module(user, tenant, m, is_admin_of_tenant, can_access_module)
+    ]
 
     # Agrupar módulos por seções
     menu_groups = _group_modules_by_sections(available_modules)
 
     # Processar URLs e estado ativo
-    processed_groups = []
+    processed_groups: list[dict[str, Any]] = []
     for group in menu_groups:
         if group["items"]:
-            processed_items = []
+            processed_items: list[dict[str, Any]] = []
             for item in group["items"]:
                 processed_item = _process_menu_item(item, request)
                 if processed_item:
@@ -95,14 +114,14 @@ def render_sidebar_menu(context):
 
     try:
         return render_to_string("core/sidebar_menu.html", menu_context, request=request)
-    except Exception:
+    except TemplateDoesNotExist:
         # Fallback para o sistema antigo se o template não existir
-        return _render_menu_fallback(processed_groups, request)
+        return _render_menu_fallback(processed_groups)
 
 
-def _group_modules_by_sections(modules):
-    """Agrupa módulos por seções com cabeçalhos"""
-    grouped_modules = []
+def _group_modules_by_sections(modules: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Agrupa módulos por seções com cabeçalhos."""
+    grouped_modules: list[dict[str, Any]] = []
     current_group = None
 
     for module in modules:
@@ -123,8 +142,14 @@ def _group_modules_by_sections(modules):
     return grouped_modules
 
 
-def _process_menu_item(module, request):
-    """Processa um item do menu individual"""
+if TYPE_CHECKING:  # apenas para tipos
+    from collections.abc import Callable
+
+    from django.http import HttpRequest
+
+
+def _process_menu_item(module: dict[str, Any], request: HttpRequest) -> dict[str, Any]:
+    """Processa um item do menu individual."""
     has_children = "children" in module and module["children"]
     is_active = False
     menu_url = "#"
@@ -163,9 +188,9 @@ def _process_menu_item(module, request):
     }
 
 
-def _render_menu_fallback(processed_groups, request):
-    """Sistema de fallback usando concatenação (compatibilidade)"""
-    menu_html = ['<ul class="nav-list">']
+def _render_menu_fallback(processed_groups: list[dict[str, Any]]) -> str:
+    """Sistema de fallback usando concatenação (compatibilidade)."""
+    menu_html: list[str] = ['<ul class="nav-list">']
 
     for group in processed_groups:
         if group["header"]:
@@ -200,16 +225,24 @@ def _render_menu_fallback(processed_groups, request):
                 if item["is_active"]:
                     collapse_class += " show"
 
-                menu_html.append(f'<ul id="{item["collapse_id"]}" class="{collapse_class}" data-bs-parent=".nav-list">')
+                menu_html.append(
+                    f'<ul id="{item["collapse_id"]}" class="{collapse_class}" data-bs-parent=".nav-list">',
+                )
                 for child in item["children"]:
                     child_link_class = "nav-link active" if child["is_active"] else "nav-link"
                     # CORREÇÃO: Adicionando a classe "nav-item" ao <li> do submenu
                     menu_html.append(
-                        f'<li class="nav-item"><a href="{child["url"]}" class="{child_link_class}"><span class="nav-text">{child["name"]}</span></a></li>',
+                        '<li class="nav-item">'
+                        f'<a href="{child["url"]}" class="{child_link_class}">'
+                        f'<span class="nav-text">{child["name"]}</span>'
+                        "</a>"
+                        "</li>",
                     )
                 menu_html.append("</ul>")
 
             menu_html.append("</li>")
 
     menu_html.append("</ul>")
-    return mark_safe("".join(menu_html))
+    # O conteúdo é gerado a partir de nomes/URLs definidos pela aplicação,
+    # sem dados fornecidos por usuários.
+    return mark_safe("".join(menu_html))  # noqa: S308

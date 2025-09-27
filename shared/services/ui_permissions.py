@@ -1,35 +1,51 @@
-def _get_role(user, tenant):
+"""Módulo para permissões de UI."""
+
+from __future__ import annotations
+
+import logging
+from contextlib import suppress
+from typing import TYPE_CHECKING
+
+from core.models import TenantUser
+
+from .permission_resolver import has_permission as resolver_has_permission
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+
+    from cadastros_gerais.models import Tenant
+    from user_management.models import Role
+
+logger = logging.getLogger(__name__)
+
+
+def _get_role(user: User, tenant: Tenant) -> Role | None:
     try:
-        from core.models import TenantUser
-
         tu = TenantUser.objects.select_related("role").get(user=user, tenant=tenant)
-        return tu.role
-    except Exception:
+    except TenantUser.DoesNotExist:
         return None
+    else:
+        return tu.role
 
 
-def _role_has_model_perm(role, app_label: str, model_name: str, action: str) -> bool:
+def _role_has_model_perm(role: Role | None, app_label: str, model_name: str, action: str) -> bool:
     if not role:
         return False
-    try:
+    with suppress(Exception):  # Erros aqui não devem quebrar a UI
         codename = f"{action.lower()}_{model_name.lower()}"
         return role.permissions.filter(content_type__app_label=app_label, codename=codename).exists()
-    except Exception:
-        return False
+    return False
 
 
-def _resolver_allows(user, tenant, action: str, resource: str | None = None) -> bool:
-    try:
-        from .permission_resolver import has_permission as resolver_has_permission
-
+def _resolver_allows(user: User, tenant: Tenant, action: str, resource: str | None = None) -> bool:
+    with suppress(Exception):  # Falhas no resolver não devem quebrar a UI
         return bool(resolver_has_permission(user, tenant, action, resource))
-    except Exception:
-        return False
+    return False
 
 
-def build_ui_permissions(
-    user,
-    tenant,
+def build_ui_permissions(  # noqa: PLR0913
+    user: User,
+    tenant: Tenant,
     *,
     module_key: str | None = None,
     app_label: str | None = None,
@@ -53,17 +69,16 @@ def build_ui_permissions(
         return perms
 
     if getattr(user, "is_superuser", False):
-        return {k: True for k in perms}
+        return dict.fromkeys(perms, True)
 
     # Se for admin do tenant, conceder permissões amplas na UI
-    try:
-        if tenant and not getattr(user, "is_superuser", False):
-            from core.models import TenantUser
-
-            if TenantUser.objects.filter(user=user, tenant=tenant, is_tenant_admin=True).exists():
-                return {k: True for k in perms}
-    except Exception:
-        pass
+    with suppress(Exception):  # Falhas de DB não devem quebrar a UI
+        if (
+            tenant
+            and not getattr(user, "is_superuser", False)
+            and TenantUser.objects.filter(user=user, tenant=tenant, is_tenant_admin=True).exists()
+        ):
+            return dict.fromkeys(perms, True)
 
     # Tentar via PermissionResolver se module_key existir
     if module_key and tenant:

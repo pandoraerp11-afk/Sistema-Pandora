@@ -33,6 +33,25 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-key-for-develo
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 TESTING = bool(os.environ.get("PYTEST_CURRENT_TEST"))
 
+# =============================
+# SUBDOMÍNIOS (Compatibilidade de testes)
+# Alguns testes antigos esperam que constantes de subdomínio estejam expostas diretamente
+# em settings.*. A lógica real vive em core.validators. Para manter compat e evitar alterar
+# os testes legados de sincronização, exportamos aqui proxies estáveis. MIN/MAX derivam do
+# regex adotado (r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"): tamanho mínimo 1 e máximo 63.
+# Isso NÃO muda a regra de validação (que continua centralizada em core.validators), apenas
+# torna explícito para outros módulos / inspeções.
+try:  # pragma: no cover - fallback defensivo
+    from core.validators import SUBDOMAIN_REGEX as _CORE_SUBDOMAIN_REGEX
+except Exception:  # noqa: BLE001
+    import re as _re
+
+    _CORE_SUBDOMAIN_REGEX = _re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+
+SUBDOMAIN_REGEX = _CORE_SUBDOMAIN_REGEX
+SUBDOMAIN_MIN_LENGTH = 1
+SUBDOMAIN_MAX_LENGTH = 63
+
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -199,10 +218,12 @@ DATABASES = {
 _db_url = os.environ.get("DATABASE_URL")
 if _db_url:
     import importlib
+
     try:
         _djdb = importlib.import_module("dj_database_url")
     except ModuleNotFoundError:
         from urllib.parse import urlparse
+
         url = urlparse(_db_url)
         if url.scheme in {"postgres", "postgresql"}:
             DATABASES["default"] = {

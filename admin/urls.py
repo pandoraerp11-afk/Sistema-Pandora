@@ -17,6 +17,7 @@ from .views import (
     TenantBackupViewSet,
     TenantConfigurationUpdateView,
     TenantConfigurationViewSet,
+    TenantListLiteView,
     TenantUsageReportViewSet,
     admin_home,
     alerts_page,
@@ -27,7 +28,8 @@ from .views import (
     support_page,
 )
 
-app_name = "administration"
+# Namespace principal (administration) e alias 'admin' fornecido em urls raiz.
+app_name = "admin"
 
 # --- API Endpoints ---
 router = DefaultRouter()
@@ -61,4 +63,7 @@ urlpatterns = [
     path("config/tenant/", TenantConfigurationUpdateView.as_view(), name="tenant_config_update"),
     # Rotas da API (prefixadas com /api/)
     path("api/", include(router.urls)),
+    # Aliases esperados pelos testes migrados
+    path("api/system-alerts/", SystemAlertViewSet.as_view({"get": "list"}), name="system-alerts-list"),
+    path("api/tenants/", TenantListLiteView.as_view(), name="tenant-list"),
 ]

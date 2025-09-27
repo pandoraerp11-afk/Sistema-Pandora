@@ -1,4 +1,4 @@
-# core/urls.py (VERSÃO CORRETA E FINAL)
+"""Rotas do módulo core (mantidas sem rotas de documentos locais)."""
 
 from django.urls import path
 from django.views.generic import RedirectView
@@ -28,17 +28,18 @@ urlpatterns = [
     # --- Gerenciamento de Tenants (Páginas HTML) ---
     path("tenants/", views.TenantListView.as_view(), name="tenant_list"),
     # Rotas de criação/edição agora usam exclusivamente o Wizard moderno
-    # Rotas canonicas (uso interno e externo) – criação/edição via Wizard
+    # Rotas canonicas (uso interno e externo) - criação/edição via Wizard
     path("tenants/create/", TenantCreationWizardView.as_view(), name="tenant_create"),
     path("tenants/<int:pk>/", views.TenantDetailView.as_view(), name="tenant_detail"),
     path("tenants/<int:pk>/edit/", TenantCreationWizardView.as_view(), name="tenant_update"),
     path("tenants/<int:pk>/delete/", views.TenantDeleteView.as_view(), name="tenant_delete"),
     path("tenants/<int:pk>/modules/", views.tenant_module_config, name="tenant_module_config"),
-    path("tenants/<int:pk>/documents/", views.tenant_documents, name="tenant_documents"),  # Nova rota para documentos
     # --- Rotas legacy (transitórias) - manter até 2025-10 para backlinks existentes ---
     # Redirecionam para as rotas canônicas evitando quebra de links antigos.
     path(
-        "tenants/wizard/", RedirectView.as_view(pattern_name="core:tenant_create", permanent=True), name="tenant_wizard"
+        "tenants/wizard/",
+        RedirectView.as_view(pattern_name="core:tenant_create", permanent=True),
+        name="tenant_wizard",
     ),
     path(
         "tenants/wizard/<int:pk>/edit/",
@@ -51,6 +52,13 @@ urlpatterns = [
     path("tenants/wizard/<int:pk>/edit/step/<int:step>/", wizard_goto_step, name="wizard_goto_step_edit"),
     path("tenants/wizard/validate-field/", wizard_validate_field, name="tenant_wizard_validate_field"),
     path("tenants/check-subdomain/", check_subdomain_availability, name="check_subdomain"),
+    # Alias legacy (apenas para compatibilidade de testes migrados / backlinks internos).
+    # NOTE(compat): alias temporário; remover após migrar testes para 'check_subdomain' (meta 2025-11).
+    path(
+        "tenants/check-subdomain-legacy/",
+        check_subdomain_availability,
+        name="tenant_subdomain_check",
+    ),
     # --- Gerenciamento de Usuários do Tenant ---
     path("tenant-users/", views.TenantUserListView.as_view(), name="tenant_user_list"),
     path("tenant-users/create/", views.TenantUserCreateView.as_view(), name="tenant_user_create"),
@@ -87,6 +95,8 @@ urlpatterns = [
     path("api/permissions/cache/", api_views.api_permission_cache_inspect, name="api_permission_cache_inspect"),
     path("api/cargo/suggestions/", api_views.api_cargo_suggestions, name="api_cargo_suggestions"),
     path("api/departments/", api_views.api_departments_list, name="api_departments_list"),
+    # Alias compat solicitado pelos testes migrados
+    path("api/departments-legacy/", api_views.api_departments_list, name="departments_api"),
     path("api/ui-permissions/", views.ui_permissions_json, name="ui_permissions_json"),
     # --- Métricas internas do Wizard (staff only) ---
     path("wizard/metrics/", wizard_metrics_view, name="wizard_metrics"),

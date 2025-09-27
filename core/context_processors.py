@@ -1,19 +1,26 @@
+"""Context processors for the core app."""
+
+from importlib import import_module
+from typing import Any
+
+from django.http import HttpRequest
 from django.utils import timezone
 
 
-def tenant_context(request):
+def tenant_context(request: HttpRequest) -> dict[str, Any]:
     """Contexto base do tenant + métricas leves Saúde."""
     tenant = getattr(request, "tenant", None)
     data = {"current_tenant": tenant}
     if tenant and request.user.is_authenticated:
         try:
-            from prontuarios.models import Atendimento
-
+            pront_mod = import_module("prontuarios.models")
+            atendimento = pront_mod.Atendimento
             hoje = timezone.localdate()
-            data["saude_atendimentos_hoje"] = Atendimento.objects.filter(
-                tenant=tenant, data_atendimento__date=hoje
+            data["saude_atendimentos_hoje"] = atendimento.objects.filter(
+                tenant=tenant,
+                data_atendimento__date=hoje,
             ).count()
-            # slots futuros livres removidos deste módulo
-        except Exception:
+        except ImportError:
+            # Se o app não estiver disponível, ignora silenciosamente
             pass
     return data

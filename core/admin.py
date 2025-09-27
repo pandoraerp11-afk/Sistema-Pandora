@@ -1,7 +1,14 @@
-# core/admin.py - VERSÃO EVOLUÍDA PARA ADMINISTRAÇÃO DO TENANT
-# Inclui todos os novos campos e modelos para uma interface administrativa completa
+"""Admin do app core.
+
+Inclui configurações avançadas e inlines para administração multi-tenant,
+mantendo compatibilidade com o legado e atendendo padrões de lint/typing.
+"""
+
+from typing import ClassVar
 
 from django.contrib import admin
+from django.contrib.admin.options import InlineModelAdmin
+from django.http import HttpRequest
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -32,6 +39,8 @@ from .models import (
 
 
 class EnderecoInline(admin.TabularInline):
+    """Inline para endereços do tenant."""
+
     model = Endereco
     extra = 1
     verbose_name = _("Endereço")
@@ -51,6 +60,8 @@ class EnderecoInline(admin.TabularInline):
 
 
 class ContatoInline(admin.TabularInline):
+    """Inline para contatos do tenant."""
+
     model = Contato
     extra = 1
     verbose_name = _("Contato")
@@ -59,6 +70,8 @@ class ContatoInline(admin.TabularInline):
 
 
 class TenantDocumentoInline(admin.TabularInline):
+    """Inline para documentos anexados ao tenant."""
+
     model = TenantDocumento
     extra = 1
     verbose_name = _("Documento da Empresa")
@@ -67,6 +80,8 @@ class TenantDocumentoInline(admin.TabularInline):
 
 
 class CertificacaoInline(admin.TabularInline):
+    """Inline para certificações do tenant."""
+
     model = Certificacao
     extra = 1
     verbose_name = _("Certificação")
@@ -83,6 +98,8 @@ class CertificacaoInline(admin.TabularInline):
 
 
 class DadosBancariosInline(admin.TabularInline):
+    """Inline para dados bancários do tenant."""
+
     model = DadosBancarios
     extra = 1
     verbose_name = _("Dado Bancário")
@@ -91,6 +108,8 @@ class DadosBancariosInline(admin.TabularInline):
 
 
 class TenantPessoaFisicaInline(admin.StackedInline):
+    """Inline com informações específicas de pessoa física (PF)."""
+
     model = TenantPessoaFisica
     can_delete = False
     verbose_name = _("Informações de Pessoa Física")
@@ -111,13 +130,15 @@ class TenantPessoaFisicaInline(admin.StackedInline):
                     "estado_civil",
                     "nome_mae",
                     "nome_pai",
-                )
+                ),
             },
         ),
     )
 
 
 class TenantPessoaJuridicaInline(admin.StackedInline):
+    """Inline com informações específicas de pessoa jurídica (PJ)."""
+
     model = TenantPessoaJuridica
     can_delete = False
     verbose_name = _("Informações de Pessoa Jurídica")
@@ -138,13 +159,15 @@ class TenantPessoaJuridicaInline(admin.StackedInline):
                     "website",
                     "email_financeiro",
                     "telefone_financeiro",
-                )
+                ),
             },
         ),
     )
 
 
 class ConfiguracaoSistemaInline(admin.StackedInline):
+    """Inline com configurações de sistema por tenant."""
+
     model = ConfiguracaoSistema
     can_delete = False
     verbose_name = _("Configurações do Sistema")
@@ -161,13 +184,15 @@ class ConfiguracaoSistemaInline(admin.StackedInline):
                     "logo_login",
                     "termos_uso",
                     "politica_privacidade",
-                )
+                ),
             },
         ),
     )
 
 
 class EmpresaDocumentoVersaoInline(admin.TabularInline):
+    """Inline para versões de documentos da empresa."""
+
     model = EmpresaDocumentoVersao
     extra = 0
     fields = (
@@ -192,6 +217,8 @@ class EmpresaDocumentoVersaoInline(admin.TabularInline):
 
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
+    """Admin do modelo `Tenant` com inlines e filtros personalizados."""
+
     list_display = (
         "name",
         "subdomain",
@@ -214,17 +241,22 @@ class TenantAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "subdomain", "cnpj", "cpf", "email", "telefone", "razao_social", "nome_contato_principal")
     readonly_fields = ("created_at", "updated_at")
-    inlines = [
+    inlines: ClassVar[tuple[type[InlineModelAdmin], ...]] = (
         EnderecoInline,
         ContatoInline,
         TenantDocumentoInline,
         CertificacaoInline,
         DadosBancariosInline,
         ConfiguracaoSistemaInline,
-    ]
+    )
 
     fieldsets = (
-        (None, {"fields": ("name", "subdomain", "status", "logo", "observacoes", "created_at", "updated_at")}),
+        (
+            None,
+            {
+                "fields": ("name", "subdomain", "status", "logo", "observacoes", "created_at", "updated_at"),
+            },
+        ),
         (
             _("Informações de Identificação"),
             {
@@ -330,8 +362,9 @@ class TenantAdmin(admin.ModelAdmin):
         ),
     )
 
-    def get_inlines(self, request, obj=None):
-        inlines = super().get_inlines(request, obj)
+    def get_inlines(self, request: HttpRequest, obj: Tenant | None = None) -> list[type[InlineModelAdmin]]:
+        """Retorna inlines de acordo com o tipo de pessoa do tenant."""
+        inlines: list[type[InlineModelAdmin]] = list(super().get_inlines(request, obj))
         if obj and obj.tipo_pessoa == "PF":
             inlines = [TenantPessoaFisicaInline] + [i for i in inlines if i not in [TenantPessoaJuridicaInline]]
         elif obj and obj.tipo_pessoa == "PJ":
@@ -340,18 +373,19 @@ class TenantAdmin(admin.ModelAdmin):
             inlines = [i for i in inlines if i not in [TenantPessoaFisicaInline, TenantPessoaJuridicaInline]]
         return inlines
 
-    def display_status(self, obj):
+    @admin.display(description=_("Status"), ordering="status")
+    def display_status(self, obj: Tenant) -> str:
+        """Exibe o status com cor no admin."""
         colors = {
             "active": "green",
             "inactive": "red",
             "suspended": "orange",
         }
         return format_html(
-            '<span style="color: {};">{}</span>', colors.get(obj.status, "black"), obj.get_status_display()
+            '<span style="color: {};">{}</span>',
+            colors.get(obj.status, "black"),
+            obj.get_status_display(),
         )
-
-    display_status.short_description = _("Status")
-    display_status.admin_order_field = "status"
 
 
 # ============================================================================
@@ -361,6 +395,8 @@ class TenantAdmin(admin.ModelAdmin):
 
 @admin.register(Endereco)
 class EnderecoAdmin(admin.ModelAdmin):
+    """Admin para endereços."""
+
     list_display = ("tenant", "tipo", "logradouro", "numero", "cidade", "uf", "cep")
     list_filter = ("tipo", "uf", "pais", "tenant")
     search_fields = ("logradouro", "numero", "bairro", "cidade", "cep", "tenant__name")
@@ -368,6 +404,8 @@ class EnderecoAdmin(admin.ModelAdmin):
 
 @admin.register(Contato)
 class ContatoAdmin(admin.ModelAdmin):
+    """Admin para contatos."""
+
     list_display = ("tenant", "nome", "email", "telefone", "cargo")
     list_filter = ("cargo", "tenant")
     search_fields = ("nome", "email", "telefone", "tenant__name")
@@ -375,6 +413,8 @@ class ContatoAdmin(admin.ModelAdmin):
 
 @admin.register(TenantDocumento)
 class TenantDocumentoAdmin(admin.ModelAdmin):
+    """Admin para documentos do tenant."""
+
     list_display = ("tenant", "descricao", "arquivo", "created_at")
     list_filter = ("tenant",)
     search_fields = ("descricao", "tenant__name")
@@ -382,6 +422,8 @@ class TenantDocumentoAdmin(admin.ModelAdmin):
 
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):
+    """Admin para usuários customizados."""
+
     list_display = (
         "username",
         "email",
@@ -410,6 +452,8 @@ class CustomUserAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
+    """Admin para perfis de usuário."""
+
     list_display = (
         "user",
         "email_notifications",
@@ -425,6 +469,8 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
+    """Admin para papéis (roles)."""
+
     list_display = ("tenant", "name", "description")
     list_filter = ("tenant",)
     search_fields = ("name", "description", "tenant__name")
@@ -433,6 +479,8 @@ class RoleAdmin(admin.ModelAdmin):
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
+    """Admin para departamentos."""
+
     list_display = ("tenant", "name", "description")
     list_filter = ("tenant",)
     search_fields = ("name", "description", "tenant__name")
@@ -440,6 +488,8 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(TenantUser)
 class TenantUserAdmin(admin.ModelAdmin):
+    """Admin para relacionamento Tenant-Usuário."""
+
     list_display = ("tenant", "user", "role", "department", "is_tenant_admin")
     list_filter = ("tenant", "role", "department", "is_tenant_admin")
     search_fields = ("tenant__name", "user__username", "role__name", "department__name")
@@ -447,6 +497,8 @@ class TenantUserAdmin(admin.ModelAdmin):
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
+    """Admin para registros de auditoria."""
+
     list_display = ("action_time", "user", "tenant", "action_type", "content_object", "ip_address")
     list_filter = ("action_type", "tenant", "user", "content_type")
     search_fields = ("user__username", "tenant__name", "change_message", "ip_address")
@@ -465,6 +517,8 @@ class AuditLogAdmin(admin.ModelAdmin):
 
 @admin.register(Certificacao)
 class CertificacaoAdmin(admin.ModelAdmin):
+    """Admin para certificações."""
+
     list_display = (
         "tenant",
         "nome_certificacao",
@@ -481,6 +535,8 @@ class CertificacaoAdmin(admin.ModelAdmin):
 
 @admin.register(DadosBancarios)
 class DadosBancariosAdmin(admin.ModelAdmin):
+    """Admin para dados bancários."""
+
     list_display = ("tenant", "banco", "agencia", "conta", "tipo_conta", "chave_pix")
     list_filter = ("tenant", "banco", "tipo_conta")
     search_fields = ("banco", "agencia", "conta", "chave_pix", "tenant__name")
@@ -489,6 +545,8 @@ class DadosBancariosAdmin(admin.ModelAdmin):
 
 @admin.register(ConfiguracaoSistema)
 class ConfiguracaoSistemaAdmin(admin.ModelAdmin):
+    """Admin para configurações do sistema por tenant."""
+
     list_display = ("tenant", "permitir_cadastro_auto_clientes", "notificacoes_email_ativas", "cor_primaria_sistema")
     list_filter = ("permitir_cadastro_auto_clientes", "notificacoes_email_ativas")
     readonly_fields = ("created_at", "updated_at")
@@ -496,6 +554,8 @@ class ConfiguracaoSistemaAdmin(admin.ModelAdmin):
 
 @admin.register(Modulo)
 class ModuloAdmin(admin.ModelAdmin):
+    """Admin para módulos do sistema."""
+
     list_display = ("nome", "descricao", "ativo_por_padrao")
     list_filter = ("ativo_por_padrao",)
     search_fields = ("nome", "descricao")
@@ -504,25 +564,23 @@ class ModuloAdmin(admin.ModelAdmin):
 
 @admin.register(EmpresaDocumento)
 class EmpresaDocumentoAdmin(admin.ModelAdmin):
+    """Admin para tipos de documentos da empresa."""
+
     list_display = ("tenant", "tipo", "status_atual", "versao_atual", "versionavel", "periodicidade")
     list_filter = ("tenant", "status_atual", "tipo__categoria", "tipo__periodicidade")
     search_fields = ("tenant__name", "tipo__nome")
-    inlines = [EmpresaDocumentoVersaoInline]
+    inlines: ClassVar[tuple[type[InlineModelAdmin], ...]] = (EmpresaDocumentoVersaoInline,)
     readonly_fields = ("created_at", "updated_at")
 
-    def versionavel(self, obj):
-        try:
-            return bool(obj.tipo.versionavel)
-        except Exception:
-            return False
+    @admin.display(boolean=True, description=_("Versionável"))
+    def versionavel(self, obj: EmpresaDocumento) -> bool:
+        """Indica se o tipo associado é versionável."""
+        return bool(getattr(getattr(obj, "tipo", None), "versionavel", False))
 
-    versionavel.boolean = True
-    versionavel.short_description = _("Versionável")
-
-    def periodicidade(self, obj):
-        try:
-            return obj.tipo.get_periodicidade_display()
-        except Exception:
-            return "-"
-
-    periodicidade.short_description = _("Periodicidade")
+    @admin.display(description=_("Periodicidade"))
+    def periodicidade(self, obj: EmpresaDocumento) -> str:
+        """Retorna a periodicidade legível do tipo, se houver."""
+        tipo = getattr(obj, "tipo", None)
+        getter = getattr(tipo, "get_periodicidade_display", None)
+        value = getter() if callable(getter) else "-"
+        return str(value)

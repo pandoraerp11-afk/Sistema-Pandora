@@ -143,7 +143,7 @@ class CoreViewsTestCase(TestCase):
         """Testa o fluxo de login e logout de um usuário."""
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.headers.get("Location"), f'{reverse("core:login")}?next=/dashboard/')
+        self.assertEqual(response.headers.get("Location"), f"{reverse('core:login')}?next=/dashboard/")
 
         response = self.client.post(
             reverse("core:login"),

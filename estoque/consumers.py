@@ -260,9 +260,7 @@ class PickingStreamConsumer(AsyncJsonWebsocketConsumer):
 
         try:
             pedido = PedidoSeparacao.objects.get(id=pedido_id)
-            return (
-                self.user in (pedido.separador, pedido.conferente, pedido.criado_por) or self.user.is_staff
-            )
+            return self.user in (pedido.separador, pedido.conferente, pedido.criado_por) or self.user.is_staff
         except PedidoSeparacao.DoesNotExist:
             return False
 

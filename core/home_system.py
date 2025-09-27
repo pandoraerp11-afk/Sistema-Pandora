@@ -1,25 +1,37 @@
-# core/home_system.py
+"""Componentes de Home do módulo CORE."""
+
+from __future__ import annotations
+
+import json
+import logging
 from datetime import timedelta
+from typing import TYPE_CHECKING, Any
 
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 
 from .models import Department, Role, Tenant, TenantUser
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser
+    from django.db.models import Model
+
+
+logger = logging.getLogger(__name__)
+
 
 class CoreHomeSystem:
-    """
-    Sistema de Home do Módulo CORE
-    Responsável por gerenciar empresas, usuários e configurações do sistema
+    """Sistema de Home do Módulo CORE.
+
+    Responsável por gerenciar empresas, usuários e configurações do sistema.
     """
 
-    def __init__(self, user=None):
+    def __init__(self, user: AbstractBaseUser | None = None) -> None:
+        """Inicializa o sistema com o usuário atual (opcional)."""
         self.user = user
 
-    def get_home_context(self):
-        """
-        Retorna todos os dados necessários para o home do CORE
-        """
+    def get_home_context(self) -> dict[str, Any]:
+        """Retorna todos os dados necessários para o home do CORE."""
         context = {}
 
         # Métricas principais
@@ -33,8 +45,8 @@ class CoreHomeSystem:
 
         return context
 
-    def _get_metrics(self):
-        """Calcula as métricas principais do home"""
+    def _get_metrics(self) -> dict[str, Any]:
+        """Calcula as métricas principais do home."""
         try:
             # Contagem de tenants
             total_tenants = Tenant.objects.count()
@@ -51,16 +63,9 @@ class CoreHomeSystem:
             # Assumindo um valor base por tenant ativo
             mrr_value = active_tenants * 500  # R$ 500 por tenant ativo
 
-            return {
-                "total_tenants": total_tenants,
-                "active_tenants": active_tenants,
-                "total_users": total_users,
-                "total_roles": total_roles,
-                "total_departamentos": total_departamentos,
-                "mrr_value": mrr_value,
-            }
-        except Exception:
+        except (AttributeError, ValueError):
             # Em caso de erro, retorna valores padrão
+            logger.exception("Erro ao calcular métricas principais")
             return {
                 "total_tenants": 0,
                 "active_tenants": 0,
@@ -69,11 +74,18 @@ class CoreHomeSystem:
                 "total_departamentos": 0,
                 "mrr_value": 0,
             }
+        else:
+            return {
+                "total_tenants": total_tenants,
+                "active_tenants": active_tenants,
+                "total_users": total_users,
+                "total_roles": total_roles,
+                "total_departamentos": total_departamentos,
+                "mrr_value": mrr_value,
+            }
 
-    def _get_chart_data(self):
-        """Prepara dados para os gráficos"""
-        import json
-
+    def _get_chart_data(self) -> dict[str, str]:
+        """Prepara dados para os gráficos."""
         try:
             # Dados para gráfico de crescimento de tenants (últimos 6 meses)
             tenant_growth_data = self._get_tenant_growth_data()
@@ -87,10 +99,9 @@ class CoreHomeSystem:
                 "tenant_status_labels": json.dumps(tenant_status_data["labels"]),
                 "tenant_status_data": json.dumps(tenant_status_data["data"]),
             }
-        except Exception:
+        except (AttributeError, ValueError, TypeError):
             # Em caso de erro, retorna dados vazios
-            import json
-
+            logger.exception("Erro ao preparar dados para gráficos")
             return {
                 "tenant_growth_labels": json.dumps([]),
                 "tenant_growth_data": json.dumps([]),
@@ -98,11 +109,11 @@ class CoreHomeSystem:
                 "tenant_status_data": json.dumps([]),
             }
 
-    def _get_tenant_growth_data(self):
-        """Calcula dados de crescimento de tenants nos últimos 6 meses"""
+    def _get_tenant_growth_data(self) -> dict[str, list[Any]]:
+        """Calcula dados de crescimento de tenants nos últimos 6 meses."""
         now = timezone.now()
-        labels = []
-        data = []
+        labels: list[str] = []
+        data: list[int] = []
 
         for i in range(6):
             # Calcula o mês
@@ -119,54 +130,49 @@ class CoreHomeSystem:
 
         return {"labels": labels, "data": data}
 
-    def _get_tenant_status_data(self):
-        """Calcula distribuição de status dos tenants"""
+    def _get_tenant_status_data(self) -> dict[str, list[Any]]:
+        """Calcula distribuição de status dos tenants."""
         try:
             active_count = Tenant.objects.filter(status="active").count()
             inactive_count = Tenant.objects.filter(status="inactive").count()
-
-            return {"labels": ["Ativos", "Inativos"], "data": [active_count, inactive_count]}
-        except Exception:
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao calcular status dos tenants")
             return {"labels": ["Ativos", "Inativos"], "data": [0, 0]}
+        else:
+            return {"labels": ["Ativos", "Inativos"], "data": [active_count, inactive_count]}
 
-    def _get_widget_lists(self):
-        """Prepara listas para widgets"""
+    def _get_widget_lists(self) -> dict[str, list[Model]]:
+        """Prepara listas para widgets."""
         try:
             # Tenants recentes (últimos 5)
             recent_tenants = Tenant.objects.select_related().order_by("-created_at")[:5]
-
-            return {
-                "recent_tenants": recent_tenants,
-            }
-        except Exception:
-            return {
-                "recent_tenants": [],
-            }
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao buscar listas para widgets")
+            return {"recent_tenants": []}
+        else:
+            return {"recent_tenants": list(recent_tenants)}
 
 
 class HomeMetrics:
-    """
-    Classe utilitária para cálculos de métricas específicas
-    """
+    """Classe utilitária para cálculos de métricas específicas."""
 
     @staticmethod
-    def calculate_growth_percentage(current, previous):
-        """Calcula percentual de crescimento"""
+    def calculate_growth_percentage(current: int, previous: int) -> float:
+        """Calcula percentual de crescimento."""
         if previous == 0:
-            return 100 if current > 0 else 0
+            return 100.0 if current > 0 else 0.0
         return round(((current - previous) / previous) * 100, 1)
 
     @staticmethod
-    def format_currency(value):
-        """Formata valor monetário"""
+    def format_currency(value: float) -> str:
+        """Formata valor monetário."""
         return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
     @staticmethod
-    def get_trend_indicator(percentage):
-        """Retorna indicador de tendência baseado no percentual"""
+    def get_trend_indicator(percentage: float) -> str:
+        """Retorna indicador de tendência baseado no percentual."""
         if percentage > 0:
             return "positive"
-        elif percentage < 0:
+        if percentage < 0:
             return "negative"
-        else:
-            return "neutral"
+        return "neutral"

@@ -1,41 +1,52 @@
+"""Formulários do app core.
+
+Inclui formulários de Tenant (wizard), endereços, contatos, documentos,
+usuários, cargos, departamentos e configuração de módulos. Refatorado
+para conformidade com Ruff (docstrings, tipagem e estilo) sem alterar
+regras de negócio.
+"""
+
 # core/forms.py - VERSÃO FINAL, COMPLETA E SINCRONIZADA
 
+from __future__ import annotations
+
+import json
+from typing import Any, ClassVar
+
 from django import forms
+from django.contrib.auth.models import Permission
 from django.db import models
-from django.forms import DateInput, inlineformset_factory
+from django.forms import DateInput
 from django.utils.translation import gettext_lazy as _
 
 from cadastros_gerais.models import ItemAuxiliar  # novo: para filtrar tipos de documentos aplicáveis
 
 # Modelos importados
 from .models import (  # novo: modelos de versionamento
-    Contato,
     CustomUser,
     Department,
     EmpresaDocumento,
     EmpresaDocumentoVersao,
-    Endereco,
-    EnderecoAdicional,
     Role,
     Tenant,
-    TenantDocumento,
     TenantUser,
 )
 
 
 class BasePandoraForm(forms.ModelForm):
-    """
-    Classe base de estilização mantida 100% intacta.
-    """
+    """Classe base de estilização mantida 100% intacta."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Aplica classes CSS padronizadas aos widgets dos campos."""
         super().__init__(*args, **kwargs)
-        for _field_name, field in self.fields.items():
+        for field in self.fields.values():
             widget = field.widget
             current_class = widget.attrs.get("class", "")
-            if not isinstance(widget, (forms.CheckboxInput, forms.FileInput, forms.RadioSelect)):
-                if "form-control" not in current_class:
-                    widget.attrs["class"] = f"{current_class} form-control".strip()
+            if (
+                not isinstance(widget, (forms.CheckboxInput, forms.FileInput, forms.RadioSelect))
+                and "form-control" not in current_class
+            ):
+                widget.attrs["class"] = f"{current_class} form-control".strip()
             if isinstance(widget, forms.Select):
                 if "select2" not in current_class:
                     widget.attrs["class"] = f"{widget.attrs.get('class', '')} select2".strip()
@@ -46,196 +57,6 @@ class BasePandoraForm(forms.ModelForm):
                 widget.attrs["class"] = f"{current_class} custom-file-input".strip()
             if isinstance(widget, forms.Textarea) and "rows" not in widget.attrs:
                 widget.attrs["rows"] = 3
-
-
-# ============================================================================
-# FORMULÁRIOS DE TENANT
-# ============================================================================
-
-
-class TenantBaseForm(BasePandoraForm):
-    class Meta:
-        model = Tenant
-        fields = [
-            "name",
-            "subdomain",
-            "status",
-            "tipo_pessoa",
-            "logo",
-            "codigo_interno",
-            "email",
-            "telefone",
-            "telefone_secundario",
-            "observacoes",
-            "plano_assinatura",
-            "data_ativacao_plano",
-            "data_fim_trial",
-            "max_usuarios",
-            "max_armazenamento_gb",
-            "data_proxima_cobranca",
-            "portal_ativo",
-        ]
-        widgets = {
-            "tipo_pessoa": forms.Select(attrs={"id": "id_tenant_tipo_pessoa"}),
-            "name": forms.TextInput(attrs={"placeholder": "Nome Fantasia ou Nome Completo"}),
-            "subdomain": forms.TextInput(attrs={"placeholder": "identificador-unico"}),
-            "codigo_interno": forms.TextInput(attrs={"placeholder": "Ex: E-001"}),
-            "email": forms.EmailInput(attrs={"placeholder": "email.principal@dominio.com"}),
-            "telefone": forms.TextInput(attrs={"class": "phone-mask", "placeholder": "(99) 99999-9999"}),
-            "telefone_secundario": forms.TextInput(attrs={"class": "phone-mask", "placeholder": "(99) 99999-9999"}),
-            "observacoes": forms.Textarea(
-                attrs={"rows": 3, "placeholder": "Informações adicionais sobre a empresa..."}
-            ),
-            "data_ativacao_plano": DateInput(
-                attrs={"type": "text", "class": "datepicker", "placeholder": "DD/MM/AAAA"}
-            ),
-            "data_fim_trial": DateInput(attrs={"type": "text", "class": "datepicker", "placeholder": "DD/MM/AAAA"}),
-            "data_proxima_cobranca": DateInput(
-                attrs={"type": "text", "class": "datepicker", "placeholder": "DD/MM/AAAA"}
-            ),
-        }
-
-    def clean_subdomain(self):
-        subdomain = self.cleaned_data.get("subdomain")
-        if subdomain:
-            # Verificar se já existe (excluindo a instância atual se for edição)
-            queryset = Tenant.objects.filter(subdomain=subdomain)
-            if self.instance and self.instance.pk:
-                queryset = queryset.exclude(pk=self.instance.pk)
-            if queryset.exists():
-                raise forms.ValidationError("Este subdomínio já está em uso.")
-        return subdomain
-
-
-class TenantPessoaJuridicaForm(BasePandoraForm):
-    class Meta:
-        model = Tenant
-        fields = [
-            "razao_social",
-            "cnpj",
-            "inscricao_estadual",
-            "inscricao_municipal",
-            "data_fundacao",
-            "ramo_atividade",
-            "porte_empresa",
-            "website",
-            "regime_tributario",
-            "cnae_principal",
-            "email_financeiro",
-            "nome_responsavel_financeiro",
-            "telefone_financeiro",
-        ]
-        widgets = {
-            "razao_social": forms.TextInput(attrs={"placeholder": "Nome de registro da empresa"}),
-            "cnpj": forms.TextInput(attrs={"class": "cnpj-mask", "placeholder": "99.999.999/9999-99"}),
-            "inscricao_estadual": forms.TextInput(attrs={"placeholder": "Número da I.E."}),
-            "inscricao_municipal": forms.TextInput(attrs={"placeholder": "Número da I.M."}),
-            "data_fundacao": DateInput(attrs={"type": "text", "class": "datepicker", "placeholder": "DD/MM/AAAA"}),
-            "ramo_atividade": forms.TextInput(attrs={"placeholder": "Ex: Construção Civil"}),
-            "porte_empresa": forms.TextInput(attrs={"placeholder": "MEI, Pequena, Média..."}),
-            "website": forms.URLInput(attrs={"placeholder": "https://www.empresa.com.br"}),
-            "cnae_principal": forms.TextInput(attrs={"placeholder": "Ex: 4120-4/00"}),
-            "email_financeiro": forms.EmailInput(attrs={"placeholder": "financeiro@empresa.com"}),
-            "nome_responsavel_financeiro": forms.TextInput(attrs={"placeholder": "Nome do contato financeiro"}),
-            "telefone_financeiro": forms.TextInput(attrs={"class": "phone-mask", "placeholder": "(99) 99999-9999"}),
-        }
-
-
-class TenantPessoaFisicaForm(BasePandoraForm):
-    class Meta:
-        model = Tenant
-        fields = [
-            "cpf",
-            "rg",
-            "data_nascimento",
-            "sexo",
-            "estado_civil",
-            "nacionalidade",
-            "naturalidade",
-            "nome_mae",
-            "nome_pai",
-            "profissao",
-            "escolaridade",
-        ]
-        widgets = {
-            "cpf": forms.TextInput(attrs={"class": "cpf-mask", "placeholder": "999.999.999-99"}),
-            "rg": forms.TextInput(attrs={"placeholder": "Número do RG"}),
-            "data_nascimento": DateInput(attrs={"type": "text", "class": "datepicker", "placeholder": "DD/MM/AAAA"}),
-            "nacionalidade": forms.TextInput(attrs={"placeholder": "País de nacionalidade"}),
-            "naturalidade": forms.TextInput(attrs={"placeholder": "Cidade de nascimento"}),
-            "nome_mae": forms.TextInput(attrs={"placeholder": "Nome completo da mãe"}),
-            "nome_pai": forms.TextInput(attrs={"placeholder": "Nome completo do pai"}),
-            "profissao": forms.TextInput(attrs={"placeholder": "Engenheiro, Médico..."}),
-            "escolaridade": forms.Select(attrs={"placeholder": "Selecione a escolaridade"}),
-        }
-
-
-# ============================================================================
-# FORMULÁRIOS E FORMSETS DE ENDEREÇO
-# ============================================================================
-
-
-class EnderecoPrincipalForm(BasePandoraForm):
-    class Meta:
-        model = Endereco
-        exclude = ["tenant", "tipo"]
-        widgets = {
-            "cep": forms.TextInput(attrs={"class": "cep-mask", "placeholder": "99999-999"}),
-            "pais": forms.TextInput(attrs={"placeholder": "Brasil"}),
-            "ponto_referencia": forms.TextInput(attrs={"placeholder": "Ponto de referência"}),
-        }
-
-
-# --- INÍCIO DA ADIÇÃO NECESSÁRIA PARA CORRIGIR O ERRO ---
-class EnderecoAdicionalForm(BasePandoraForm):
-    class Meta:
-        model = EnderecoAdicional
-        exclude = ["tenant"]
-        widgets = {
-            "cep": forms.TextInput(attrs={"class": "cep-mask", "placeholder": "99999-999"}),
-            "pais": forms.TextInput(attrs={"placeholder": "Brasil"}),
-            "ponto_referencia": forms.TextInput(attrs={"placeholder": "Ponto de referência"}),
-        }
-
-
-EnderecoAdicionalFormSet = inlineformset_factory(
-    Tenant, EnderecoAdicional, form=EnderecoAdicionalForm, extra=0, can_delete=True
-)
-# --- FIM DA ADIÇÃO NECESSÁRIA PARA CORRIGIR O ERRO ---
-
-
-# ============================================================================
-# FORMSETS PARA OUTROS MODELOS RELACIONADOS
-# ============================================================================
-
-
-class ContatoForm(BasePandoraForm):
-    class Meta:
-        model = Contato
-        fields = ["nome", "cargo", "email", "telefone", "observacao"]
-        widgets = {
-            "nome": forms.TextInput(attrs={"placeholder": "Nome completo do contato (opcional)"}),
-            "cargo": forms.TextInput(attrs={"placeholder": "Cargo ou departamento"}),
-            "email": forms.EmailInput(attrs={"placeholder": "email@empresa.com"}),
-            "telefone": forms.TextInput(attrs={"class": "phone-mask", "placeholder": "(99) 99999-9999"}),
-            "observacao": forms.Textarea(attrs={"placeholder": "Observações sobre o contato", "rows": 3}),
-        }
-
-
-class TenantDocumentoForm(BasePandoraForm):
-    class Meta:
-        model = TenantDocumento
-        fields = ["tipo", "descricao", "arquivo", "url"]
-        widgets = {
-            "tipo": forms.Select(attrs={"class": "form-select"}),
-            "descricao": forms.TextInput(attrs={"placeholder": "Descrição do documento"}),
-        }
-
-
-ContatoFormSet = inlineformset_factory(Tenant, Contato, form=ContatoForm, extra=0, can_delete=True)
-TenantDocumentoFormSet = inlineformset_factory(
-    Tenant, TenantDocumento, form=TenantDocumentoForm, extra=0, can_delete=True
-)
 
 
 # ============================================================================
@@ -251,11 +72,15 @@ formsets encobriria código morto e aumentaria custos de manutenção.
 
 
 class CustomUserForm(BasePandoraForm):
+    """Criação/edição de usuários internos."""
+
     password2 = forms.CharField(label=_("Confirmação de senha"), widget=forms.PasswordInput, required=False)
 
     class Meta:
+        """Campos do usuário."""
+
         model = CustomUser
-        fields = [
+        fields: ClassVar[list[str]] = [
             "username",
             "email",
             "first_name",
@@ -269,7 +94,8 @@ class CustomUserForm(BasePandoraForm):
             "is_staff",
         ]
 
-    def save(self, commit=True):
+    def save(self, *, commit: bool = True) -> CustomUser:
+        """Define a senha quando informada e salva conforme ``commit``."""
         user = super().save(commit=False)
         password = self.cleaned_data.get("password")
         if password:
@@ -280,19 +106,25 @@ class CustomUserForm(BasePandoraForm):
 
 
 class RoleForm(BasePandoraForm):
-    class Meta:
-        model = Role
-        fields = ["tenant", "name", "description", "is_active", "department", "permissions"]
-        widgets = {"permissions": forms.CheckboxSelectMultiple(attrs={"class": "permissions-matrix"})}
+    """Formulário de cargos (roles) e suas permissões."""
 
-    def __init__(self, *args, **kwargs):
+    class Meta:
+        """Campos e widgets da Role."""
+
+        model = Role
+        fields: ClassVar[list[str]] = ["tenant", "name", "description", "is_active", "department", "permissions"]
+        widgets: ClassVar[dict[str, Any]] = {
+            "permissions": forms.CheckboxSelectMultiple(
+                attrs={"class": "permissions-matrix"},
+            ),
+        }
+
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Inicializa permissões e filtra departamentos por tenant/usuário."""
         self.request = kwargs.pop("request", None)
         self.tenant = kwargs.pop("tenant", None)
         super().__init__(*args, **kwargs)
-        from django.contrib.auth.models import Permission
-
         self.fields["permissions"].queryset = Permission.objects.all().select_related("content_type")
-        from .models import Department, Tenant
 
         user = getattr(self.request, "user", None)
         is_super = bool(user and getattr(user, "is_superuser", False))
@@ -320,7 +152,7 @@ class RoleForm(BasePandoraForm):
                 active_tenant = self.tenant.id if getattr(self.tenant, "id", None) else None
             if active_tenant:
                 self.fields["department"].queryset = base_qs.filter(
-                    models.Q(tenant__isnull=True) | models.Q(tenant_id=active_tenant)
+                    models.Q(tenant__isnull=True) | models.Q(tenant_id=active_tenant),
                 ).order_by("tenant__name", "name")
             # Superuser sem tenant escolhido: mostrar todos para facilitar (globais + específicos) ordenados
             elif is_super:
@@ -332,16 +164,19 @@ class RoleForm(BasePandoraForm):
 
 
 class DepartmentForm(BasePandoraForm):
-    class Meta:
-        model = Department
-        fields = ["name", "description"]
+    """Formulário de departamentos."""
 
-    def __init__(self, *args, **kwargs):
+    class Meta:
+        """Campos do departamento (tenant é opcional para superusuário)."""
+
+        model = Department
+        fields: ClassVar[list[str]] = ["name", "description"]
+
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Expõe campo tenant somente para superusuários."""
         self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
         # Se superuser: permitir escolher tenant explicitamente (profissional / transparente)
-        from .models import Tenant
-
         if self.request and getattr(self.request.user, "is_superuser", False):
             self.fields["tenant"] = forms.ModelChoiceField(
                 queryset=Tenant.objects.all().order_by("name"),
@@ -353,6 +188,8 @@ class DepartmentForm(BasePandoraForm):
 
 
 class TenantUserForm(BasePandoraForm):
+    """Vincula um usuário existente a um Tenant com cargo/departamento."""
+
     email_or_username = forms.CharField(
         label="E-mail ou Nome de Usuário",
         help_text="Digite o e-mail ou nome de usuário do usuário que deseja vincular",
@@ -361,11 +198,16 @@ class TenantUserForm(BasePandoraForm):
     )
 
     class Meta:
-        model = TenantUser
-        fields = ["role", "department", "is_tenant_admin"]
+        """Campos do vínculo do usuário ao tenant."""
 
-    def __init__(self, *args, **kwargs):
+        model = TenantUser
+        fields: ClassVar[list[str]] = ["role", "department", "is_tenant_admin"]
+
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Permite receber ``tenant`` e ``request`` via view e ajusta querysets."""
+        # Views podem fornecer `tenant` e `request` via get_form_kwargs
         self.tenant = kwargs.pop("tenant", None)
+        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
         if self.tenant:
             self.fields["role"].queryset = Role.objects.filter(tenant=self.tenant)
@@ -376,21 +218,26 @@ class TenantUserForm(BasePandoraForm):
         else:
             self.fields["email_or_username"].required = True
 
-    def clean_email_or_username(self):
+    def clean_email_or_username(self) -> CustomUser | None:
+        """Busca o usuário por e-mail ou username e valida duplicidade."""
         email_or_username = self.cleaned_data.get("email_or_username")
         if not email_or_username and not (self.instance and self.instance.pk):
-            raise forms.ValidationError("Este campo é obrigatório.")
+            msg = _("Este campo é obrigatório.")
+            raise forms.ValidationError(msg)
         if not email_or_username:
             return email_or_username
         try:
             user = CustomUser.objects.get(models.Q(email=email_or_username) | models.Q(username=email_or_username))
         except CustomUser.DoesNotExist:
-            raise forms.ValidationError("Usuário não encontrado com este e-mail ou nome de usuário.")
+            msg = _("Usuário não encontrado com este e-mail ou nome de usuário.")
+            raise forms.ValidationError(msg) from None
         if TenantUser.objects.filter(tenant=self.tenant, user=user).exists():
-            raise forms.ValidationError("Este usuário já está vinculado a esta empresa.")
+            msg = _("Este usuário já está vinculado a esta empresa.")
+            raise forms.ValidationError(msg)
         return user
 
-    def save(self, commit=True):
+    def save(self, *, commit: bool = True) -> TenantUser:
+        """Atribui tenant e usuário (no create) e salva conforme ``commit``."""
         instance = super().save(commit=False)
         instance.tenant = self.tenant
         if not instance.pk and "email_or_username" in self.cleaned_data:
@@ -401,8 +248,10 @@ class TenantUserForm(BasePandoraForm):
 
 
 class ModuleConfigurationForm(forms.Form):
+    """Habilitação e visual de módulos por Tenant."""
+
     # Configuração visual dos módulos (ícones e cores)
-    MODULE_ICONS_AND_COLORS = {
+    MODULE_ICONS_AND_COLORS: ClassVar[dict[str, dict[str, str]]] = {
         # Módulos Básicos de Gestão
         "clientes": {"icon": "fas fa-users", "color": "text-primary", "category": "Gestão Básica"},
         "fornecedores": {"icon": "fas fa-truck", "color": "text-info", "category": "Gestão Básica"},
@@ -451,7 +300,7 @@ class ModuleConfigurationForm(forms.Form):
     }
 
     # Categorias organizadas para melhor apresentação
-    MODULE_CATEGORIES = {
+    MODULE_CATEGORIES: ClassVar[dict[str, dict[str, str]]] = {
         "Gestão Básica": {
             "icon": "fas fa-building",
             "color": "text-primary",
@@ -500,7 +349,7 @@ class ModuleConfigurationForm(forms.Form):
     }
 
     # Definição completa dos módulos disponíveis
-    AVAILABLE_MODULES = {
+    AVAILABLE_MODULES: ClassVar[dict[str, dict[str, Any]]] = {
         # Módulos Básicos de Gestão
         "clientes": {
             "name": "Clientes",
@@ -681,7 +530,9 @@ class ModuleConfigurationForm(forms.Form):
     }
 
     # Lista de tuplas para o campo de formulário
-    AVAILABLE_MODULES_CHOICES = [(key, str(info.get("name", key))) for key, info in AVAILABLE_MODULES.items()]
+    AVAILABLE_MODULES_CHOICES: ClassVar[list[tuple[str, str]]] = [
+        (key, str(info.get("name", key))) for key, info in AVAILABLE_MODULES.items()
+    ]
 
     enabled_modules = forms.MultipleChoiceField(
         choices=sorted(AVAILABLE_MODULES_CHOICES, key=lambda x: (x[1] or "")),
@@ -690,13 +541,12 @@ class ModuleConfigurationForm(forms.Form):
         label=_("Selecione os módulos para habilitar para esta empresa"),
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Preenche módulos habilitados a partir do tenant (quando houver)."""
         self.tenant = kwargs.pop("tenant", None)
         super().__init__(*args, **kwargs)
         if self.tenant and getattr(self.tenant, "enabled_modules", None):
             try:
-                import json
-
                 enabled_modules_data = self.tenant.enabled_modules
                 if isinstance(enabled_modules_data, str):
                     initial_modules = json.loads(enabled_modules_data)
@@ -708,10 +558,11 @@ class ModuleConfigurationForm(forms.Form):
             except (json.JSONDecodeError, TypeError):
                 pass
 
-    def save(self):
+    def save(self) -> None:
+        """Salva a lista de módulos habilitados no campo JSON do tenant."""
         if not self.tenant:
-            raise TypeError("O tenant não foi fornecido para o formulário.")
-        import json
+            msg = _("O tenant não foi fornecido para o formulário.")
+            raise TypeError(msg)
 
         selected_modules = self.cleaned_data.get("enabled_modules", [])
         self.tenant.enabled_modules = json.dumps(selected_modules)
@@ -719,16 +570,21 @@ class ModuleConfigurationForm(forms.Form):
 
 
 class EmpresaDocumentoVersaoCreateForm(forms.Form):
+    """Criação de nova versão de documento da empresa."""
+
     tipo = forms.ModelChoiceField(queryset=ItemAuxiliar.objects.none(), label=_("Tipo de Documento"))
     arquivo = forms.FileField(label=_("Arquivo"))
     data_vigencia_inicio = forms.DateField(label=_("Início da Vigência"), widget=DateInput(attrs={"type": "date"}))
     data_vigencia_fim = forms.DateField(
-        label=_("Fim da Vigência"), required=False, widget=DateInput(attrs={"type": "date"})
+        label=_("Fim da Vigência"),
+        required=False,
+        widget=DateInput(attrs={"type": "date"}),
     )
     competencia = forms.CharField(label=_("Competência (MM/AAAA)"), required=False)
     observacao = forms.CharField(label=_("Observação"), required=False, widget=forms.Textarea(attrs={"rows": 3}))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Filtra tipos aplicáveis a 'empresa' e ordena por categoria/ordem/nome."""
         self.tenant = kwargs.pop("tenant", None)
         super().__init__(*args, **kwargs)
         # Filtrar tipos aplicáveis a EMPRESA nas categorias conhecidas
@@ -737,20 +593,21 @@ class EmpresaDocumentoVersaoCreateForm(forms.Form):
         qs = qs.filter(categoria__slug__in=["documentos-da-empresa", "documentos-financeiros", "outros-documentos"])
         self.fields["tipo"].queryset = qs.order_by("categoria__ordem", "ordem", "nome")
 
-    def clean(self):
+    def clean(self) -> dict[str, Any]:
+        """Validações suaves: sugere competência quando periodicidade não é 'nenhuma'."""
         cleaned = super().clean()
         tipo = cleaned.get("tipo")
         competencia = cleaned.get("competencia")
-        # Se o tipo tiver periodicidade, sugerir/validar competência preenchida
+        # Se o tipo tiver periodicidade, sugerir competência preenchida (não obrigatório)
         if tipo and getattr(tipo, "periodicidade", "nenhuma") != "nenhuma" and not competencia:
-            # Não tornar obrigatório duro; apenas dica. Pode-se habilitar validação dura se necessário:
-            # raise forms.ValidationError(_('Competência é obrigatória para documentos periódicos.'))
-            pass
+            ...
         return cleaned
 
-    def save(self, user=None):
+    def save(self, user: CustomUser | None = None) -> EmpresaDocumentoVersao:
+        """Cria a versão, atualiza cabeçalho e retorna a nova instância."""
         if not self.tenant:
-            raise ValueError("Tenant é obrigatório para salvar a versão do documento.")
+            msg = _("Tenant é obrigatório para salvar a versão do documento.")
+            raise ValueError(msg)
         tipo = self.cleaned_data["tipo"]
         arquivo = self.cleaned_data["arquivo"]
         data_ini = self.cleaned_data["data_vigencia_inicio"]
@@ -759,7 +616,7 @@ class EmpresaDocumentoVersaoCreateForm(forms.Form):
         observacao = self.cleaned_data.get("observacao")
 
         # Obter ou criar o registro do documento por (tenant, tipo)
-        doc, _ = EmpresaDocumento.objects.get_or_create(tenant=self.tenant, tipo=tipo)
+        doc, _created = EmpresaDocumento.objects.get_or_create(tenant=self.tenant, tipo=tipo)
         proxima_versao = (doc.versao_atual or 0) + 1
 
         versao = EmpresaDocumentoVersao.objects.create(

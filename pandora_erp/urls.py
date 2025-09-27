@@ -66,6 +66,8 @@ urlpatterns = [
     # APIs principais (namespaces usados nos testes)
     path("core-api/", include("core.api_urls", namespace="core_api")),
     path("admin-panel/", include("admin.urls", namespace="administration")),
+    # Alias de compatibilidade para testes que usam namespace 'admin'
+    path("admin/", include("admin.urls", namespace="admin")),
     path("clientes/", include("clientes.urls", namespace="clientes")),
     path("obras/", include("obras.urls", namespace="obras")),
     path("orcamentos/", include("orcamentos.urls", namespace="orcamentos")),

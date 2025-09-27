@@ -1,423 +1,387 @@
-# core/templatetags/core_tags.py (Versão Corrigida)
+"""Tags e filtros de template personalizados para a aplicação core.
+
+Este módulo fornece um conjunto de tags e filtros para o sistema de templates
+do Django, facilitando o acesso a dados específicos do tenant, formatação de
+dados e verificação de permissões diretamente nos templates.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from typing import TYPE_CHECKING, Any
 
 from django import template
+from django.utils.safestring import SafeString, mark_safe
 
-# CORREÇÃO: Usando imports relativos para melhor compatibilidade com editores de código.
-from ..models import Tenant, TenantUser
-from ..utils import format_cnpj as format_cnpj_util
-from ..utils import format_phone as format_phone_util
-from ..utils import get_current_tenant
+from core.models import Tenant, TenantUser
+from core.utils import get_current_tenant
+
+if TYPE_CHECKING:
+    from django.forms import BoundField
 
 register = template.Library()
 
+# ==============================================================================
+# CONSTANTES
+# ==============================================================================
+
+CPF_LENGTH = 11
+CNPJ_LENGTH = 14
+PHONE_LANDLINE_LENGTH = 10
+PHONE_MOBILE_LENGTH = 11
+
+
+# ==============================================================================
+# TAGS DE TEMPLATE
+# ==============================================================================
+
 
 @register.simple_tag(takes_context=True)
-def get_tenant(context):
+def get_tenant(context: dict[str, Any]) -> Tenant | None:
+    """Retorna o tenant atual com base na requisição."""
     request = context.get("request")
-    if request:
-        return get_current_tenant(request)
-    return None
+    return get_current_tenant(request) if request else None
 
 
 @register.simple_tag(takes_context=True)
-def is_module_enabled(context, module_name):
-    """Versão simplificada: delega a Tenant.is_module_enabled (canonical)."""
+def is_module_enabled(context: dict[str, Any], module_name: str) -> bool:
+    """Verifica se um módulo está habilitado para o tenant atual."""
     request = context.get("request")
     if not request or not module_name:
         return False
-    if getattr(request.user, "is_superuser", False):
+
+    user = getattr(request, "user", None)
+    if user and getattr(user, "is_superuser", False):
         return True
+
     tenant = get_current_tenant(request)
     return tenant.is_module_enabled(module_name) if tenant else False
 
 
 @register.simple_tag(takes_context=True)
-def user_has_tenant_permission(context, permission_codename):
+def user_has_tenant_permission(context: dict[str, Any], permission_codename: str) -> bool:
+    """Verifica se o usuário tem uma permissão específica no tenant."""
     request = context.get("request")
-    if not request or not request.user.is_authenticated:
+    if not request or not getattr(request, "user", None) or not request.user.is_authenticated:
         return False
+
     user = request.user
     if user.is_superuser:
         return True
+
     tenant = get_current_tenant(request)
     if not tenant:
         return False
+
     try:
-        tenant_user = TenantUser.objects.select_related("role__permissions").get(user=user, tenant=tenant)
+        tenant_user = TenantUser.objects.select_related("role__permissions").get(
+            user=user,
+            tenant=tenant,
+        )
+    except TenantUser.DoesNotExist:
+        return False
+    else:
         if not tenant_user.role:
             return False
         return tenant_user.role.permissions.filter(codename=permission_codename).exists()
-    except TenantUser.DoesNotExist:
-        return False
 
 
 @register.simple_tag(takes_context=True)
-def is_tenant_admin(context):
+def is_tenant_admin(context: dict[str, Any]) -> bool:
+    """Verifica se o usuário é administrador do tenant atual."""
     request = context.get("request")
-    if not request or not request.user.is_authenticated:
+    if not request or not getattr(request, "user", None) or not request.user.is_authenticated:
         return False
-    tenant = get_current_tenant(request)
-    if not tenant:
-        return False
+
     if request.user.is_superuser:
         return True
-    return TenantUser.objects.filter(tenant=tenant, user=request.user, is_tenant_admin=True).exists()
 
-
-@register.simple_tag(takes_context=True)
-def get_enabled_modules(context):
-    request = context.get("request")
-    if not request:
-        return []
     tenant = get_current_tenant(request)
     if not tenant:
-        return []
-    return tenant.enabled_modules.get("modules", [])
+        return False
+
+    return TenantUser.objects.filter(
+        tenant=tenant,
+        user=request.user,
+        is_tenant_admin=True,
+    ).exists()
 
 
 @register.simple_tag(takes_context=True)
-def get_all_tenants(context):
-    """Retorna todos os tenants que o usuário atual tem acesso"""
+def get_enabled_modules(context: dict[str, Any]) -> list[str]:
+    """Retorna a lista de módulos habilitados para o tenant atual."""
     request = context.get("request")
-    if not request or not request.user.is_authenticated:
+    tenant = get_current_tenant(request) if request else None
+    return tenant.enabled_modules.get("modules", []) if tenant else []
+
+
+@register.simple_tag(takes_context=True)
+def get_all_tenants(context: dict[str, Any]) -> list[Tenant]:
+    """Retorna todos os tenants aos quais o usuário atual tem acesso."""
+    request = context.get("request")
+    if not request or not getattr(request, "user", None) or not request.user.is_authenticated:
         return []
 
     user = request.user
     if user.is_superuser:
-        # Superusuário tem acesso a todos os tenants
-        return Tenant.objects.all().order_by("name")
+        return list(Tenant.objects.all().order_by("name"))
 
-    # Usuário comum só tem acesso aos tenants onde é membro
     tenant_users = TenantUser.objects.filter(user=user).select_related("tenant")
     return [tu.tenant for tu in tenant_users]
 
 
+# ==============================================================================
+# FILTROS DE TEMPLATE
+# ==============================================================================
+
+
 @register.filter(name="has_module")
-def has_module(module_list, module_name):
+def has_module(module_list: list[str], module_name: str) -> bool:
+    """Verifica se um nome de módulo existe em uma lista de módulos."""
     return module_name in module_list
 
 
 @register.filter
-def format_cnpj(cnpj):
-    return format_cnpj_util(cnpj)
+def format_cnpj(cnpj: str | None) -> str:
+    """Formata um número de CNPJ (XX.XXX.XXX/XXXX-XX)."""
+    if not cnpj:
+        return ""
+    try:
+        cnpj_clean = "".join(filter(str.isdigit, str(cnpj)))
+        if len(cnpj_clean) != CNPJ_LENGTH:
+            return str(cnpj)
+    except (ValueError, TypeError):
+        return str(cnpj)
+    else:
+        return f"{cnpj_clean[:2]}.{cnpj_clean[2:5]}.{cnpj_clean[5:8]}/{cnpj_clean[8:12]}-{cnpj_clean[12:14]}"
 
 
 @register.filter
-def format_phone(phone):
-    return format_phone_util(phone)
+def format_phone(phone: str | None) -> str:
+    """Formata um número de telefone fixo ou celular."""
+    if not phone:
+        return ""
+    try:
+        phone_clean = "".join(filter(str.isdigit, str(phone)))
+        if len(phone_clean) == PHONE_LANDLINE_LENGTH:
+            return f"({phone_clean[:2]}) {phone_clean[2:6]}-{phone_clean[6:10]}"
+        if len(phone_clean) == PHONE_MOBILE_LENGTH:
+            return f"({phone_clean[:2]}) {phone_clean[2:7]}-{phone_clean[7:11]}"
+    except (ValueError, TypeError):
+        return str(phone)
+    else:
+        return str(phone)
 
 
 @register.filter
-def truncate_words_custom(value, length=20):
+def truncate_words_custom(value: Any, length: int = 20) -> str:  # noqa: ANN401
+    """Trunca uma string para um número específico de palavras."""
     try:
         words = str(value).split()
         if len(words) > length:
             return " ".join(words[:length]) + "..."
-        return value
     except (ValueError, TypeError):
-        return value
+        return str(value)
+    else:
+        return str(value)
 
 
 @register.filter
-def get_item(dictionary, key):
-    """
-    Filtro para acessar itens de dicionário no template.
-    Usado nos templates ultra modernos para acessar valores dinâmicos.
-    """
+def get_item(dictionary: Any, key: Any) -> Any:  # noqa: ANN401
+    """Filtro para acessar itens de dicionário ou atributos de objeto no template."""
     try:
         if hasattr(dictionary, "get"):
             return dictionary.get(key)
-        elif hasattr(dictionary, "__getitem__"):
-            return dictionary[key]
-        else:
-            return None
+        return dictionary[key]
     except (KeyError, TypeError, AttributeError):
         return None
 
 
 @register.filter
-def replace_id(value, replacement=""):
-    """
-    Filtro para substituir IDs nos templates ultra modernos.
-    Remove ou substitui caracteres especiais em IDs para uso em JavaScript/CSS.
-    """
-    try:
-        if value is None:
-            return replacement
-
-        value_str = str(value)
-
-        # Remove caracteres especiais comuns em IDs
-        value_str = value_str.replace(".", "_")
-        value_str = value_str.replace("-", "_")
-        value_str = value_str.replace(" ", "_")
-        value_str = value_str.replace("/", "_")
-        value_str = value_str.replace("\\", "_")
-        value_str = value_str.replace(":", "_")
-        value_str = value_str.replace(";", "_")
-        value_str = value_str.replace(",", "_")
-        value_str = value_str.replace("(", "_")
-        value_str = value_str.replace(")", "_")
-        value_str = value_str.replace("[", "_")
-        value_str = value_str.replace("]", "_")
-        value_str = value_str.replace("{", "_")
-        value_str = value_str.replace("}", "_")
-
-        # Remove underscores duplos
-        while "__" in value_str:
-            value_str = value_str.replace("__", "_")
-
-        # Remove underscores no início e fim
-        value_str = value_str.strip("_")
-
-        return value_str if value_str else replacement
-
-    except (ValueError, TypeError, AttributeError):
+def replace_id(value: Any, replacement: str = "") -> str:  # noqa: ANN401
+    """Substitui caracteres especiais em uma string para uso como ID."""
+    if value is None:
         return replacement
+    try:
+        value_str = str(value)
+        # Substitui múltiplos caracteres especiais por um underscore
+        value_str = re.sub(r"[.\- /\\:;,()\[\]{}]", "_", value_str)
+        # Remove underscores duplicados
+        value_str = re.sub(r"__+", "_", value_str)
+        # Remove underscores no início e no fim
+        value_str = value_str.strip("_")
+    except (ValueError, TypeError):
+        return replacement
+    else:
+        return value_str or replacement
 
 
 @register.filter
-def safe_getattr(obj, attr_name, default=None):
-    """
-    Filtro para acessar atributos de objetos de forma segura.
-    Usado nos templates ultra modernos para acessar propriedades dinâmicas.
-    """
+def safe_getattr(
+    obj: Any,  # noqa: ANN401
+    attr_name: str,
+    default: Any = None,  # noqa: ANN401
+) -> Any:  # noqa: ANN401
+    """Acessa um atributo de um objeto de forma segura, retornando um padrão em caso de falha."""
     try:
         return getattr(obj, attr_name, default)
     except (AttributeError, TypeError):
         return default
 
 
-@register.filter
-def to_json(value):
-    """
-    Filtro para converter valores Python para JSON nos templates.
-    Útil para passar dados para JavaScript nos templates ultra modernos.
-    """
+@register.filter(name="to_json")
+def to_json(value: Any) -> SafeString:  # noqa: ANN401
+    """Converta um valor Python para uma string JSON segura para uso em templates."""
     try:
-        import json
-
-        return json.dumps(value)
+        json_string = json.dumps(value)
     except (TypeError, ValueError):
-        return "{}"
+        return mark_safe("{}")
+    else:
+        # json.dumps escapa caracteres HTML, tornando o uso de mark_safe seguro aqui.
+        return mark_safe(json_string)  # noqa: S308
 
 
 @register.filter
-def format_currency(value):
-    """
-    Filtro para formatar valores monetários em formato brasileiro.
-    """
+def format_currency(value: Any) -> str:  # noqa: ANN401
+    """Formata um valor numérico como moeda brasileira (R$)."""
+    if value is None or value == "":
+        return "R$ 0,00"
     try:
-        if value is None or value == "":
-            return "R$ 0,00"
-
-        # Converte para float se necessário
         if isinstance(value, str):
-            # Remove caracteres não numéricos exceto ponto e vírgula
-            value = value.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
-            value = float(value)
-        elif not isinstance(value, (int, float)):
-            return "R$ 0,00"
-
-        # Formata para formato brasileiro
-        return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            value = float(value.replace("R$", "").strip().replace(".", "").replace(",", "."))
+        formatted_value = f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except (ValueError, TypeError):
         return "R$ 0,00"
+    else:
+        return formatted_value
 
 
 @register.filter
-def format_cpf(cpf):
-    """
-    Filtro para formatar CPF em formato brasileiro.
-    """
+def format_cpf(cpf: str | None) -> str:
+    """Formata um número de CPF (XXX.XXX.XXX-XX)."""
+    if not cpf:
+        return ""
     try:
-        if not cpf:
-            return ""
-
-        # Remove caracteres não numéricos
         cpf_clean = "".join(filter(str.isdigit, str(cpf)))
-
-        if len(cpf_clean) != 11:
-            return cpf  # Retorna original se não tiver 11 dígitos
-
-        # Formata CPF: XXX.XXX.XXX-XX
+        if len(cpf_clean) != CPF_LENGTH:
+            return str(cpf)
+    except (ValueError, TypeError):
+        return str(cpf)
+    else:
         return f"{cpf_clean[:3]}.{cpf_clean[3:6]}.{cpf_clean[6:9]}-{cpf_clean[9:11]}"
-    except (ValueError, TypeError):
-        return cpf
 
 
 @register.filter
-def format_cnpj_filter(cnpj):
-    """
-    Filtro para formatar CNPJ em formato brasileiro.
-    """
+def brazilian_date(date_value: Any, format_str: str = "d/m/Y") -> str:  # noqa: ANN401
+    """Formata um objeto de data para o padrão brasileiro (dd/mm/YYYY)."""
+    if not date_value:
+        return ""
     try:
-        if not cnpj:
-            return ""
-
-        # Remove caracteres não numéricos
-        cnpj_clean = "".join(filter(str.isdigit, str(cnpj)))
-
-        if len(cnpj_clean) != 14:
-            return cnpj  # Retorna original se não tiver 14 dígitos
-
-        # Formata CNPJ: XX.XXX.XXX/XXXX-XX
-        return f"{cnpj_clean[:2]}.{cnpj_clean[2:5]}.{cnpj_clean[5:8]}/{cnpj_clean[8:12]}-{cnpj_clean[12:14]}"
-    except (ValueError, TypeError):
-        return cnpj
-
-
-@register.filter
-def format_phone_filter(phone):
-    """
-    Filtro para formatar telefone em formato brasileiro.
-    """
-    try:
-        if not phone:
-            return ""
-
-        # Remove caracteres não numéricos
-        phone_clean = "".join(filter(str.isdigit, str(phone)))
-
-        if len(phone_clean) == 10:
-            # Telefone fixo: (XX) XXXX-XXXX
-            return f"({phone_clean[:2]}) {phone_clean[2:6]}-{phone_clean[6:10]}"
-        elif len(phone_clean) == 11:
-            # Celular: (XX) 9XXXX-XXXX
-            return f"({phone_clean[:2]}) {phone_clean[2:7]}-{phone_clean[7:11]}"
-        else:
-            return phone  # Retorna original se não for formato conhecido
-    except (ValueError, TypeError):
-        return phone
-
-
-@register.filter
-def brazilian_date(date_value, format_str="d/m/Y"):
-    """
-    Filtro para formatar data em formato brasileiro.
-    """
-    try:
-        if not date_value:
-            return ""
-
         if hasattr(date_value, "strftime"):
-            return date_value.strftime(format_str.replace("d", "%d").replace("m", "%m").replace("Y", "%Y"))
-
-        return str(date_value)
+            formatted_date = date_value.strftime(
+                format_str.replace("d", "%d").replace("m", "%m").replace("Y", "%Y"),
+            )
+        else:
+            return str(date_value)
     except (ValueError, TypeError, AttributeError):
-        return str(date_value) if date_value else ""
+        return str(date_value)
+    else:
+        return formatted_date
 
 
 @register.filter
-def format_percentage(value, decimal_places=2):
-    """
-    Filtro para formatar percentual.
-    """
+def format_percentage(value: Any, decimal_places: int = 2) -> str:  # noqa: ANN401
+    """Formata um valor numérico como uma porcentagem."""
+    if value is None or value == "":
+        return "0%"
     try:
-        if value is None or value == "":
-            return "0%"
-
         if isinstance(value, str):
             value = float(value.replace("%", "").replace(",", "."))
-
-        return f"{value:.{decimal_places}f}%"
+        formatted_value = f"{float(value):.{decimal_places}f}%"
     except (ValueError, TypeError):
         return "0%"
+    else:
+        return formatted_value
 
 
 @register.filter
-def add_class(field, css_class):
-    """
-    Filtro para adicionar classes CSS a campos de formulário.
-    """
+def add_class(field: BoundField, css_class: str) -> SafeString | str:
+    """Adiciona uma classe CSS a um campo de formulário do Django."""
     try:
-        if hasattr(field, "as_widget"):
-            return field.as_widget(attrs={"class": css_class})
-        return field
+        # Cria uma cópia dos atributos para não modificar o widget original.
+        attrs = field.field.widget.attrs.copy()
+        existing_class = attrs.get("class", "")
+        attrs["class"] = f"{existing_class} {css_class}".strip()
+        return field.as_widget(attrs=attrs)  # pyright: ignore [reportArgumentType]
     except (AttributeError, TypeError):
-        return field
+        # Retorna o campo como string em caso de erro inesperado.
+        return str(field)
 
 
 @register.filter
-def get_attribute(obj, attr_path):
-    """
-    Filtro para acessar atributos aninhados usando notação de ponto.
-    Ex: obj|get_attribute:"user.profile.name"
-    """
+def get_attribute(obj: Any, attr_path: str) -> Any:  # noqa: ANN401
+    """Acessa atributos aninhados de um objeto usando notação de ponto."""
     try:
         value = obj
         for attr in attr_path.split("."):
             value = value.get(attr) if hasattr(value, "get") and callable(value.get) else getattr(value, attr, None)
-
             if value is None:
                 return None
-
-        return value
     except (AttributeError, TypeError):
         return None
+    else:
+        return value
 
 
 @register.filter
-def multiply(value, arg):
-    """
-    Filtro para multiplicar valores.
-    """
+def multiply(value: Any, arg: Any) -> float:  # noqa: ANN401
+    """Multiplica dois valores."""
     try:
         return float(value) * float(arg)
     except (ValueError, TypeError):
-        return 0
+        return 0.0
 
 
 @register.filter
-def divide(value, arg):
-    """
-    Filtro para dividir valores.
-    """
+def divide(value: Any, arg: Any) -> float:  # noqa: ANN401
+    """Divide dois valores, com segurança contra divisão por zero."""
     try:
-        if float(arg) == 0:
-            return 0
-        return float(value) / float(arg)
-    except (ValueError, TypeError, ZeroDivisionError):
-        return 0
+        divisor = float(arg)
+        if divisor == 0:
+            return 0.0
+        return float(value) / divisor
+    except (ValueError, TypeError):
+        return 0.0
 
 
 @register.filter
-def format_decimal(value, decimal_places=2):
-    """
-    Filtro para formatar números decimais.
-    """
+def format_decimal(value: Any, decimal_places: int = 2) -> str:  # noqa: ANN401
+    """Formata um número decimal com vírgula como separador."""
+    if value is None or value == "":
+        return "0,00"
     try:
-        if value is None or value == "":
-            return "0,00"
-
         if isinstance(value, str):
             value = float(value.replace(",", "."))
-
-        formatted = f"{float(value):.{decimal_places}f}"
-        return formatted.replace(".", ",")
+        formatted_value = f"{float(value):.{decimal_places}f}".replace(".", ",")
     except (ValueError, TypeError):
         return "0,00"
+    else:
+        return formatted_value
 
 
 @register.filter
-def replace_url_id(url, object_id):
-    """
-    Filtro para substituir {id} nas URLs de ação com o ID real do objeto.
-    """
-    try:
-        if url and object_id:
-            return url.replace("{id}", str(object_id))
+def replace_url_id(url: str | None, object_id: Any) -> str | None:  # noqa: ANN401
+    """Substitui um placeholder {id} em uma URL pelo ID de um objeto."""
+    if not url or object_id is None:
         return url
+    try:
+        return url.replace("{id}", str(object_id))
     except (ValueError, TypeError, AttributeError):
         return url
 
 
 @register.filter
-def lookup(dictionary, key):
-    """
-    Filtro para acessar valores de dicionário no template
-    Uso: {{ dict|lookup:key }}
-    """
-    if isinstance(dictionary, dict):
-        return dictionary.get(key, {})
-    return {}
+def lookup(dictionary: dict[Any, Any], key: Any) -> Any:  # noqa: ANN401
+    """Acessa um valor em um dicionário de forma segura."""
+    return dictionary.get(key) if isinstance(dictionary, dict) else None

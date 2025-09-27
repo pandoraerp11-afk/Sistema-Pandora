@@ -1,37 +1,48 @@
-# core/dashboard_widgets.py
-from datetime import timedelta
+"""Módulo para os widgets do dashboard do sistema CORE."""
 
+from __future__ import annotations
+
+import logging
+from datetime import timedelta
+from typing import TYPE_CHECKING, Any
+
+from dateutil.relativedelta import relativedelta
+from django.core.exceptions import FieldError
 from django.db.models import Count
 from django.utils import timezone
 
 from .models import CustomUser, Department, Role, Tenant
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
+
+logger = logging.getLogger(__name__)
+
 
 class BaseDashboardWidget:
-    """
-    Classe base para todos os widgets do dashboard
-    """
+    """Classe base para todos os widgets do dashboard."""
 
-    def __init__(self, request=None):
+    def __init__(self, request: HttpRequest | None = None) -> None:
+        """Inicializa o widget com o request."""
         self.request = request
         self.user = request.user if request else None
 
-    def get_data(self):
-        """Método que deve ser implementado pelos widgets filhos"""
-        raise NotImplementedError("Widgets devem implementar o método get_data()")
+    def get_data(self) -> dict[str, Any]:
+        """Método que deve ser implementado pelos widgets filhos."""
+        msg = "Widgets devem implementar o método get_data()"
+        raise NotImplementedError(msg)
 
-    def has_permission(self):
-        """Verifica se o usuário tem permissão para ver este widget"""
+    def has_permission(self) -> bool:
+        """Verifica se o usuário tem permissão para ver este widget."""
         return True  # Por padrão, todos podem ver
 
 
 class TenantMetricsWidget(BaseDashboardWidget):
-    """
-    Widget para métricas de empresas/tenants
-    """
+    """Widget para métricas de empresas/tenants."""
 
-    def get_data(self):
-        """Retorna dados das métricas de tenants"""
+    def get_data(self) -> dict[str, Any]:
+        """Retorna dados das métricas de tenants."""
         try:
             total = Tenant.objects.count()
             active = Tenant.objects.filter(status="active").count()
@@ -46,8 +57,11 @@ class TenantMetricsWidget(BaseDashboardWidget):
             last_month_end = month_start - timedelta(seconds=1)
             last_month = Tenant.objects.filter(created_at__gte=last_month_start, created_at__lte=last_month_end).count()
 
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao calcular métricas de tenants")
+            return {"total": 0, "active": 0, "inactive": 0, "this_month": 0, "growth_percentage": 0, "trend": "neutral"}
+        else:
             growth = self._calculate_growth(this_month, last_month)
-
             return {
                 "total": total,
                 "active": active,
@@ -56,23 +70,19 @@ class TenantMetricsWidget(BaseDashboardWidget):
                 "growth_percentage": growth,
                 "trend": "positive" if growth > 0 else "negative" if growth < 0 else "neutral",
             }
-        except Exception:
-            return {"total": 0, "active": 0, "inactive": 0, "this_month": 0, "growth_percentage": 0, "trend": "neutral"}
 
-    def _calculate_growth(self, current, previous):
-        """Calcula percentual de crescimento"""
+    def _calculate_growth(self, current: int, previous: int) -> float:
+        """Calcula percentual de crescimento."""
         if previous == 0:
-            return 100 if current > 0 else 0
+            return 100.0 if current > 0 else 0.0
         return round(((current - previous) / previous) * 100, 1)
 
 
 class UserMetricsWidget(BaseDashboardWidget):
-    """
-    Widget para métricas de usuários
-    """
+    """Widget para métricas de usuários."""
 
-    def get_data(self):
-        """Retorna dados das métricas de usuários"""
+    def get_data(self) -> dict[str, int]:
+        """Retorna dados das métricas de usuários."""
         try:
             total_users = CustomUser.objects.count()
             active_users = CustomUser.objects.filter(is_active=True).count()
@@ -81,29 +91,28 @@ class UserMetricsWidget(BaseDashboardWidget):
             # Usuários criados nos últimos 30 dias
             thirty_days_ago = timezone.now() - timedelta(days=30)
             recent_users = CustomUser.objects.filter(date_joined__gte=thirty_days_ago).count()
-
-            return {
-                "total": total_users,
-                "active": active_users,
-                "superusers": superusers,
-                "recent": recent_users,
-            }
-        except Exception:
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao calcular métricas de usuários")
             return {
                 "total": 0,
                 "active": 0,
                 "superusers": 0,
                 "recent": 0,
             }
+        else:
+            return {
+                "total": total_users,
+                "active": active_users,
+                "superusers": superusers,
+                "recent": recent_users,
+            }
 
 
 class RoleMetricsWidget(BaseDashboardWidget):
-    """
-    Widget para métricas de cargos/roles
-    """
+    """Widget para métricas de cargos/roles."""
 
-    def get_data(self):
-        """Retorna dados das métricas de cargos"""
+    def get_data(self) -> dict[str, Any]:
+        """Retorna dados das métricas de cargos."""
         try:
             total_roles = Role.objects.count()
             active_roles = Role.objects.filter(is_active=True).count()
@@ -112,74 +121,76 @@ class RoleMetricsWidget(BaseDashboardWidget):
             roles_by_tenant = (
                 Role.objects.values("tenant__razao_social").annotate(count=Count("id")).order_by("-count")[:5]
             )
-
-            return {
-                "total": total_roles,
-                "active": active_roles,
-                "by_tenant": list(roles_by_tenant),
-            }
-        except Exception:
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao calcular métricas de cargos")
             return {
                 "total": 0,
                 "active": 0,
                 "by_tenant": [],
             }
+        else:
+            return {
+                "total": total_roles,
+                "active": active_roles,
+                "by_tenant": list(roles_by_tenant),
+            }
 
 
 class DepartmentMetricsWidget(BaseDashboardWidget):
-    """
-    Widget para métricas de departamentos
-    """
+    """Widget para métricas de departamentos."""
 
-    def get_data(self):
-        """Retorna dados das métricas de departamentos"""
+    def get_data(self) -> dict[str, int]:
+        """Retorna dados das métricas de departamentos."""
         try:
             total_departments = Department.objects.count()
-            active_departments = Department.objects.filter(is_active=True).count()
-
-            return {
-                "total": total_departments,
-                "active": active_departments,
-            }
-        except Exception:
+            # Alguns esquemas não possuem o campo `is_active` em Department.
+            # Neste caso, consideramos todos como ativos (fallback compatível).
+            try:
+                active_departments = Department.objects.filter(is_active=True).count()
+            except FieldError:
+                active_departments = total_departments
+        except (AttributeError, ValueError, FieldError):
+            logger.exception("Erro ao calcular métricas de departamentos")
             return {
                 "total": 0,
                 "active": 0,
             }
+        else:
+            return {
+                "total": total_departments,
+                "active": active_departments,
+            }
 
 
 class RecentActivityWidget(BaseDashboardWidget):
-    """
-    Widget para atividades recentes
-    """
+    """Widget para atividades recentes."""
 
-    def get_data(self):
-        """Retorna dados de atividades recentes"""
+    def get_data(self) -> dict[str, list[Any]]:
+        """Retorna dados de atividades recentes."""
         try:
             # Tenants recentes
             recent_tenants = Tenant.objects.select_related().order_by("-created_at")[:5]
 
             # Usuários recentes
             recent_users = CustomUser.objects.select_related().order_by("-date_joined")[:5]
-
-            return {
-                "recent_tenants": recent_tenants,
-                "recent_users": recent_users,
-            }
-        except Exception:
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao buscar atividades recentes")
             return {
                 "recent_tenants": [],
                 "recent_users": [],
             }
+        else:
+            return {
+                "recent_tenants": list(recent_tenants),
+                "recent_users": list(recent_users),
+            }
 
 
 class QuickActionsWidget(BaseDashboardWidget):
-    """
-    Widget para ações rápidas do módulo CORE
-    """
+    """Widget para ações rápidas do módulo CORE."""
 
-    def get_data(self):
-        """Retorna dados para ações rápidas"""
+    def get_data(self) -> dict[str, list[dict[str, str]]]:
+        """Retorna dados para ações rápidas."""
         actions = [
             {
                 "title": "Nova Empresa",
@@ -212,29 +223,24 @@ class QuickActionsWidget(BaseDashboardWidget):
         ]
 
         # Filtra ações baseado nas permissões do usuário
-        if self.user:
-            filtered_actions = []
-            for action in actions:
-                if not action.get("permission") or self.user.has_perm(action["permission"]):
-                    filtered_actions.append(action)
+        if self.user and self.user.is_authenticated:
+            filtered_actions = [
+                action for action in actions if not action.get("permission") or self.user.has_perm(action["permission"])
+            ]
             return {"actions": filtered_actions}
 
         return {"actions": actions}
 
 
 class ChartDataWidget(BaseDashboardWidget):
-    """
-    Widget para dados de gráficos
-    """
+    """Widget para dados de gráficos."""
 
-    def get_tenant_growth_chart_data(self):
-        """Retorna dados para gráfico de crescimento de tenants"""
+    def get_tenant_growth_chart_data(self) -> dict[str, Any]:
+        """Retorna dados para gráfico de crescimento de tenants."""
         try:
-            from dateutil.relativedelta import relativedelta
-
             now = timezone.now()
-            labels = []
-            data = []
+            labels: list[str] = []
+            data: list[int] = []
 
             for i in range(6):
                 date = now - relativedelta(months=i)
@@ -245,27 +251,29 @@ class ChartDataWidget(BaseDashboardWidget):
 
                 labels.insert(0, date.strftime("%b/%Y"))
                 data.insert(0, count)
-
-            return {"labels": labels, "data": data, "type": "bar"}
-        except Exception:
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao gerar dados do gráfico de crescimento")
             return {"labels": [], "data": [], "type": "bar"}
+        else:
+            return {"labels": labels, "data": data, "type": "bar"}
 
-    def get_tenant_status_chart_data(self):
-        """Retorna dados para gráfico de status de tenants"""
+    def get_tenant_status_chart_data(self) -> dict[str, Any]:
+        """Retorna dados para gráfico de status de tenants."""
         try:
             active_count = Tenant.objects.filter(status="active").count()
             inactive_count = Tenant.objects.filter(status="inactive").count()
-
-            return {
-                "labels": ["Ativos", "Inativos"],
-                "data": [active_count, inactive_count],
-                "type": "doughnut",
-                "colors": ["#22c55e", "#f59e0b"],
-            }
-        except Exception:
+        except (AttributeError, ValueError):
+            logger.exception("Erro ao gerar dados do gráfico de status")
             return {
                 "labels": ["Ativos", "Inativos"],
                 "data": [0, 0],
+                "type": "doughnut",
+                "colors": ["#22c55e", "#f59e0b"],
+            }
+        else:
+            return {
+                "labels": ["Ativos", "Inativos"],
+                "data": [active_count, inactive_count],
                 "type": "doughnut",
                 "colors": ["#22c55e", "#f59e0b"],
             }
@@ -273,11 +281,10 @@ class ChartDataWidget(BaseDashboardWidget):
 
 # Classe principal para gerenciar todos os widgets
 class CoreDashboardWidgets:
-    """
-    Gerenciador de todos os widgets do dashboard do CORE
-    """
+    """Gerenciador de todos os widgets do dashboard do CORE."""
 
-    def __init__(self, request=None):
+    def __init__(self, request: HttpRequest | None = None) -> None:
+        """Inicializa o gerenciador de widgets com o request."""
         self.request = request
         self.widgets = {
             "tenant_metrics": TenantMetricsWidget(request),
@@ -289,16 +296,16 @@ class CoreDashboardWidgets:
             "chart_data": ChartDataWidget(request),
         }
 
-    def get_all_widget_data(self):
-        """Retorna dados de todos os widgets"""
+    def get_all_widget_data(self) -> dict[str, Any]:
+        """Retorna dados de todos os widgets."""
         data = {}
 
         for widget_name, widget_instance in self.widgets.items():
             if widget_instance.has_permission():
                 try:
                     data[widget_name] = widget_instance.get_data()
-                except Exception:
-                    # Em caso de erro, adiciona dados vazios
+                except (NotImplementedError, AttributeError, ValueError, FieldError):
+                    # Em caso de erro, adiciona dados vazios e loga o erro
+                    logger.exception("Erro ao obter dados do widget '%s'", widget_name)
                     data[widget_name] = {}
-
         return data

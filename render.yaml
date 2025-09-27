@@ -26,12 +26,3 @@ services:
 databases:
   - name: sitema-pandora-db
     plan: free
-  
-  
-  
-  
-  
-  
-  
-
-

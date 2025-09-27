@@ -1,0 +1,1 @@
+"""Pacote de testes para funcionalidades de chatbot e home system."""

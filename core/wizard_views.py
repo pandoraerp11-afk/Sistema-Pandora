@@ -73,7 +73,6 @@ from .wizard_forms import (
     TenantAdminsWizardForm,
     TenantConfigurationWizardForm,
     TenantContactsWizardForm,
-    TenantDocumentsWizardForm,
     TenantPessoaFisicaWizardForm,
     TenantPessoaJuridicaWizardForm,
     TenantReviewWizardForm,
@@ -81,10 +80,10 @@ from .wizard_forms import (
 
 # Fallback seguro para ModuleConfigurationForm com tipagem estável para mypy
 ModuleConfigurationFormCls: type[Any] | None = None
-with contextlib.suppress(ImportError):  # pragma: no cover
-    from .forms import ModuleConfigurationForm as _ModuleConfigurationForm
-
-    ModuleConfigurationFormCls = cast("type[Any]", _ModuleConfigurationForm)
+try:  # pragma: no cover
+    from .forms import ModuleConfigurationForm as ModuleConfigurationFormCls
+except ImportError:  # pragma: no cover
+    ModuleConfigurationFormCls = None
 
 # Constantes internas (sem alterar regras de negócio)
 MIN_PASSWORD_LENGTH = 8
@@ -187,7 +186,8 @@ WIZARD_STEPS = {
     },
     STEP_DOCUMENTS: {
         "name": "Documentos",
-        "form_classes": {"main": TenantDocumentsWizardForm},
+        # Step sem formulário: UI/JS chama endpoints do app documentos
+        "form_classes": {},
         "template": "core/wizard/step_documents.html",
         "icon": "fas fa-file-alt",
         "description": "Documentos da empresa (opcional)",
@@ -459,6 +459,7 @@ class TenantCreationWizardView(LoginRequiredMixin, UserPassesTestMixin, Template
         bairro = (item.get("bairro") or "").strip()
         cidade = (item.get("cidade") or "").strip()
         uf = (item.get("uf") or "").strip()[:2]
+        pais = (item.get("pais") or "Brasil").strip()
         cep = (item.get("cep") or "").strip()
 
         if not all((logradouro, numero, bairro, cidade, uf, cep)):
@@ -488,7 +489,7 @@ class TenantCreationWizardView(LoginRequiredMixin, UserPassesTestMixin, Template
             cidade=cidade,
             uf=uf,
             cep=cep,
-            pais=(item.get("pais") or "Brasil").strip(),
+            pais=pais,
             ponto_referencia=(item.get("ponto_referencia") or "").strip() or None,
             principal=bool(item.get("principal")),
         )
