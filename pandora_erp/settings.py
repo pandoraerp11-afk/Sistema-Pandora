@@ -251,9 +251,20 @@ if _db_url:
     else:
         DATABASES["default"] = _djdb.parse(_db_url, conn_max_age=600, ssl_require=True)
 
+# Proteção: evitar uso acidental de SQLite em produção.
+ALLOW_SQLITE_PROD = os.environ.get("ALLOW_SQLITE_PROD") == "1"
+if not DEBUG:
+    engine_val = str(DATABASES["default"].get("ENGINE", ""))  # garantir str
+    if "sqlite" in engine_val and not ALLOW_SQLITE_PROD:
+        _msg_sqlite_prod = (
+            "Produção com DEBUG=False usando SQLite (faltando DATABASE_URL). "
+            "Defina DATABASE_URL (Postgres) ou exporte ALLOW_SQLITE_PROD=1 para forçar."
+        )
+        raise RuntimeError(_msg_sqlite_prod)
+
 # Configuração específica para habilitar foreign keys no SQLite
-engine_val = DATABASES["default"].get("ENGINE")
-if isinstance(engine_val, str) and "sqlite" in engine_val:
+engine_val = str(DATABASES["default"].get("ENGINE", ""))
+if "sqlite" in engine_val:
     import sqlite3
 
     # Registrar função para habilitar foreign keys automaticamente
