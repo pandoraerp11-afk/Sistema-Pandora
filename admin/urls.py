@@ -1,4 +1,5 @@
 # admin/urls.py (Versão Ultra Moderna)
+"""URL configuration for the admin module."""
 
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
@@ -29,7 +30,7 @@ from .views import (
 )
 
 # Namespace principal (administration) e alias 'admin' fornecido em urls raiz.
-app_name = "admin"
+app_name = "administration"
 
 # --- API Endpoints ---
 router = DefaultRouter()

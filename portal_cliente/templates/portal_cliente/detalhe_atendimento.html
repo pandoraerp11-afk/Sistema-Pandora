@@ -1,11 +1,9 @@
-{% extends 'pandora_ultra_modern_base.html' %}
+{% extends 'portal_cliente/base_portal.html' %}
 {% load static %}
 
 {% block title %}Portal Cliente - Detalhes do Atendimento{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
-{% endblock %}
+{% block extra_css %}{{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -98,6 +96,30 @@
                     </div>
                 </div>
             </div>
+            {% else %}
+            {% if atendimento.pode_avaliar %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Avaliar Atendimento</h5>
+                </div>
+                <div class="card-body">
+                    <form id="formAvaliacao" class="text-center">
+                        <div class="mb-3 rating" id="ratingStars">
+                            {% for i in "12345" %}
+                                <i class="fas fa-star star" data-value="{{ forloop.counter }}"></i>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="satisfacao" id="satisfacaoInput">
+                        <div class="mb-3">
+                            <textarea name="comentarios" class="form-control" rows="3" placeholder="Deixe um comentário opcional..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success" id="btnEnviarAvaliacao" disabled>
+                            <i class="fas fa-paper-plane me-1"></i>Enviar Avaliação
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
             {% endif %}
 
             <!-- Fotos do Atendimento -->
@@ -212,6 +234,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
 function abrirModalFoto(imagemUrl, timestamp) {
     document.getElementById('fotoModalImage').src = imagemUrl;
@@ -220,5 +243,36 @@ function abrirModalFoto(imagemUrl, timestamp) {
     const modal = new bootstrap.Modal(document.getElementById('fotoModal'));
     modal.show();
 }
+// Avaliação interativa
+document.addEventListener('DOMContentLoaded', function(){
+    const stars = document.querySelectorAll('#ratingStars .star');
+    const input = document.getElementById('satisfacaoInput');
+    const btn = document.getElementById('btnEnviarAvaliacao');
+    if(stars.length){
+        stars.forEach(st => {
+            st.addEventListener('mouseover', ()=>highlight(st.dataset.value));
+            st.addEventListener('click', ()=>select(st.dataset.value));
+        });
+        document.getElementById('ratingStars').addEventListener('mouseleave', ()=>highlight(input.value||0));
+    }
+    function highlight(val){
+        stars.forEach(st => st.classList.toggle('filled', st.dataset.value <= val));
+    }
+    function select(val){
+        input.value = val; btn.disabled = false; highlight(val);
+    }
+    const form = document.getElementById('formAvaliacao');
+    if(form){
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            if(!input.value){return;}
+            const data = new FormData(form);
+            fetch(`{% url 'portal_cliente:avaliar_atendimento_ajax' atendimento.id %}`, {method:'POST', body: data, headers:{'X-CSRFToken': window.csrfToken||''}})
+                .then(r=>r.json())
+                .then(d=>{ if(d.success){ PortalCliente.showToast('Avaliação registrada','success'); window.location.reload(); } else { PortalCliente.showToast(d.error||'Erro ao avaliar','error'); } })
+                .catch(err=>PortalCliente.showToast(err.message,'error'));
+        });
+    }
+});
 </script>
 {% endblock %}

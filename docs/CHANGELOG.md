@@ -81,3 +81,13 @@ Todas as mudanças notáveis neste projeto serão documentadas aqui.
 
 ### Security
 - Adicionados scanners automáticos (bandit, pip-audit) via workflow dedicado.
+
+## [0.1.5] - 2025-09-13
+### Changed
+- **Refatoração Completa de `clientes/views.py`**:
+  - Removidas as views legadas `ClienteCreateView` e `ClienteUpdateView`, que foram substituídas por um wizard.
+  - Eliminadas todas as views duplicadas (baseadas em função e em classe) para `Detail`, `Delete`, etc.
+  - Consolidado todo o código em um único conjunto de views canônicas, seguindo as melhores práticas do Django.
+  - Adicionadas anotações de tipo completas, docstrings e melhorada a legibilidade geral do código.
+  - A complexidade da função `cliente_import` foi reduzida através da extração de lógica para funções auxiliares.
+  - Corrigidos todos os problemas de linting e tipagem, garantindo maior qualidade e manutenibilidade do código.

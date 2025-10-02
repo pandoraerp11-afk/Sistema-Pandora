@@ -1,21 +1,10 @@
-{% extends 'pandora_ultra_modern_base.html' %}
+{% extends 'portal_cliente/base_portal.html' %}
 {% load static %}
 
 {% block title %}Portal Cliente - Visualizar Foto{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
-<style>
-.foto-viewer {
-    max-height: 80vh;
-    object-fit: contain;
-}
-.foto-container {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 2rem;
-}
-</style>
+{% block extra_css %}{{ block.super }}
+<style>.foto-viewer{max-height:80vh;object-fit:contain}.foto-container{background:#f8f9fa;border-radius:12px;padding:2rem}</style>
 {% endblock %}
 
 {% block content %}

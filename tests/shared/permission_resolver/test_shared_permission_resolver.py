@@ -1,23 +1,37 @@
-"""Migrado de shared/tests/test_shared_permission_resolver.py."""
+"""Testes básicos do permission_resolver (migrado).
+
+Objetivo: validar caminhos fundamentais de cache, precedence e escopos
+sem depender dos testes avançados.
+"""
+
+from __future__ import annotations
+
+import os
+import uuid
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.utils import timezone
 
 from core.models import Role, Tenant, TenantUser
 from shared.services.permission_resolver import permission_resolver
+from user_management.models import PermissaoPersonalizada
 
 User = get_user_model()
 
 
 @pytest.mark.django_db
 @pytest.mark.permission
-def test_permission_resolver_role_allows():
+def test_permission_resolver_role_allows() -> None:
+    """Role 'admin' deve permitir VIEW_COTACAO (fluxo role->allow)."""
     cache.clear()
     tenant = Tenant.objects.create(name="Tperm", subdomain="tperm")
-    u = User.objects.create_user("permuser", password="x")
+    u = User.objects.create_user("permuser", password=os.getenv("TEST_PASSWORD", "x"))  # nosec S106 test pwd
     role = Role.objects.create(tenant=tenant, name="admin")
-    role.is_admin = True  # type: ignore[attr-defined]
+    # Marcador auxiliar (não usado pela lógica atual, mas mantido por compat):
+    # Atributo auxiliar dinâmico usado somente em testes (não faz parte do modelo real).
+    role.is_admin = True  # atributo dinâmico de teste
     role.save()
     TenantUser.objects.create(user=u, tenant=tenant, role=role)
     allowed, reason = permission_resolver.resolve(u, tenant, "VIEW_COTACAO")
@@ -26,24 +40,24 @@ def test_permission_resolver_role_allows():
 
 @pytest.mark.django_db
 @pytest.mark.permission
-def test_permission_resolver_user_not_in_tenant():
+def test_permission_resolver_user_not_in_tenant() -> None:
+    """Usuário sem vínculo TenantUser deve ser negado."""
     cache.clear()
     tenant = Tenant.objects.create(name="Tperm2", subdomain="tperm2")
-    u = User.objects.create_user("user2", password="x")
+    u = User.objects.create_user("user2", password=os.getenv("TEST_PASSWORD", "x"))  # nosec S106
     allowed, reason = permission_resolver.resolve(u, tenant, "VIEW_COTACAO")
-    assert allowed is False and "pertence" in reason.lower()
+    assert allowed is False
+    assert "pertence" in reason.lower()
 
 
 @pytest.mark.django_db
 @pytest.mark.permission
-def test_permission_resolver_cache_behavior(monkeypatch):
+def test_permission_resolver_cache_behavior(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: ARG001
+    """Segundo resolve deve resultar em cache hit estável (false->false)."""
     cache.clear()
     tenant = Tenant.objects.create(name="Tperm3", subdomain="tperm3")
-    import uuid
-
     uname = f"user_cache_{uuid.uuid4().hex[:6]}"
-    u = User.objects.create_user(uname, password="x")
-    from user_management.models import PermissaoPersonalizada
+    u = User.objects.create_user(uname, password=os.getenv("TEST_PASSWORD", "x"))  # nosec S106
 
     PermissaoPersonalizada.objects.filter(user=u).delete()
     role = Role.objects.create(tenant=tenant, name="basic")
@@ -52,8 +66,6 @@ def test_permission_resolver_cache_behavior(monkeypatch):
     assert allowed1 is False
     allowed2, _ = permission_resolver.resolve(u, tenant, "VIEW_COTACAO")
     assert allowed2 is False
-    from user_management.models import PermissaoPersonalizada
-
     PermissaoPersonalizada.objects.create(user=u, modulo="cotacao", acao="view", concedida=True, scope_tenant=tenant)
     allowed_after_grant, _ = permission_resolver.resolve(u, tenant, "VIEW_COTACAO")
     assert allowed_after_grant is True
@@ -61,14 +73,11 @@ def test_permission_resolver_cache_behavior(monkeypatch):
 
 @pytest.mark.django_db
 @pytest.mark.permission
-def test_permission_resolver_resource_and_expiration():
-    from django.utils import timezone
-
-    from user_management.models import PermissaoPersonalizada
-
+def test_permission_resolver_resource_and_expiration() -> None:
+    """Regras expiradas devem ser ignoradas e recurso específico negar corretamente."""
     cache.clear()
     tenant = Tenant.objects.create(name="Tperm4", subdomain="tperm4")
-    u = User.objects.create_user("user4", password="x")
+    u = User.objects.create_user("user4", password=os.getenv("TEST_PASSWORD", "x"))  # nosec S106
     role = Role.objects.create(tenant=tenant, name="basic")
     TenantUser.objects.create(user=u, tenant=tenant, role=role)
     now = timezone.now()
@@ -98,12 +107,11 @@ def test_permission_resolver_resource_and_expiration():
 
 @pytest.mark.django_db
 @pytest.mark.permission
-def test_permission_resolver_precedence_deny_over_allow():
-    from user_management.models import PermissaoPersonalizada
-
+def test_permission_resolver_precedence_deny_over_allow() -> None:
+    """Deny scoped deve prevalecer sobre allows mais genéricos e globais."""
     cache.clear()
     tenant = Tenant.objects.create(name="Tperm5", subdomain="tperm5")
-    u = User.objects.create_user("user5", password="x")
+    u = User.objects.create_user("user5", password=os.getenv("TEST_PASSWORD", "x"))  # nosec S106
     role = Role.objects.create(tenant=tenant, name="basic")
     TenantUser.objects.create(user=u, tenant=tenant, role=role)
     PermissaoPersonalizada.objects.create(user=u, modulo="financeiro", acao="view", concedida=True)
@@ -130,9 +138,9 @@ def test_permission_resolver_precedence_deny_over_allow():
         scope_tenant=tenant,
         recurso="doc:B",
     )
-    allowed_A, _ = permission_resolver.resolve(u, tenant, "VIEW_FINANCEIRO", resource="doc:A")
-    allowed_B, _ = permission_resolver.resolve(u, tenant, "VIEW_FINANCEIRO", resource="doc:B")
-    allowed_C, _ = permission_resolver.resolve(u, tenant, "VIEW_FINANCEIRO", resource="doc:C")
-    assert allowed_A is False
-    assert allowed_B is False
-    assert allowed_C is False
+    allowed_a, _ = permission_resolver.resolve(u, tenant, "VIEW_FINANCEIRO", resource="doc:A")
+    allowed_b, _ = permission_resolver.resolve(u, tenant, "VIEW_FINANCEIRO", resource="doc:B")
+    allowed_c, _ = permission_resolver.resolve(u, tenant, "VIEW_FINANCEIRO", resource="doc:C")
+    assert allowed_a is False
+    assert allowed_b is False
+    assert allowed_c is False

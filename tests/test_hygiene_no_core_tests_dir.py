@@ -12,6 +12,7 @@ import pytest
 
 @pytest.mark.hygiene
 def test_no_legacy_core_tests_dir() -> None:
+    """Garante que o diretório legacy core/tests não existe e não é referenciado."""
     root = Path(__file__).parent
     project_root = root  # tests/ root
     legacy_dir = project_root.parent / "core" / "tests"

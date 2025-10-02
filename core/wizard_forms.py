@@ -300,76 +300,76 @@ class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
             "profissao",
             "escolaridade",
         ]
+        # IMPORTANTE: widgets e labels PRECISAM estar dentro de Meta para Django aplicar.
+        widgets: ClassVar[dict[str, forms.Widget]] = {
+            "tipo_pessoa": forms.HiddenInput(attrs={"value": "PF", "id": "id_pf_tipo_pessoa"}),
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control wizard-field",
+                    "placeholder": "Nome Completo",
+                    "id": "id_pf_name",
+                },
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "form-control wizard-field",
+                    "placeholder": "email.pessoal@dominio.com",
+                    "id": "id_pf_email",
+                },
+            ),
+            "telefone": forms.TextInput(
+                attrs={
+                    "class": "form-control wizard-field phone-mask",
+                    "placeholder": "(99) 99999-9999",
+                    "id": "id_pf_telefone",
+                },
+            ),
+            "cpf": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field cpf-mask", "placeholder": "999.999.999-99"},
+            ),
+            "rg": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Número do RG"},
+            ),
+            "data_nascimento": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field datepicker", "placeholder": "DD/MM/AAAA"},
+            ),
+            "sexo": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
+            "estado_civil": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
+            "nacionalidade": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "País de nacionalidade"},
+            ),
+            "naturalidade": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Cidade de nascimento"},
+            ),
+            "nome_mae": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo da mãe"},
+            ),
+            "nome_pai": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo do pai"},
+            ),
+            "profissao": forms.TextInput(
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Engenheiro, Médico..."},
+            ),
+            "escolaridade": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
+        }
 
-    widgets: ClassVar[dict[str, forms.Widget]] = {
-        "tipo_pessoa": forms.HiddenInput(attrs={"value": "PF", "id": "id_pf_tipo_pessoa"}),
-        "name": forms.TextInput(
-            attrs={
-                "class": "form-control wizard-field",
-                "placeholder": "Nome Completo da Pessoa",
-                "id": "id_pf_name",
-            },
-        ),
-        "email": forms.EmailInput(
-            attrs={
-                "class": "form-control wizard-field",
-                "placeholder": "email.pessoal@dominio.com",
-                "id": "id_pf_email",
-            },
-        ),
-        "telefone": forms.TextInput(
-            attrs={
-                "class": "form-control wizard-field phone-mask",
-                "placeholder": "(99) 99999-9999",
-                "id": "id_pf_telefone",
-            },
-        ),
-        "cpf": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field cpf-mask", "placeholder": "999.999.999-99"},
-        ),
-        "rg": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Número do RG"},
-        ),
-        "data_nascimento": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field datepicker", "placeholder": "DD/MM/AAAA"},
-        ),
-        "sexo": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
-        "estado_civil": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
-        "nacionalidade": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "País de nacionalidade"},
-        ),
-        "naturalidade": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Cidade de nascimento"},
-        ),
-        "nome_mae": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo da mãe"},
-        ),
-        "nome_pai": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo do pai"},
-        ),
-        "profissao": forms.TextInput(
-            attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Engenheiro, Médico..."},
-        ),
-        "escolaridade": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
-    }
-
-    labels: ClassVar[dict[str, str]] = {
-        "tipo_pessoa": _("Tipo de Pessoa"),
-        "name": _("Nome Completo"),
-        "email": _("E-mail"),
-        "telefone": _("Telefone"),
-        "cpf": _("CPF"),
-        "rg": _("RG"),
-        "data_nascimento": _("Data de Nascimento"),
-        "sexo": _("Sexo"),
-        "estado_civil": _("Estado Civil"),
-        "nacionalidade": _("Nacionalidade"),
-        "naturalidade": _("Naturalidade"),
-        "nome_mae": _("Nome da Mãe"),
-        "nome_pai": _("Nome do Pai"),
-        "profissao": _("Profissão"),
-        "escolaridade": _("Escolaridade"),
-    }
+        labels: ClassVar[dict[str, str]] = {
+            "tipo_pessoa": _("Tipo de Pessoa"),
+            "name": _("Nome Completo"),
+            "email": _("E-mail"),
+            "telefone": _("Telefone"),
+            "cpf": _("CPF"),
+            "rg": _("RG"),
+            "data_nascimento": _("Data de Nascimento"),
+            "sexo": _("Sexo"),
+            "estado_civil": _("Estado Civil"),
+            "nacionalidade": _("Nacionalidade"),
+            "naturalidade": _("Naturalidade"),
+            "nome_mae": _("Nome da Mãe"),
+            "nome_pai": _("Nome do Pai"),
+            "profissao": _("Profissão"),
+            "escolaridade": _("Escolaridade"),
+        }
 
     def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
         """Inicializa o formulário e configura campos/formatos padrão."""
@@ -399,6 +399,14 @@ class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
                     "type": "text",
                 },
             )
+
+        # Inserir opção padrão "Selecione..." em selects relevantes (sem duplicar)
+        for select_name in ["sexo", "estado_civil", "escolaridade"]:
+            fld = self.fields.get(select_name)
+            if fld and getattr(fld.widget, "choices", None):
+                choices = list(fld.widget.choices)
+                if not choices or choices[0][0] != "":  # garantir primeira opção vazia
+                    fld.widget.choices = [("", "Selecione..."), *choices]
 
     def clean_tipo_pessoa(self) -> str:
         """Garante que o tipo de pessoa seja PF."""
@@ -460,7 +468,7 @@ class TenantPessoaJuridicaWizardForm(EditingTenantMixin, forms.ModelForm):
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control wizard-field",
-                    "placeholder": "Nome Fantasia da Empresa",
+                    "placeholder": "Nome Fantasia",
                     "id": "id_pj_name",
                 },
             ),
@@ -785,11 +793,11 @@ class TenantContactsWizardForm(forms.ModelForm):
     widgets: ClassVar[dict[str, forms.Widget]] = {
         # Contato Principal
         "nome_contato_principal": forms.TextInput(
-            attrs={"class": "form-control wizard-field", "placeholder": "Nome completo do responsável"},
+            attrs={"class": "form-control wizard-field", "placeholder": "Ex: João Silva"},
         ),
         # Contatos Departamentais
         "nome_responsavel_comercial": forms.TextInput(
-            attrs={"class": "form-control wizard-field", "placeholder": "Nome do responsável"},
+            attrs={"class": "form-control wizard-field", "placeholder": "Ex: Ana Souza"},
         ),
         "email_comercial": forms.EmailInput(
             attrs={"class": "form-control wizard-field", "placeholder": "comercial@empresa.com"},
@@ -798,7 +806,7 @@ class TenantContactsWizardForm(forms.ModelForm):
             attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"},
         ),
         "nome_responsavel_financeiro": forms.TextInput(
-            attrs={"class": "form-control wizard-field", "placeholder": "Nome do responsável"},
+            attrs={"class": "form-control wizard-field", "placeholder": "Ex: Carlos Lima"},
         ),
         "email_financeiro": forms.EmailInput(
             attrs={"class": "form-control wizard-field", "placeholder": "financeiro@empresa.com"},
@@ -811,6 +819,32 @@ class TenantContactsWizardForm(forms.ModelForm):
             attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"},
         ),
     }
+
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Mantém somente placeholders; remove help_text extra solicitado."""
+        super().__init__(*args, **kwargs)
+        # Garantir que não exibiremos help_text intrusivo para estes campos
+        for fname in [
+            "nome_contato_principal",
+            "nome_responsavel_comercial",
+            "nome_responsavel_financeiro",
+            "telefone_emergencia",
+        ]:
+            field = self.fields.get(fname)
+            if field:
+                field.help_text = ""
+            placeholder_map = {
+                "nome_contato_principal": "Ex: João Silva",
+                "nome_responsavel_comercial": "Ex: Ana Souza",
+                "nome_responsavel_financeiro": "Ex: Carlos Lima",
+                "email_comercial": "comercial@empresa.com",
+                "email_financeiro": "financeiro@empresa.com",
+            }
+            for field_name, ph in placeholder_map.items():
+                fld = self.fields.get(field_name)
+                if fld and getattr(fld.widget, "attrs", None) is not None:
+                    # Força placeholder sempre (independente de já ter atributo vazio)
+                    fld.widget.attrs["placeholder"] = ph
 
     def clean_contacts_json(self) -> str:
         """Valida e normaliza a coleção de contatos em JSON."""

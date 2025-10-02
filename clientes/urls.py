@@ -1,4 +1,8 @@
-# clientes/urls.py
+"""URLs do app clientes (rotas consolidadas pós-migração do wizard/documentos).
+
+Rotas removidas: download de documento legado (agora tratado via app 'documentos').
+"""
+
 from django.urls import path
 
 from . import views, wizard_views
@@ -26,7 +30,6 @@ urlpatterns = [
     path("<int:pk>/excluir/", views.ClienteDeleteView.as_view(), name="clientes_delete"),
     # Funcionalidades especiais
     path("importar/", views.cliente_import, name="cliente_import"),
-    path("documento/<int:pk>/download/", views.documento_cliente_download, name="documento_download"),
     # APIs AJAX
     path("api/search/", views.api_cliente_search, name="api_cliente_search"),
     path("api/stats/", views.api_cliente_stats, name="api_cliente_stats"),

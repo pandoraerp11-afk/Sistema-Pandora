@@ -1,3 +1,5 @@
+"""Rotas do app portal_cliente (inclui views portal e endpoints AJAX Fase 2)."""
+
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -37,11 +39,37 @@ urlpatterns = [
                 path("ajax/servicos/", views_portal.servicos_ajax, name="servicos_ajax"),
                 path("ajax/profissionais/", views_portal.profissionais_ajax, name="profissionais_ajax"),
                 path(
+                    "ajax/agendamento/criar/",
+                    views_portal.criar_agendamento_ajax,
+                    name="criar_agendamento_ajax",
+                ),
+                path(
+                    "ajax/agendamento/<int:agendamento_id>/cancelar-ajax/",
+                    views_portal.cancelar_agendamento_ajax,
+                    name="cancelar_agendamento_ajax",
+                ),
+                path(
                     "ajax/agendamento/<int:agendamento_id>/status/",
                     views_portal.agendamento_status_ajax,
                     name="agendamento_status_ajax",
                 ),
-            ]
+                # Fase 2 - novos endpoints AJAX
+                path(
+                    "ajax/agendamento/<int:agendamento_id>/checkin/",
+                    views_portal.checkin_agendamento_ajax,
+                    name="checkin_agendamento_ajax",
+                ),
+                path(
+                    "ajax/atendimento/<int:atendimento_id>/finalizar/",
+                    views_portal.finalizar_atendimento_ajax,
+                    name="finalizar_atendimento_ajax",
+                ),
+                path(
+                    "ajax/atendimento/<int:atendimento_id>/avaliar/",
+                    views_portal.avaliar_atendimento_ajax,
+                    name="avaliar_atendimento_ajax",
+                ),
+            ],
         ),
     ),
 ]

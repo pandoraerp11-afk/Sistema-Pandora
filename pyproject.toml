@@ -20,7 +20,8 @@ exclude = [
   "migrations",
   "static",
   ".mypy_cache",
-  ".pytest_cache"
+  ".pytest_cache",
+  "backup do backand antes das correções do Ruff"
 ]
 
 [tool.ruff.lint]

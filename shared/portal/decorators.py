@@ -20,6 +20,8 @@ def fornecedor_required(func: Callable[..., HttpResponse]) -> Callable[..., Http
             acesso = AcessoFornecedor.objects.select_related("fornecedor").get(usuario=request.user, ativo=True)
         except AcessoFornecedor.DoesNotExist as exc:  # pragma: no cover - fluxo negativo
             msg = "Fornecedor sem acesso ativo"
+            if "tenant_id" not in request.session:
+                raise Http404(msg) from exc
             raise Http404(msg) from exc
         request.acesso_fornecedor = acesso
         return func(request, *args, **kwargs)

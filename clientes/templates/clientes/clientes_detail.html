@@ -1,7 +1,7 @@
 {% extends "pandora_ultra_modern_base.html" %}
 {% load static %}
 
-{% block title %}{{ cliente.nome }} - Detalhes do Cliente{% endblock %}
+{% block title %}{{ cliente.nome_display }} - Detalhes do Cliente{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -427,7 +427,7 @@
             </div>
             
             <div class="client-header-info">
-                <h1>{{ cliente.nome }}</h1>
+                <h1>{{ cliente.nome_display }}</h1>
                 {% if cliente.nome_fantasia %}
                     <p>{{ cliente.nome_fantasia }}</p>
                 {% endif %}
@@ -529,7 +529,7 @@
                         <i class="fas fa-signature detail-item-icon"></i>
                         <div class="detail-item-content">
                             <div class="detail-item-label">Nome Completo</div>
-                            <div class="detail-item-value">{{ cliente.nome }}</div>
+                            <div class="detail-item-value">{{ cliente.nome_display }}</div>
                         </div>
                     </div>
                     

@@ -190,14 +190,26 @@ ASGI_APPLICATION = "pandora_erp.asgi.application"
 
 REDIS_URL = os.environ.get("REDIS_URL") or os.environ.get("REDIS_HOST")
 if REDIS_URL:
-    # Permitir formatos: redis://host:port/0 ou apenas host
-    if not REDIS_URL.startswith("redis://"):
-        host = REDIS_URL
-        port = os.environ.get("REDIS_PORT", "6379")
+    # Formatos aceitos agora:
+    # 1) redis://host:port/db
+    # 2) rediss://host:port/db  (TLS - ex: Upstash)
+    # 3) host  (sem esquema, opcionalmente acompanhado de REDIS_PORT)
+    # 4) host:port (sem esquema)
+    # Só transformamos quando NÃO há esquema explícito (nem redis:// nem rediss://)
+    if not REDIS_URL.startswith(("redis://", "rediss://")):
+        # Pode vir no formato host ou host:port
+        if ":" in REDIS_URL:
+            host, port = REDIS_URL.split(":", 1)
+        else:
+            host = REDIS_URL
+            port = os.environ.get("REDIS_PORT", "6379")
         REDIS_URL = f"redis://{host}:{port}/0"
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
+            # Se for rediss:// (TLS) o redis-py reconhece automaticamente.
+            # Caso seja necessário desabilitar validação de certificado (não recomendado)
+            # usar forma avançada via tuple (ver docs channels_redis) ajustando ssl.
             "CONFIG": {"hosts": [REDIS_URL]},
         },
     }

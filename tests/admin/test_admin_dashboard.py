@@ -1,4 +1,3 @@
-# ruff: noqa: S101
 """Testes de admin/dashboard (limpos)."""
 
 from __future__ import annotations
@@ -92,6 +91,8 @@ class AdminDashboardAPITest(TestCase):
             email="admin@example.com",
             password="adminpass123",  # noqa: S106
         )
+        # Autenticação de sessão para evitar redirects de middleware/login_required
+        self.client.force_login(self.admin_user)
         self.tenant = Tenant.objects.create(
             name="Empresa Teste",
             subdomain="empresa-teste",
@@ -106,11 +107,13 @@ class AdminDashboardAPITest(TestCase):
                 severity="high" if i < self.NUM_HIGH_SEVERITY_ALERTS else "medium",
                 status="open",
             )
-        self.client.force_authenticate(user=self.admin_user)
+
+    # force_authenticate não necessário após force_login; manter sessão consistente
 
     def test_list_tenants(self) -> None:
         """Testa a listagem de tenants via API."""
-        url = reverse("admin:tenant-list")
+        # Usar namespace 'administration' para evitar colisão com django.contrib.admin
+        url = reverse("administration:tenant-list")
         resp: HttpResponse = self.client.get(url)
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
@@ -119,9 +122,15 @@ class AdminDashboardAPITest(TestCase):
 
     def test_list_alerts(self) -> None:
         """Testa a listagem de alertas via API."""
-        url = reverse("admin:system-alerts-list")
+        url = reverse("administration:system-alerts-list")
         resp: HttpResponse = self.client.get(url)
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-        assert len(data) == self.TOTAL_ALERTS
-        assert data[0]["title"] == "Alerta 5"  # Ordenação padrão é -created_at
+        # Suporta resposta paginada (dict) ou lista direta
+        if isinstance(data, dict) and "results" in data:
+            assert data["count"] == self.TOTAL_ALERTS
+            results = data["results"]
+        else:
+            results = data
+            assert len(results) == self.TOTAL_ALERTS
+        assert results[0]["title"] == "Alerta 5"  # Ordenação padrão é -created_at

@@ -1,111 +1,222 @@
 {% extends "pandora_wizard_form_ultra_modern.html" %}
 {% load static %}
-{% load fornecedores_extras %}
+{% load widget_tweaks %}
+
+{# IMPORTANTE: Este template replica o do core (templates/core/wizard/step_documents.html) #}
+{# Diferenças mínimas: slug 'fornecedor' no link 'Ver Documentos'. Manter sincronizado. #}
 
 {% block step_content %}
-<div class="alert alert-warning border-0 mb-4 wizard-alert">
-  <div class="d-flex align-items-center">
-    <i class="fas fa-file-alt text-warning me-3" style="font-size: 1.5rem;"></i>
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="fas fa-wand-magic-sparkles me-3 text-info" style="font-size:1.4rem"></i>
     <div>
-      <h6 class="mb-1 text-warning">Documentos do Fornecedor</h6>
-      <small class="text-muted">Envie e versione documentos por tipo e competência (MM/AAAA).</small>
+        <strong>Documentos Dinâmicos.</strong> Tipos + Regras definem obrigatoriedade.
+        <div class="small text-muted">Envie todos os obrigatórios para avançar.</div>
     </div>
-  </div>
-  {% if not is_editing %}
-  <div class="mt-2 small text-muted">
-    Este passo fica ativo após salvar o fornecedor (modo edição). Conclua o cadastro e retorne para anexar documentos.
-  </div>
-  {% endif %}
-  {% if is_editing %}
-  <div class="mt-2 small text-muted">
-    Dica: Você também pode gerenciar anexos pela tela de detalhe do fornecedor.
-  </div>
-  {% endif %}
-  
 </div>
 
-{% if is_editing %}
-<div class="wizard-section">
-  <h5 class="wizard-section-title"><i class="fas fa-cloud-upload-alt wizard-icon"></i> Novo Anexo</h5>
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <div class="row g-2">
-      <div class="col-md-4">{{ form.tipo.label_tag }} {{ form.tipo }}</div>
-      <div class="col-md-4">{{ form.arquivo.label_tag }} {{ form.arquivo }}</div>
-      <div class="col-md-2">{{ form.competencia.label_tag }} {{ form.competencia }}</div>
-      <div class="col-md-12">{{ form.observacao.label_tag }} {{ form.observacao }}</div>
-    </div>
-    <div class="d-flex justify-content-end mt-3">
-      <button type="submit" name="wizard_next" class="btn btn-outline-secondary me-2">
-        <i class="fas fa-arrow-right"></i> Adicionar e continuar
-      </button>
-      <button type="submit" name="wizard_finish" class="btn btn-primary">
-        <i class="fas fa-check"></i> Finalizar cadastro
-      </button>
-    </div>
-  </form>
-</div>
-
-<div class="wizard-section mt-4">
-  <h5 class="wizard-section-title"><i class="fas fa-clock-rotate-left wizard-icon"></i> Últimas versões por tipo</h5>
-  {% if categorias %}
-    {% for categoria, tipos in categorias.items %}
-      <div class="card mb-3">
-        <div class="card-header bg-light fw-semibold">{{ categoria.nome }}</div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-sm mb-0">
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th>Versão</th>
-                  <th>Competência</th>
-                  <th>Status</th>
-                  <th>Enviado em</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for tipo in tipos %}
-                  {% with rows=historico_por_tipo|get_item:tipo.pk %}
-                  {% if rows %}
-                    {% for v in rows %}
-                      <tr>
-                        <td>{{ tipo.nome }}</td>
-                        <td>v{{ v.versao }}</td>
-                        <td>{{ v.competencia|default:'—' }}</td>
-                        <td>{{ v.get_status_display }}</td>
-                        <td>{{ v.enviado_em|date:"d/m/Y H:i" }}</td>
-                      </tr>
-                    {% endfor %}
-                  {% else %}
-                    <tr>
-                      <td>{{ tipo.nome }}</td>
-                      <td colspan="4" class="text-muted">Sem uploads ainda</td>
-                    </tr>
-                  {% endif %}
-                  {% endwith %}
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+<div class="wizard-section mb-2">
+    <div class="wizard-section-title d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-lock text-danger"></i>
+            <span class="fw-semibold">Documentos Obrigatórios</span>
         </div>
-      </div>
-    {% endfor %}
-  {% else %}
-    <p class="text-muted">Nenhum tipo de documento configurado para fornecedores.</p>
-  {% endif %}
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-danger-subtle text-danger" id="countObrig">0/0</span>
+            {% if view.kwargs.pk %}
+            <a href="{% url 'documentos:documento_list' 'fornecedor' view.kwargs.pk %}"
+               class="btn btn-sm btn-outline-secondary" target="_blank" title="Visualizar documentos do fornecedor">
+               <i class="fas fa-folder-open me-1"></i> Ver Documentos
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="tblObrigatorios">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th>Periodicidade</th>
+                        <th>Status</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 </div>
-{% else %}
-<div class="wizard-section">
-  <p class="text-muted">Finalize o cadastro para habilitar o envio de documentos.</p>
-  <div class="d-flex justify-content-end">
-    <form method="post">
-      {% csrf_token %}
-      <button type="submit" name="wizard_next" class="btn btn-primary">
-        Continuar
-      </button>
-    </form>
-  </div>
+
+<div class="wizard-section mb-2">
+    <div class="wizard-section-title d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-circle-plus text-primary"></i>
+            <span class="fw-semibold">Documentos Adicionais</span>
+        </div>
+        <div class="d-flex gap-2">
+            <select id="selAdicionarOpcional" class="form-select form-select-sm" style="min-width:260px">
+                <option value="">-- Adicionar Documento Adicional --</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary" id="btnAddOpcional" type="button" title="Adicionar"><i class="fas fa-plus"></i></button>
+        </div>
+    </div>
+    <p class="text-muted small mb-0 mt-2">Selecione um tipo adicional e clique em <strong>+</strong>. Após enviar um arquivo o status muda para <em>Enviado</em>.</p>
 </div>
-{% endif %}
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="tblOpcionais">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th>Periodicidade</th>
+                        <th>Status</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="alert alert-secondary small" id="wizardDocsResumo">Carregando...</div>
+
+<template id="rowDocTemplate">
+    <tr data-tipo-id=""><td class="tipo-nome fw-semibold"></td><td class="tipo-categoria small text-muted"></td><td class="tipo-periodicidade small"></td><td class="status-col"></td><td><div class="d-flex gap-2 justify-content-center"><button type="button" class="btn btn-sm btn-outline-primary btn-upload"><i class="fas fa-upload"></i></button><button type="button" class="btn btn-sm btn-outline-secondary d-none btn-ver" title="Abrir arquivo"><i class="fas fa-eye"></i></button><button type="button" class="btn btn-sm btn-outline-danger d-none btn-remover" title="Remover"><i class="fas fa-trash"></i></button></div><input type="file" class="d-none input-file" /></td></tr>
+</template>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    function bytes(n){ if(!n && n!==0) return ''; const u=['B','KB','MB']; const i=Math.floor(Math.log(n)/Math.log(1024)); return (n/Math.pow(1024,i)).toFixed(1)+' '+u[i]; }
+    function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+    const URL_LIST = '{% url "documentos:wizard_docs_list" %}';
+    const URL_UPLOAD = '{% url "documentos:wizard_docs_upload" %}';
+    const URL_DELETE_PATTERN = '{% url "documentos:wizard_docs_delete" 999999 %}';
+    function buildDeleteUrl(id){ return URL_DELETE_PATTERN.replace('999999', id); }
+    let state = { obrigatorios:[], opcionais:[] };
+    let el={};
+    function init(){
+        el.tblObrig=document.querySelector('#tblObrigatorios tbody');
+        el.tblOpc=document.querySelector('#tblOpcionais tbody');
+        el.tmpl=document.getElementById('rowDocTemplate');
+        el.selOpc=document.getElementById('selAdicionarOpcional');
+        el.btnAdd=document.getElementById('btnAddOpcional');
+        el.resumo=document.getElementById('wizardDocsResumo');
+        el.countObrig=document.getElementById('countObrig');
+        el.btnAdd.addEventListener('click', onAdd); load();
+    }
+    function onAdd(){ const v=el.selOpc.value; if(!v) return; const obj=state.opcionais.find(o=>o.tipo_id==v); if(obj){ obj.addedTempRow=true; render(); el.selOpc.value=''; } }
+    function render(){
+        el.tblObrig.innerHTML=''; el.tblOpc.innerHTML='';
+        el.selOpc.querySelectorAll('option:not([value=""])').forEach(o=>o.remove());
+        let env=0,total=state.obrigatorios.length;
+        state.obrigatorios.forEach(d=>{const tr=row(d,true); el.tblObrig.appendChild(tr); if(d.uploaded) env++;});
+        state.opcionais.forEach(d=>{
+            if(!d.uploaded){
+                const opt=document.createElement('option');
+                opt.value=d.tipo_id; opt.textContent=d.nome+' ('+d.categoria+')'; el.selOpc.appendChild(opt);
+            }
+            if(d.addedTempRow||d.uploaded){ d.addedTempRow=true; el.tblOpc.appendChild(row(d,false)); }
+        });
+        if(!state.obrigatorios.length){
+            el.tblObrig.innerHTML='<tr class="table-light"><td colspan="5" class="text-center text-muted small">Nenhum documento obrigatório configurado para este fornecedor.</td></tr>';
+        }
+        if(!el.tblOpc.children.length){
+            el.tblOpc.innerHTML='<tr class="table-light"><td colspan="5" class="text-center text-muted small">Nenhum documento adicional selecionado ainda.</td></tr>';
+        }
+        el.countObrig.textContent=env+'/'+total;
+        const pct = total? Math.round((env/total)*100):0;
+        el.resumo.innerHTML= env===total
+            ? '<span class="text-success"><i class="fas fa-check me-1"></i>Todos os obrigatórios enviados ('+env+'/'+total+' - '+pct+'%).</span>'
+            : '<span class="text-danger"><i class="fas fa-triangle-exclamation me-1"></i>'+env+'/'+total+' enviados ('+pct+'%). Envie todos para avançar.</span>';
+        controlaNext(env===total);
+    }
+    function controlaNext(ok){ const b=document.querySelector('[data-wizard-next]'); if(b){ b.disabled=!ok; b.title= ok? '' : 'Envie todos os documentos obrigatórios.'; } }
+    function row(d,ob){
+        const n=el.tmpl.content.firstElementChild.cloneNode(true);
+        n.dataset.tipoId=d.tipo_id;
+        n.querySelector('.tipo-nome').textContent=d.nome;
+        n.querySelector('.tipo-categoria').textContent=d.categoria||'-';
+        n.querySelector('.tipo-periodicidade').textContent=d.periodicidade||'-';
+        const st=n.querySelector('.status-col');
+        if(d.uploaded){
+            st.innerHTML='<span class="badge bg-success-subtle text-success">Enviado</span><div class="small text-muted">'+(d.filename||'')+' '+(d.tamanho? '('+bytes(d.tamanho)+')':'')+'</div>';
+            n.querySelector('.btn-remover').classList.remove('d-none');
+            n.querySelector('.btn-ver').classList.remove('d-none');
+        } else {
+            st.innerHTML= ob? '<span class="badge bg-danger-subtle text-danger">Pendente</span>' : '<span class="badge bg-secondary">Adicional</span>';
+        }
+        const btnUpload = n.querySelector('.btn-upload');
+        btnUpload.title='Enviar / Atualizar arquivo';
+        const btnVer = n.querySelector('.btn-ver');
+        btnVer.title='Visualizar arquivo enviado';
+        const btnRem = n.querySelector('.btn-remover');
+        btnRem.title='Remover arquivo enviado';
+        const inp=n.querySelector('.input-file');
+        btnUpload.addEventListener('click',()=>inp.click());
+        inp.addEventListener('change',()=>{ if(!inp.files.length) return; upload(d.tipo_id, inp.files[0]); });
+        btnRem.addEventListener('click',()=>remover(d));
+        btnVer.addEventListener('click',()=>visualizar(d));
+        return n;
+    }
+    function visualizar(d){ if(!d.temp_id) return; window.open('/media/'+d.filename,'_blank'); }
+    function remover(d){ if(!d.temp_id) return; fetch(buildDeleteUrl(d.temp_id),{method:'POST',headers:{'X-CSRFToken':csrf()}}).then(r=>r.json()).then(j=>{ if(j.ok){ d.uploaded=false; d.temp_id=null; render(); } else alert('Erro remover'); }).catch(()=>alert('Falha remover')); }
+    function upload(id,file){ const fd=new FormData(); fd.append('tipo_id',id); fd.append('arquivo',file); fetch(URL_UPLOAD,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd}).then(r=>r.json()).then(j=>{ if(j.ok){ const all=[...state.obrigatorios,...state.opcionais]; const obj=all.find(x=>x.tipo_id==id); Object.assign(obj,{uploaded:true,temp_id:j.temp_id,filename:j.filename,tamanho:j.tamanho,addedTempRow:true}); render(); } else alert(j.error||'Falha upload'); }).catch(()=>alert('Erro upload')); }
+    function load(){
+        el.resumo.textContent='Carregando...';
+        fetch(URL_LIST, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(async r=>{
+                let data=null; try{ data = await r.json(); }catch(_){ }
+                if(!r.ok){
+                    if(data && data.detail){
+                        el.resumo.innerHTML='<span class="text-danger">500: '+escapeHtml(data.detail)+'</span>';
+                    } else {
+                        el.resumo.innerHTML='<span class="text-danger">Falha '+r.status+' '+r.statusText+'</span>';
+                    }
+                    throw new Error('HTTP '+r.status);
+                }
+                return data;
+            })
+            .then(d=>{ state=d; render(); })
+            .catch(err=>{ if(!(err && err.message && err.message.startsWith('HTTP'))){ el.resumo.innerHTML='<span class="text-danger">Erro ao carregar (network)</span>'; } });
+    }
+    function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
+<style>
+    #tblObrigatorios tbody tr td, #tblOpcionais tbody tr td { vertical-align: middle; }
+    .bg-success-subtle{ background:#e9f7ef; }
+    .bg-danger-subtle{ background:#fdecec; }
+    .badge{ font-weight:500; }
+    .wizard-section-title{ padding:.25rem 0 .5rem; border-bottom:1px solid #e9ecef; margin-bottom:.75rem; }
+    #tblObrigatorios th:nth-child(1), #tblObrigatorios td:nth-child(1),
+    #tblOpcionais   th:nth-child(1), #tblOpcionais   td:nth-child(1){ width:22%; }
+    #tblObrigatorios th:nth-child(2), #tblObrigatorios td:nth-child(2),
+    #tblOpcionais   th:nth-child(2), #tblOpcionais   td:nth-child(2){ width:30%; }
+    #tblObrigatorios th:nth-child(3), #tblObrigatorios td:nth-child(3),
+    #tblObrigatorios th:nth-child(4), #tblObrigatorios td:nth-child(4),
+    #tblObrigatorios th:nth-child(5), #tblObrigatorios td:nth-child(5),
+    #tblOpcionais   th:nth-child(3), #tblOpcionais   td:nth-child(3),
+    #tblOpcionais   th:nth-child(4), #tblOpcionais   td:nth-child(4),
+    #tblOpcionais   th:nth-child(5), #tblOpcionais   td:nth-child(5){ width:16%; }
+    #tblObrigatorios th:nth-child(3), #tblOpcionais th:nth-child(3){ white-space: nowrap; }
+    #tblObrigatorios th:nth-child(2), #tblObrigatorios td:nth-child(2),
+    #tblOpcionais   th:nth-child(2), #tblOpcionais   td:nth-child(2){ text-align:center; }
+    #tblObrigatorios th:nth-child(3), #tblObrigatorios td:nth-child(3),
+    #tblObrigatorios th:nth-child(4), #tblObrigatorios td:nth-child(4),
+    #tblObrigatorios th:nth-child(5), #tblObrigatorios td:nth-child(5),
+    #tblOpcionais th:nth-child(3), #tblOpcionais td:nth-child(3),
+    #tblOpcionais th:nth-child(4), #tblOpcionais td:nth-child(4),
+    #tblOpcionais th:nth-child(5), #tblOpcionais td:nth-child(5){ text-align: center; }
+    #tblObrigatorios td:nth-child(5) .d-flex,
+    #tblOpcionais td:nth-child(5) .d-flex{ justify-content: center; }
+</style>
+{% endblock %}
+
+{% block modals %}{% endblock %}

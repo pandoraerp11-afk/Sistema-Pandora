@@ -1,5 +1,9 @@
+"""Testes para comandos de limpeza e dedupe de notificações."""
+
+import os
 from datetime import timedelta
 from io import StringIO
+from typing import Any  # noqa: F401 (usado em comentários futuros se necessário)
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -19,10 +23,14 @@ User = get_user_model()
 
 
 class ManagementCommandsNotificationTest(TestCase):
-    def setUp(self):
+    """Testes cobrindo expiração/remoção e deduplicação de notificações simples e avançadas."""
+
+    def setUp(self) -> None:
+        """Configura tenant, usuários e configurações de retenção."""
         self.tenant = Tenant.objects.create(name="Empresa Cmd", subdomain="empresa-cmd", status="active")
-        self.user1 = User.objects.create_user(username="u1", password="pass")
-        self.user2 = User.objects.create_user(username="u2", password="pass")
+        pwd = os.getenv("TEST_PASSWORD", "x")
+        self.user1 = User.objects.create_user(username="u1", password=pwd)  # nosec S106
+        self.user2 = User.objects.create_user(username="u2", password=pwd)  # nosec S106
         # Config simples
         self.cfg = ConfiguracaoNotificacao.objects.create(
             tenant=self.tenant,
@@ -36,17 +44,29 @@ class ManagementCommandsNotificationTest(TestCase):
             notification_retention_days=15,
         )
 
-    def _retroceder(self, obj, dias):
-        # Atualiza created_at manualmente
-        obj.__class__.objects.filter(pk=obj.pk).update(created_at=timezone.now() - timedelta(days=dias))
+    def _retroceder(self, obj: object, dias: int) -> None:
+        """Retrocede artificialmente a data de criação do objeto em 'dias'."""
+        obj.__class__.objects.filter(pk=obj.pk).update(  # type: ignore[attr-defined]
+            created_at=timezone.now() - timedelta(days=dias),
+        )
 
-    def test_notifications_cleanup_simple_and_advanced(self):
+    def test_notifications_cleanup_simple_and_advanced(self) -> None:
+        """Valida expiração e remoção de simples e avançadas conforme políticas."""
         # Simples
         n_naolida = Notification.objects.create(
-            tenant=self.tenant, usuario_destinatario=self.user1, titulo="A", mensagem="A", tipo="info"
+            tenant=self.tenant,
+            usuario_destinatario=self.user1,
+            titulo="A",
+            mensagem="A",
+            tipo="info",
         )
         n_lida = Notification.objects.create(
-            tenant=self.tenant, usuario_destinatario=self.user1, titulo="B", mensagem="B", tipo="info", status="lida"
+            tenant=self.tenant,
+            usuario_destinatario=self.user1,
+            titulo="B",
+            mensagem="B",
+            tipo="info",
+            status="lida",
         )
         n_arch = Notification.objects.create(
             tenant=self.tenant,
@@ -57,18 +77,31 @@ class ManagementCommandsNotificationTest(TestCase):
             status="arquivada",
         )
         self._retroceder(n_naolida, 20)  # expira (>10)
-        self._retroceder(n_lida, 10)  # deletar (>5)
+        # Criada há 7 dias: < limite_lidas (5) p/ deletar? (ajuste correto é >5 e <10). Corrigir comentário:
+        # Necessário: created_at < now-5 (retention lidas) e >= now-10 (não expirar): usamos 7 dias.
+        self._retroceder(n_lida, 7)  # deletar sem expirar
         self._retroceder(n_arch, 40)  # deletar (>30)
 
         # Avançadas
         adv_pending = NotificationAdvanced.objects.create(
-            tenant=self.tenant, title="AdvPend", content="X", priority="medium"
+            tenant=self.tenant,
+            title="AdvPend",
+            content="X",
+            priority="medium",
         )
         adv_read = NotificationAdvanced.objects.create(
-            tenant=self.tenant, title="AdvRead", content="X", priority="medium", status="read"
+            tenant=self.tenant,
+            title="AdvRead",
+            content="X",
+            priority="medium",
+            status="read",
         )
         adv_arch = NotificationAdvanced.objects.create(
-            tenant=self.tenant, title="AdvArch", content="X", priority="medium", status="archived"
+            tenant=self.tenant,
+            title="AdvArch",
+            content="X",
+            priority="medium",
+            status="archived",
         )
         # Recipients (necessário para consistência)
         for adv in (adv_pending, adv_read, adv_arch):
@@ -83,8 +116,8 @@ class ManagementCommandsNotificationTest(TestCase):
         call_command("notifications_cleanup", "--dry-run", stdout=out)
         adv_pending.refresh_from_db()
         n_naolida.refresh_from_db()
-        self.assertEqual(adv_pending.status, "pending")  # não alterado
-        self.assertEqual(n_naolida.status, "nao_lida")
+        assert adv_pending.status == "pending"
+        assert n_naolida.status == "nao_lida"
 
         # Execução real
         out = StringIO()
@@ -92,19 +125,20 @@ class ManagementCommandsNotificationTest(TestCase):
         # Refresh
         adv_pending.refresh_from_db()
         n_naolida.refresh_from_db()
-        self.assertEqual(n_naolida.status, "expirada")  # expirou
+        assert n_naolida.status == "expirada"
         adv_pending.refresh_from_db()
-        self.assertEqual(adv_pending.status, "expired")
+        assert adv_pending.status == "expired"
         # Lida simples removida
-        self.assertFalse(Notification.objects.filter(pk=n_lida.pk).exists())
+        assert not Notification.objects.filter(pk=n_lida.pk).exists()
         # Arquivada simples removida
-        self.assertFalse(Notification.objects.filter(pk=n_arch.pk).exists())
+        assert not Notification.objects.filter(pk=n_arch.pk).exists()
         # Lida avançada removida (read old)
-        self.assertFalse(NotificationAdvanced.objects.filter(pk=adv_read.pk).exists())
+        assert not NotificationAdvanced.objects.filter(pk=adv_read.pk).exists()
         # Arquivada avançada removida
-        self.assertFalse(NotificationAdvanced.objects.filter(pk=adv_arch.pk).exists())
+        assert not NotificationAdvanced.objects.filter(pk=adv_arch.pk).exists()
 
-    def test_notifications_dedupe_simple_and_advanced(self):
+    def test_notifications_dedupe_simple_and_advanced(self) -> None:
+        """Garante que duplicatas são arquivadas mantendo somente uma ativa."""
         # Simples duplicadas agenda
         for _i in range(3):
             Notification.objects.create(
@@ -117,15 +151,15 @@ class ManagementCommandsNotificationTest(TestCase):
                 dados_extras={"evento_id": 123},
             )
         # Avançadas duplicadas
-        base_args = dict(
-            tenant=self.tenant,
-            title="TituloX",
-            content="Y",
-            priority="medium",
-            source_module="agenda",
-            source_object_type="Evento",
-            source_object_id="123",
-        )
+        base_args = {
+            "tenant": self.tenant,
+            "title": "TituloX",
+            "content": "Y",
+            "priority": "medium",
+            "source_module": "agenda",
+            "source_object_type": "Evento",
+            "source_object_id": "123",
+        }
         adv_main = NotificationAdvanced.objects.create(**base_args)
         adv_dup1 = NotificationAdvanced.objects.create(**base_args)
         adv_dup2 = NotificationAdvanced.objects.create(**base_args)
@@ -135,11 +169,11 @@ class ManagementCommandsNotificationTest(TestCase):
         call_command("notifications_dedupe", "--window-minutes", "10", stdout=out)
         # Simples: 1 ativa + 2 arquivadas
         simples = Notification.objects.filter(modulo_origem="agenda", dados_extras__evento_id=123)
-        self.assertEqual(simples.count(), 3)
+        assert simples.count() == 3
         arquivadas = simples.filter(status="arquivada").count()
-        self.assertEqual(arquivadas, 2)
+        assert arquivadas == 2
         # Avançadas: 1 mantida, 2 archived
         adv_all = NotificationAdvanced.objects.filter(source_module="agenda", source_object_id="123")
-        self.assertEqual(adv_all.count(), 3)
+        assert adv_all.count() == 3
         archived_adv = adv_all.filter(status="archived").count()
-        self.assertEqual(archived_adv, 2)
+        assert archived_adv == 2

@@ -94,72 +94,67 @@ def system_stats(request: HttpRequest) -> Response:
     """Retorna estatísticas do sistema."""
     if not request.user.is_authenticated:
         return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    # TODO(dev): #456 Implementar a lógica real para obter as estatísticas
+    # Implementação básica (placeholder realista) - expande depois se integrar com métricas do host
+    total_users = User.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    active_tenants = Tenant.objects.filter(status="active").count()
+    tenant_links = TenantUser.objects.count()
+    # Percentual simples de "uso" = usuários ativos / total (evita divisão por zero)
+    active_ratio = (active_users / total_users) if total_users else 0.0
     data = {
-        "cpu_usage": 0,
-        "memory_usage": 0,
-        "disk_usage": 0,
-        "online_users": 0,
+        "active_tenants": active_tenants,
+        "total_users": total_users,
+        "active_users": active_users,
+        "active_user_ratio": round(active_ratio, 4),
+        "tenant_user_links": tenant_links,
+        # slots reservados para futura instrumentação real (CPU/Mem etc.)
+        "cpu_usage": None,
+        "memory_usage": None,
+        "disk_usage": None,
+        "timestamp": timezone.now().isoformat(),
     }
-    return Response(data)
+    return Response(data, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def get_dashboard_metrics(_request: HttpRequest) -> Response:
     """Fornece dados de métricas para o dashboard principal."""
-    # TODO(dev): #123 Substituir por dados reais do banco de dados
+    # Métricas reais (mínimas) derivadas dos modelos disponíveis
+    total_tenants = Tenant.objects.count()
+    active_tenants = Tenant.objects.filter(status="active").count()
+    total_users = User.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    total_links = TenantUser.objects.count()
+    # Top 5 cargos mais utilizados (normalizados)
+    top_cargos_qs = (
+        TenantUser.objects.exclude(cargo__isnull=True)
+        .exclude(cargo__exact="")
+        .values("cargo")
+        .annotate(cnt=Count("cargo"))
+        .order_by("-cnt")[:5]
+    )
+    top_cargos = [
+        {"cargo": normalizar_cargo(row["cargo"]) or row["cargo"], "count": row["cnt"]} for row in top_cargos_qs
+    ]
+
     data = {
-        "key_metrics": [
-            {
-                "label": "Novos Clientes",
-                "value": 12,
-                "change": "+5%",
-                "change_type": "positive",
-                "icon": "fas fa-users",
-            },
-            {
-                "label": "Vendas (Mês)",
-                "value": "R$ 45.230",
-                "change": "+12%",
-                "change_type": "positive",
-                "icon": "fas fa-money-bill-wave",
-            },
-            {"label": "Projetos Ativos", "value": 8, "change": "-2", "change_type": "negative", "icon": "fas fa-tools"},
-            {
-                "label": "Taxa de Conclusão",
-                "value": "92%",
-                "change": "+1.5%",
-                "change_type": "positive",
-                "icon": "fas fa-check-circle",
-            },
-        ],
-        "revenue_chart": {
-            "labels": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"],
-            "datasets": [
-                {
-                    "label": "Receita",
-                    "data": [12000, 19000, 15000, 21000, 18000, 25000],
-                    "backgroundColor": "rgba(75, 192, 192, 0.6)",
-                },
-                {
-                    "label": "Despesas",
-                    "data": [8000, 9500, 11000, 10500, 12000, 13000],
-                    "backgroundColor": "rgba(255, 99, 132, 0.6)",
-                },
-            ],
+        "summary": {
+            "tenants": total_tenants,
+            "tenants_active": active_tenants,
+            "users": total_users,
+            "users_active": active_users,
+            "tenant_user_links": total_links,
+            "active_user_ratio": round((active_users / total_users) if total_users else 0.0, 4),
         },
-        "sales_categories": [
-            {"name": "Serviços", "percentage": 60, "color": "#36A2EB"},
-            {"name": "Produtos", "percentage": 30, "color": "#FFCE56"},
-            {"name": "Manutenção", "percentage": 10, "color": "#FF6384"},
-        ],
-        "recent_activities": [
-            {"user": {"name": "Ana"}, "description": "cadastrou um novo cliente.", "timestamp": "2 horas atrás"},
-            {"user": {"name": "Carlos"}, "description": "finalizou o projeto 'Alpha'.", "timestamp": "5 horas atrás"},
-            {"user": {"name": "Mariana"}, "description": "atualizou o orçamento #2024-058.", "timestamp": "ontem"},
-        ],
+        "top_cargos": top_cargos,
+        # Espaço reservado para futura ampliação (receitas, projetos, etc.)
+        "placeholders": {
+            "revenue_chart": None,
+            "sales_categories": None,
+            "recent_activities": [],
+        },
+        "generated_at": timezone.now().isoformat(),
     }
     return Response(data, status=status.HTTP_200_OK)
 
@@ -369,7 +364,11 @@ def api_cargo_suggestions(request: HttpRequest) -> Response:
     - q: filtro opcional (case-insensitive)
     - limit: quantidade (default 15)
     """
-    tenant = get_current_tenant(request)
+    # Fallback robusto: durante o wizard de criação pode não haver tenant resolvido ainda.
+    try:
+        tenant = get_current_tenant(request)
+    except Exception:  # noqa: BLE001
+        tenant = None
     query = (request.GET.get("q") or "").strip().lower()
     try:
         limit = int(request.GET.get("limit") or 15)

@@ -576,8 +576,20 @@ class Tenant(TimestampedModel):
     # Mantém testes e código legado funcionando sem alterar chamadas.
     # ------------------------------------------------------------------
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
-        """Initialize Tenant, handling legacy kwargs."""
-        legacy = {"nome": "name", "slug": "subdomain", "email_contato": "email", "schema_name": "subdomain"}
+        """Initialize Tenant, handling legacy kwargs.
+
+        Aceita variantes históricas/portuguesas dos campos para manter testes e
+        chamadas legadas operando sem alteração imediata. Cada chave antiga é
+        convertida para o nome de campo atual apenas se o novo ainda não tiver
+        sido passado explicitamente (precedência para chamadas já atualizadas).
+        """
+        legacy = {
+            "nome": "name",
+            "slug": "subdomain",  # alias histórico em algumas rotas
+            "schema_name": "subdomain",  # usado em contextos multi-schema antigos
+            "subdominio": "subdomain",  # variante pt-BR usada em alguns testes
+            "email_contato": "email",  # campo de contato legado
+        }
         for old, new in list(legacy.items()):
             if old in kwargs and new not in kwargs:
                 kwargs[new] = kwargs.pop(old)

@@ -22,6 +22,52 @@ services:
         fromService:
           name: sitema-pandora
           type: web
+      # Substitua o valor de REDIS_URL após criar o banco Redis (Upstash):
+      # Formato: rediss://default:SENHA@host:port
+      - key: REDIS_URL
+        value: "rediss://default:COLOQUE_SUA_SENHA@allowed-walrus-5115.upstash.io:6379"
+
+  - type: worker
+    name: sitema-pandora-worker
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        sync: true # Compartilha a mesma SECRET_KEY (definida manualmente depois de gerar)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sitema-pandora-db
+          property: connectionString
+      - key: REDIS_URL
+        sync: true
+    # Comando customizado para rodar o worker Celery
+    startCommand: "celery -A pandora_erp worker -l info --queues=default,media"
+
+  # Caso no futuro queira tarefas periódicas, descomente abaixo:
+  # - type: worker
+  #   name: sitema-pandora-beat
+  #   runtime: docker
+  #   plan: free
+  #   autoDeploy: true
+  #   dockerfilePath: Dockerfile
+  #   dockerContext: .
+  #   envVars:
+  #     - key: DJANGO_DEBUG
+  #       value: "False"
+  #     - key: DJANGO_SECRET_KEY
+  #       sync: true
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: sitema-pandora-db
+  #         property: connectionString
+  #     - key: REDIS_URL
+  #       sync: true
+  #   startCommand: "celery -A pandora_erp beat -l info"
 
 databases:
   - name: sitema-pandora-db

@@ -29,10 +29,15 @@ from core.models import Tenant as TenantModel
 from core.models import TenantUser, CustomUser
 from clientes.models import Cliente
 
+# Import opcional do modelo de fornecedor sem reatribuir o nome da classe (evita erro de tipo).
 try:  # Import opcional para auto-bind de fornecedores no portal
-    from portal_fornecedor.models import AcessoFornecedor  # type: ignore[attr-defined]
+    from portal_fornecedor import models as _forn_models
 except ModuleNotFoundError:  # pragma: no cover
-    AcessoFornecedor = None  # type: ignore[attr-defined]
+    _acesso_fornecedor_model = None
+else:
+    _acesso_fornecedor_model = _forn_models.AcessoFornecedor
+
+# _acesso_fornecedor_model agora é: classe AcessoFornecedor ou None.
 
 if TYPE_CHECKING:  # imports apenas para tipagem
     from collections.abc import Callable, Iterator
@@ -49,13 +54,13 @@ logger = logging.getLogger(__name__)
 
 try:
     django.setup()
-except Exception as e:  # pragma: no cover - apenas salvaguarda  # noqa: BLE001
-    logger.warning("[conftest] Aviso ao inicializar Django: %s", e)
+except (RuntimeError, ImportError) as err:  # pragma: no cover
+    logger.warning("[conftest] Aviso ao inicializar Django: %s", err)
 
 # Import opcional (mantém robustez em ambientes parciais)
 try:
     from core.services.wizard_metrics import reset_all_metrics as _reset_all_metrics
-except Exception:  # noqa: BLE001
+except (RuntimeError, ImportError):  # pragma: no cover
     _reset_all_metrics = None
 
 # Forçar flag de teste (detecção baseada em sys.modules pode ocorrer cedo demais)
@@ -72,16 +77,22 @@ def user_logado(db: object) -> CustomUser:
     del db
     user_model = get_user_model()
     test_pwd = os.environ.get("TEST_PASSWORD", "x")
-    user: CustomUser = user_model.objects.create_user(  # type: ignore[assignment]
-        username="user_logado",
-        password=test_pwd,
+    # create_user já retorna CustomUser (settings.AUTH_USER_MODEL) neste projeto
+    user = cast(
+        "CustomUser",
+        user_model.objects.create_user(
+            username="user_logado",
+            password=test_pwd,
+        ),
     )
     tenant = TenantModel.objects.create(name="Tenant UserLogado", subdomain="tul")
     TenantUser.objects.create(user=user, tenant=tenant)
     # Cliente mínimo para testes que acessam user_logado.cliente
     cliente = Cliente.objects.create(tenant=tenant, tipo="PF", email="u@example.com")
     # Anexar atributo para compat direta
-    user.cliente = cliente  # type: ignore[attr-defined]
+    # Atributo dinâmico usado por testes legados
+    # Atributo dinâmico usado em testes legados: anexamos de forma explícita.
+    user.cliente = cliente  # atributo dinâmico suportado em runtime pelos testes
     return user
 
 
@@ -114,10 +125,10 @@ with contextlib.suppress(Exception):
                 session.save()
             return
         # Fornecedor portal (sem TenantUser) — um único acesso ativo
-        if AcessoFornecedor is not None:
+        if _acesso_fornecedor_model is not None:
             with contextlib.suppress(Exception):
                 acessos = (
-                    AcessoFornecedor.objects.filter(usuario=user, ativo=True)
+                    _acesso_fornecedor_model.objects.filter(usuario=user, ativo=True)
                     .select_related("fornecedor__tenant")
                     .values_list("fornecedor__tenant_id", flat=True)[:2]
                 )
@@ -214,6 +225,20 @@ def tenant_with_all_modules(db: object) -> Tenant:
 
     tenant = TenantModel.objects.create(name="Empresa Teste Auto", subdomain="empresa-auto")
     return enable_all_modules_for_tenant(tenant)
+
+
+@pytest.fixture
+def tenant(db: object) -> Tenant:
+    """Fixture global simples `tenant` (compat com testes legados).
+
+    Vários testes migrados esperam uma fixture chamada exatamente `tenant`.
+    Antes ela existia apenas em arquivos específicos, causando `fixture 'tenant' not found`
+    em módulos que a referenciam sem declarar localmente. Fornecemos aqui uma
+    versão mínima ativa com módulos habilitados (para evitar redirects/403).
+    """
+    del db
+    t = TenantModel.objects.create(name="Empresa Global Teste", subdomain="empresa-global")
+    return enable_all_modules_for_tenant(t)
 
 
 @pytest.fixture

@@ -1,0 +1,13 @@
+{
+  "ruff_counts": {},
+  "ruff_grouped": {},
+  "mypy_counts": {},
+  "messages": {
+    "ruff": "ruff retornou código 1 (há findings)",
+    "mypy": "mypy retornou código 2 (há findings)"
+  },
+  "paths": {
+    "ruff": "C:\\dev\\Pandora\\backand\\erros_full_ruff.txt",
+    "mypy": "C:\\dev\\Pandora\\backand\\erros_full_mypy.txt"
+  }
+}

@@ -22,9 +22,9 @@ def test_subdomain_limits_match_regex() -> None:
     """Valida coerência entre MIN/MAX e o padrão do regex compartilhado."""
     regex = settings.SUBDOMAIN_REGEX
     pattern = regex.pattern if isinstance(regex, re.Pattern) else str(regex)
-    MAX_SUBDOMAIN_LENGTH = 63
+    max_subdomain_length = 63  # constante local usada para comparação
     assert settings.SUBDOMAIN_MIN_LENGTH == 1, "SUBDOMAIN_MIN_LENGTH divergente (esperado 1)"
-    assert settings.SUBDOMAIN_MAX_LENGTH == MAX_SUBDOMAIN_LENGTH, "SUBDOMAIN_MAX_LENGTH divergente (esperado 63)"
+    assert max_subdomain_length == settings.SUBDOMAIN_MAX_LENGTH, "SUBDOMAIN_MAX_LENGTH divergente (esperado 63)"
     assert "{0,61}" in pattern or "{0,61}" in pattern.replace("\\", ""), "Regex não contém intervalo {0,61}"
 
 

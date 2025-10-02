@@ -34,8 +34,16 @@
 <div class="card mb-4 shadow-sm border-0">
     <div class="table-responsive">
             <table class="table table-sm align-middle mb-0" id="tblObrigatorios">
-                <thead class="table-light"><tr><th>Tipo</th><th>Categoria</th><th>Periodicidade</th><th>Status</th><th>Ação</th></tr></thead>
-            <tbody></tbody>
+                <thead class="table-light">
+                    <tr>
+                        <th title="Nome do tipo documental">Tipo</th>
+                        <th title="Categoria do documento para organização">Categoria</th>
+                        <th title="Frequência de renovação (se aplicável)">Periodicidade</th>
+                        <th title="Situação atual do envio / validação">Status</th>
+                        <th title="Enviar, visualizar ou remover">Ação</th>
+                    </tr>
+                </thead>
+            <tbody><!-- placeholder dinâmico inserido via JS --></tbody>
         </table>
     </div>
 </div>
@@ -53,13 +61,22 @@
             <button class="btn btn-sm btn-outline-primary" id="btnAddOpcional" type="button" title="Adicionar"><i class="fas fa-plus"></i></button>
         </div>
     </div>
+    <p class="text-muted small mb-0 mt-2">Selecione um tipo adicional e clique em <strong>+</strong>. Após enviar um arquivo o status muda para <em>Enviado</em>.</p>
 </div>
 
 <div class="card mb-4 shadow-sm border-0">
     <div class="table-responsive">
             <table class="table table-sm align-middle mb-0" id="tblOpcionais">
-                <thead class="table-light"><tr><th>Tipo</th><th>Categoria</th><th>Periodicidade</th><th>Status</th><th>Ação</th></tr></thead>
-            <tbody></tbody>
+                <thead class="table-light">
+                    <tr>
+                        <th title="Nome do tipo documental">Tipo</th>
+                        <th title="Categoria do documento para organização">Categoria</th>
+                        <th title="Frequência de renovação (se aplicável)">Periodicidade</th>
+                        <th title="Situação atual do envio / validação">Status</th>
+                        <th title="Enviar, visualizar ou remover">Ação</th>
+                    </tr>
+                </thead>
+            <tbody><!-- placeholder dinâmico inserido via JS --></tbody>
         </table>
     </div>
 </div>
@@ -94,17 +111,64 @@
     }
     function onAdd(){ const v=el.selOpc.value; if(!v) return; const obj=state.opcionais.find(o=>o.tipo_id==v); if(obj){ obj.addedTempRow=true; render(); el.selOpc.value=''; } }
     function render(){
-        el.tblObrig.innerHTML=''; el.tblOpc.innerHTML=''; el.selOpc.querySelectorAll('option:not([value=""])').forEach(o=>o.remove());
+        el.tblObrig.innerHTML=''; el.tblOpc.innerHTML='';
+        // Limpa opções anteriores do select (mantendo placeholder)
+        el.selOpc.querySelectorAll('option:not([value=""])').forEach(o=>o.remove());
         let env=0,total=state.obrigatorios.length;
         state.obrigatorios.forEach(d=>{const tr=row(d,true); el.tblObrig.appendChild(tr); if(d.uploaded) env++;});
-        state.opcionais.forEach(d=>{ if(!d.uploaded){ const opt=document.createElement('option'); opt.value=d.tipo_id; opt.textContent=d.nome+' ('+d.categoria+')'; el.selOpc.appendChild(opt);} if(d.addedTempRow||d.uploaded){ d.addedTempRow=true; el.tblOpc.appendChild(row(d,false)); }});
+        state.opcionais.forEach(d=>{
+            if(!d.uploaded){
+                const opt=document.createElement('option');
+                opt.value=d.tipo_id;
+                opt.textContent=d.nome+' ('+d.categoria+')';
+                el.selOpc.appendChild(opt);
+            }
+            if(d.addedTempRow||d.uploaded){
+                d.addedTempRow=true; el.tblOpc.appendChild(row(d,false));
+            }
+        });
+        // Placeholders quando vazio
+        if(!state.obrigatorios.length){
+            el.tblObrig.innerHTML='<tr class="table-light"><td colspan="5" class="text-center text-muted small">Nenhum documento obrigatório configurado para este tipo de empresa.</td></tr>';
+        }
+        if(!el.tblOpc.children.length){
+            el.tblOpc.innerHTML='<tr class="table-light"><td colspan="5" class="text-center text-muted small">Nenhum documento adicional selecionado ainda.</td></tr>';
+        }
         el.countObrig.textContent=env+'/'+total;
-        el.resumo.innerHTML= env===total? '<span class="text-success"><i class="fas fa-check me-1"></i>Todos os obrigatórios enviados.</span>' : '<span class="text-danger"><i class="fas fa-triangle-exclamation me-1"></i>Envie todos os obrigatórios para avançar.</span>';
+        const pct = total? Math.round((env/total)*100):0;
+        el.resumo.innerHTML= env===total
+            ? '<span class="text-success"><i class="fas fa-check me-1"></i>Todos os obrigatórios enviados ('+env+'/'+total+' - '+pct+'%).</span>'
+            : '<span class="text-danger"><i class="fas fa-triangle-exclamation me-1"></i>'+env+'/'+total+' enviados ('+pct+'%). Envie todos para avançar.</span>';
         controlaNext(env===total);
     }
     function controlaNext(ok){ const b=document.querySelector('[data-wizard-next]'); if(b){ b.disabled=!ok; b.title= ok? '' : 'Envie todos os documentos obrigatórios.'; } }
-    function row(d,ob){ const n=el.tmpl.content.firstElementChild.cloneNode(true); n.dataset.tipoId=d.tipo_id; n.querySelector('.tipo-nome').textContent=d.nome; n.querySelector('.tipo-categoria').textContent=d.categoria||'-'; n.querySelector('.tipo-periodicidade').textContent=d.periodicidade||'-'; const st=n.querySelector('.status-col'); if(d.uploaded){ st.innerHTML='<span class="badge bg-success-subtle text-success">Enviado</span><div class="small text-muted">'+(d.filename||'')+' '+(d.tamanho? '('+bytes(d.tamanho)+')':'')+'</div>'; n.querySelector('.btn-remover').classList.remove('d-none'); n.querySelector('.btn-ver').classList.remove('d-none'); } else { st.innerHTML= ob? '<span class="badge bg-danger-subtle text-danger">Pendente</span>' : '<span class="badge bg-secondary">Opcional</span>'; } const inp=n.querySelector('.input-file'); n.querySelector('.btn-upload').addEventListener('click',()=>inp.click()); inp.addEventListener('change',()=>{ if(!inp.files.length) return; upload(d.tipo_id, inp.files[0]); }); n.querySelector('.btn-remover').addEventListener('click',()=>remover(d)); n.querySelector('.btn-ver').addEventListener('click',()=>visualizar(d)); return n; }
-        function row(d,ob){ const n=el.tmpl.content.firstElementChild.cloneNode(true); n.dataset.tipoId=d.tipo_id; n.querySelector('.tipo-nome').textContent=d.nome; n.querySelector('.tipo-categoria').textContent=d.categoria||'-'; n.querySelector('.tipo-periodicidade').textContent=d.periodicidade||'-'; const st=n.querySelector('.status-col'); if(d.uploaded){ st.innerHTML='<span class="badge bg-success-subtle text-success">Enviado</span><div class="small text-muted">'+(d.filename||'')+' '+(d.tamanho? '('+bytes(d.tamanho)+')':'')+'</div>'; n.querySelector('.btn-remover').classList.remove('d-none'); n.querySelector('.btn-ver').classList.remove('d-none'); } else { st.innerHTML= ob? '<span class="badge bg-danger-subtle text-danger">Pendente</span>' : '<span class="badge bg-secondary">Adicional</span>'; } const inp=n.querySelector('.input-file'); n.querySelector('.btn-upload').addEventListener('click',()=>inp.click()); inp.addEventListener('change',()=>{ if(!inp.files.length) return; upload(d.tipo_id, inp.files[0]); }); n.querySelector('.btn-remover').addEventListener('click',()=>remover(d)); n.querySelector('.btn-ver').addEventListener('click',()=>visualizar(d)); return n; }
+    function row(d,ob){
+        const n=el.tmpl.content.firstElementChild.cloneNode(true);
+        n.dataset.tipoId=d.tipo_id;
+        n.querySelector('.tipo-nome').textContent=d.nome;
+        n.querySelector('.tipo-categoria').textContent=d.categoria||'-';
+        n.querySelector('.tipo-periodicidade').textContent=d.periodicidade||'-';
+        const st=n.querySelector('.status-col');
+        if(d.uploaded){
+            st.innerHTML='<span class="badge bg-success-subtle text-success">Enviado</span><div class="small text-muted">'+(d.filename||'')+' '+(d.tamanho? '('+bytes(d.tamanho)+')':'')+'</div>';
+            n.querySelector('.btn-remover').classList.remove('d-none');
+            n.querySelector('.btn-ver').classList.remove('d-none');
+        } else {
+            st.innerHTML= ob? '<span class="badge bg-danger-subtle text-danger">Pendente</span>' : '<span class="badge bg-secondary">Adicional</span>';
+        }
+        const btnUpload = n.querySelector('.btn-upload');
+        btnUpload.title='Enviar / Atualizar arquivo';
+        const btnVer = n.querySelector('.btn-ver');
+        btnVer.title='Visualizar arquivo enviado';
+        const btnRem = n.querySelector('.btn-remover');
+        btnRem.title='Remover arquivo enviado';
+        const inp=n.querySelector('.input-file');
+        btnUpload.addEventListener('click',()=>inp.click());
+        inp.addEventListener('change',()=>{ if(!inp.files.length) return; upload(d.tipo_id, inp.files[0]); });
+        btnRem.addEventListener('click',()=>remover(d));
+        btnVer.addEventListener('click',()=>visualizar(d));
+        return n;
+    }
     function visualizar(d){ if(!d.temp_id) return; window.open('/media/'+d.filename,'_blank'); }
     function remover(d){ if(!d.temp_id) return; fetch(buildDeleteUrl(d.temp_id),{method:'POST',headers:{'X-CSRFToken':csrf()}}).then(r=>r.json()).then(j=>{ if(j.ok){ d.uploaded=false; d.temp_id=null; render(); } else alert('Erro remover'); }).catch(()=>alert('Falha remover')); }
     function upload(id,file){ const fd=new FormData(); fd.append('tipo_id',id); fd.append('arquivo',file); fetch(URL_UPLOAD,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd}).then(r=>r.json()).then(j=>{ if(j.ok){ const all=[...state.obrigatorios,...state.opcionais]; const obj=all.find(x=>x.tipo_id==id); Object.assign(obj,{uploaded:true,temp_id:j.temp_id,filename:j.filename,tamanho:j.tamanho,addedTempRow:true}); render(); } else alert(j.error||'Falha upload'); }).catch(()=>alert('Erro upload')); }

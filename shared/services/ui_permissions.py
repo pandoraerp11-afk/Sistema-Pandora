@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import suppress
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol
 
 from core.models import TenantUser
 
@@ -13,8 +13,14 @@ from .permission_resolver import has_permission as resolver_has_permission
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
 
-    from cadastros_gerais.models import Tenant
-    from user_management.models import Role
+    class Tenant(Protocol):
+        """Protocolo mínimo representando um Tenant em contexto de tipagem."""
+
+    class Role(Protocol):
+        """Protocolo mínimo para Role contendo collection de permissions."""
+
+        permissions: Any  # Django RelatedManager
+
 
 logger = logging.getLogger(__name__)
 
