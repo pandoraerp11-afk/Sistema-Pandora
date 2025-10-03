@@ -19,6 +19,31 @@
     transition: all 0.15s ease-in-out;
 }
 
+/* Placeholder tipografia unificada (mantém identidade visual) */
+.wizard-field::placeholder,
+input.wizard-input::placeholder,
+textarea.wizard-field::placeholder,
+textarea.wizard-textarea::placeholder {
+    font-family: inherit;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: #6c757d;
+    opacity: 0.95;
+}
+
+/* Cross-browser (alguns navegadores antigos) */
+::-webkit-input-placeholder {
+    color: #6c757d;
+}
+
+:-ms-input-placeholder {
+    color: #6c757d;
+}
+
+::-ms-input-placeholder {
+    color: #6c757d;
+}
+
 .wizard-field:focus {
     border-color: #0d6efd;
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
@@ -712,18 +737,19 @@ textarea.wizard-field {
 
 .progress-steps {
     display: flex;
-    justify-content: space-between;
-    /* Distribui igualmente */
+    justify-content: center;
+    /* Centraliza conjunto como nos cadastros de clientes/fornecedores */
     align-items: flex-start;
     position: relative;
     min-height: 60px;
     margin: 0 auto;
-    max-width: 880px;
-    /* ligeiro aumento para respirar */
+    max-width: 760px;
+    /* Harmoniza com largura típica do container de formulário */
     width: 100%;
-    padding: 0 1rem;
-    gap: 0;
-    /* gap zero para espaçamento puramente proporcional */
+    padding: 0;
+    /* Remove padding lateral para alinhamento idêntico */
+    gap: 3.5rem;
+    /* Espaçamento consistente entre círculos */
 }
 
 .step {

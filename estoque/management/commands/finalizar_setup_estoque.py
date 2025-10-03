@@ -11,10 +11,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--with-tests", action="store_true", help="Executa suíte de testes do app estoque ao final."
+            "--with-tests",
+            action="store_true",
+            help="Executa suíte de testes do app estoque ao final.",
         )
         parser.add_argument(
-            "--skip-migrate", action="store_true", help="Não executar migrate (caso já aplicado em pipeline anterior)."
+            "--skip-migrate",
+            action="store_true",
+            help="Não executar migrate (caso já aplicado em pipeline anterior).",
         )
         parser.add_argument("--skip-permissions", action="store_true", help="Skip custom permissions creation.")
         parser.add_argument("--skip-seed", action="store_true", help="Skip basic seed data creation.")
@@ -28,34 +32,29 @@ class Command(BaseCommand):
         no_perms = options.get("skip_permissions") or options.get("no_permissoes")
         no_seed = options.get("skip_seed") or options.get("no_seed")
 
-        self.stdout.write(self.style.MIGRATE("=== Setup Estoque Moderno ==="))
-        try:
-            if not skip_migrate:
-                self.stdout.write("-> Aplicando migrations...")
-                call_command("migrate", verbosity=1)
+        self.stdout.write(self.style.SUCCESS("=== Setup Estoque Moderno ==="))
+        if not skip_migrate:
+            self.stdout.write("-> Aplicando migrations...")
+            call_command("migrate", verbosity=1)
 
-            if not no_perms:
-                self.stdout.write("-> Criando permissões customizadas...")
-                try:
-                    from estoque.permissions import criar_permissoes_estoque
+        if not no_perms:
+            self.stdout.write("-> Criando permissões customizadas...")
+            try:
+                from estoque.permissions import criar_permissoes_estoque
 
-                    criar_permissoes_estoque()
-                except Exception as e:  # pragma: no cover - proteção extra
-                    raise CommandError(f"Falha ao criar permissões: {e}")
+                criar_permissoes_estoque()
+            except Exception as e:  # pragma: no cover
+                raise CommandError(f"Falha ao criar permissões: {e}") from e
 
-            if not no_seed:
-                self.stdout.write("-> Criando dados iniciais (tipos de movimento e depósito principal)...")
-                self._seed_basico()
+        if not no_seed:
+            self.stdout.write("-> Criando dados iniciais (tipos de movimento e depósito principal)...")
+            self._seed_basico()
 
-            if with_tests:
-                self.stdout.write("-> Executando testes rápidos do app estoque...")
-                call_command("test", "estoque.tests", verbosity=1)
+        if with_tests:
+            self.stdout.write("-> Executando testes rápidos do app estoque...")
+            call_command("test", "estoque.tests", verbosity=1)
 
-            self.stdout.write(self.style.SUCCESS("Setup concluído com sucesso."))
-        except CommandError:
-            raise
-        except Exception as e:  # pragma: no cover
-            raise CommandError(str(e))
+        self.stdout.write(self.style.SUCCESS("Setup concluído com sucesso."))
 
     @transaction.atomic
     def _seed_basico(self):
@@ -74,5 +73,6 @@ class Command(BaseCommand):
         for codigo, descricao in tipos_movimento:
             TipoMovimento.objects.get_or_create(codigo=codigo, defaults={"descricao": descricao})
         Deposito.objects.get_or_create(
-            codigo="ALMOX01", defaults={"nome": "Almoxarifado Principal", "tipo": "ALMOX", "ativo": True}
+            codigo="ALMOX01",
+            defaults={"nome": "Almoxarifado Principal", "tipo": "ALMOX", "ativo": True},
         )

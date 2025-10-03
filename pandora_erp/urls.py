@@ -1,36 +1,47 @@
+"""Configuração principal de URLs do Pandora ERP.
+
+Inclui rotas de aplicativos internos, endpoint /metrics (Prometheus) e
+redirecionamentos iniciais. Se a lib prometheus_client não estiver instalada,
+o endpoint responde 503 sem interromper o servidor.
+"""
+
+from __future__ import annotations
+
 import json
 
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path
 
-"""URL configuration principal do Pandora ERP.
-
-Inclui integração opcional com Prometheus. O import de prometheus_client é
-protegido para que a ausência ou erro de instalação do pacote não impeça o
-servidor de inicializar. A rota /metrics retornará 503 se o pacote não estiver
-disponível ou apresentará as métricas padrão caso esteja instalado.
-"""
+# (Docstring principal movida para o topo do arquivo.)
 
 # Import Prometheus de forma segura
-try:
-    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest  # type: ignore
+try:  # Import opcional (não interromper aplicação em falta de dependência)
+    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
     _PROM_AVAILABLE = True
-except Exception:  # ModuleNotFoundError ou qualquer outro problema de runtime
-    generate_latest = None  # type: ignore
-    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"  # fallback mínimo
+except ModuleNotFoundError:  # Dependência ausente
+    generate_latest = None
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
+    _PROM_AVAILABLE = False
+except (RuntimeError, ImportError):  # falha inesperada mas conhecida
+    generate_latest = None
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
     _PROM_AVAILABLE = False
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpRequest
 from django.shortcuts import redirect
 
 from core.views import dashboard
 from core.views_help import AjudaView
 
 
-def metrics_view(request):
-    """Endpoint de métricas Prometheus (seguro mesmo sem a lib)."""
+def metrics_view(_request: HttpRequest) -> HttpResponse:
+    """Endpoint de métricas Prometheus.
+
+    Retorna 503 se `prometheus_client` indisponível ou falha ao gerar métricas.
+    """
     if not _PROM_AVAILABLE or generate_latest is None:
         return HttpResponse(
             json.dumps({"status": "unavailable", "detail": "prometheus_client não instalado ou falhou no import"}),
@@ -40,16 +51,16 @@ def metrics_view(request):
     try:
         output = generate_latest()
         return HttpResponse(output, content_type=CONTENT_TYPE_LATEST)
-    except Exception as e:
+    except (ValueError, RuntimeError):  # falhas previsíveis ao gerar métricas
         return HttpResponse(
-            json.dumps({"status": "error", "detail": f"Falha ao gerar métricas: {e}"}),
+            json.dumps({"status": "error", "detail": "Falha ao gerar métricas"}),
             status=500,
             content_type="application/json",
         )
 
 
-def redirect_to_dashboard(request):
-    """Redireciona a raiz do site para o dashboard do sistema"""
+def redirect_to_dashboard(_request: HttpRequest) -> HttpResponse:
+    """Redireciona a raiz do site para o dashboard do sistema."""
     return redirect("dashboard")
 
 
@@ -79,8 +90,7 @@ urlpatterns = [
     path("servicos/", include("servicos.urls", namespace="servicos")),
     path("funcionarios/", include("funcionarios.urls", namespace="funcionarios")),
     path("agenda/", include("agenda.urls", namespace="agenda")),
-    # Eventos unificado na Agenda; rota antiga temporariamente redirecionada
-    # path("eventos/", include("eventos.urls", namespace="eventos")),
+    # Eventos unificados na Agenda.
     path("chat/", include("chat.urls", namespace="chat")),
     path("notifications/", include("notifications.urls", namespace="notifications")),
     path("relatorios/", include("relatorios.urls", namespace="relatorios")),

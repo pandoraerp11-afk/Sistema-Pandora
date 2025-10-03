@@ -103,6 +103,7 @@
             </thead>
             <tbody></tbody>
         </table>
+        <small class="text-muted d-block text-center mt-2">Adicione quantas redes forem necessárias.</small>
     </div>
 </div>
 
@@ -125,7 +126,6 @@
             <i class="fas fa-plus"></i>
         </button>
     </div>
-    <p class="text-muted small mt-2 mb-2">Cadastre contatos relevantes (técnico, jurídico, operações, etc.). Cada item pode conter Nome, Cargo, Telefone, E-mail e Observação.</p>
     <!-- Campo oculto JSON -->
     {% if form.contacts_json %}
         {% render_field form.contacts_json class+="wizard-extra-contacts-json" style="display:none" %}

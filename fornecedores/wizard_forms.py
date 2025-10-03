@@ -1,8 +1,11 @@
+"""Formulários do wizard de Fornecedores (endereços, contatos, config/unificado)."""
+
+import re
+from typing import Any
+
 from django import forms
-from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from cadastros_gerais.models import ItemAuxiliar
 from core.wizard_forms import (
     TenantContactsWizardForm,
     TenantPessoaFisicaWizardForm,
@@ -19,6 +22,8 @@ from .models import (
 
 
 class FornecedorAddressWizardForm(forms.Form):
+    """Form do step de endereços (principal + adicionais serializados)."""
+
     # Endereço principal
     logradouro = forms.CharField(max_length=255, label=_("Logradouro"))
     numero = forms.CharField(max_length=20, label=_("Número"))
@@ -32,6 +37,8 @@ class FornecedorAddressWizardForm(forms.Form):
 
 
 class FornecedorContactsWizardForm(forms.Form):
+    """Form legado simplificado de contatos (não estendido no fluxo atual)."""
+
     # Contato principal
     nome = forms.CharField(max_length=100, required=False, label=_("Nome do Contato"))
     email = forms.EmailField(required=False, label=_("E-mail"))
@@ -42,10 +49,7 @@ class FornecedorContactsWizardForm(forms.Form):
 
 
 class FornecedorContactsExtendCoreForm(TenantContactsWizardForm):
-    """
-    Extende o form de contatos do CORE para o módulo Fornecedores,
-    adicionando um campo hidden para lista dinâmica de vendedores.
-    """
+    """Estende contatos do CORE adicionando campos dinâmicos (vendedores e funcionários)."""
 
     additional_vendors_json = forms.CharField(required=False, widget=forms.HiddenInput())
     additional_employees_json = forms.CharField(
@@ -55,17 +59,9 @@ class FornecedorContactsExtendCoreForm(TenantContactsWizardForm):
     )
 
 
-class FornecedorBankingWizardForm(forms.Form):
-    banco = forms.CharField(max_length=100, required=False, label=_("Banco"))
-    agencia = forms.CharField(max_length=20, required=False, label=_("Agência"))
-    conta = forms.CharField(max_length=20, required=False, label=_("Conta"))
-    tipo_chave_pix = forms.CharField(max_length=50, required=False, label=_("Tipo de Chave PIX"))
-    chave_pix = forms.CharField(max_length=255, required=False, label=_("Chave PIX"))
-    # Contas adicionais (JSON opcional)
-    additional_bank_json = forms.CharField(required=False, widget=forms.HiddenInput())
-
-
 class FornecedorReviewWizardForm(forms.Form):
+    """Step de revisão final (confirmações e observações)."""
+
     confirmacao = forms.BooleanField(required=True, label=_("Confirmo que revisei os dados."))
     confirmar = forms.BooleanField(label=_("Confirmo os dados"), required=True)
     observacoes = forms.CharField(label=_("Observações"), widget=forms.Textarea(attrs={"rows": 3}), required=False)
@@ -73,45 +69,50 @@ class FornecedorReviewWizardForm(forms.Form):
 
 
 class FornecedorConfigWizardForm(forms.Form):
+    """Step unificado de configurações + dados bancários."""
+
     tipo_fornecimento = forms.ChoiceField(
         choices=Fornecedor.TIPO_FORNECIMENTO_CHOICES,
         required=False,
         label=_("Tipo de Fornecimento"),
-        help_text=_("Selecione se o fornecedor presta serviços, vende produtos ou ambos."),
         widget=forms.Select,
-    )
-    linhas_fornecidas = forms.ModelMultipleChoiceField(
-        queryset=ItemAuxiliar.objects.none(),
-        required=False,
-        label=_("Linhas/Categorias Fornecidas"),
-        help_text=_("Selecione as linhas/categorias que este fornecedor atende."),
-        widget=forms.SelectMultiple(attrs={"size": 6}),
-    )
-    regioes_atendidas = forms.CharField(
-        required=False,
-        label=_("Regiões Atendidas (UFs/Cidades)"),
-        help_text=_("Informe UFs e/ou cidades. Ex.: SP; RJ; Belo Horizonte/MG."),
-        widget=forms.Textarea(attrs={"rows": 2}),
     )
     prazo_pagamento_dias = forms.IntegerField(required=False, min_value=0, label=_("Prazo de Pagamento Padrão (dias)"))
     pedido_minimo = forms.DecimalField(
-        required=False, min_value=0, max_digits=12, decimal_places=2, label=_("Pedido Mínimo (valor)")
+        required=False,
+        min_value=0,
+        max_digits=12,
+        decimal_places=2,
+        label=_("Pedido Mínimo (valor)"),
     )
     prazo_medio_entrega_dias = forms.IntegerField(required=False, min_value=0, label=_("Prazo Médio de Entrega (dias)"))
+    # Campos bancários incorporados do antigo step de banking
+    banco = forms.CharField(max_length=100, required=False, label=_("Banco"))
+    agencia = forms.CharField(max_length=20, required=False, label=_("Agência"))
+    conta = forms.CharField(max_length=20, required=False, label=_("Conta"))
+    tipo_chave_pix = forms.CharField(max_length=50, required=False, label=_("Tipo de Chave PIX"))
+    chave_pix = forms.CharField(max_length=255, required=False, label=_("Chave PIX"))
+    additional_bank_json = forms.CharField(required=False, widget=forms.HiddenInput())
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401 - uso deliberado de Any para compat.
+        """Chama inicialização padrão e configura queryset dinâmica."""
         super().__init__(*args, **kwargs)
-        try:
-            # Filtrar itens aplicáveis a fornecedor
-            qs = ItemAuxiliar.objects.filter(ativo=True)
-            qs = qs.filter(models.Q(alvo="fornecedor") | models.Q(targets__code="fornecedor")).distinct()
-            self.fields["linhas_fornecidas"].queryset = qs.order_by("categoria__ordem", "ordem", "nome")
-        except Exception:
-            pass
+        self._configure_dynamic_queryset()
+
+    def _configure_dynamic_queryset(self) -> None:
+        """Configura queryset dinâmica de linhas fornecidas.
+
+        Isolado para evitar assinatura extensa do __init__ e simplificar lint.
+        """
+
+    # Campos removidos (linhas_fornecidas, regioes_atendidas) nesta fase do projeto.
+    # Nenhuma configuração adicional necessária.
 
 
 class FornecedorDocumentsWizardForm(forms.Form):
-    pass
+    """Placeholder mantido por compatibilidade (step documentos agora dinâmico)."""
+
+    # Render é totalmente dinâmico (JS) no step de documentos.
 
 
 # -------------------------------
@@ -120,27 +121,31 @@ class FornecedorDocumentsWizardForm(forms.Form):
 # -------------------------------
 
 
+CPF_LEN = 11
+CNPJ_LEN = 14
+
+
 class FornecedorPFIdentificationForm(TenantPessoaFisicaWizardForm):
-    def clean_cpf(self):
-        # Apenas valida formato básico; não bloqueia por duplicidade no Tenant
+    """Identificação PF sem validação de unicidade no tenant (apenas formato)."""
+
+    def clean_cpf(self) -> str | None:
+        """Validar formato básico do CPF (apenas comprimento)."""
         cpf = self.cleaned_data.get("cpf")
         if cpf:
-            import re
-
             cpf_digits = re.sub(r"\D", "", str(cpf))
-            if len(cpf_digits) != 11:
+            if len(cpf_digits) != CPF_LEN:
                 raise forms.ValidationError(_("CPF inválido."))
         return cpf
 
 
 class FornecedorPJIdentificationForm(TenantPessoaJuridicaWizardForm):
-    def clean_cnpj(self):
-        # Apenas valida formato básico; não bloqueia por duplicidade no Tenant
+    """Identificação PJ sem validação de unicidade (somente formato)."""
+
+    def clean_cnpj(self) -> str | None:
+        """Validar formato básico do CNPJ (apenas comprimento)."""
         cnpj = self.cleaned_data.get("cnpj")
         if cnpj:
-            import re
-
             cnpj_digits = re.sub(r"\D", "", str(cnpj))
-            if len(cnpj_digits) != 14:
+            if len(cnpj_digits) != CNPJ_LEN:
                 raise forms.ValidationError(_("CNPJ inválido."))
         return cnpj

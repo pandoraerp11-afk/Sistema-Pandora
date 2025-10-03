@@ -1,24 +1,28 @@
-from datetime import datetime, timedelta
+"""Views públicas do módulo Fornecedores.
+
+Criação e edição migradas para `wizard_views`; mantém listagem, detalhe,
+exclusão, dashboard e documentos.
+"""
+
+from datetime import timedelta
+from typing import Any, cast
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db import models
 from django.db.models import Avg, Count
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_tables2 import RequestConfig
 
-from cadastros_gerais.models import ItemAuxiliar
 from core.utils import get_current_tenant
 from shared.services.ui_permissions import build_ui_permissions
 
-from .forms import FornecedorDocumentoVersaoCreateForm
 from .models import (
     Fornecedor,
-    FornecedorDocumento,
 )
 
 # Removido: formulários e formsets antigos de criação/edição; o cadastro usa apenas o Wizard
@@ -26,7 +30,8 @@ from .tables import FornecedorTable
 
 
 @login_required
-def fornecedor_list(request):
+def fornecedor_list(request: HttpRequest) -> HttpResponse:
+    """Lista fornecedores (global ou restrita ao tenant atual)."""
     tenant_atual = get_current_tenant(request)
     user = request.user
     is_global_view = user.is_superuser and not tenant_atual
@@ -36,7 +41,9 @@ def fornecedor_list(request):
         subtitle = _("Visão Global de Todos os Fornecedores")
     elif tenant_atual:
         queryset = Fornecedor.objects.filter(tenant=tenant_atual).select_related(
-            "pessoafisica", "pessoajuridica", "categoria"
+            "pessoafisica",
+            "pessoajuridica",
+            "categoria",
         )
         subtitle = _("Gestão de Fornecedores")
     else:
@@ -47,7 +54,8 @@ def fornecedor_list(request):
     if not is_global_view:
         table.exclude = ("tenant",)
 
-    RequestConfig(request, paginate={"per_page": 20}).configure(table)
+    # Paginação simples
+    RequestConfig(request).configure(table)
     # Fornece também 'object_list' e paginação básica para o template moderno
     page_number = request.GET.get("page")
     paginator = Paginator(queryset, 20)
@@ -60,7 +68,7 @@ def fornecedor_list(request):
     fornecedores_preferenciais = 0  # Placeholder se não houver flag específica
     novos_mes = queryset.filter(data_cadastro__gte=timezone.now() - timedelta(days=30)).count()
 
-    ui_perms = build_ui_permissions(request.user, tenant_atual, module_key="FORNECEDOR")
+    ui_perms = build_ui_permissions(cast("Any", request.user), tenant_atual, module_key="FORNECEDOR")
 
     context = {
         "table": table,
@@ -114,16 +122,18 @@ def fornecedor_list(request):
 
 
 @login_required
-def fornecedor_detail(request, pk):
+def fornecedor_detail(request: HttpRequest, pk: int) -> HttpResponse:
+    """Exibe detalhes de um fornecedor."""
     user = request.user
     query_args = {"pk": pk}
     if not user.is_superuser:
-        query_args["tenant"] = get_current_tenant(request)
-
+        tenant_obj = get_current_tenant(request)
+        if tenant_obj:
+            query_args["tenant_id"] = tenant_obj.id
     fornecedor = get_object_or_404(Fornecedor.objects.select_related("pessoafisica", "pessoajuridica"), **query_args)
 
     tenant = get_current_tenant(request)
-    ui_perms = build_ui_permissions(request.user, tenant, module_key="FORNECEDOR")
+    ui_perms = build_ui_permissions(cast("Any", request.user), tenant, module_key="FORNECEDOR")
 
     context = {
         "fornecedor": fornecedor,
@@ -142,32 +152,22 @@ def fornecedor_detail(request, pk):
     return render(request, "fornecedores/fornecedores_detail.html", context)
 
 
-@login_required
-def fornecedor_create(request):
-    """Compat: redireciona criação para o Wizard canônico."""
-    from .wizard_views import fornecedor_wizard_create
-
-    return fornecedor_wizard_create(request)
+# Nota: As operações de criação/edição estão em `wizard_views.py`.
 
 
 @login_required
-def fornecedor_edit(request, pk):
-    """Compat: redireciona edição para o Wizard canônico de edição."""
-    from .wizard_views import fornecedor_wizard_edit
-
-    return fornecedor_wizard_edit(request, pk)
-
-
-@login_required
-def fornecedor_delete(request, pk):
+def fornecedor_delete(request: HttpRequest, pk: int) -> HttpResponse:
+    """Remove um fornecedor se usuário tiver permissão."""
     query_args = {"pk": pk}
     if not request.user.is_superuser:
-        query_args["tenant"] = get_current_tenant(request)
+        tenant_obj = get_current_tenant(request)
+        if tenant_obj:
+            query_args["tenant_id"] = tenant_obj.id
 
     fornecedor = get_object_or_404(Fornecedor, **query_args)
     # Checagem de permissão UI/ação (server-side continua tendo verificação por tenant)
     tenant = get_current_tenant(request)
-    ui_perms = build_ui_permissions(request.user, tenant, module_key="FORNECEDOR")
+    ui_perms = build_ui_permissions(cast("Any", request.user), tenant, module_key="FORNECEDOR")
     if not (request.user.is_superuser or ui_perms.get("can_delete")):
         messages.error(request, _("Você não tem permissão para excluir fornecedores."))
         return redirect("fornecedores:fornecedores_list")
@@ -175,20 +175,17 @@ def fornecedor_delete(request, pk):
     if request.method == "POST":
         fornecedor.delete()
         messages.success(request, _("Fornecedor excluído com sucesso."))
-    return redirect("fornecedores:fornecedores_list")
+        return redirect("fornecedores:fornecedores_list")
 
-    context = {"fornecedor": fornecedor, "titulo": "Confirmar Exclusão"}
+    context = {"fornecedor": fornecedor, "titulo": _("Confirmar Exclusão")}
     return render(request, "fornecedores/fornecedores_confirm_delete.html", context)
 
 
 @login_required
-def fornecedores_home(request):
-    """
-    View para o dashboard de fornecedores, mostrando estatísticas e dados relevantes.
-    """
+def fornecedores_home(request: HttpRequest) -> HttpResponse:
+    """Dashboard de fornecedores com estatísticas agregadas."""
     template_name = "fornecedores/fornecedores_home.html"
     tenant = get_current_tenant(request)
-
     if not tenant:
         messages.error(request, _("Por favor, selecione uma empresa para ver o dashboard."))
         return redirect(reverse("core:tenant_select"))
@@ -208,7 +205,7 @@ def fornecedores_home(request):
     media_avaliacao = fornecedores_qs.filter(avaliacao__isnull=False).aggregate(Avg("avaliacao"))["avaliacao__avg"] or 0
 
     # Novos fornecedores (últimos 30 dias)
-    data_limite = datetime.now() - timedelta(days=30)
+    data_limite = timezone.now() - timedelta(days=30)
     novos_fornecedores_qs = fornecedores_qs.filter(data_cadastro__gte=data_limite)
 
     # Top 5 Categorias
@@ -220,7 +217,7 @@ def fornecedores_home(request):
     )
 
     # Permissões de UI para Fornecedor
-    ui_perms = build_ui_permissions(request.user, tenant, module_key="FORNECEDOR")
+    ui_perms = build_ui_permissions(cast("Any", request.user), tenant, module_key="FORNECEDOR")
 
     context = {
         "page_title": _("Dashboard de Fornecedores"),
@@ -238,52 +235,3 @@ def fornecedores_home(request):
         "perms_ui": ui_perms,
     }
     return render(request, template_name, context)
-
-
-@login_required
-def fornecedor_documents(request, pk):
-    fornecedor = get_object_or_404(Fornecedor, pk=pk)
-    tenant = get_current_tenant(request)
-    if not request.user.is_superuser and fornecedor.tenant_id != getattr(tenant, "id", None):
-        messages.error(request, _("Acesso negado."))
-        return redirect("fornecedores:fornecedores_list")
-
-    if request.method == "POST":
-        form = FornecedorDocumentoVersaoCreateForm(request.POST, request.FILES, fornecedor=fornecedor)
-        if form.is_valid():
-            versao = form.save(user=request.user)
-            messages.success(request, _("Documento enviado com sucesso (v%(v)s).") % {"v": versao.versao})
-            return redirect("fornecedores:fornecedor_documents", pk=fornecedor.pk)
-        else:
-            messages.error(request, _("Corrija os erros abaixo."))
-    else:
-        form = FornecedorDocumentoVersaoCreateForm(fornecedor=fornecedor)
-
-    tipos_qs = ItemAuxiliar.objects.filter(ativo=True)
-    tipos_qs = tipos_qs.filter(models.Q(alvo="fornecedor") | models.Q(targets__code="fornecedor")).distinct()
-    tipos_qs = tipos_qs.select_related("categoria").order_by("categoria__ordem", "ordem", "nome")
-
-    categorias = {}
-    tipo_doc_map = {}
-    for tipo in tipos_qs:
-        cat = tipo.categoria
-        categorias.setdefault(cat, []).append(tipo)
-        # Mapeia o documento do fornecedor para cada tipo
-        tipo_doc_map[tipo.pk] = FornecedorDocumento.objects.filter(fornecedor=fornecedor, tipo=tipo).first()
-
-    historico_por_tipo = {}
-    for tipo in tipos_qs:
-        doc = tipo_doc_map.get(tipo.pk)
-        historico_por_tipo[tipo.pk] = list(doc.versoes.order_by("-enviado_em", "-versao")[:5]) if doc else []
-
-    # Adiciona o documento do fornecedor ao tipo para uso no template
-    for tipo in tipos_qs:
-        tipo.documento_fornecedor = tipo_doc_map.get(tipo.pk)
-
-    context = {
-        "fornecedor": fornecedor,
-        "categorias": categorias,
-        "historico_por_tipo": historico_por_tipo,
-        "form_nova_versao": form,
-    }
-    return render(request, "fornecedores/fornecedor_documents.html", context)

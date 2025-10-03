@@ -33,6 +33,25 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-key-for-develo
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 TESTING = bool(os.environ.get("PYTEST_CURRENT_TEST"))
 
+# =============================
+# SUBDOMÍNIOS (Compatibilidade de testes)
+# Alguns testes antigos esperam que constantes de subdomínio estejam expostas diretamente
+# em settings.*. A lógica real vive em core.validators. Para manter compat e evitar alterar
+# os testes legados de sincronização, exportamos aqui proxies estáveis. MIN/MAX derivam do
+# regex adotado (r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"): tamanho mínimo 1 e máximo 63.
+# Isso NÃO muda a regra de validação (que continua centralizada em core.validators), apenas
+# torna explícito para outros módulos / inspeções.
+try:  # pragma: no cover - fallback defensivo
+    from core.validators import SUBDOMAIN_REGEX as _CORE_SUBDOMAIN_REGEX
+except Exception:  # noqa: BLE001
+    import re as _re
+
+    _CORE_SUBDOMAIN_REGEX = _re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+
+SUBDOMAIN_REGEX = _CORE_SUBDOMAIN_REGEX
+SUBDOMAIN_MIN_LENGTH = 1
+SUBDOMAIN_MAX_LENGTH = 63
+
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -171,14 +190,26 @@ ASGI_APPLICATION = "pandora_erp.asgi.application"
 
 REDIS_URL = os.environ.get("REDIS_URL") or os.environ.get("REDIS_HOST")
 if REDIS_URL:
-    # Permitir formatos: redis://host:port/0 ou apenas host
-    if not REDIS_URL.startswith("redis://"):
-        host = REDIS_URL
-        port = os.environ.get("REDIS_PORT", "6379")
+    # Formatos aceitos agora:
+    # 1) redis://host:port/db
+    # 2) rediss://host:port/db  (TLS - ex: Upstash)
+    # 3) host  (sem esquema, opcionalmente acompanhado de REDIS_PORT)
+    # 4) host:port (sem esquema)
+    # Só transformamos quando NÃO há esquema explícito (nem redis:// nem rediss://)
+    if not REDIS_URL.startswith(("redis://", "rediss://")):
+        # Pode vir no formato host ou host:port
+        if ":" in REDIS_URL:
+            host, port = REDIS_URL.split(":", 1)
+        else:
+            host = REDIS_URL
+            port = os.environ.get("REDIS_PORT", "6379")
         REDIS_URL = f"redis://{host}:{port}/0"
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
+            # Se for rediss:// (TLS) o redis-py reconhece automaticamente.
+            # Caso seja necessário desabilitar validação de certificado (não recomendado)
+            # usar forma avançada via tuple (ver docs channels_redis) ajustando ssl.
             "CONFIG": {"hosts": [REDIS_URL]},
         },
     }
@@ -199,10 +230,12 @@ DATABASES = {
 _db_url = os.environ.get("DATABASE_URL")
 if _db_url:
     import importlib
+
     try:
         _djdb = importlib.import_module("dj_database_url")
     except ModuleNotFoundError:
         from urllib.parse import urlparse
+
         url = urlparse(_db_url)
         if url.scheme in {"postgres", "postgresql"}:
             DATABASES["default"] = {
@@ -218,9 +251,20 @@ if _db_url:
     else:
         DATABASES["default"] = _djdb.parse(_db_url, conn_max_age=600, ssl_require=True)
 
+# Proteção: evitar uso acidental de SQLite em produção.
+ALLOW_SQLITE_PROD = os.environ.get("ALLOW_SQLITE_PROD") == "1"
+if not DEBUG:
+    engine_val = str(DATABASES["default"].get("ENGINE", ""))  # garantir str
+    if "sqlite" in engine_val and not ALLOW_SQLITE_PROD:
+        _msg_sqlite_prod = (
+            "Produção com DEBUG=False usando SQLite (faltando DATABASE_URL). "
+            "Defina DATABASE_URL (Postgres) ou exporte ALLOW_SQLITE_PROD=1 para forçar."
+        )
+        raise RuntimeError(_msg_sqlite_prod)
+
 # Configuração específica para habilitar foreign keys no SQLite
-engine_val = DATABASES["default"].get("ENGINE")
-if isinstance(engine_val, str) and "sqlite" in engine_val:
+engine_val = str(DATABASES["default"].get("ENGINE", ""))
+if "sqlite" in engine_val:
     import sqlite3
 
     # Registrar função para habilitar foreign keys automaticamente

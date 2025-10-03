@@ -50,8 +50,13 @@
      */
     function initializeWizardMasks() {
         console.log('Inicializando máscaras do wizard...');
+        // Regra de ouro: não remover comportamento existente – apenas envolver em verificação para evitar quebra
+        if (typeof $.fn.inputmask !== 'function') {
+            console.warn('Inputmask não carregado – campos serão aceitos sem máscara (fallback).');
+            return; // não tenta aplicar para não lançar erro
+        }
 
-        // Máscara de telefone
+        // Máscara de telefone (mantido)
         $('.phone-mask').inputmask({
             mask: '(99) 99999-9999',
             placeholder: '(99) 99999-9999',
@@ -59,8 +64,7 @@
             showMaskOnHover: false,
             showMaskOnFocus: true
         });
-
-        // Máscara de CEP
+        // Máscara de CEP (mantido)
         $('.cep-mask').inputmask({
             mask: '99999-999',
             placeholder: '99999-999',
@@ -68,8 +72,7 @@
             showMaskOnHover: false,
             showMaskOnFocus: true
         });
-
-        // Máscara de CPF
+        // Máscara de CPF (mantido)
         $('.cpf-mask').inputmask({
             mask: '999.999.999-99',
             placeholder: '999.999.999-99',
@@ -77,8 +80,7 @@
             showMaskOnHover: false,
             showMaskOnFocus: true
         });
-
-        // Máscara de CNPJ
+        // Máscara de CNPJ (mantido)
         $('.cnpj-mask').inputmask({
             mask: '99.999.999/9999-99',
             placeholder: '99.999.999/9999-99',
@@ -86,8 +88,7 @@
             showMaskOnHover: false,
             showMaskOnFocus: true
         });
-
-        // Máscara de CNAE
+        // Máscara de CNAE (mantido)
         $('.cnae-mask').inputmask({
             mask: '9999-9/99',
             placeholder: '9999-9/99',
@@ -95,8 +96,7 @@
             showMaskOnHover: false,
             showMaskOnFocus: true
         });
-
-        // Máscara de data
+        // Máscara de data (mantido)
         $('.date-mask').inputmask({
             mask: '99/99/9999',
             placeholder: 'dd/mm/aaaa',
@@ -624,50 +624,85 @@
      */
     function initializeCepLookup() {
         console.log('Inicializando busca de CEP...');
+        // Função utilitária (não altera regra de negócio; apenas torna robusto a vários layouts)
+        function fillAddressFields($cepField, data) {
+            const form = $cepField.closest('form');
+            const scope = form.length ? form : $(document);
+            const mappings = [
+                { key: 'logradouro', val: data.logradouro || '' },
+                { key: 'bairro', val: data.bairro || '' },
+                { key: 'cidade', val: data.localidade || '' },
+            ];
+            // UF pode estar em select ou input
+            const ufValue = data.uf || '';
+            const ufSelectors = ['uf', 'estado'];
+            mappings.forEach(m => {
+                // name exact, name endswith, id exact
+                scope.find(`[name="${m.key}"]`).val(m.val);
+                scope.find(`[name$="${m.key}"]`).filter(function () { return !this.name.endsWith('_json'); }).val(m.val);
+                scope.find(`#id_${m.key}`).val(m.val);
+            });
+            ufSelectors.forEach(uk => {
+                scope.find(`[name="${uk}"]`).val(ufValue);
+                scope.find(`[name$="${uk}"]`).val(ufValue);
+                scope.find(`#id_${uk}`).val(ufValue);
+            });
+            // Suporte explícito aos campos do modal de endereços adicionais (ids addr*)
+            const modalIds = [
+                ['addrLogradouro', data.logradouro || ''],
+                ['addrBairro', data.bairro || ''],
+                ['addrCidade', data.localidade || ''],
+                ['addrUf', ufValue],
+            ];
+            modalIds.forEach(([id, val]) => { const el = document.getElementById(id); if (el && !el.value) el.value = val; });
+            // Focar número se existir no mesmo escopo
+            const numField = scope.find('[name="numero"], [name$="numero"], #id_numero').first();
+            if (numField.length) numField.focus(); else { const modalNum = document.getElementById('addrNumero'); if (modalNum) modalNum.focus(); }
+        }
 
-        $(document).on('blur', '[data-cep-lookup="true"]', function () {
-            const cepField = $(this);
-            const cep = cepField.val().replace(/\D/g, '');
-
-            if (cep.length === 8) {
-                console.log('Buscando CEP:', cep);
-
-                // Mostrar loading
-                cepField.addClass('loading');
-
-                // Buscar CEP via ViaCEP
-                $.ajax({
-                    url: `https://viacep.com.br/ws/${cep}/json/`,
-                    type: 'GET',
-                    dataType: 'json',
-                    timeout: 5000,
-                    success: function (data) {
-                        if (data && !data.erro) {
-                            // Preencher campos automaticamente
-                            $('[name="logradouro"]').val(data.logradouro || '');
-                            $('[name="bairro"]').val(data.bairro || '');
-                            $('[name="cidade"]').val(data.localidade || '');
-                            $('[name="estado"]').val(data.uf || '');
-
-                            // Focar no campo número
-                            $('[name="numero"]').focus();
-
-                            console.log('CEP encontrado:', data);
-                        } else {
-                            console.warn('CEP não encontrado');
-                            showToast('CEP não encontrado', 'warning');
-                        }
-                    },
-                    error: function () {
-                        console.error('Erro ao buscar CEP');
-                        showToast('Erro ao buscar CEP', 'error');
-                    },
-                    complete: function () {
-                        cepField.removeClass('loading');
+        function doLookup($field, rawCep) {
+            if (!rawCep || rawCep.length !== 8) return;
+            // Evitar mesma chamada repetida
+            if ($field.data('lastCepLookup') === rawCep) return;
+            $field.data('lastCepLookup', rawCep);
+            console.log('Buscando CEP:', rawCep);
+            $field.addClass('loading');
+            $.ajax({
+                url: `https://viacep.com.br/ws/${rawCep}/json/`,
+                type: 'GET',
+                dataType: 'json',
+                timeout: 5000,
+                success: function (data) {
+                    if (data && !data.erro) {
+                        fillAddressFields($field, data);
+                        console.log('CEP encontrado:', data);
+                    } else {
+                        console.warn('CEP não encontrado');
+                        showToast('CEP não encontrado', 'warning');
                     }
-                });
+                },
+                error: function () {
+                    console.error('Erro ao buscar CEP');
+                    showToast('Erro ao buscar CEP', 'error');
+                },
+                complete: function () { $field.removeClass('loading'); }
+            });
+        }
+
+        // Blur & change (mantém original) + keyup com debounce
+        let cepTimer = null;
+        $(document).on('blur change', '[data-cep-lookup="true"]', function () {
+            const $f = $(this); const cep = ($f.val() || '').replace(/\D/g, ''); doLookup($f, cep);
+        });
+        $(document).on('keyup', '[data-cep-lookup="true"]', function () {
+            const $f = $(this); const cep = ($f.val() || '').replace(/\D/g, '');
+            clearTimeout(cepTimer);
+            if (cep.length === 8) {
+                cepTimer = setTimeout(() => doLookup($f, cep), 300);
             }
         });
+        // Garantir que o campo do modal (addrCep) participe sem duplicar markup original
+        $(document).on('focus', '#addrCep', function () { if (!this.hasAttribute('data-cep-lookup')) this.setAttribute('data-cep-lookup', 'true'); });
     }
 
     /**
@@ -1246,6 +1281,20 @@
     // ===== Step 7: Contatos adicionais =====
     function initializeWizardContactsStep() {
         const section = document.getElementById('wizard-extra-contacts-section');
+        // Fallback de placeholders para campos principais (alguns navegadores/autofill limpam ou o backend pode vir sem atributo)
+        (function ensureContactPlaceholders() {
+            const mapping = {
+                'id_nome_contato_principal': 'Ex: João Silva',
+                'id_nome_responsavel_comercial': 'Ex: Ana Souza',
+                'id_nome_responsavel_financeiro': 'Ex: Carlos Lima'
+            };
+            Object.entries(mapping).forEach(([id, ph]) => {
+                const el = document.getElementById(id);
+                if (el && !el.getAttribute('placeholder')) {
+                    el.setAttribute('placeholder', ph);
+                }
+            });
+        })();
         // Autocomplete para cargos dos campos principais (se existirem na página)
         (function attachCargoAutocompleteToMain() {
             const apiUrl = (section && section.getAttribute('data-cargo-api')) || (window.CORE_CARGO_SUGGESTIONS_URL || '');
@@ -1353,8 +1402,50 @@
         // Autocomplete de Cargo no modal
         (function () { const input = fld.cargo; if (!input) return; const datalist = document.getElementById('extraContactCargoDatalist'); const apiUrl = section.getAttribute('data-cargo-api') || (window.CORE_CARGO_SUGGESTIONS_URL || ''); if (!apiUrl) return; let lastQuery = ''; let timer = null; function renderOptions(items) { if (!datalist) return; datalist.innerHTML = ''; (items || []).forEach(function (v) { const opt = document.createElement('option'); opt.value = v; datalist.appendChild(opt); }); } async function fetchSuggestions(q) { try { const url = q ? `${apiUrl}?q=${encodeURIComponent(q)}&limit=15` : `${apiUrl}?limit=15`; const resp = await fetch(url, { headers: { 'Accept': 'application/json' } }); if (!resp.ok) return; const data = await resp.json(); const arr = Array.isArray(data?.results) ? data.results : []; renderOptions(arr); } catch (_) { } } function debouncedFetch(q) { if (q === lastQuery) return; lastQuery = q; if (timer) clearTimeout(timer); timer = setTimeout(function () { fetchSuggestions(q); }, 200); } input.addEventListener('input', function () { debouncedFetch(input.value.trim()); }); input.addEventListener('focus', function () { if (!datalist || datalist.children.length === 0) { fetchSuggestions(''); } }); })();
 
+        // Autocomplete opcional de Departamento no modal (se houver campo)
+        (function () { const deptInput = document.getElementById('extraContactDepartamento'); if (!deptInput) return; const dlId = 'extraContactDepartamentoDatalist'; let datalist = document.getElementById(dlId); if (!datalist) { datalist = document.createElement('datalist'); datalist.id = dlId; deptInput.setAttribute('list', dlId); deptInput.parentElement && deptInput.parentElement.appendChild(datalist); } let last = ''; let timer = null; async function fetchDept(q) { try { const url = '/core/api/departments/list/' + (q ? ('?q=' + encodeURIComponent(q)) : ''); const resp = await fetch(url, { headers: { 'Accept': 'application/json' } }); if (!resp.ok) return; const data = await resp.json(); const arr = Array.isArray(data?.results) ? data.results : []; datalist.innerHTML = ''; arr.slice(0, 25).forEach(r => { const opt = document.createElement('option'); opt.value = r.name; datalist.appendChild(opt); }); } catch (_) { } } function deb(q) { if (q === last) return; last = q; if (timer) clearTimeout(timer); timer = setTimeout(() => fetchDept(q), 220); } deptInput.addEventListener('input', () => deb(deptInput.value.trim())); deptInput.addEventListener('focus', () => { if (!datalist.children.length) fetchDept(''); }); })();
+
         // Inicialização
         render(); updateAddBtn(); save();
+        // Autocomplete de departamentos se houver campos marcados
+        initializeWizardDepartmentsAutocomplete();
+    }
+
+    // ===== Autocomplete de Departamentos (genérico reutilizável) =====
+    function initializeWizardDepartmentsAutocomplete() {
+        const deptInputs = document.querySelectorAll('input.wizard-department-autocomplete');
+        if (!deptInputs.length) return;
+        deptInputs.forEach(inp => {
+            const dlId = inp.id + '_departments_datalist';
+            let datalist = document.getElementById(dlId);
+            if (!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = dlId;
+                inp.setAttribute('list', dlId);
+                inp.parentElement && inp.parentElement.appendChild(datalist);
+            }
+            let lastQuery = '';
+            let timer = null;
+            async function fetchDepartments(q) {
+                try {
+                    // Endpoint já existente: /core/api/departments/list/
+                    const url = '/core/api/departments/list/' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+                    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                    if (!resp.ok) return;
+                    const data = await resp.json();
+                    const results = Array.isArray(data?.results) ? data.results : [];
+                    datalist.innerHTML = '';
+                    results.slice(0, 30).forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = r.name;
+                        datalist.appendChild(opt);
+                    });
+                } catch (_) { /* silencioso */ }
+            }
+            function debounced(q) { if (q === lastQuery) return; lastQuery = q; if (timer) clearTimeout(timer); timer = setTimeout(() => fetchDepartments(q), 220); }
+            inp.addEventListener('input', () => debounced(inp.value.trim()));
+            inp.addEventListener('focus', () => { if (!datalist.children.length) fetchDepartments(''); });
+        });
     }
 
     // ===== Step 7: Redes sociais =====
@@ -1494,54 +1585,52 @@
             console.log('✅ Preview atualizado:', formData);
         }
 
-        // Função para coletar dados dos formulários
+        // Utilitário: prioriza campos visíveis com valor, senão primeiro encontrado
+        function pickValue(selectorGroup) {
+            const $visible = $(selectorGroup).filter(':visible');
+            if ($visible.length) {
+                const $withVal = $visible.filter(function () { return $.trim($(this).val()) !== ''; });
+                if ($withVal.length) return $withVal.first().val();
+                return $visible.first().val();
+            }
+            const $all = $(selectorGroup);
+            if ($all.length) return $all.first().val();
+            return '';
+        }
+
+        // Função para coletar dados dos formulários (robusta e reutilizável entre módulos)
         function collectFormData() {
             const data = {};
 
-            // Detectar tipo de pessoa dos radio buttons
-            const tipoRadioChecked = $('input[name="tipo_pessoa"]:checked');
-            if (tipoRadioChecked.length > 0) {
-                data.tipo_pessoa = tipoRadioChecked.val();
-                console.log('🔍 Tipo pessoa detectado via radio:', data.tipo_pessoa);
+            // Tipo de pessoa (rádios) ou fallback a inputs hidden
+            data.tipo_pessoa = pickValue('input[name="tipo_pessoa"]:checked, input[name="tipo_pessoa"][type="hidden"]') || '';
+            if (data.tipo_pessoa) {
+                console.debug('[preview] tipo_pessoa:', data.tipo_pessoa);
             }
 
-            // Coletar dados baseado no tipo de pessoa usando IDs com prefixos
             if (data.tipo_pessoa === 'PJ') {
-                // Dados PJ com suporte a IDs com hífen e underscore
-                const nameField = $('#id_pj-name, #id_pj_name, #id_pj-razao_social, #id_pj_razao_social').first();
-                const emailField = $('#id_pj-email, #id_pj_email').first();
-                if (nameField.length) data.name = nameField.val();
-                if (emailField.length) data.email = emailField.val();
+                data.name = pickValue('#id_pj-name, #id_pj_name, #id_pj-razao_social, #id_pj_razao_social');
+                data.email = pickValue('#id_pj-email, #id_pj_email');
             } else if (data.tipo_pessoa === 'PF') {
-                // Dados PF com suporte a IDs com hífen e underscore
-                const nameField = $('#id_pf-name, #id_pf_name').first();
-                const emailField = $('#id_pf-email, #id_pf_email').first();
-                if (nameField.length) data.name = nameField.val();
-                if (emailField.length) data.email = emailField.val();
+                data.name = pickValue('#id_pf-name, #id_pf_name');
+                data.email = pickValue('#id_pf-email, #id_pf_email');
             } else {
-                // Fallback para campos gerais
-                const nameField = $('[name*="name"], [name*="nome"]').first();
-                const emailField = $('[name*="email"]').not('[name*="admin"]').first();
-
-                if (nameField.length) data.name = nameField.val();
-                if (emailField.length) data.email = emailField.val();
+                // Fallback amplo (permite reutilização em outros módulos que estendam o wizard)
+                data.name = pickValue('[name*="razao_social"], [name*="nome_fantasia"], [name*="name"], [name*="nome"]');
+                data.email = pickValue('[name*="email"]:not([name*="admin"])');
             }
 
-            // Dados gerais (independente do tipo)
-            const subdomainField = $('[name*="subdomain"]').first();
-            const cidadeField = $('[name*="cidade"]').first();
-            const ufField = $('[name*="uf"], [name*="estado"]').first();
+            // Campos gerais suportando variantes de outros módulos (clientes / fornecedores)
+            data.subdomain = pickValue('[name*="subdomain"], [name*="dominio"], [name*="slug"]');
+            data.cidade = pickValue('[name*="cidade"], [name*="city"]');
+            data.uf = pickValue('[name*="uf"], [name*="estado"], [name*="state"]');
 
-            if (subdomainField.length) data.subdomain = subdomainField.val();
-            if (cidadeField.length) data.cidade = cidadeField.val();
-            if (ufField.length) data.uf = ufField.val();
-
-            console.log('📊 Dados coletados:', data);
+            console.debug('[preview] dados coletados', data);
             return data;
         }
 
         // Listeners para atualização em tempo real
-        $(document).on('input change blur', [
+        const previewWatchSelectors = [
             // Campos gerais
             '[name*="name"]',
             '[name*="nome"]',
@@ -1568,17 +1657,35 @@
             '#id_pf-telefone',
             // Radio buttons tipo pessoa
             'input[name="tipo_pessoa"]'
-        ].join(', '), function () {
-            // Debounce para evitar muitas atualizações
-            clearTimeout(window.previewUpdateTimeout);
-            window.previewUpdateTimeout = setTimeout(updatePreview, 300);
-        });
+        ];
 
-        // Atualização inicial
-        setTimeout(updatePreview, 1000);
+        function schedulePreviewUpdate() {
+            clearTimeout(window.previewUpdateTimeout);
+            window.previewUpdateTimeout = setTimeout(updatePreview, 180); // resposta mais ágil
+        }
+
+        $(document).on('input change blur keyup paste', previewWatchSelectors.join(', '), schedulePreviewUpdate);
+
+        // Atualização também quando módulos externos dispararem evento
+        $(document).on('wizard:field:updated wizard:typeChanged', schedulePreviewUpdate);
+
+        // Atualização inicial rápida
+        setTimeout(updatePreview, 120);
 
         // Expor função globalmente para uso em outros scripts
-        window.updateWizardPreview = updatePreview;
+        window.updateWizardPreview = function () {
+            updatePreview();
+            return true;
+        };
+
+        // Evento global após cada atualização
+        const _origUpdate = updatePreview;
+        function updatePreviewWithEvent() {
+            _origUpdate();
+            try { $(document).trigger('wizard:preview:updated'); } catch (e) { /* noop */ }
+        }
+        // Substituir referência global para permitir evolução futura
+        window.updateWizardPreview = updatePreviewWithEvent;
 
         console.log('✅ Preview dinâmico inicializado');
     }

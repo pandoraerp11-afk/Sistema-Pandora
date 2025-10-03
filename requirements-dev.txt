@@ -8,3 +8,5 @@ pytest-django
 pytest-cov
 bandit
 pip-audit
+types-python-dateutil
+types-requests

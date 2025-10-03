@@ -20,8 +20,24 @@ from typing import TYPE_CHECKING, Any, cast
 import django
 import pytest
 from django.conf import settings as _settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in
 from django.test.client import Client
+
+# Após django.setup() (abaixo), importamos os modelos usados nos fixtures
+from core.models import Tenant as TenantModel
+from core.models import TenantUser, CustomUser
+from clientes.models import Cliente
+
+# Import opcional do modelo de fornecedor sem reatribuir o nome da classe (evita erro de tipo).
+try:  # Import opcional para auto-bind de fornecedores no portal
+    from portal_fornecedor import models as _forn_models
+except ModuleNotFoundError:  # pragma: no cover
+    _acesso_fornecedor_model = None
+else:
+    _acesso_fornecedor_model = _forn_models.AcessoFornecedor
+
+# _acesso_fornecedor_model agora é: classe AcessoFornecedor ou None.
 
 if TYPE_CHECKING:  # imports apenas para tipagem
     from collections.abc import Callable, Iterator
@@ -38,16 +54,47 @@ logger = logging.getLogger(__name__)
 
 try:
     django.setup()
-except Exception as e:  # pragma: no cover - apenas salvaguarda  # noqa: BLE001
-    logger.warning("[conftest] Aviso ao inicializar Django: %s", e)
+except (RuntimeError, ImportError) as err:  # pragma: no cover
+    logger.warning("[conftest] Aviso ao inicializar Django: %s", err)
 
-# Imports que dependem do Django inicializado
-with contextlib.suppress(Exception):
-    from core.models import Tenant as _Tenant
-    from core.models import TenantUser
+# Import opcional (mantém robustez em ambientes parciais)
+try:
+    from core.services.wizard_metrics import reset_all_metrics as _reset_all_metrics
+except (RuntimeError, ImportError):  # pragma: no cover
+    _reset_all_metrics = None
 
 # Forçar flag de teste (detecção baseada em sys.modules pode ocorrer cedo demais)
 _settings.TESTING = True
+
+
+# =============================================================================
+# Fixture legada esperada por testes migrados: user_logado
+# Cria usuário, cliente associado e retorna objeto user com atributo cliente.
+# =============================================================================
+@pytest.fixture
+def user_logado(db: object) -> CustomUser:
+    """Usuário autenticado simplificado com cliente vinculado (compat)."""
+    del db
+    user_model = get_user_model()
+    test_pwd = os.environ.get("TEST_PASSWORD", "x")
+    # create_user já retorna CustomUser (settings.AUTH_USER_MODEL) neste projeto
+    user = cast(
+        "CustomUser",
+        user_model.objects.create_user(
+            username="user_logado",
+            password=test_pwd,
+        ),
+    )
+    tenant = TenantModel.objects.create(name="Tenant UserLogado", subdomain="tul")
+    TenantUser.objects.create(user=user, tenant=tenant)
+    # Cliente mínimo para testes que acessam user_logado.cliente
+    cliente = Cliente.objects.create(tenant=tenant, tipo="PF", email="u@example.com")
+    # Anexar atributo para compat direta
+    # Atributo dinâmico usado por testes legados
+    # Atributo dinâmico usado em testes legados: anexamos de forma explícita.
+    user.cliente = cliente  # atributo dinâmico suportado em runtime pelos testes
+    return user
+
 
 # =============================================================================
 # Auto-seleção de tenant único para reduzir redirects 302 em testes
@@ -56,7 +103,13 @@ with contextlib.suppress(Exception):
     _original_force_login = Client.force_login
 
     def _auto_bind_single_tenant(session: SessionBase, user: AbstractBaseUser) -> None:  # helper isolado
-        """Se usuário tiver exatamente um vínculo TenantUser e sessão sem tenant_id, define-o."""
+        """Auto-define tenant_id na sessão para usuários com único vínculo.
+
+        Regras:
+        1. Se houver exatamente um TenantUser -> usar esse tenant.
+          2. Caso contrário, se houver exatamente um acesso de fornecedor ativo (AcessoFornecedor)
+              usar tenant do fornecedor.
+        """
         if "tenant_id" in session:
             return
         rel = getattr(user, "tenant_memberships", None)
@@ -70,6 +123,19 @@ with contextlib.suppress(Exception):
             session["tenant_id"] = tenant_ids[0]
             with contextlib.suppress(Exception):
                 session.save()
+            return
+        # Fornecedor portal (sem TenantUser) — um único acesso ativo
+        if _acesso_fornecedor_model is not None:
+            with contextlib.suppress(Exception):
+                acessos = (
+                    _acesso_fornecedor_model.objects.filter(usuario=user, ativo=True)
+                    .select_related("fornecedor__tenant")
+                    .values_list("fornecedor__tenant_id", flat=True)[:2]
+                )
+                fornec_tenants = list(acessos)
+                if len(fornec_tenants) == 1:
+                    session["tenant_id"] = fornec_tenants[0]
+                    session.save()
 
     def _patched_force_login(self: Client, user: AbstractBaseUser, backend: str | None = None) -> None:
         _original_force_login(self, user, backend=backend)
@@ -101,11 +167,9 @@ def enable_all_modules_for_tenant(tenant: Tenant) -> Tenant:
     Tolerante a erros e formatos.
     """
     try:
-        from django.conf import settings
-
         mods = [
             item["module_name"]
-            for item in getattr(settings, "PANDORA_MODULES", [])
+            for item in getattr(_settings, "PANDORA_MODULES", [])
             if isinstance(item, dict) and item.get("module_name")
         ]
         if mods:
@@ -118,10 +182,10 @@ def enable_all_modules_for_tenant(tenant: Tenant) -> Tenant:
 
 # Monkeypatch Tenant.save para garantir habilitação automática ainda durante a criação
 with contextlib.suppress(Exception):
-    _original_tenant_save = _Tenant.save
+    _original_tenant_save = TenantModel.save
 
-    def _tenant_save_patched(self: Tenant, *args: object, **kwargs: object) -> object:
-        result = _original_tenant_save(self, *args, **kwargs)
+    def _tenant_save_patched(self: Tenant, *args: object, **kwargs: object) -> None:
+        _original_tenant_save(self, *args, **kwargs)
         if getattr(_settings, "TESTING", False):
             em = getattr(self, "enabled_modules", None)
             # Somente autopopular se vazio ou dict com chave 'modules' vazia.
@@ -132,10 +196,9 @@ with contextlib.suppress(Exception):
             )
             if autopop:
                 enable_all_modules_for_tenant(self)
-        return result
 
     # Monkeypatch direto; ignorar verificação de tipo (atribuição de método em runtime)
-    _Tenant.save = _tenant_save_patched  # type: ignore[method-assign]
+    TenantModel.save = _tenant_save_patched  # type: ignore[method-assign]
 
 
 @pytest.fixture(autouse=True)
@@ -145,12 +208,11 @@ def auto_enable_modules(db: object) -> Iterator[None]:
     Ajuda a evitar redirecionamentos 302 em testes que não configuram módulos.
     """
     del db  # ativa fixture do banco; não é usada diretamente aqui
-    from core.models import Tenant
 
     yield
     # Após cada teste (fase teardown) ajustar apenas tenants sem módulos definidos
     with contextlib.suppress(Exception):
-        for tenant in Tenant.objects.all():
+        for tenant in TenantModel.objects.all():
             em = tenant.enabled_modules
             if not em or (isinstance(em, dict) and not em.get("modules")):
                 enable_all_modules_for_tenant(tenant)
@@ -160,10 +222,23 @@ def auto_enable_modules(db: object) -> Iterator[None]:
 def tenant_with_all_modules(db: object) -> Tenant:
     """Cria um `Tenant` já com todos os módulos habilitados."""
     del db  # ativa fixture do banco; não é usada diretamente aqui
-    from core.models import Tenant
 
-    tenant = Tenant.objects.create(name="Empresa Teste Auto", subdomain="empresa-auto")
+    tenant = TenantModel.objects.create(name="Empresa Teste Auto", subdomain="empresa-auto")
     return enable_all_modules_for_tenant(tenant)
+
+
+@pytest.fixture
+def tenant(db: object) -> Tenant:
+    """Fixture global simples `tenant` (compat com testes legados).
+
+    Vários testes migrados esperam uma fixture chamada exatamente `tenant`.
+    Antes ela existia apenas em arquivos específicos, causando `fixture 'tenant' not found`
+    em módulos que a referenciam sem declarar localmente. Fornecemos aqui uma
+    versão mínima ativa com módulos habilitados (para evitar redirects/403).
+    """
+    del db
+    t = TenantModel.objects.create(name="Empresa Global Teste", subdomain="empresa-global")
+    return enable_all_modules_for_tenant(t)
 
 
 @pytest.fixture
@@ -176,9 +251,6 @@ def auth_user(client: DjangoClient, db: object) -> Callable[..., tuple[object, T
         `user, tenant, client = auth_user(is_staff=True)`
     """
     del db  # ativa fixture do banco; não é usada diretamente aqui
-    from django.contrib.auth import get_user_model
-
-    from core.models import Tenant, TenantUser
 
     def _make(
         *,
@@ -199,7 +271,7 @@ def auth_user(client: DjangoClient, db: object) -> Callable[..., tuple[object, T
         tenant = None
         if with_tenant:
             # Segue o padrão usado em tenant_with_all_modules
-            tenant = Tenant.objects.create(name=f"Empresa {username}", subdomain=f"empresa-{username}")
+            tenant = TenantModel.objects.create(name=f"Empresa {username}", subdomain=f"empresa-{username}")
             TenantUser.objects.create(user=user, tenant=tenant)
             sess = client.session
             # Usar pk para agradar type-checkers e converter para int
@@ -210,6 +282,22 @@ def auth_user(client: DjangoClient, db: object) -> Callable[..., tuple[object, T
         return user, tenant, client
 
     return _make
+
+
+# =============================================================================
+# Fixtures de compatibilidade
+# =============================================================================
+# Alguns testes esperam uma fixture chamada `django_settings` (LazySettings).
+# Para manter restauração automática de alterações entre testes, delegamos para a
+# fixture `settings` do pytest-django.
+@pytest.fixture
+def django_settings(settings: Any) -> Any:  # noqa: ANN401 - compat: tipo dinâmico
+    """Alias compatível que expõe as configurações do Django.
+
+    Usa a fixture `settings` (pytest-django) para garantir que alterações
+    realizadas no escopo do teste sejam revertidas automaticamente no teardown.
+    """
+    return settings
 
 
 # =============================================================================
@@ -418,7 +506,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         tr = config.pluginmanager.getplugin("terminalreporter")
         if not tr:
             return
-        tr_any = cast(Any, tr)
+        tr_any = cast("Any", tr)
         failed = sum(len(tr_any.stats.get(k, [])) for k in ("failed", "error"))
         if failed == 0 and exitstatus != 0:
             # Provavelmente só cobertura (ou warnings tratados como erro). Normalizar.
@@ -443,8 +531,7 @@ def _reset_wizard_metrics() -> None:
     Evita contaminação entre testes que inspecionam contadores/snapshots.
     """
     try:
-        from core.services.wizard_metrics import reset_all_metrics
-
-        reset_all_metrics()
+        if "_reset_all_metrics" in globals() and callable(_reset_all_metrics):
+            _reset_all_metrics()
     except Exception:  # noqa: BLE001
         logger.debug("[conftest] reset_wizard_metrics: falha ao resetar", exc_info=True)

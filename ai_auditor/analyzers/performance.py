@@ -1,8 +1,10 @@
+from typing import Any
+
 from .base import BaseAnalyzer
 
 
 class PerformanceAnalyzer(BaseAnalyzer):
-    def analyze(self, file_path: str, content: str) -> List[Dict[str, Any]]:
+    def analyze(self, file_path: str, content: str) -> list[dict[str, Any]]:
         issues = []
 
         # Detecção de queries N+1

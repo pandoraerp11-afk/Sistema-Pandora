@@ -1,4 +1,5 @@
 # admin/urls.py (Versão Ultra Moderna)
+"""URL configuration for the admin module."""
 
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
@@ -17,6 +18,7 @@ from .views import (
     TenantBackupViewSet,
     TenantConfigurationUpdateView,
     TenantConfigurationViewSet,
+    TenantListLiteView,
     TenantUsageReportViewSet,
     admin_home,
     alerts_page,
@@ -27,6 +29,7 @@ from .views import (
     support_page,
 )
 
+# Namespace principal (administration) e alias 'admin' fornecido em urls raiz.
 app_name = "administration"
 
 # --- API Endpoints ---
@@ -61,4 +64,7 @@ urlpatterns = [
     path("config/tenant/", TenantConfigurationUpdateView.as_view(), name="tenant_config_update"),
     # Rotas da API (prefixadas com /api/)
     path("api/", include(router.urls)),
+    # Aliases esperados pelos testes migrados
+    path("api/system-alerts/", SystemAlertViewSet.as_view({"get": "list"}), name="system-alerts-list"),
+    path("api/tenants/", TenantListLiteView.as_view(), name="tenant-list"),
 ]

@@ -68,7 +68,7 @@
             {% elif 'cpf' in field.name|lower %}
                 {{ field|add_class:"form-control form-control-sm wizard-input cpf-mask"|attr:"style:height: calc(1.5em + .5rem + 2px); line-height: 1.5" }}
             {% elif 'cep' in field.name|lower %}
-                {{ field|add_class:"form-control form-control-sm wizard-input cep-mask"|attr:"maxlength:10"|attr:"size:10"|attr:"inputmode:numeric"|attr:"pattern:[0-9]{5}-[0-9]{3}"|attr:"style:width: calc(10ch + 3rem + 2px); height: calc(1.5em + .5rem + 2px); line-height: 1.5"|attr:"title:CEP no formato 00000-000"|attr:"placeholder:00000-000" }}
+                {{ field|add_class:"form-control form-control-sm wizard-input cep-mask"|attr:"maxlength:10"|attr:"size:10"|attr:"inputmode:numeric"|attr:"pattern:[0-9]{5}-[0-9]{3}"|attr:"data-cep-lookup:true"|attr:"style:width: calc(10ch + 3rem + 2px); height: calc(1.5em + .5rem + 2px); line-height: 1.5"|attr:"title:CEP no formato 00000-000"|attr:"placeholder:00000-000" }}
             {% elif 'telefone' in field.name|lower or 'celular' in field.name|lower or 'whatsapp' in field.name|lower %}
                 {{ field|add_class:"form-control form-control-sm wizard-input phone-mask"|attr:"maxlength:16"|attr:"size:16"|attr:"inputmode:tel"|attr:"pattern:\\(\\d{2}\\)\\s?\\d{4,5}-\\d{4}"|attr:"style:width: calc(16ch + 3rem + 2px); height: calc(1.5em + .5rem + 2px); line-height: 1.5"|attr:"title:Telefone no formato (11) 99999-9999"|attr:"placeholder:(11) 99999-9999" }}
             {% else %}

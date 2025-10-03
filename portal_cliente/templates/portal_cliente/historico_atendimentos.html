@@ -1,11 +1,9 @@
-{% extends 'pandora_ultra_modern_base.html' %}
+{% extends 'portal_cliente/base_portal.html' %}
 {% load static %}
 
 {% block title %}Portal Cliente - Histórico de Atendimentos{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
-{% endblock %}
+{% block extra_css %}{{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -67,11 +65,15 @@
                                             <span class="text-muted">Não avaliado</span>
                                         {% endif %}
                                     </div>
-                                    <div class="col-md-3 text-md-end">
-                                        <a href="{% url 'portal_cliente:detalhe_atendimento' atendimento.id %}" 
-                                           class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-eye me-1"></i>Ver Detalhes
+                                    <div class="col-md-3 text-md-end d-flex gap-2 justify-content-end">
+                                        <a href="{% url 'portal_cliente:detalhe_atendimento' atendimento.id %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>Detalhes
                                         </a>
+                                        {% if atendimento.status == 'CONCLUIDO' and not atendimento.satisfacao_cliente and atendimento.pode_avaliar %}
+                                        <a href="{% url 'portal_cliente:detalhe_atendimento' atendimento.id %}#formAvaliacao" class="btn btn-outline-warning btn-sm">
+                                            <i class="fas fa-star me-1"></i>Avaliar
+                                        </a>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 

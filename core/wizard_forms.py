@@ -1,26 +1,32 @@
-# ruff: noqa
 """Formulários do Wizard de criação de Tenant.
 
 Este módulo contém os formulários e widgets usados nas etapas do wizard.
 """
 
-from typing import Any, Mapping
-
 # core/wizard_forms.py - Formulários do Wizard de Criação de Tenant (VERSÃO INDEPENDENTE)
-
+import json
 import re
+from collections.abc import Mapping, Sequence
+from datetime import date, datetime
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar
+from urllib.parse import urlparse
 
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from django.db.models import Q
 from django.forms.widgets import Widget
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from .models import Tenant
-from .validators import RESERVED_SUBDOMAINS, SUBDOMAIN_REGEX, normalize_subdomain
+from core.models import Tenant
+from core.validators import RESERVED_SUBDOMAINS, SUBDOMAIN_REGEX, normalize_subdomain
+
+if TYPE_CHECKING:  # Tipagem apenas; evita ImportError em runtime no Django 5+
+    from django.utils.safestring import SafeText
 
 
 class EditingTenantMixin:
@@ -32,9 +38,9 @@ class EditingTenantMixin:
 
 
 class MultipleFileInput(Widget):
-    """
-    Widget customizado para upload de múltiplos arquivos
-    Padrão Ultra Moderno - Implementação completa do zero
+    """Widget customizado para upload de múltiplos arquivos.
+
+    Padrão Ultra Moderno - Implementação completa do zero.
     """
 
     template_name = "django/forms/widgets/file.html"
@@ -53,39 +59,51 @@ class MultipleFileInput(Widget):
         default_attrs.update(attrs)
         super().__init__(default_attrs)
 
-    def format_value(self, value: object) -> None:
+    def format_value(self, _value: object) -> None:
         """Formata o valor para exibição; inputs de arquivo não exibem valor."""
         return
 
-    def value_from_datadict(self, data: Mapping[str, Any], files: Mapping[str, Any], name: str) -> Any:
+    def value_from_datadict(
+        self,
+        _data: Mapping[str, object],
+        files: Mapping[str, object],
+        name: str,
+    ) -> UploadedFile | Sequence[UploadedFile] | None:
         """Extrai múltiplos arquivos do request com fallback seguro para single file."""
-        upload: Any = None
+        result: UploadedFile | Sequence[UploadedFile] | None = None
+        upload_obj: object | None = None
         getlist = getattr(files, "getlist", None)
         if callable(getlist):
             try:
-                upload = getlist(name)
+                upload_obj = getlist(name)
             except Exception:  # noqa: BLE001
-                upload = None
+                upload_obj = None
 
-        if upload is None:
+        if upload_obj is None:
             single = files.get(name)
-            if not single:
-                return None
-            return single
-
-        if not upload:
-            return None
-        if len(upload) == 1:
-            return upload[0]
-        return upload
+            result = single if isinstance(single, UploadedFile) else None
+        elif isinstance(upload_obj, (list, tuple)):
+            if upload_obj:
+                if len(upload_obj) == 1 and isinstance(upload_obj[0], UploadedFile):
+                    result = upload_obj[0]
+                else:
+                    seq: list[UploadedFile] = [f for f in upload_obj if isinstance(f, UploadedFile)]
+                    result = seq or None
+            else:
+                result = None
+        elif isinstance(upload_obj, UploadedFile):
+            result = upload_obj
+        else:
+            result = None
+        return result
 
     def render(
         self,
         name: str,
-        value: object,
+        _value: object | None,
         attrs: dict[str, Any] | None = None,
-        renderer: Any | None = None,
-    ) -> str:
+        _renderer: object | None = None,
+    ) -> "SafeText":
         """Renderiza o widget de múltiplos arquivos com padrão ultra-moderno."""
         if attrs is None:
             attrs = {}
@@ -128,7 +146,10 @@ class MultipleFileInput(Widget):
                             li.className = 'small text-info';
                             const icon = document.createElement('i');
                             icon.className = 'fas fa-file';
-                            const text = document.createTextNode(' ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)');
+                            const sizeKb = (file.size / 1024).toFixed(1);
+                            const text = document.createTextNode(
+                                ' ' + file.name + ' (' + sizeKb + ' KB)'
+                            );
                             li.appendChild(icon);
                             li.appendChild(text);
                             fileList.appendChild(li);
@@ -141,30 +162,84 @@ class MultipleFileInput(Widget):
         }});
         </script>
         """
-
-        return mark_safe(html)
+        return mark_safe(html)  # noqa: S308
 
 
 class MultipleFileField(forms.FileField):
-    """
-    Campo customizado para múltiplos arquivos
-    Padrão Ultra Moderno - Validação e processamento completo
+    """Campo customizado para múltiplos arquivos.
+
+    Padrão Ultra Moderno - Validação e processamento completo.
     """
 
     widget = MultipleFileInput
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def _coerce_to_list(
+        self,
+        data: UploadedFile | Sequence[UploadedFile] | None,
+    ) -> list[UploadedFile]:
+        if not data:
+            return []
+        if isinstance(data, (list, tuple)):
+            return [f for f in data if isinstance(f, UploadedFile)]
+        return [data] if isinstance(data, UploadedFile) else []
+
+    def _validate_limits(self, files: list[UploadedFile]) -> None:
+        max_files = self.max_files
+        if isinstance(max_files, int) and len(files) > max_files:
+            msg = f"Máximo de {max_files} arquivos permitidos. Você selecionou {len(files)}."
+            raise ValidationError(msg)
+
+    def _validate_single_file(
+        self,
+        item: UploadedFile,
+        initial: UploadedFile | None,
+    ) -> UploadedFile | None:
+        validated_file = super().clean(item, initial)
+        if not validated_file:
+            return validated_file
+        types_set = self.file_types
+        if isinstance(types_set, set):
+            file_extension = validated_file.name.split(".")[-1].lower()
+            if file_extension not in types_set:
+                msg = (
+                    f"Tipo de arquivo não permitido: {file_extension}. Tipos permitidos: {', '.join(sorted(types_set))}"
+                )
+                raise ValidationError(msg)
+        if self.max_file_size and getattr(validated_file, "size", None) and validated_file.size > self.max_file_size:
+            max_mb = int(self.max_file_size / (1024 * 1024))
+            msg = f"Tamanho máximo por arquivo excedido ({max_mb} MB)."
+            raise ValidationError(msg)
+        return validated_file
+
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Extrai limites e inicializa o campo com widget customizado."""
         # Extrair configurações específicas para múltiplos arquivos
-        self.max_files = kwargs.pop("max_files", None)
-        self.file_types = kwargs.pop("file_types", None)
+        max_files_val = kwargs.pop("max_files", None)
+        self.max_files: int | None = max_files_val if isinstance(max_files_val, int) else None
+
+        file_types_val = kwargs.pop("file_types", None)
+        if file_types_val is None:
+            self.file_types: set[str] | None = None
+        else:
+            try:
+                iterable = file_types_val if isinstance(file_types_val, (list, set, tuple)) else []
+                self.file_types = {str(x).lower().lstrip(".") for x in iterable}
+            except Exception:  # noqa: BLE001
+                self.file_types = None
+
         # Tamanho máximo por arquivo (padrão 10MB)
-        self.max_file_size = kwargs.pop("max_file_size", 10 * 1024 * 1024)
+        max_size_val = kwargs.pop("max_file_size", 10 * 1024 * 1024)
+        self.max_file_size: int = max_size_val if isinstance(max_size_val, int) else 10 * 1024 * 1024
 
         kwargs.setdefault("widget", MultipleFileInput())
         super().__init__(*args, **kwargs)
 
-    def clean(self, data: Any, initial: Any | None = None) -> list[Any]:
-        """Valida múltiplos arquivos com verificações avançadas"""
+    def clean(
+        self,
+        data: UploadedFile | Sequence[UploadedFile] | None,
+        initial: UploadedFile | None = None,
+    ) -> list[UploadedFile]:
+        """Valida múltiplos arquivos com verificações avançadas."""
         # Se não há dados e o campo não é obrigatório
         if not data and not self.required:
             return []
@@ -173,50 +248,30 @@ class MultipleFileField(forms.FileField):
         if not data and self.required:
             raise ValidationError(self.error_messages["required"])
 
-        # Se é um único arquivo, converte para lista
-        if not isinstance(data, list):
-            data = [data]
+        files = self._coerce_to_list(data)
 
         # Verificar limite máximo de arquivos
-        if self.max_files and len(data) > self.max_files:
-            raise ValidationError(f"Máximo de {self.max_files} arquivos permitidos. Você selecionou {len(data)}.")
+        self._validate_limits(files)
 
         # Valida cada arquivo individualmente
         result = []
-        for i, item in enumerate(data):
+        for i, item in enumerate(files):
             if item:  # Apenas processar se o item não é None/vazio
                 try:
-                    # Usar validação padrão do FileField
-                    validated_file = super().clean(item, initial)
+                    validated_file = self._validate_single_file(item, initial)
                     if validated_file:
-                        # Verificações adicionais de tipo de arquivo
-                        if self.file_types:
-                            file_extension = validated_file.name.split(".")[-1].lower()
-                            if file_extension not in self.file_types:
-                                raise ValidationError(
-                                    f"Tipo de arquivo não permitido: {file_extension}. "
-                                    f"Tipos permitidos: {', '.join(self.file_types)}"
-                                )
-                        # Verificação de tamanho por arquivo
-                        if (
-                            self.max_file_size
-                            and getattr(validated_file, "size", None)
-                            and validated_file.size > self.max_file_size
-                        ):
-                            max_mb = int(self.max_file_size / (1024 * 1024))
-                            raise ValidationError(f"Tamanho máximo por arquivo excedido ({max_mb} MB).")
-
                         result.append(validated_file)
                 except ValidationError as e:
                     # Re-lançar erros de validação com contexto do arquivo
-                    raise ValidationError(f"Arquivo {i + 1}: {str(e)}")
+                    msg = f"Arquivo {i + 1}: {e!s}"
+                    raise ValidationError(msg) from e
 
         return result
 
 
 class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
-    """
-    📋 PESSOA FÍSICA COMPLETO:
+    """📋 PESSOA FÍSICA COMPLETO.
+
     ├── tipo_pessoa (sempre PF)
     ├── name (nome completo da pessoa)
     ├── email (email da pessoa)
@@ -225,8 +280,10 @@ class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
     """
 
     class Meta:
+        """Metadados do formulário de Pessoa Física."""
+
         model = Tenant
-        fields = [
+        fields: ClassVar[list[str]] = [
             "tipo_pessoa",
             "name",
             "email",
@@ -243,60 +300,60 @@ class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
             "profissao",
             "escolaridade",
         ]
-
-        widgets = {
+        # IMPORTANTE: widgets e labels PRECISAM estar dentro de Meta para Django aplicar.
+        widgets: ClassVar[dict[str, forms.Widget]] = {
             "tipo_pessoa": forms.HiddenInput(attrs={"value": "PF", "id": "id_pf_tipo_pessoa"}),
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control wizard-field",
-                    "placeholder": "Nome Completo da Pessoa",
+                    "placeholder": "Nome Completo",
                     "id": "id_pf_name",
-                }
+                },
             ),
             "email": forms.EmailInput(
                 attrs={
                     "class": "form-control wizard-field",
                     "placeholder": "email.pessoal@dominio.com",
                     "id": "id_pf_email",
-                }
+                },
             ),
             "telefone": forms.TextInput(
                 attrs={
                     "class": "form-control wizard-field phone-mask",
                     "placeholder": "(99) 99999-9999",
                     "id": "id_pf_telefone",
-                }
+                },
             ),
             "cpf": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field cpf-mask", "placeholder": "999.999.999-99"}
+                attrs={"class": "form-control wizard-field wizard-pf-field cpf-mask", "placeholder": "999.999.999-99"},
             ),
             "rg": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Número do RG"}
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Número do RG"},
             ),
             "data_nascimento": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field datepicker", "placeholder": "DD/MM/AAAA"}
+                attrs={"class": "form-control wizard-field wizard-pf-field datepicker", "placeholder": "DD/MM/AAAA"},
             ),
             "sexo": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
             "estado_civil": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
             "nacionalidade": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "País de nacionalidade"}
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "País de nacionalidade"},
             ),
             "naturalidade": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Cidade de nascimento"}
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Cidade de nascimento"},
             ),
             "nome_mae": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo da mãe"}
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo da mãe"},
             ),
             "nome_pai": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo do pai"}
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Nome completo do pai"},
             ),
             "profissao": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Engenheiro, Médico..."}
+                attrs={"class": "form-control wizard-field wizard-pf-field", "placeholder": "Engenheiro, Médico..."},
             ),
             "escolaridade": forms.Select(attrs={"class": "form-select wizard-field wizard-pf-field"}),
         }
 
-        labels = {
+        labels: ClassVar[dict[str, str]] = {
             "tipo_pessoa": _("Tipo de Pessoa"),
             "name": _("Nome Completo"),
             "email": _("E-mail"),
@@ -314,8 +371,10 @@ class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
             "escolaridade": _("Escolaridade"),
         }
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self._editing_tenant_pk = kwargs.pop("editing_tenant_pk", None)
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Inicializa o formulário e configura campos/formatos padrão."""
+        pk_obj = kwargs.pop("editing_tenant_pk", None)
+        self._editing_tenant_pk: int | None = pk_obj if isinstance(pk_obj, int) else None
         super().__init__(*args, **kwargs)
 
         # Forçar tipo_pessoa = PF
@@ -341,14 +400,23 @@ class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
                 },
             )
 
+        # Inserir opção padrão "Selecione..." em selects relevantes (sem duplicar)
+        for select_name in ["sexo", "estado_civil", "escolaridade"]:
+            fld = self.fields.get(select_name)
+            if fld and getattr(fld.widget, "choices", None):
+                choices = list(fld.widget.choices)
+                if not choices or choices[0][0] != "":  # garantir primeira opção vazia
+                    fld.widget.choices = [("", "Selecione..."), *choices]
+
     def clean_tipo_pessoa(self) -> str:
+        """Garante que o tipo de pessoa seja PF."""
         value = self.cleaned_data.get("tipo_pessoa") or "PF"
         if value != "PF":
             raise forms.ValidationError(_("Tipo de pessoa inválido para este formulário."))
         return "PF"
 
     def clean_cpf(self) -> str | None:
-        """Validação de CPF única com normalização básica"""
+        """Validação de CPF única com normalização básica."""
         cpf = self.cleaned_data.get("cpf")
         if cpf:
             cpf_digits = re.sub(r"\D", "", str(cpf))
@@ -366,8 +434,8 @@ class TenantPessoaFisicaWizardForm(EditingTenantMixin, forms.ModelForm):
 
 
 class TenantPessoaJuridicaWizardForm(EditingTenantMixin, forms.ModelForm):
-    """
-    📋 PESSOA JURÍDICA COMPLETO:
+    """📋 PESSOA JURÍDICA COMPLETO.
+
     ├── tipo_pessoa (sempre PJ)
     ├── name (nome fantasia da empresa)
     ├── email (email da empresa)
@@ -376,8 +444,10 @@ class TenantPessoaJuridicaWizardForm(EditingTenantMixin, forms.ModelForm):
     """
 
     class Meta:
+        """Metadados do formulário de Pessoa Jurídica."""
+
         model = Tenant
-        fields = [
+        fields: ClassVar[list[str]] = [
             "tipo_pessoa",
             "name",
             "email",
@@ -393,61 +463,61 @@ class TenantPessoaJuridicaWizardForm(EditingTenantMixin, forms.ModelForm):
             "regime_tributario",
         ]
 
-        widgets = {
+        widgets: ClassVar[dict[str, forms.Widget]] = {
             "tipo_pessoa": forms.HiddenInput(attrs={"value": "PJ", "id": "id_pj_tipo_pessoa"}),
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control wizard-field",
-                    "placeholder": "Nome Fantasia da Empresa",
+                    "placeholder": "Nome Fantasia",
                     "id": "id_pj_name",
-                }
+                },
             ),
             "email": forms.EmailInput(
                 attrs={
                     "class": "form-control wizard-field",
                     "placeholder": "email.empresa@dominio.com",
                     "id": "id_pj_email",
-                }
+                },
             ),
             "telefone": forms.TextInput(
                 attrs={
                     "class": "form-control wizard-field phone-mask",
                     "placeholder": "(99) 99999-9999",
                     "id": "id_pj_telefone",
-                }
+                },
             ),
             "razao_social": forms.TextInput(
                 attrs={
                     "class": "form-control wizard-field wizard-pj-field",
                     "placeholder": "Nome de registro da empresa",
-                }
+                },
             ),
             "cnpj": forms.TextInput(
                 attrs={
                     "class": "form-control wizard-field wizard-pj-field cnpj-mask",
                     "placeholder": "99.999.999/9999-99",
-                }
+                },
             ),
             "inscricao_estadual": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Número da I.E."}
+                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Número da I.E."},
             ),
             "inscricao_municipal": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Número da I.M."}
+                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Número da I.M."},
             ),
             "data_fundacao": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pj-field datepicker", "placeholder": "DD/MM/AAAA"}
+                attrs={"class": "form-control wizard-field wizard-pj-field datepicker", "placeholder": "DD/MM/AAAA"},
             ),
             "ramo_atividade": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Ex: Construção Civil"}
+                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Ex: Construção Civil"},
             ),
             "porte_empresa": forms.Select(attrs={"class": "form-select wizard-field wizard-pj-field"}),
             "cnae_principal": forms.TextInput(
-                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Ex: 4120-4/00"}
+                attrs={"class": "form-control wizard-field wizard-pj-field", "placeholder": "Ex: 4120-4/00"},
             ),
             "regime_tributario": forms.Select(attrs={"class": "form-select wizard-field wizard-pj-field"}),
         }
 
-        labels = {
+        labels: ClassVar[dict[str, str]] = {
             "tipo_pessoa": _("Tipo de Pessoa"),
             "name": _("Nome Fantasia"),
             "email": _("E-mail da Empresa"),
@@ -463,7 +533,8 @@ class TenantPessoaJuridicaWizardForm(EditingTenantMixin, forms.ModelForm):
             "regime_tributario": _("Regime Tributário"),
         }
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Inicializa o formulário e configura campos/formatos padrão."""
         self._editing_tenant_pk = kwargs.pop("editing_tenant_pk", None)
         super().__init__(*args, **kwargs)
 
@@ -491,13 +562,14 @@ class TenantPessoaJuridicaWizardForm(EditingTenantMixin, forms.ModelForm):
             )
 
     def clean_tipo_pessoa(self) -> str:
+        """Garante que o tipo de pessoa seja PJ."""
         value = self.cleaned_data.get("tipo_pessoa") or "PJ"
         if value != "PJ":
             raise forms.ValidationError(_("Tipo de pessoa inválido para este formulário."))
         return "PJ"
 
     def clean_cnpj(self) -> str | None:
-        """Validação de CNPJ única com normalização básica"""
+        """Validação de CNPJ única com normalização básica."""
         cnpj = self.cleaned_data.get("cnpj")
         if cnpj:
             cnpj_digits = re.sub(r"\D", "", str(cnpj))
@@ -517,12 +589,11 @@ class TenantPessoaJuridicaWizardForm(EditingTenantMixin, forms.ModelForm):
 
 
 class TenantAddressWizardForm(forms.Form):
-    """
-    STEP 2: Endereço Principal
-    """
+    """STEP 2: Endereço Principal."""
 
     # Campo oculto para manter a lista de endereços adicionais em JSON
-    # Estrutura esperada: [ { tipo:'COB'|'ENT'|'FISCAL'|'OUTRO', logradouro:'', numero:'', ... , principal: true|false }, ... ]
+    # Estrutura esperada:
+    # [ { tipo:'COB'|'ENT'|'FISCAL'|'OUTRO', logradouro:'', numero:'', ... , principal: true|false }, ... ]
     additional_addresses_json = forms.CharField(
         required=False,
         widget=forms.HiddenInput(attrs={"class": "wizard-additional-addresses-json"}),
@@ -614,14 +685,15 @@ class TenantAddressWizardForm(forms.Form):
         required=False,
         label=_("Ponto de Referência"),
         widget=forms.TextInput(
-            attrs={"class": "form-control wizard-field", "placeholder": "Ex: Próximo ao shopping, em frente à escola"}
+            attrs={
+                "class": "form-control wizard-field",
+                "placeholder": "Ex: Próximo ao shopping, em frente à escola",
+            },
         ),
     )
 
     def clean_additional_addresses_json(self) -> str:
-        """Garante que o JSON seja válido e seja uma lista; retorna string normalizada."""
-        import json
-
+        """Garante JSON válido (lista) e retorna string normalizada."""
         data = self.cleaned_data.get("additional_addresses_json")
         if not data:
             return "[]"
@@ -631,18 +703,17 @@ class TenantAddressWizardForm(forms.Form):
                 # Normalizar para lista vazia se estrutura inesperada
                 return "[]"
             # Opcional: limitar tamanho para evitar payloads excessivos
-            if len(parsed) > 50:
-                parsed = parsed[:50]
+            max_addresses = 50
+            if len(parsed) > max_addresses:
+                parsed = parsed[:max_addresses]
             return json.dumps(parsed, ensure_ascii=False)
-        except Exception:
+        except (TypeError, ValueError):
             # Em caso de erro de JSON, retornar lista vazia para não quebrar navegação livre
             return "[]"
 
 
 class TenantContactsWizardForm(forms.ModelForm):
-    """
-    STEP 3: Contatos, Website e Redes Sociais
-    """
+    """STEP 3: Contatos, Website e Redes Sociais."""
 
     # Campos adicionais para contato principal (não estão no modelo)
     cargo_contato_principal = forms.CharField(
@@ -659,7 +730,7 @@ class TenantContactsWizardForm(forms.ModelForm):
         required=False,
         label=_("Telefone do Contato"),
         widget=forms.TextInput(
-            attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 98765-4321"}
+            attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 98765-4321"},
         ),
     )
 
@@ -677,24 +748,7 @@ class TenantContactsWizardForm(forms.ModelForm):
 
     # Campos para redes sociais: substituídos por coleção dinâmica via socials_json
     # Mantivemos os campos antigos comentados para referência; a UI não os utiliza mais.
-    # linkedin = forms.URLField(
-    #     required=False,
-    #     label=_("LinkedIn"),
-    #     widget=forms.URLInput(attrs={'class': 'form-control wizard-field', 'placeholder': 'https://linkedin.com/company/empresa'}),
-    #     assume_scheme='https'
-    # )
-    # instagram = forms.URLField(
-    #     required=False,
-    #     label=_("Instagram"),
-    #     widget=forms.URLInput(attrs={'class': 'form-control wizard-field', 'placeholder': 'https://instagram.com/empresa'}),
-    #     assume_scheme='https'
-    # )
-    # facebook = forms.URLField(
-    #     required=False,
-    #     label=_("Facebook"),
-    #     widget=forms.URLInput(attrs={'class': 'form-control wizard-field', 'placeholder': 'https://facebook.com/empresa'}),
-    #     assume_scheme='https'
-    # )
+    # Campos para redes sociais foram substituídos por coleção dinâmica via socials_json.
 
     # Website removido da UI neste step
 
@@ -715,8 +769,10 @@ class TenantContactsWizardForm(forms.ModelForm):
     )
 
     class Meta:
+        """Metadados do formulário de contatos e redes sociais."""
+
         model = Tenant
-        fields = [
+        fields: ClassVar[list[str]] = [
             # Contato Principal
             "nome_contato_principal",
             # Contatos Departamentais
@@ -733,39 +789,65 @@ class TenantContactsWizardForm(forms.ModelForm):
             # Hidden para redes sociais dinâmicas
             "socials_json",
         ]
-        widgets = {
-            # Contato Principal
-            "nome_contato_principal": forms.TextInput(
-                attrs={"class": "form-control wizard-field", "placeholder": "Nome completo do responsável"}
-            ),
-            # Contatos Departamentais
-            "nome_responsavel_comercial": forms.TextInput(
-                attrs={"class": "form-control wizard-field", "placeholder": "Nome do responsável"}
-            ),
-            "email_comercial": forms.EmailInput(
-                attrs={"class": "form-control wizard-field", "placeholder": "comercial@empresa.com"}
-            ),
-            "telefone_comercial": forms.TextInput(
-                attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"}
-            ),
-            "nome_responsavel_financeiro": forms.TextInput(
-                attrs={"class": "form-control wizard-field", "placeholder": "Nome do responsável"}
-            ),
-            "email_financeiro": forms.EmailInput(
-                attrs={"class": "form-control wizard-field", "placeholder": "financeiro@empresa.com"}
-            ),
-            "telefone_financeiro": forms.TextInput(
-                attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"}
-            ),
-            # Contato de Emergência
-            "telefone_emergencia": forms.TextInput(
-                attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"}
-            ),
-        }
+
+    widgets: ClassVar[dict[str, forms.Widget]] = {
+        # Contato Principal
+        "nome_contato_principal": forms.TextInput(
+            attrs={"class": "form-control wizard-field", "placeholder": "Ex: João Silva"},
+        ),
+        # Contatos Departamentais
+        "nome_responsavel_comercial": forms.TextInput(
+            attrs={"class": "form-control wizard-field", "placeholder": "Ex: Ana Souza"},
+        ),
+        "email_comercial": forms.EmailInput(
+            attrs={"class": "form-control wizard-field", "placeholder": "comercial@empresa.com"},
+        ),
+        "telefone_comercial": forms.TextInput(
+            attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"},
+        ),
+        "nome_responsavel_financeiro": forms.TextInput(
+            attrs={"class": "form-control wizard-field", "placeholder": "Ex: Carlos Lima"},
+        ),
+        "email_financeiro": forms.EmailInput(
+            attrs={"class": "form-control wizard-field", "placeholder": "financeiro@empresa.com"},
+        ),
+        "telefone_financeiro": forms.TextInput(
+            attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"},
+        ),
+        # Contato de Emergência
+        "telefone_emergencia": forms.TextInput(
+            attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"},
+        ),
+    }
+
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Mantém somente placeholders; remove help_text extra solicitado."""
+        super().__init__(*args, **kwargs)
+        # Garantir que não exibiremos help_text intrusivo para estes campos
+        for fname in [
+            "nome_contato_principal",
+            "nome_responsavel_comercial",
+            "nome_responsavel_financeiro",
+            "telefone_emergencia",
+        ]:
+            field = self.fields.get(fname)
+            if field:
+                field.help_text = ""
+            placeholder_map = {
+                "nome_contato_principal": "Ex: João Silva",
+                "nome_responsavel_comercial": "Ex: Ana Souza",
+                "nome_responsavel_financeiro": "Ex: Carlos Lima",
+                "email_comercial": "comercial@empresa.com",
+                "email_financeiro": "financeiro@empresa.com",
+            }
+            for field_name, ph in placeholder_map.items():
+                fld = self.fields.get(field_name)
+                if fld and getattr(fld.widget, "attrs", None) is not None:
+                    # Força placeholder sempre (independente de já ter atributo vazio)
+                    fld.widget.attrs["placeholder"] = ph
 
     def clean_contacts_json(self) -> str:
-        import json
-
+        """Valida e normaliza a coleção de contatos em JSON."""
         raw = self.cleaned_data.get("contacts_json")
         if not raw:
             return "[]"
@@ -775,7 +857,8 @@ class TenantContactsWizardForm(forms.ModelForm):
                 return "[]"
             # Normalização básica + limites de segurança
             normalized = []
-            for item in data[:100]:  # limitar a 100 contatos
+            max_contacts = 100
+            for item in data[:max_contacts]:  # limitar a 100 contatos
                 if not isinstance(item, dict):
                     continue
                 nome = (item.get("nome") or "").strip()
@@ -793,16 +876,14 @@ class TenantContactsWizardForm(forms.ModelForm):
                         "telefone": telefone[:20],
                         "cargo": cargo[:100] or None,
                         "observacao": observacao[:500] or None,
-                    }
+                    },
                 )
             return json.dumps(normalized, ensure_ascii=False)
-        except Exception:
+        except (TypeError, ValueError):
             return "[]"
 
     def clean_socials_json(self) -> str:
-        import json
-        from urllib.parse import urlparse
-
+        """Valida e normaliza a coleção de redes sociais em JSON."""
         raw = self.cleaned_data.get("socials_json")
         if not raw:
             return "[]"
@@ -811,7 +892,8 @@ class TenantContactsWizardForm(forms.ModelForm):
             if not isinstance(data, list):
                 return "[]"
             normalized = []
-            for item in data[:50]:  # limitar a 50 redes sociais
+            max_socials = 50
+            for item in data[:max_socials]:  # limitar a 50 redes sociais
                 if not isinstance(item, dict):
                     continue
                 nome = (item.get("nome") or "").strip()
@@ -819,90 +901,28 @@ class TenantContactsWizardForm(forms.ModelForm):
                 if not (nome and link):
                     continue
                 # Normalizar esquema do link
-                try:
-                    parsed = urlparse(link)
-                    if not parsed.scheme:
-                        link = "https://" + link
-                except Exception:
-                    pass
+                parsed = urlparse(link)
+                if not parsed.scheme:
+                    link = "https://" + link
                 normalized.append(
                     {
                         "nome": nome[:50],
                         "link": link[:500],
-                    }
+                    },
                 )
             return json.dumps(normalized, ensure_ascii=False)
-        except Exception:
+        except (TypeError, ValueError):
             return "[]"
 
 
-class TenantDocumentsWizardForm(forms.Form):
-    """
-    STEP 4: Documentos (Opcional) - VERSÃO COMPLETA
-    """
-
-    # Documentos da Empresa
-    contrato_social = forms.FileField(
-        required=False, label=_("Contrato Social"), widget=forms.FileInput(attrs={"class": "form-control wizard-field"})
-    )
-    documento_cnpj = forms.FileField(
-        required=False, label=_("Cartão CNPJ"), widget=forms.FileInput(attrs={"class": "form-control wizard-field"})
-    )
-    inscricao_estadual = forms.FileField(
-        required=False,
-        label=_("Inscrição Estadual"),
-        widget=forms.FileInput(attrs={"class": "form-control wizard-field"}),
-    )
-    alvara_funcionamento = forms.FileField(
-        required=False,
-        label=_("Alvará de Funcionamento"),
-        widget=forms.FileInput(attrs={"class": "form-control wizard-field"}),
-    )
-
-    # Documentos Financeiros
-    comprovante_endereco = forms.FileField(
-        required=False,
-        label=_("Comprovante de Endereço"),
-        widget=forms.FileInput(attrs={"class": "form-control wizard-field"}),
-    )
-    balanco_patrimonial = forms.FileField(
-        required=False,
-        label=_("Balanço Patrimonial"),
-        widget=forms.FileInput(attrs={"class": "form-control wizard-field"}),
-    )
-    dre = forms.FileField(
-        required=False,
-        label=_("DRE (Demonstração de Resultados)"),
-        widget=forms.FileInput(attrs={"class": "form-control wizard-field"}),
-    )
-    certidoes_negativas = forms.FileField(
-        required=False,
-        label=_("Certidões Negativas"),
-        widget=forms.FileInput(attrs={"class": "form-control wizard-field"}),
-    )
-
-    # Outros Documentos
-    procuracao = forms.FileField(
-        required=False,
-        label=_("Procuração (se aplicável)"),
-        widget=forms.FileInput(attrs={"class": "form-control wizard-field"}),
-    )
-    documentos_adicionais = MultipleFileField(
-        required=False,
-        label=_("Documentos Adicionais"),
-        help_text=_("Selecione múltiplos arquivos. Máximo 10 arquivos de até 10MB cada."),
-        max_files=10,
-        file_types=["pdf", "doc", "docx", "jpg", "jpeg", "png", "txt", "xlsx", "xls"],
-    )
+## Removido: Step de Documentos agora é totalmente conduzido via API (app documentos)
 
 
 class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
-    """
-    STEP 5: Configurações & Módulos
-    """
+    """STEP 5: Configurações & Módulos."""
 
     # Definição completa dos módulos disponíveis (igual ao forms.py)
-    AVAILABLE_MODULES = {
+    AVAILABLE_MODULES: ClassVar[dict[str, dict[str, object]]] = {
         # Módulos Básicos de Gestão
         "clientes": {
             "name": "Clientes",
@@ -1114,7 +1134,7 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
     }
 
     # Configuração visual dos módulos (ícones e cores)
-    MODULE_ICONS_AND_COLORS = {
+    MODULE_ICONS_AND_COLORS: ClassVar[dict[str, dict[str, object]]] = {
         # Módulos Básicos de Gestão
         "clientes": {"icon": "fas fa-users", "color": "text-primary", "category": "Gestão Básica"},
         "fornecedores": {"icon": "fas fa-truck", "color": "text-info", "category": "Gestão Básica"},
@@ -1187,26 +1207,22 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
     @classmethod
     def discover_internal_modules(cls) -> list[tuple[str, str]]:
         """Descobre módulos internos a partir de INSTALLED_APPS e diretórios de primeiro nível.
+
         Regras:
           - Considera apenas apps cujo nome não contém ponto (.) e que tenham diretório no root do projeto.
           - Usa metadados de AVAILABLE_MODULES se existir; caso contrário gera label capitalizada.
         """
-        import os
-
-        from django.conf import settings
-
         base_dir = getattr(settings, "BASE_DIR", None)
         discovered: list[tuple[str, str]] = []
         if not base_dir:
             return discovered
-        root_entries = set()
+        root_entries: set[str] = set()
         try:
-            for entry in os.listdir(base_dir):
-                full = os.path.join(base_dir, entry)
-                if os.path.isdir(full) and not entry.startswith("_") and entry.isidentifier():
-                    root_entries.add(entry)
-        except Exception:
-            pass
+            for entry in Path(base_dir).iterdir():
+                if entry.is_dir() and not entry.name.startswith("_") and entry.name.isidentifier():
+                    root_entries.add(entry.name)
+        except OSError:
+            root_entries = set()
         installed = getattr(settings, "INSTALLED_APPS", [])
         for app in installed:
             base = app.split(".")[0]
@@ -1226,30 +1242,35 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
         discovered.sort(key=lambda x: x[1])
         return discovered
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Inicializa o form unificando configurações de módulos e ajustes de campos numéricos.
-
-        Havia duas versões de __init__ previamente; esta versão combina ambas para garantir que:
-        - choices de enabled_modules sejam populadas dinamicamente;
-        - module_catalog esteja disponível no template;
-        - help_text e atributos de min/step de max_usuarios e max_armazenamento_gb sejam aplicados.
-        """
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        """Inicializa o form unificando configurações de módulos e ajustes numéricos."""
         # Capturar contexto de edição (usado em validações de unicidade)
         self._editing_tenant_pk = kwargs.pop("editing_tenant_pk", None)
         super().__init__(*args, **kwargs)
 
-        # 1) Popular choices dinamicamente para enabled_modules
+        dynamic_choices = self._build_dynamic_choices()
+        self.fields["enabled_modules"].choices = dynamic_choices
+
+        self.module_catalog = self._build_module_catalog(dynamic_choices)
+
+        self._apply_field_help()
+
+    def _build_dynamic_choices(self) -> list[tuple[str, str]]:
+        """Monta as choices para enabled_modules, com fallback robusto."""
         dynamic_choices = self.discover_internal_modules() or []
         if not dynamic_choices:
-            # Fallback robusto para não quebrar UI, garantindo tipos corretos
             dynamic_choices = []
             for k, v in self.AVAILABLE_MODULES.items():
                 label = str(v.get("name") or k)
                 dynamic_choices.append((k, label))
             dynamic_choices.sort(key=lambda x: x[1])
-        self.fields["enabled_modules"].choices = dynamic_choices
+        return dynamic_choices
 
-        # 2) Construir catálogo agrupado por categoria para o template
+    def _build_module_catalog(
+        self,
+        dynamic_choices: list[tuple[str, str]],
+    ) -> list[tuple[str, list[dict[str, object]]]]:
+        """Agrupa módulos por categoria e ordena para exibição no template."""
         catalog: dict[str, list[dict[str, object]]] = {}
         for key, label in dynamic_choices:
             meta = self.AVAILABLE_MODULES.get(key, {})
@@ -1265,27 +1286,24 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
                     "premium": bool(meta.get("premium")),
                     "icon": icon_cfg.get("icon", "fas fa-puzzle-piece"),
                     "color": icon_cfg.get("color", "text-muted"),
-                }
+                },
             )
-        # Ordenações
         for modules in catalog.values():
             modules.sort(key=lambda m: str(m.get("label") or ""))
         ordered: list[tuple[str, list[dict[str, object]]]] = []
         if "Gestão Básica" in catalog:
             ordered.append(("Gestão Básica", catalog.pop("Gestão Básica")))
-        for cat in sorted(catalog.keys()):
-            ordered.append((cat, catalog[cat]))
-        self.module_catalog = ordered
+        ordered.extend((cat, catalog[cat]) for cat in sorted(catalog))
+        return ordered
 
-        # 3) Ajustes de apresentação/ajuda
+    def _apply_field_help(self) -> None:
+        """Ajusta labels e help_text, além de atributos de widgets numéricos."""
         if "portal_ativo" in self.fields:
             self.fields["portal_ativo"].label = "Acesso Externo (Portal) Ativo?"
             self.fields["portal_ativo"].help_text = (
                 "Publica o portal externo para clientes/usuários finais. "
                 'Requer o módulo "Portal do Cliente" habilitado na seção de Módulos.'
             )
-
-        # 4) Ajustes de ajuda/validação visual para limites (0 = ilimitado)
         if "max_usuarios" in self.fields:
             self.fields["max_usuarios"].help_text = self.fields["max_usuarios"].help_text or "Use 0 para ilimitado."
             self.fields["max_usuarios"].widget.attrs["min"] = "0"
@@ -1298,8 +1316,10 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
             self.fields["max_armazenamento_gb"].widget.attrs.setdefault("step", "1")
 
     class Meta:
+        """Metadados dos campos e widgets do formulário de configurações."""
+
         model = Tenant
-        fields = [
+        fields: ClassVar[list[str]] = [
             "subdomain",
             "logo",
             "codigo_interno",
@@ -1315,23 +1335,23 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
             "idioma_padrao",
             "moeda_padrao",
         ]
-        widgets = {
+        widgets: ClassVar[dict[str, forms.Widget]] = {
             "subdomain": forms.TextInput(attrs={"class": "form-control wizard-field", "placeholder": "meusubdominio"}),
             "logo": forms.ClearableFileInput(attrs={"class": "form-control wizard-field", "accept": "image/*"}),
             "codigo_interno": forms.TextInput(
-                attrs={"class": "form-control wizard-field", "placeholder": "Código de identificação interna"}
+                attrs={"class": "form-control wizard-field", "placeholder": "Código de identificação interna"},
             ),
             "status": forms.Select(attrs={"class": "form-select wizard-field"}),
             "plano_assinatura": forms.Select(attrs={"class": "form-select wizard-field"}),
             "data_ativacao_plano": forms.DateInput(attrs={"class": "form-control wizard-field", "type": "date"}),
             "data_fim_trial": forms.DateTimeInput(
-                attrs={"class": "form-control wizard-field", "type": "datetime-local"}
+                attrs={"class": "form-control wizard-field", "type": "datetime-local"},
             ),
             "max_usuarios": forms.NumberInput(
-                attrs={"class": "form-control wizard-field", "min": "1", "max": "1000", "placeholder": "5"}
+                attrs={"class": "form-control wizard-field", "min": "1", "max": "1000", "placeholder": "5"},
             ),
             "max_armazenamento_gb": forms.NumberInput(
-                attrs={"class": "form-control wizard-field", "min": "1", "max": "1000", "placeholder": "1"}
+                attrs={"class": "form-control wizard-field", "min": "1", "max": "1000", "placeholder": "1"},
             ),
             "data_proxima_cobranca": forms.DateInput(attrs={"class": "form-control wizard-field", "type": "date"}),
             "portal_ativo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
@@ -1340,19 +1360,17 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
             "moeda_padrao": forms.Select(attrs={"class": "form-select wizard-field"}),
         }
 
-    def clean_logo(self) -> Any:
+    def clean_logo(self) -> UploadedFile | None:
+        """Valida tamanho e tipo do logo enviado."""
         logo = self.cleaned_data.get("logo")
         if not logo:
             return logo
         # Limite padrão 2MB (pode ser sobrescrito por settings)
         max_mb = getattr(settings, "TENANT_LOGO_MAX_SIZE_MB", 2)
         max_bytes = max_mb * 1024 * 1024
-        try:
-            size = logo.size
-        except Exception:
-            size = None
+        size = getattr(logo, "size", None)
         if size and size > max_bytes:
-            raise forms.ValidationError(_(f"O logo excede {max_mb}MB."))
+            raise forms.ValidationError(_("O logo excede %sMB.") % max_mb)
         content_type = getattr(logo, "content_type", None)
         allowed = {"image/png", "image/jpeg", "image/jpg", "image/svg+xml", "image/gif"}
         if content_type and content_type.lower() not in allowed:
@@ -1360,6 +1378,7 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
         return logo
 
     def clean_max_usuarios(self) -> int | None:
+        """Garante que o valor seja >= 0 (0 = ilimitado)."""
         val = self.cleaned_data.get("max_usuarios")
         if val is None:
             return val
@@ -1368,6 +1387,7 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
         return val
 
     def clean_max_armazenamento_gb(self) -> int | None:
+        """Garante que o valor seja >= 0 (0 = ilimitado)."""
         val = self.cleaned_data.get("max_armazenamento_gb")
         if val is None:
             return val
@@ -1394,11 +1414,10 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
         prox = cleaned.get("data_proxima_cobranca")
         today = timezone.localdate()
 
-        def to_date(d):  # Normalizador seguro
-            try:
-                return d.date() if hasattr(d, "date") else d
-            except Exception:
-                return d
+        def to_date(d: datetime | date) -> date:  # Normalizador seguro
+            if isinstance(d, datetime):
+                return d.date()
+            return d
 
         ativ_d = to_date(ativ) if ativ else None
         trial_d = to_date(trial_end) if trial_end else None
@@ -1408,18 +1427,25 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
             self.add_error("data_fim_trial", _("O fim do teste deve ser igual ou posterior à data de ativação."))
         if prox_d:
             if prox_d < today:
-                self.add_error("data_proxima_cobranca", _("A próxima cobrança não pode ser no passado."))
+                self.add_error(
+                    "data_proxima_cobranca",
+                    _("A próxima cobrança não pode ser no passado."),
+                )
             if ativ_d and prox_d < ativ_d:
-                self.add_error("data_proxima_cobranca", _("A próxima cobrança deve ser igual ou posterior à ativação."))
+                self.add_error(
+                    "data_proxima_cobranca",
+                    _("A próxima cobrança deve ser igual ou posterior à ativação."),
+                )
         return cleaned
 
     def clean_subdomain(self) -> str | None:
+        """Normaliza e valida unicidade e formato do subdomínio."""
         subdomain = self.cleaned_data.get("subdomain")
         if subdomain:
             subdomain = normalize_subdomain(subdomain)
             if not SUBDOMAIN_REGEX.match(subdomain):
                 raise forms.ValidationError(
-                    _("Subdomínio inválido. Use apenas letras minúsculas, números e hífen (não no início/fim).")
+                    _("Subdomínio inválido. Use apenas letras minúsculas, números e hífen (não no início/fim)."),
                 )
             if subdomain in RESERVED_SUBDOMAINS:
                 raise forms.ValidationError(_("Este subdomínio é reservado. Escolha outro."))
@@ -1434,9 +1460,7 @@ class TenantConfigurationWizardForm(EditingTenantMixin, forms.ModelForm):
 
 
 class TenantAdminsWizardForm(forms.Form):
-    """
-    STEP 6: Administradores Iniciais (Opcional)
-    """
+    """STEP 6: Administradores Iniciais (Opcional)."""
 
     admin_nome = forms.CharField(
         max_length=150,
@@ -1463,7 +1487,7 @@ class TenantAdminsWizardForm(forms.Form):
         required=False,
         label=_("Senha"),
         widget=forms.PasswordInput(
-            attrs={"class": "form-control wizard-field", "placeholder": "Digite uma senha segura"}
+            attrs={"class": "form-control wizard-field", "placeholder": "Digite uma senha segura"},
         ),
     )
 
@@ -1479,11 +1503,12 @@ class TenantAdminsWizardForm(forms.Form):
         required=False,
         label=_("Telefone"),
         widget=forms.TextInput(
-            attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"}
+            attrs={"class": "form-control wizard-field phone-mask", "placeholder": "(11) 99999-9999"},
         ),
     )
 
     def clean(self) -> dict[str, Any]:
+        """Valida senha e confirmação quando ambos presentes."""
         cleaned_data = super().clean()
         senha = cleaned_data.get("admin_senha")
         confirmar = cleaned_data.get("admin_confirmar_senha")
@@ -1495,9 +1520,7 @@ class TenantAdminsWizardForm(forms.Form):
 
 
 class TenantReviewWizardForm(forms.ModelForm):
-    """
-    STEP 7: Revisão & Confirmação
-    """
+    """STEP 7: Revisão & Confirmação."""
 
     confirmar_dados = forms.BooleanField(
         required=True,
@@ -1518,10 +1541,16 @@ class TenantReviewWizardForm(forms.ModelForm):
     )
 
     class Meta:
+        """Configurações de campos e widgets do formulário de revisão."""
+
         model = Tenant
-        fields = ["observacoes"]
-        widgets = {
+        fields: ClassVar[list[str]] = ["observacoes"]
+        widgets: ClassVar[dict[str, forms.Widget]] = {
             "observacoes": forms.Textarea(
-                attrs={"class": "form-control wizard-field", "rows": 4, "placeholder": "Observações sobre a empresa..."}
-            )
+                attrs={
+                    "class": "form-control wizard-field",
+                    "rows": 4,
+                    "placeholder": "Observações sobre a empresa...",
+                },
+            ),
         }

@@ -20,7 +20,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--window-minutes", type=int, default=3, help="Janela em minutos para agrupar notificações semelhantes."
+            "--window-minutes",
+            type=int,
+            default=3,
+            help="Janela em minutos para agrupar notificações semelhantes.",
         )
         parser.add_argument("--dry-run", action="store_true")
         parser.add_argument("--no-advanced", action="store_true", help="Não processa notificações avançadas.")
@@ -36,17 +39,21 @@ class Command(BaseCommand):
         # Simples (agenda)
         qs = Notification.objects.filter(modulo_origem="agenda", created_at__gte=limite)
         redundantes_simples = 0
-        for user_id, evento_id in qs.values_list("usuario_destinatario_id", "dados_extras__evento_id").annotate(
-            total=Count("id")
-        ):
-            if evento_id and user_id:
+        agrupados_simples = (
+            qs.values("usuario_destinatario_id", "dados_extras__evento_id")
+            .annotate(total=Count("id"))
+            .filter(total__gt=1)
+        )
+        for grupo in agrupados_simples:
+            user_id = grupo["usuario_destinatario_id"]
+            evento_id = grupo["dados_extras__evento_id"]
+            if user_id and evento_id:
                 sub = qs.filter(usuario_destinatario_id=user_id, dados_extras__evento_id=evento_id)
-                if sub.count() > 1:
-                    keep = sub.order_by("-created_at").first()
-                    redundantes = sub.exclude(id=keep.id)
-                    if not dry:
-                        redundantes.update(status="arquivada")
-                    redundantes_simples += redundantes.count()
+                keep = sub.order_by("-created_at").first()
+                redundantes = sub.exclude(id=keep.id)
+                if not dry:
+                    redundantes.update(status="arquivada")
+                redundantes_simples += redundantes.count()
 
         redundantes_adv = 0
         if process_advanced:

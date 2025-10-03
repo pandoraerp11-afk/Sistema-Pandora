@@ -1,131 +1,149 @@
+"""Este módulo contém as views da API para o app de agendamentos."""
+
 import contextlib
+from typing import ClassVar, cast
 
+from django.conf import settings as dj_settings
+from django.contrib.auth.models import AbstractUser, User
+from django.core.cache import cache
 from django.db import transaction
-from django.db.models import F
+from django.db.models import Count, F, Model, QuerySet, Sum
 from django.http import Http404
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
+from rest_framework import serializers as drf_serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from clientes.models import AcessoCliente, Cliente
+from core.models import Tenant as _Tenant
 from core.utils import get_current_tenant
+from servicos.models import Servico as _Servico
 from shared.permissions_servicos import CLINICAL_SCHEDULING_DENIED_MESSAGE, can_schedule_clinical_service
 
-from .models import Agendamento, AuditoriaAgendamento, Disponibilidade, Slot
+from .models import Agendamento, AuditoriaAgendamento, Disponibilidade, ProfissionalProcedimento, Slot
 from .serializers import (
     AgendamentoSerializer,
+    AgendamentoV2CreateSerializer,
+    AgendamentoV2DetailSerializer,
+    AgendamentoV2ListSerializer,
     AuditoriaAgendamentoSerializer,
     DisponibilidadeSerializer,
     SlotSerializer,
 )
+from .services import AgendamentoService, SchedulingService, SlotService, get_slots_cache_version
+
+
+def _get_permission_codename(action: str, model: type[Model]) -> str:
+    """Retorna o codinome da permissão para uma determinada ação e modelo."""
+    # Acesso intencional a _meta para interoperabilidade com sistema de permissões do Django.
+    return f"{model._meta.app_label}.{action}_{model._meta.model_name}"  # noqa: SLF001
 
 
 class IsAgendamentoProfissionalOuSecretaria(permissions.BasePermission):
-    """Permite acesso a superuser, grupo secretaria ou profissional (is_staff).
-    Grupo AGENDAMENTOS_VISUALIZAR tem acesso SOMENTE LEITURA (SAFE_METHODS) global.
+    """Permissão para verificar se o usuário é um profissional ou secretária.
+
+    Concede acesso a superusuários, secretárias, ou a profissionais com
+    permissões de modelo específicas (se ativado).
     """
 
-    def has_permission(self, request, view):
-        u = request.user
-        if not u or not u.is_authenticated:
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """Verifica se o usuário tem permissão para a requisição."""
+        user = request.user
+        if not isinstance(user, AbstractUser):
             return False
-        if u.is_superuser:
-            return True
-        if u.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists():
-            return True
-        # Grupo de visualização global somente leitura
-        if u.groups.filter(name="AGENDAMENTOS_VISUALIZAR").exists():
-            return request.method in permissions.SAFE_METHODS
-        allowed = u.is_staff
-        # Enforcement opcional de permissões nativas Django
-        try:
-            from django.conf import settings as dj_settings
 
-            if getattr(dj_settings, "ENABLE_AGENDAMENTOS_MODEL_PERMS", False):
-                # Determina modelo alvo do viewset
-                model = None
-                if hasattr(view, "queryset") and getattr(view.queryset, "model", None):
-                    model = view.queryset.model
-                # Se não conseguiu inferir modelo, usa fallback (mantém allowed)
-                if model is not None:
-                    action_map = {
-                        "GET": "view",
-                        "HEAD": "view",
-                        "OPTIONS": "view",
-                        "POST": "add",
-                        "PUT": "change",
-                        "PATCH": "change",
-                        "DELETE": "delete",
-                    }
-                    needed = action_map.get(request.method, "view")
-                    app_label = model._meta.app_label
-                    codename = f"{needed}_{model._meta.model_name}"
-                    if not u.has_perm(f"{app_label}.{codename}"):
-                        return False
-                return allowed
-        except Exception:
-            return allowed
-        return allowed
+        if user.is_superuser or user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists():
+            return True
+
+        if user.groups.filter(name="AGENDAMENTOS_VISUALIZAR").exists():
+            return request.method in permissions.SAFE_METHODS
+
+        if not user.is_staff or not getattr(dj_settings, "ENABLE_AGENDAMENTOS_MODEL_PERMS", False):
+            return user.is_staff
+
+        try:
+            model = view.queryset.model
+            method_map = {
+                "GET": "view",
+                "HEAD": "view",
+                "OPTIONS": "view",
+                "POST": "add",
+                "PUT": "change",
+                "PATCH": "change",
+                "DELETE": "delete",
+            }
+            needed_perm = method_map.get(request.method, "view")
+            perm_codename = _get_permission_codename(needed_perm, model)
+            return user.has_perm(perm_codename)
+        except AttributeError:
+            return True
+
+    def has_object_permission(self, request: Request, view: APIView, _obj: Model) -> bool:
+        """Verifica a permissão no nível do objeto, reutilizando a lógica de `has_permission`."""
+        return self.has_permission(request, view)
 
 
 class IsAgendamentoAuditoria(permissions.BasePermission):
     """Restringe acesso à auditoria: somente superuser ou grupo secretaria."""
 
-    def has_permission(self, request, view):
-        u = request.user
-        if not u or not u.is_authenticated:
+    def has_permission(self, request: Request, _view: APIView) -> bool:
+        """Verifica se o usuário tem permissão para acessar a auditoria."""
+        user = request.user
+        if not isinstance(user, AbstractUser):
             return False
-        if u.is_superuser:
+        if user.is_superuser:
             return True
-        return u.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()
+        return user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()
 
 
 class IsClientePortal(permissions.BasePermission):
     """Permite acesso a usuários autenticados que tenham vínculo de portal com algum Cliente no tenant atual."""
 
-    def has_permission(self, request, view):
-        u = request.user
-        if not u or not u.is_authenticated:
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """Verifica se o usuário é um cliente do portal com acesso."""
+        user = request.user
+        if not isinstance(user, AbstractUser):
             return False
-        # Staff e secretaria já atendidos pelas outras permissões; aqui é especificamente cliente portal
-        if u.is_staff or u.is_superuser:
+        if user.is_staff or user.is_superuser:
             return False
-        tenant = get_current_tenant(request)
-        # Tentativa de inferir tenant a partir do slot (pk na rota) se ainda não definido
+
+        tenant = get_current_tenant(request._request)  # noqa: SLF001
         if not tenant:
-            try:
-                pk = getattr(view, "kwargs", {}).get("pk") or getattr(
-                    getattr(view, "kwargs", None), "get", lambda *_: None
-                )("pk")
-                if pk:
-                    from agendamentos.models import Slot as _Slot
+            pk = view.kwargs.get("pk")
+            if pk:
+                with contextlib.suppress(Slot.DoesNotExist, AttributeError):
+                    slot = Slot.objects.select_related("tenant").get(id=pk)
+                    if slot.tenant and hasattr(request, "session"):
+                        request.session["tenant_id"] = slot.tenant_id
+                        tenant = slot.tenant
 
-                    sl = _Slot.objects.filter(id=pk).select_related("tenant").first()
-                    if sl and sl.tenant and hasattr(request, "session"):
-                        request.session["tenant_id"] = sl.tenant_id
-                        tenant = sl.tenant
-            except Exception:
-                pass
-        from clientes.models import AcessoCliente
-
-        # Se ainda sem tenant: aceitar se usuário tem qualquer acesso ativo (a view lidará com validação específica depois)
         if not tenant:
-            return AcessoCliente.objects.filter(usuario=u, cliente__status="active").exists()
-        return AcessoCliente.objects.filter(usuario=u, cliente__tenant=tenant, cliente__status="active").exists()
+            return AcessoCliente.objects.filter(usuario=user, cliente__status="active").exists()
+        return AcessoCliente.objects.filter(usuario=user, cliente__tenant=tenant, cliente__status="active").exists()
 
 
-def _resolver_cliente_do_usuario(request):
-    """Retorna o Cliente associado ao usuário autenticado no tenant atual via AcessoCliente.
-    Se múltiplos, aceita request.data['cliente_id'] contanto que pertença ao conjunto permitido.
+def _resolver_cliente_do_usuario(request: Request) -> Cliente | None:
+    """Retorna o Cliente associado ao usuário autenticado no tenant atual.
+
+    Se múltiplos, aceita request.data['cliente_id'] contanto que pertença ao
+    conjunto permitido.
     """
-    from clientes.models import Cliente
+    drf_request = request
+    if not isinstance(drf_request, Request):
+        drf_request = Request(request)
 
-    tenant = get_current_tenant(request)
+    tenant = get_current_tenant(drf_request._request)  # noqa: SLF001
     if not tenant:
         return None
-    user = request.user
-    # Opcional: permitir escolher cliente específico entre os acessíveis
-    cid = request.data.get("cliente_id") or request.query_params.get("cliente_id")
+    user = drf_request.user
+    if not isinstance(user, AbstractUser):
+        return None
+    cid = drf_request.data.get("cliente_id") or drf_request.query_params.get("cliente_id")
     base_qs = Cliente.objects.filter(tenant=tenant, acessos__usuario=user, status="active").distinct()
     if cid:
         return base_qs.filter(id=cid).first()
@@ -133,160 +151,169 @@ def _resolver_cliente_do_usuario(request):
 
 
 class DisponibilidadeViewSet(viewsets.ModelViewSet):
+    """ViewSet para gerenciar Disponibilidades."""
+
     queryset = Disponibilidade.objects.all()
     serializer_class = DisponibilidadeSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAgendamentoProfissionalOuSecretaria]
+    permission_classes: ClassVar[list[type[permissions.BasePermission]]] = [
+        permissions.IsAuthenticated,
+        IsAgendamentoProfissionalOuSecretaria,
+    ]
 
-    def get_queryset(self):
-        tenant = get_current_tenant(self.request)
-        from django.core.cache import cache
+    def get_queryset(self) -> QuerySet[Disponibilidade]:
+        """Filtra o queryset para o tenant e usuário atuais."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
+        if not tenant:
+            return Disponibilidade.objects.none()
 
-        from agendamentos.services import get_slots_cache_version
+        user = self.request.user
+        if not isinstance(user, AbstractUser):
+            return Disponibilidade.objects.none()
 
         qs_base = Disponibilidade.objects.filter(tenant=tenant, ativo=True)
-        user = self.request.user
-        # Cache somente para leitura (não para superuser com alterações frequentes) – chave inclui papel e tenant
-        cache_key = None
-        if tenant and self.request.method == "GET" and user.is_authenticated:
-            papel = (
-                "adm" if (user.is_superuser or user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()) else "prof"
-            )
-            cache_key = f"ag:disp:{tenant.id}:{papel}:{get_slots_cache_version()}"
-        if cache_key:
-            data_ids = cache.get(cache_key)
-            if data_ids is not None:
-                return qs_base.filter(id__in=data_ids)
-        qs = qs_base
-        user = self.request.user
-        if (
-            user.is_superuser
-            or user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()
-            or user.groups.filter(name="AGENDAMENTOS_VISUALIZAR").exists()
-        ):
-            final_qs = qs
-        else:
-            final_qs = qs.filter(profissional=user)
-        if cache_key:
-            with contextlib.suppress(Exception):
-                cache.set(cache_key, list(final_qs.values_list("id", flat=True)), 30)
-        return final_qs
 
-    def perform_create(self, serializer):
-        tenant = get_current_tenant(self.request)
+        # Otimização de cache para leitura
+        if self.request.method == "GET":
+            papel = "adm" if self._is_admin(user) else "prof"
+            cache_key = f"ag:disp:{tenant.id}:{papel}:{get_slots_cache_version()}"
+            if cached_ids := cache.get(cache_key):
+                return qs_base.filter(id__in=cached_ids)
+
+        qs = self._filter_queryset_by_user(qs_base, user)
+
+        # Salva no cache após filtrar
+        if self.request.method == "GET":
+            papel = "adm" if self._is_admin(user) else "prof"
+            cache_key = f"ag:disp:{tenant.id}:{papel}:{get_slots_cache_version()}"
+            with contextlib.suppress(Exception):
+                cache.set(cache_key, list(qs.values_list("id", flat=True)), 30)
+
+        return qs
+
+    def _is_admin(self, user: AbstractUser) -> bool:
+        """Verifica se o usuário tem perfil de administrador para agendamentos."""
+        return (
+            user.is_superuser
+            or user.groups.filter(
+                name__in=["AGENDAMENTOS_SECRETARIA", "AGENDAMENTOS_VISUALIZAR"],
+            ).exists()
+        )
+
+    def _filter_queryset_by_user(
+        self,
+        queryset: QuerySet[Disponibilidade],
+        user: AbstractUser,
+    ) -> QuerySet[Disponibilidade]:
+        """Filtra o queryset de acordo com o perfil do usuário."""
+        if self._is_admin(user):
+            return queryset
+        return queryset.filter(profissional=user)
+
+    def perform_create(self, serializer: drf_serializers.Serializer) -> None:
+        """Define o tenant e o profissional ao criar uma disponibilidade."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
         user = self.request.user
         if not tenant:
-            raise permissions.PermissionDenied("Tenant inválido")
+            msg = "Tenant inválido"
+            raise permissions.PermissionDenied(msg)
+        if not isinstance(user, AbstractUser):
+            msg = "Usuário inválido"
+            raise permissions.PermissionDenied(msg)
+
+        if not serializer.validated_data:
+            msg = "Dados de validação não encontrados."
+            raise drf_serializers.ValidationError(msg)
+
+        profissional = serializer.validated_data.get("profissional", user)
         serializer.save(
             tenant=tenant,
-            profissional=user if not user.is_superuser else serializer.validated_data.get("profissional", user),
+            profissional=user if not user.is_superuser else profissional,
         )
-        # Geração de slots pode ser feita por serviço externo futuro
-        # (placeholder para consistência com prontuarios)
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: drf_serializers.Serializer) -> None:
+        """Atualiza a instância da disponibilidade."""
         serializer.save()
 
     @action(detail=True, methods=["post"])
-    def gerar_slots(self, request, pk=None):
+    def gerar_slots(self, request: Request, pk: str | None = None) -> Response:
+        """Gera slots para uma disponibilidade específica."""
+        del request, pk
         disp = self.get_object()
-        from .services import SlotService
-
         criados, existentes = SlotService.gerar_slots(disp)
         return Response({"disponibilidade": disp.id, "criados": criados, "ja_existentes": existentes})
 
 
 class SlotViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet para visualização de Slots."""
+
     queryset = Slot.objects.select_related("profissional", "disponibilidade").all()
     serializer_class = SlotSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAgendamentoProfissionalOuSecretaria]
+    permission_classes: ClassVar[list[type[permissions.BasePermission]]] = [
+        permissions.IsAuthenticated,
+        IsAgendamentoProfissionalOuSecretaria,
+    ]
 
-    def get_queryset(self):
-        from django.utils import timezone
-
-        tenant = get_current_tenant(self.request)
-        now = timezone.now()
-        if tenant is None:
-            qs = Slot.objects.filter(ativo=True, horario__gte=now).select_related("profissional", "disponibilidade")
-        else:
-            qs = Slot.objects.filter(tenant=tenant, ativo=True, horario__gte=now).select_related(
-                "profissional", "disponibilidade"
-            )
-        user = self.request.user
-        profissional_id = self.request.query_params.get("profissional")
+    def get_queryset(self) -> QuerySet[Slot]:
+        """Filtra slots para o tenant e usuário atuais."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
+        qs_base = Slot.objects.filter(tenant=tenant, ativo=True)
+        # Filtros opcionais
+        prof_id = self.request.query_params.get("profissional")
         data = self.request.query_params.get("data")
         disponivel = self.request.query_params.get("disponivel")
-        servico_id = self.request.query_params.get("servico") or self.request.query_params.get("servico_id")
-        # Cache chaveada por filtros básicos
-        from django.core.cache import cache
 
-        from agendamentos.services import get_slots_cache_version
-
+        # Cache somente para leitura (não para superuser com alterações frequentes) - inclui filtros
         cache_key = None
         if tenant and self.request.method == "GET":
-            cache_key = f"ag:slots:{tenant.id}:{profissional_id or '-'}:{data or '-'}:{disponivel or '-'}:{servico_id or '-'}:{get_slots_cache_version()}"
-            cached_ids = cache.get(cache_key)
-            if cached_ids is not None:
-                base = qs.filter(id__in=cached_ids)
-                # Aplicar regras de escopo de usuário após cache (ids já filtrados por tenant/filtros)
-                user_scoped = base
-                if not (
-                    user.is_superuser
-                    or user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()
-                    or user.groups.filter(name="AGENDAMENTOS_VISUALIZAR").exists()
-                ):
-                    if not user.is_staff:
-                        user_scoped = base.filter(capacidade_utilizada__lt=F("capacidade_total"))
-                    else:
-                        user_scoped = base.filter(profissional=user)
-                return user_scoped.order_by("horario", "id")
-        if profissional_id:
-            qs = qs.filter(profissional_id=profissional_id)
-        if data:
-            qs = qs.filter(horario__date=data)
-        if disponivel == "1":
-            qs = qs.filter(capacidade_utilizada__lt=F("capacidade_total"))
-        # Filtro opcional por competência Profissional x Serviço
-        if servico_id and tenant is not None:
-            try:
-                from django.conf import settings as dj_settings
+            user = self.request.user
+            if isinstance(user, AbstractUser):
+                papel = (
+                    "adm"
+                    if user.is_superuser or user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()
+                    else "prof"
+                )
+                cache_key = (
+                    f"ag:disp:{tenant.id}:{papel}:{prof_id or '-'}:{data or '-'}:{disponivel or '-'}:"
+                    f"{get_slots_cache_version()}"
+                )
+                if data_ids := cache.get(cache_key):
+                    return qs_base.filter(id__in=data_ids)
 
-                if getattr(dj_settings, "ENFORCE_COMPETENCIA", False):
-                    from .models import ProfissionalProcedimento
+        user = self.request.user
+        if not isinstance(user, AbstractUser):
+            return qs_base.none()
 
-                    qs = qs.filter(
-                        profissional_id__in=ProfissionalProcedimento.objects.filter(
-                            tenant=tenant, servico_id=servico_id, ativo=True
-                        ).values_list("profissional_id", flat=True)
-                    )
-            except Exception:
-                # Não falhar silenciosamente a listagem caso app/migração ainda não aplicados
-                pass
-        qs = qs.order_by("horario", "id")
         if (
             user.is_superuser
             or user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()
             or user.groups.filter(name="AGENDAMENTOS_VISUALIZAR").exists()
         ):
-            final_qs = qs
-        elif not user.is_staff:
-            final_qs = qs.filter(capacidade_utilizada__lt=F("capacidade_total"))
+            final_qs = qs_base
         else:
-            final_qs = qs.filter(profissional=user)
+            final_qs = qs_base.filter(profissional=user)
+
+        # Aplicar filtros opcionais
+        if prof_id:
+            final_qs = final_qs.filter(profissional_id=prof_id)
+        if data:
+            final_qs = final_qs.filter(horario__date=data)
+        if disponivel in {"1", "true", "True"}:
+            final_qs = final_qs.filter(capacidade_utilizada__lt=F("capacidade_total"))
+
         if cache_key:
             with contextlib.suppress(Exception):
-                cache.set(cache_key, list(final_qs.values_list("id", flat=True)), 15)
+                cache.set(cache_key, list(final_qs.values_list("id", flat=True)), 30)
         return final_qs
 
-    def get_object(self):
+    def get_object(self) -> Slot:
+        """Obtém um slot, com fallback para ajustar o tenant na sessão."""
         try:
             return super().get_object()
         except Http404:
-            # Fallback: tenta localizar slot ignorando filtros de tenant/horario
             pk = self.kwargs.get(self.lookup_field or "pk")
             slot = Slot.objects.filter(pk=pk).select_related("profissional", "disponibilidade").first()
             if not slot:
                 raise
-            # Ajusta tenant em sessão se ausente
             req = self.request
             if not hasattr(req, "session"):
                 req.session = {}
@@ -295,42 +322,45 @@ class SlotViewSet(viewsets.ReadOnlyModelViewSet):
             return slot
 
     @action(detail=True, methods=["post"])
-    def reservar(self, request, pk=None):
+    def reservar(self, request: Request, pk: str | None = None) -> Response:
+        """Reserva um slot para um cliente."""
+        del pk
         slot = self.get_object()
-        # Fallback: se tenant não resolvido (ex: request sem session em testes), usa tenant do slot
         if not hasattr(request, "session"):
             request.session = {}
         if "tenant_id" not in request.session and slot.tenant_id:
             request.session["tenant_id"] = slot.tenant_id
-        from .services import AgendamentoService
 
         cliente_id = request.data.get("cliente_id")
         if not cliente_id:
-            return Response({"detail": _("cliente_id obrigatório")}, status=400)
-        from clientes.models import Cliente
+            msg = "cliente_id obrigatório"
+            return Response({"detail": _(msg)}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             cliente = Cliente.objects.get(id=cliente_id, tenant=slot.tenant)
-        except Cliente.DoesNotExist:
-            return Response({"detail": _("cliente inválido")}, status=400)
+        except Cliente.DoesNotExist as e:
+            raise Http404 from e
+
         servico_id = request.data.get("servico_id")
         if servico_id:
-            from servicos.models import Servico as _Servico
-
             try:
                 _serv = _Servico.objects.select_related("perfil_clinico").get(id=servico_id)
+                if _serv.is_clinical and not can_schedule_clinical_service(request.user, _serv):
+                    return Response(
+                        {"detail": str(CLINICAL_SCHEDULING_DENIED_MESSAGE)},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
             except _Servico.DoesNotExist:
-                return Response({"detail": _("Serviço inválido")}, status=400)
-            if _serv.is_clinical and not can_schedule_clinical_service(request.user, _serv):
-                return Response({"detail": str(CLINICAL_SCHEDULING_DENIED_MESSAGE)}, status=403)
-        # Criar agendamento (service fará a reserva do slot uma única vez)
+                msg = "Serviço inválido"
+                return Response({"detail": _(msg)}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             ag = AgendamentoService.criar(
                 tenant=slot.tenant,
                 cliente=cliente,
                 profissional=slot.profissional,
                 data_inicio=slot.horario,
-                data_fim=None,  # permite cálculo automático se serviço
+                data_fim=None,
                 origem="OPERADOR" if request.user.is_staff else "CLIENTE",
                 slot=slot,
                 servico=servico_id,
@@ -338,41 +368,52 @@ class SlotViewSet(viewsets.ReadOnlyModelViewSet):
                 user=request.user,
             )
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         ser = AgendamentoSerializer(ag)
         return Response({"slot": slot.id, "agendamento": ser.data})
 
     @action(detail=True, methods=["post"])
-    def waitlist(self, request, pk=None):
+    def waitlist(self, request: Request, pk: str | None = None) -> Response:
+        """Adiciona um cliente à lista de espera de um slot."""
+        del pk
         slot = self.get_object()
-        from clientes.models import Cliente
-
-        from .services import AgendamentoService
-
         cliente_id = request.data.get("cliente_id")
-        prioridade = int(request.data.get("prioridade", 100))
         if not cliente_id:
-            return Response({"detail": _("cliente_id obrigatório")}, status=400)
+            msg = "cliente_id obrigatório"
+            return Response({"detail": _(msg)}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             cliente = Cliente.objects.get(id=cliente_id, tenant=slot.tenant)
         except Cliente.DoesNotExist:
-            return Response({"detail": _("cliente inválido")}, status=400)
+            msg = "cliente inválido"
+            return Response({"detail": _(msg)}, status=status.HTTP_400_BAD_REQUEST)
+
+        prioridade = int(request.data.get("prioridade", 100))
         try:
             wl = AgendamentoService.inscrever_waitlist(slot, cliente=cliente, prioridade=prioridade)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"waitlist_id": wl.id, "prioridade": wl.prioridade})
 
 
 class AgendamentoViewSet(viewsets.ModelViewSet):
+    """ViewSet para gerenciar Agendamentos."""
+
     queryset = Agendamento.objects.all()
     serializer_class = AgendamentoSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAgendamentoProfissionalOuSecretaria]
+    permission_classes: ClassVar[list[type[permissions.BasePermission]]] = [
+        permissions.IsAuthenticated,
+        IsAgendamentoProfissionalOuSecretaria,
+    ]
 
-    def get_queryset(self):
-        tenant = get_current_tenant(self.request)
+    def get_queryset(self) -> QuerySet[Agendamento]:
+        """Filtra agendamentos para o tenant e usuário atuais."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
         qs = Agendamento.objects.filter(tenant=tenant).order_by("data_inicio", "id")
         user = self.request.user
+        if not isinstance(user, AbstractUser):
+            return qs.none()
         if (
             user.is_superuser
             or user.groups.filter(name="AGENDAMENTOS_SECRETARIA").exists()
@@ -381,104 +422,115 @@ class AgendamentoViewSet(viewsets.ModelViewSet):
             return qs
         if user.is_staff:
             return qs.filter(profissional=user)
-        # cliente final (futuro): filtrar por cliente vinculado ao user
         return qs.none()
 
-    def perform_create(self, serializer):
-        """Criação centralizada usando service para garantir regras e preenchimento de tenant.
-        Replica lógica essencial da v2 evitando duplicação de regras de negócio.
-        """
-        from rest_framework import serializers as drf_serializers
+    def _validate_agendamento_data(self, validated_data: dict, user: AbstractUser) -> None:
+        """Valida os dados necessários para criar um agendamento."""
+        slot = validated_data.get("slot")
+        data_inicio = validated_data.get("data_inicio")
+        data_fim = validated_data.get("data_fim")
 
-        from .services import AgendamentoService
-
-        tenant = get_current_tenant(self.request)
-        # Fallback explícito caso utilitário não resolva (ex.: testes) usando session
-        if tenant is None:
-            try:
-                sid = getattr(self.request, "session", {}).get("tenant_id")
-                if sid:
-                    from core.models import Tenant as _Tenant
-
-                    tenant = _Tenant.objects.filter(id=sid).first()
-            except Exception:
-                tenant = None
-        user = self.request.user
-        if not tenant:
-            raise permissions.PermissionDenied("Tenant inválido")
-        slot = serializer.validated_data.get("slot")
-        data_inicio = serializer.validated_data.get("data_inicio")
-        data_fim = serializer.validated_data.get("data_fim")
         if not slot and (not data_inicio or not data_fim):
-            raise permissions.PermissionDenied("Para agendamento manual informe data_inicio e data_fim")
-        cliente = serializer.validated_data.get("cliente")
-        profissional = serializer.validated_data.get("profissional") or (slot.profissional if slot else user)
-        origem = serializer.validated_data.get("origem") or ("PROFISSIONAL" if user.is_staff else "CLIENTE")
-        servico_id = self.request.data.get("servico_id")
-        metadata = serializer.validated_data.get("metadata")
-        # Enforce permissão clínica
-        if servico_id:
-            from servicos.models import Servico as _Servico
+            msg = "Para agendamento manual informe data_inicio e data_fim"
+            raise permissions.PermissionDenied(msg)
 
+        servico_id = self.request.data.get("servico_id")
+        if servico_id:
             try:
                 _serv = _Servico.objects.select_related("perfil_clinico").get(id=servico_id)
-            except _Servico.DoesNotExist:
-                raise permissions.PermissionDenied(_("Serviço inválido"))
-            if _serv.is_clinical and not can_schedule_clinical_service(user, _serv):
-                raise permissions.PermissionDenied(str(CLINICAL_SCHEDULING_DENIED_MESSAGE))
+                if _serv.is_clinical and not can_schedule_clinical_service(cast("User", user), _serv):
+                    raise permissions.PermissionDenied(str(CLINICAL_SCHEDULING_DENIED_MESSAGE))
+            except _Servico.DoesNotExist as e:
+                msg = "Serviço inválido"
+                raise permissions.PermissionDenied(msg) from e
+
+    def perform_create(self, serializer: drf_serializers.Serializer) -> None:
+        """Criação centralizada usando service para garantir regras.
+
+        Replica lógica essencial da v2 evitando duplicação de regras de negócio.
+        """
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
+        if tenant is None:
+            with contextlib.suppress(AttributeError, _Tenant.DoesNotExist):
+                sid = getattr(self.request, "session", {}).get("tenant_id")
+                if sid:
+                    tenant = _Tenant.objects.get(id=sid)
+
+        user = self.request.user
+        if not tenant:
+            msg = "Tenant inválido"
+            raise permissions.PermissionDenied(msg)
+        if not isinstance(user, AbstractUser):
+            msg = "Usuário inválido"
+            raise permissions.PermissionDenied(msg)
+
+        validated_data = serializer.validated_data
+        validated_data = serializer.validated_data
+        if not isinstance(validated_data, dict):
+            msg = "Dados de validação não encontrados."
+            raise drf_serializers.ValidationError(msg)
+
+        self._validate_agendamento_data(validated_data, user)
+
         try:
             with transaction.atomic():
+                slot = validated_data.get("slot")
+                profissional = validated_data.get("profissional")
+                if not profissional:
+                    profissional = slot.profissional if slot else user
+
+                data_inicio = validated_data.get("data_inicio")
+                if not data_inicio:
+                    msg = "Data de início é obrigatória."
+                    raise drf_serializers.ValidationError(msg)
+
                 ag = AgendamentoService.criar(
                     tenant=tenant,
-                    cliente=cliente,
+                    cliente=validated_data.get("cliente"),
                     profissional=profissional,
                     data_inicio=data_inicio,
-                    data_fim=data_fim,
-                    origem=origem,
+                    data_fim=validated_data.get("data_fim"),
+                    origem=validated_data.get("origem") or ("PROFISSIONAL" if user.is_staff else "CLIENTE"),
                     slot=slot,
-                    servico=servico_id,
-                    metadata=metadata,
+                    servico=self.request.data.get("servico_id"),
+                    metadata=validated_data.get("metadata"),
                     user=user,
                 )
-        except ValueError as e:
-            raise drf_serializers.ValidationError({"detail": str(e)})
+        except (ValueError, TypeError) as e:
+            raise drf_serializers.ValidationError({"detail": str(e)}) from e
         serializer.instance = ag
 
-    # ==== AÇÕES (base – compartilhadas com v2) ====
     @action(detail=True, methods=["post"])
-    def cancelar(self, request, pk=None):
-        from .services import AgendamentoService
-
+    def cancelar(self, request: Request, pk: str | None = None) -> Response:
+        """Cancela um agendamento."""
+        del pk
         ag = self.get_object()
         motivo = request.data.get("motivo") or "Cancelado via API"
         try:
             AgendamentoService.cancelar(ag, motivo=motivo, user=request.user)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"status": "ok", "novo_status": ag.status})
 
     @action(detail=True, methods=["post"])
-    def reagendar(self, request, pk=None):
-        from .services import AgendamentoService
-
+    def reagendar(self, request: Request, pk: str | None = None) -> Response:
+        """Reagenda um agendamento para um novo slot ou horário."""
+        del pk
         ag = self.get_object()
         novo_slot_id = request.data.get("novo_slot")
-        nova_data_inicio = request.data.get("nova_data_inicio")
-        nova_data_fim = request.data.get("nova_data_fim")
+        nova_data_inicio_str = request.data.get("nova_data_inicio")
+        nova_data_fim_str = request.data.get("nova_data_fim")
         motivo = request.data.get("motivo") or "Reagendamento via API"
+
         novo_slot = None
         if novo_slot_id:
             novo_slot = Slot.objects.filter(id=novo_slot_id, tenant=ag.tenant, ativo=True).first()
             if not novo_slot:
-                return Response({"detail": "novo_slot inválido"}, status=400)
-        if nova_data_inicio:
-            from django.utils.dateparse import parse_datetime
+                return Response({"detail": "novo_slot inválido"}, status=status.HTTP_400_BAD_REQUEST)
 
-            nova_data_inicio = parse_datetime(nova_data_inicio)
-        if nova_data_fim:
-            from django.utils.dateparse import parse_datetime
+        nova_data_inicio = parse_datetime(nova_data_inicio_str) if nova_data_inicio_str else None
+        nova_data_fim = parse_datetime(nova_data_fim_str) if nova_data_fim_str else None
 
-            nova_data_fim = parse_datetime(nova_data_fim)
         try:
             novo = AgendamentoService.reagendar(
                 ag,
@@ -489,86 +541,81 @@ class AgendamentoViewSet(viewsets.ModelViewSet):
                 motivo=motivo,
             )
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         ser = self.get_serializer(novo)
         return Response(ser.data)
 
     @action(detail=True, methods=["post"])
-    def checkin(self, request, pk=None):
-        from .services import AgendamentoService
-
+    def checkin(self, request: Request, pk: str | None = None) -> Response:
+        """Realiza o check-in de um agendamento."""
+        del pk
         ag = self.get_object()
         try:
             AgendamentoService.checkin(ag, user=request.user)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"status": ag.status})
 
     @action(detail=True, methods=["post"])
-    def concluir(self, request, pk=None):
-        from .services import AgendamentoService
-
+    def concluir(self, request: Request, pk: str | None = None) -> Response:
+        """Marca um agendamento como concluído."""
+        del pk
         ag = self.get_object()
         try:
             AgendamentoService.concluir(ag, user=request.user)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"status": ag.status})
 
     @action(detail=True, methods=["post"])
-    def resolver_pendencias(self, request, pk=None):
-        from .services import AgendamentoService
-
+    def resolver_pendencias(self, request: Request, pk: str | None = None) -> Response:
+        """Resolve pendências de um agendamento."""
+        del pk
         ag = self.get_object()
         AgendamentoService.resolver_pendencias(ag, user=request.user)
         return Response({"status": ag.status, "metadata": ag.metadata})
 
     @action(detail=True, methods=["post"])
-    def sync_evento(self, request, pk=None):
-        """Força sincronização manual do evento espelho (feature flag ENABLE_EVENT_MIRROR).
+    def sync_evento(self, request: Request, pk: str | None = None) -> Response:
+        """Força sincronização manual do evento espelho.
+
         Retorna o id do evento criado/atualizado ou null se desabilitado.
         """
-        from .services import SchedulingService
-
+        del request, pk
         ag = self.get_object()
         evento_id = SchedulingService.sync_evento(ag)
         return Response({"agendamento": ag.id, "evento_id": evento_id})
 
 
 class AgendamentoV2ViewSet(AgendamentoViewSet):
-    """Versão 2 (scaffold) – atualmente herda totalmente a lógica de v1.
+    """Versão 2 do ViewSet de Agendamento.
+
     Permite evolução de payloads/serializers sem quebrar clientes antigos.
     Controlado por flag USE_NOVO_AGENDAMENTO para ativação gradual nas rotas.
     """
 
-    def get_queryset(self):  # possibilidade de filtros/otimizações futuras
+    def get_queryset(self) -> QuerySet[Agendamento]:
+        """Retorna o queryset para a V2, respeitando a feature flag."""
         qs = super().get_queryset()
-        from django.conf import settings as _s
-
-        if not getattr(_s, "USE_NOVO_AGENDAMENTO", False):
-            return qs.none()  # rota ativa mas retorna vazio se flag off
+        if not getattr(dj_settings, "USE_NOVO_AGENDAMENTO", False):
+            return qs.none()
         return qs
 
-    def get_serializer_class(self):
-        from .serializers import (
-            AgendamentoV2CreateSerializer,
-            AgendamentoV2DetailSerializer,
-            AgendamentoV2ListSerializer,
-        )
-
+    def get_serializer_class(self) -> type[drf_serializers.Serializer]:
+        """Retorna a classe do serializador com base na ação."""
         if self.action in ("list", "stats", "capacidade"):
             return AgendamentoV2ListSerializer
-        if self.action in ("retrieve",):
+        if self.action == "retrieve":
             return AgendamentoV2DetailSerializer
-        if self.action in ("create",):
+        if self.action == "create":
             return AgendamentoV2CreateSerializer
         return super().get_serializer_class()
 
     @action(detail=False, methods=["get"])
-    def stats(self, request):
-        from django.utils import timezone
-
-        tenant = get_current_tenant(request)
+    def stats(self, request: Request) -> Response:
+        """Retorna estatísticas sobre os agendamentos."""
+        tenant = get_current_tenant(request._request)  # noqa: SLF001
         now = timezone.now()
         qs = Agendamento.objects.filter(tenant=tenant)
         futuro = qs.filter(data_inicio__gte=now)
@@ -580,15 +627,13 @@ class AgendamentoV2ViewSet(AgendamentoViewSet):
                 "confirmados_futuros": futuro.filter(status="CONFIRMADO").count(),
                 "pendentes_futuros": futuro.filter(status="PENDENTE").count(),
                 "no_show_total": no_show,
-            }
+            },
         )
 
     @action(detail=False, methods=["get"])
-    def capacidade(self, request):
-        """Capacidade agregada por profissional e data (filtros opcionais data_start, data_end)."""
-        from django.db.models import Count, Sum
-
-        tenant = get_current_tenant(request)
+    def capacidade(self, request: Request) -> Response:
+        """Capacidade agregada por profissional e data."""
+        tenant = get_current_tenant(request._request)  # noqa: SLF001
         data_start = request.query_params.get("data_start")
         data_end = request.query_params.get("data_end")
         qs = Slot.objects.filter(tenant=tenant, ativo=True)
@@ -603,147 +648,141 @@ class AgendamentoV2ViewSet(AgendamentoViewSet):
         )
         return Response(list(agg))
 
-    def perform_create(self, serializer):
-        # Substitui lógica de v1 para usar service e depois serializar
-        from rest_framework import serializers as drf_serializers
-
-        from .services import AgendamentoService
-
-        tenant = get_current_tenant(self.request)
+    def perform_create(self, serializer: drf_serializers.Serializer) -> None:
+        """Cria um agendamento usando o AgendamentoService."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
         user = self.request.user
         if not tenant:
-            raise permissions.PermissionDenied("Tenant inválido")
-        slot = serializer.validated_data.get("slot")
-        data_inicio = serializer.validated_data.get("data_inicio")
-        data_fim = serializer.validated_data.get("data_fim")
-        cliente = serializer.validated_data.get("cliente")
-        profissional = serializer.validated_data.get("profissional") or (slot.profissional if slot else user)
-        origem = serializer.validated_data.get("origem") or ("PROFISSIONAL" if user.is_staff else "CLIENTE")
-        servico = serializer.validated_data.get("servico")
-        metadata = serializer.validated_data.get("metadata") or {}
+            msg = "Tenant inválido"
+            raise permissions.PermissionDenied(msg)
+        if not isinstance(user, AbstractUser):
+            msg = "Usuário inválido"
+            raise permissions.PermissionDenied(msg)
+
+        validated_data = serializer.validated_data
+        if not validated_data:
+            msg = "Dados de validação não encontrados."
+            raise drf_serializers.ValidationError(msg)
+
+        slot = validated_data.get("slot")
+        data_inicio = validated_data.get("data_inicio")
+        data_fim = validated_data.get("data_fim")
         if not slot and (not data_inicio or not data_fim):
-            raise permissions.PermissionDenied("Para agendamento manual informe data_inicio e data_fim")
+            msg = "Para agendamento manual informe data_inicio e data_fim"
+            raise permissions.PermissionDenied(msg)
+
+        if not data_inicio:
+            msg = "Data de início é obrigatória"
+            raise drf_serializers.ValidationError(msg)
+
+        metadata = validated_data.get("metadata") or {}
         if not slot:
             metadata.setdefault("manual_sem_slot", True)
+
         try:
             with transaction.atomic():
                 ag = AgendamentoService.criar(
                     tenant=tenant,
-                    cliente=cliente,
-                    profissional=profissional,
+                    cliente=validated_data.get("cliente"),
+                    profissional=validated_data.get("profissional") or (slot.profissional if slot else user),
                     data_inicio=data_inicio,
                     data_fim=data_fim,
-                    origem=origem,
+                    origem=validated_data.get("origem") or ("PROFISSIONAL" if user.is_staff else "CLIENTE"),
                     slot=slot,
-                    servico=servico,
+                    servico=self.request.data.get("servico_id"),
                     metadata=metadata,
                     user=user,
                 )
-        except ValueError as e:
-            raise drf_serializers.ValidationError({"detail": str(e)})
+        except (ValueError, TypeError) as e:
+            raise drf_serializers.ValidationError({"detail": str(e)}) from e
         serializer.instance = ag
 
-    def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        # Re-serializa com detail serializer para incluir campos derivados (id, auditoria vazia)
-        from .serializers import AgendamentoV2DetailSerializer
-
-        if response.status_code == 201 and isinstance(response.data, dict) and "id" not in response.data:
-            (
-                getattr(getattr(response, "data", None), "get", lambda *_: None)("id")
-                or getattr(self, "object", None)
-                or None
-            )
-        # Simples: pegar último criado pelo instance do serializer
-        instance = getattr(self, "serializer_instance", None) or getattr(self, "object", None)
-        if not instance:
-            # fallback: recuperar pelo maior id do tenant (baixo volume durante criação isolada)
-            try:
-                instance = Agendamento.objects.filter(tenant=get_current_tenant(request)).latest("id")
-            except Exception:  # pragma: no cover
-                return response
-        ser = AgendamentoV2DetailSerializer(instance, context=self.get_serializer_context())
-        response.data = ser.data
-        return response
+    def create(self, request: Request, *args: tuple, **kwargs: dict) -> Response:
+        """Cria um agendamento e retorna os dados detalhados."""
+        return super().create(request, *args, **kwargs)
 
 
 class ClienteSlotViewSet(viewsets.ReadOnlyModelViewSet):
-    """Listagem de slots para clientes (portal), somente disponíveis e futuros.
+    """Listagem de slots para clientes (portal).
+
     Suporta filtro por serviço e aplica competência do profissional quando flag ativa.
     """
 
     queryset = Slot.objects.select_related("profissional", "disponibilidade").all()
     serializer_class = SlotSerializer
-    permission_classes = [permissions.IsAuthenticated, IsClientePortal]
+    permission_classes: ClassVar[list[type[permissions.BasePermission]]] = [
+        permissions.IsAuthenticated,
+        IsClientePortal,
+    ]
 
-    def get_queryset(self):
-        from django.utils import timezone
-
-        tenant = get_current_tenant(self.request)
+    def get_queryset(self) -> QuerySet[Slot]:
+        """Filtra slots disponíveis para o cliente."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
         now = timezone.now()
         qs = Slot.objects.filter(tenant=tenant, ativo=True, horario__gte=now).select_related(
-            "profissional", "disponibilidade"
+            "profissional",
+            "disponibilidade",
         )
         qs = qs.filter(capacidade_utilizada__lt=F("capacidade_total"))  # somente com vaga
+
         profissional_id = self.request.query_params.get("profissional")
         data = self.request.query_params.get("data")
         servico_id = self.request.query_params.get("servico") or self.request.query_params.get("servico_id")
+
         if profissional_id:
             qs = qs.filter(profissional_id=profissional_id)
         if data:
             qs = qs.filter(horario__date=data)
-        if servico_id and tenant is not None:
-            try:
-                from django.conf import settings as dj_settings
+        if servico_id and tenant and getattr(dj_settings, "ENFORCE_COMPETENCIA", False):
+            with contextlib.suppress(Exception):
+                profissionais_competentes = ProfissionalProcedimento.objects.filter(
+                    tenant=tenant,
+                    servico_id=servico_id,
+                    ativo=True,
+                ).values_list("profissional_id", flat=True)
+                qs = qs.filter(profissional_id__in=profissionais_competentes)
 
-                if getattr(dj_settings, "ENFORCE_COMPETENCIA", False):
-                    from .models import ProfissionalProcedimento
-
-                    qs = qs.filter(
-                        profissional_id__in=ProfissionalProcedimento.objects.filter(
-                            tenant=tenant,
-                            servico_id=servico_id,
-                            ativo=True,
-                        ).values_list("profissional_id", flat=True)
-                    )
-            except Exception:
-                pass
-        from django.core.cache import cache
-
-        from agendamentos.services import get_slots_cache_version
-
-        cache_key = f"ag:slots_cli:{tenant.id if tenant else '-'}:{profissional_id or '-'}:{data or '-'}:{servico_id or '-'}:{get_slots_cache_version()}"
-        cached_ids = cache.get(cache_key)
-        if cached_ids is not None:
+        cache_key = (
+            f"ag:slots_cli:{tenant.id if tenant else '-'}:{profissional_id or '-'}:{data or '-'}:"
+            f"{servico_id or '-'}:{get_slots_cache_version()}"
+        )
+        if cached_ids := cache.get(cache_key):
             return qs.filter(id__in=cached_ids).order_by("horario", "id")
+
         ordered = qs.order_by("horario", "id")
         with contextlib.suppress(Exception):
             cache.set(cache_key, list(ordered.values_list("id", flat=True)), 20)
         return ordered
 
     @action(detail=True, methods=["post"])
-    def reservar(self, request, pk=None):
-        """Cliente reserva um slot: cliente é inferido do vínculo do portal; origem=CLIENTE."""
+    def reservar(self, request: Request, pk: str | None = None) -> Response:
+        """Cliente reserva um slot: cliente é inferido do vínculo do portal."""
+        del pk
         slot = self.get_object()
         if not hasattr(request, "session"):
             request.session = {}
         if "tenant_id" not in request.session and slot.tenant_id:
             request.session["tenant_id"] = slot.tenant_id
-        from .services import AgendamentoService
 
         cliente = _resolver_cliente_do_usuario(request)
         if not cliente:
-            return Response({"detail": "Acesso de cliente não encontrado para este tenant"}, status=403)
+            msg = "Acesso de cliente não encontrado para este tenant"
+            return Response({"detail": msg}, status=status.HTTP_403_FORBIDDEN)
+
         servico_id = request.data.get("servico_id")
         if servico_id:
-            from servicos.models import Servico as _Servico
-
             try:
                 _serv = _Servico.objects.select_related("perfil_clinico").get(id=servico_id)
+                # Regra: cliente portal deve receber 403 quando serviço clínico não permitido (ex: offline/inativo)
+                if _serv.is_clinical and not can_schedule_clinical_service(request.user, _serv):
+                    return Response(
+                        {"detail": str(CLINICAL_SCHEDULING_DENIED_MESSAGE)},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
             except _Servico.DoesNotExist:
-                return Response({"detail": _("Serviço inválido")}, status=400)
-            if _serv.is_clinical and not can_schedule_clinical_service(request.user, _serv):
-                return Response({"detail": str(CLINICAL_SCHEDULING_DENIED_MESSAGE)}, status=403)
+                msg = "Serviço inválido"
+                return Response({"detail": _(msg)}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             ag = AgendamentoService.criar(
                 tenant=slot.tenant,
@@ -758,25 +797,33 @@ class ClienteSlotViewSet(viewsets.ReadOnlyModelViewSet):
                 user=request.user,
             )
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         ser = AgendamentoSerializer(ag)
         return Response({"slot": slot.id, "agendamento": ser.data})
 
 
 class ClienteAgendamentoViewSet(viewsets.ModelViewSet):
-    """Agendamentos do cliente (portal): lista e cria para o Cliente associado ao usuário.
+    """Agendamentos do cliente (portal).
+
+    Lista e cria para o Cliente associado ao usuário.
     Ações de cancelar/reagendar disponíveis com regras de negócio do serviço.
     """
 
     queryset = Agendamento.objects.all()
     serializer_class = AgendamentoSerializer
-    permission_classes = [permissions.IsAuthenticated, IsClientePortal]
+    permission_classes: ClassVar[list[type[permissions.BasePermission]]] = [
+        permissions.IsAuthenticated,
+        IsClientePortal,
+    ]
 
-    def get_queryset(self):
-        tenant = get_current_tenant(self.request)
-        cliente = _resolver_cliente_do_usuario(self.request)
+    def get_queryset(self) -> QuerySet[Agendamento]:
+        """Filtra agendamentos para o cliente do usuário logado."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
+        cliente = _resolver_cliente_do_usuario(Request(self.request))
         if not tenant or not cliente:
             return Agendamento.objects.none()
+
         qs = Agendamento.objects.filter(tenant=tenant, cliente=cliente)
         # Filtros opcionais
         status_f = self.request.query_params.get("status")
@@ -790,35 +837,67 @@ class ClienteAgendamentoViewSet(viewsets.ModelViewSet):
             qs = qs.filter(data_fim__date__lte=dend)
         return qs.order_by("data_inicio", "id")
 
-    def perform_create(self, serializer):
-        from rest_framework import serializers as drf_serializers
+    def _validate_agendamento_data_cliente(self, validated_data: dict, user: AbstractUser) -> None:
+        """Valida os dados para criação de agendamento pelo cliente."""
+        slot = validated_data.get("slot")
+        data_inicio = validated_data.get("data_inicio")
+        data_fim = validated_data.get("data_fim")
 
-        from .services import AgendamentoService
-
-        tenant = get_current_tenant(self.request)
-        user = self.request.user
-        cliente = _resolver_cliente_do_usuario(self.request)
-        if not tenant or not cliente:
-            raise permissions.PermissionDenied("Acesso de cliente não encontrado para este tenant")
-        slot = serializer.validated_data.get("slot")
-        data_inicio = serializer.validated_data.get("data_inicio")
-        data_fim = serializer.validated_data.get("data_fim")
         if not slot and (not data_inicio or not data_fim):
-            raise permissions.PermissionDenied("Informe slot ou data_inicio/data_fim")
-        profissional = serializer.validated_data.get("profissional") or (slot.profissional if slot else None)
+            msg = "Informe slot ou data_inicio/data_fim"
+            raise permissions.PermissionDenied(msg)
+
+        profissional = validated_data.get("profissional")
+        if not profissional and slot:
+            profissional = slot.profissional
+
         if not profissional:
-            raise permissions.PermissionDenied("Profissional obrigatório")
+            msg = "Profissional obrigatório"
+            raise permissions.PermissionDenied(msg)
+
         servico = self.request.data.get("servico_id")
         if servico:
-            from servicos.models import Servico as _Servico
-
             try:
                 _serv = _Servico.objects.select_related("perfil_clinico").get(id=servico)
-            except _Servico.DoesNotExist:
-                raise permissions.PermissionDenied(_("Serviço inválido"))
-            if _serv.is_clinical and not can_schedule_clinical_service(user, _serv):
-                raise permissions.PermissionDenied(str(CLINICAL_SCHEDULING_DENIED_MESSAGE))
-        metadata = serializer.validated_data.get("metadata")
+                if _serv.is_clinical and isinstance(user, User) and not can_schedule_clinical_service(user, _serv):
+                    raise permissions.PermissionDenied(str(CLINICAL_SCHEDULING_DENIED_MESSAGE))
+            except _Servico.DoesNotExist as e:
+                msg = "Serviço inválido"
+                raise permissions.PermissionDenied(msg) from e
+
+    def perform_create(self, serializer: drf_serializers.Serializer) -> None:
+        """Cria um agendamento para o cliente do portal."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
+        user = self.request.user
+        cliente = _resolver_cliente_do_usuario(Request(self.request))
+        if not tenant or not cliente:
+            msg = "Acesso de cliente não encontrado para este tenant"
+            raise permissions.PermissionDenied(msg)
+        if not isinstance(user, AbstractUser):
+            msg = "Usuário inválido"
+            raise permissions.PermissionDenied(msg)
+
+        validated_data = serializer.validated_data
+        if not isinstance(validated_data, dict):
+            msg = "Dados de validação inválidos."
+            raise drf_serializers.ValidationError(msg)
+
+        self._validate_agendamento_data_cliente(validated_data, user)
+
+        slot = validated_data.get("slot")
+        data_inicio = validated_data.get("data_inicio")
+        data_fim = validated_data.get("data_fim")
+        profissional = validated_data.get("profissional")
+        if not profissional and slot:
+            profissional = slot.profissional
+
+        servico = self.request.data.get("servico_id")
+        metadata = validated_data.get("metadata")
+
+        if not data_inicio:
+            msg = "Data de início é obrigatória."
+            raise drf_serializers.ValidationError(msg)
+
         try:
             with transaction.atomic():
                 ag = AgendamentoService.criar(
@@ -833,44 +912,41 @@ class ClienteAgendamentoViewSet(viewsets.ModelViewSet):
                     metadata={**(metadata or {}), "portal_cliente": True},
                     user=user,
                 )
-        except ValueError as e:
-            raise drf_serializers.ValidationError({"detail": str(e)})
+        except (ValueError, TypeError) as e:
+            raise drf_serializers.ValidationError({"detail": str(e)}) from e
         serializer.instance = ag
 
     @action(detail=True, methods=["post"])
-    def cancelar(self, request, pk=None):
-        from .services import AgendamentoService
-
+    def cancelar(self, request: Request, pk: str | None = None) -> Response:
+        """Cancela um agendamento do cliente."""
+        del pk
         ag = self.get_object()
         motivo = request.data.get("motivo") or "Cancelado pelo Cliente"
         try:
             AgendamentoService.cancelar(ag, motivo=motivo, user=request.user)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"status": "ok", "novo_status": ag.status})
 
     @action(detail=True, methods=["post"])
-    def reagendar(self, request, pk=None):
-        from .services import AgendamentoService
-
+    def reagendar(self, request: Request, pk: str | None = None) -> Response:
+        """Reagenda um agendamento do cliente."""
+        del pk
         ag = self.get_object()
         novo_slot_id = request.data.get("novo_slot")
-        nova_data_inicio = request.data.get("nova_data_inicio")
-        nova_data_fim = request.data.get("nova_data_fim")
+        nova_data_inicio_str = request.data.get("nova_data_inicio")
+        nova_data_fim_str = request.data.get("nova_data_fim")
         motivo = request.data.get("motivo") or "Reagendamento pelo Cliente"
+
         novo_slot = None
         if novo_slot_id:
             novo_slot = Slot.objects.filter(id=novo_slot_id, tenant=ag.tenant, ativo=True).first()
             if not novo_slot:
-                return Response({"detail": "novo_slot inválido"}, status=400)
-        if nova_data_inicio:
-            from django.utils.dateparse import parse_datetime
+                return Response({"detail": "novo_slot inválido"}, status=status.HTTP_400_BAD_REQUEST)
 
-            nova_data_inicio = parse_datetime(nova_data_inicio)
-        if nova_data_fim:
-            from django.utils.dateparse import parse_datetime
+        nova_data_inicio = parse_datetime(nova_data_inicio_str) if nova_data_inicio_str else None
+        nova_data_fim = parse_datetime(nova_data_fim_str) if nova_data_fim_str else None
 
-            nova_data_fim = parse_datetime(nova_data_fim)
         try:
             novo = AgendamentoService.reagendar(
                 ag,
@@ -881,16 +957,20 @@ class ClienteAgendamentoViewSet(viewsets.ModelViewSet):
                 motivo=motivo,
             )
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         ser = self.get_serializer(novo)
         return Response(ser.data)
 
 
 class AuditoriaAgendamentoViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet para visualização da auditoria de agendamentos."""
+
     queryset = AuditoriaAgendamento.objects.select_related("agendamento", "user").all()
     serializer_class = AuditoriaAgendamentoSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAgendamentoAuditoria]
+    permission_classes: ClassVar[list[type[permissions.BasePermission]]] = [IsAgendamentoAuditoria]
 
-    def get_queryset(self):
-        tenant = get_current_tenant(self.request)
-        return AuditoriaAgendamento.objects.filter(agendamento__tenant=tenant)
+    def get_queryset(self) -> QuerySet[AuditoriaAgendamento]:
+        """Filtra a auditoria para o tenant atual."""
+        tenant = get_current_tenant(self.request._request)  # noqa: SLF001
+        return self.queryset.filter(agendamento__tenant=tenant)

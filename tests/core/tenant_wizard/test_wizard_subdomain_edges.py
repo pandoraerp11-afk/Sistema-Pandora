@@ -3,7 +3,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from core.models import Role, Tenant, TenantUser
-from core.tests.wizard_test_utils import TenantWizardTestHelper
+from tests.core.tenant_wizard.wizard_test_utils import TenantWizardTestHelper
 
 CustomUser = get_user_model()
 

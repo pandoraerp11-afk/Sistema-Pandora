@@ -20,12 +20,19 @@ exclude = [
   "migrations",
   "static",
   ".mypy_cache",
-  ".pytest_cache"
+  ".pytest_cache",
+  "backup do backand antes das correções do Ruff"
 ]
 
 [tool.ruff.lint]
 select = ["E","F","B","I","UP","SIM","PL"]
-ignore = ["E203", "ANN401"]
+ignore = ["E203", "ANN401", "PYI036"]
+
+# Ajustes específicos por arquivo/diretório.
+# Mantemos o uso idiomático de 'assert' em testes Pytest (riqueza de introspecção),
+# suprimindo alertas de ferramentas que tratem 'assert' como inseguro em produção.
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "PLR2004"]
 
 [tool.ruff.format]
 quote-style = "double"

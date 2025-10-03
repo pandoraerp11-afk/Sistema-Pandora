@@ -1,11 +1,9 @@
-{% extends 'pandora_ultra_modern_base.html' %}
+{% extends 'portal_cliente/base_portal.html' %}
 {% load static %}
 
 {% block title %}Portal Cliente - Dashboard{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
-{% endblock %}
+{% block extra_css %}{{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -111,6 +109,21 @@
                             </div>
                         </div>
                         {% endfor %}
+                        {% if proximos_agendamentos %}
+                        <div class="pt-3">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-sm btn-success" id="dashBtnCheckin" disabled>
+                                    <i class="fas fa-sign-in-alt me-1"></i>Check-in
+                                </button>
+                                <button class="btn btn-sm btn-warning" id="dashBtnFinalizar" disabled>
+                                    <i class="fas fa-flag-checkered me-1"></i>Finalizar
+                                </button>
+                                <button class="btn btn-sm btn-secondary" id="dashBtnAvaliar" disabled>
+                                    <i class="fas fa-star me-1"></i>Avaliar
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
                         <div class="text-center pt-3">
                             <a href="{% url 'portal_cliente:novo_agendamento' %}" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Novo Agendamento
@@ -216,5 +229,21 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/portal_cliente.js' %}"></script>
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    {% if proximos_agendamentos %}
+    const primeiro = {{ proximos_agendamentos.0.id }};
+    portalClienteStatus.init({
+        ids:{checkin:'dashBtnCheckin', finalizar:'dashBtnFinalizar', avaliar:'dashBtnAvaliar'},
+        urls:{
+            status: `{% url 'portal_cliente:dashboard' %}../ajax/agendamento/${primeiro}/status/`,
+            checkin: `{% url 'portal_cliente:dashboard' %}../ajax/agendamento/${primeiro}/checkin/`,
+            finalizar: `{% url 'portal_cliente:dashboard' %}../ajax/atendimento/${primeiro}/finalizar/`
+        },
+        autoIntervalMs: 15000
+    });
+    {% endif %}
+});
+</script>
 {% endblock %}

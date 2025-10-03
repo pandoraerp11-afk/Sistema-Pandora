@@ -1,230 +1,167 @@
 {% extends "pandora_wizard_form_ultra_modern.html" %}
 {% load static %}
-{% load widget_tweaks %}
+
+{# CLIENTES STEP DOCUMENTS (DINÂMICO) - agora espelha o comportamento do core/wizard/step_documents.html
+   Evitamos duplicar lógica de formulário campo-a-campo e usamos a mesma API JS de documentos.
+   Se no futuro quisermos customizações específicas para clientes, fazemos aqui sem tocar o core. #}
 
 {% block step_content %}
-<!-- Formulário de Documentos do Cliente -->
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="fas fa-wand-magic-sparkles me-3 text-info" style="font-size:1.4rem"></i>
+    <div>
+        <strong>Documentos Dinâmicos do Cliente.</strong> Tipos e Regras definem obrigatoriedade.
+        <div class="small text-muted">Envie todos os obrigatórios para prosseguir.</div>
+    </div>
+    {% comment %} Mantemos sem link de "Ver Documentos" específico de cliente porque a consolidação
+    atual (wizard de cliente) está direcionada ao Tenant. Caso venha a existir escopo por Cliente,
+    podemos adicionar condicional semelhante ao core. {% endcomment %}
+ </div>
 
-    <!-- Alerta Informativo -->
-    <div class="alert alert-warning border-0 mb-4 wizard-alert">
-        <div class="d-flex align-items-center">
-            <i class="fas fa-file-alt text-warning me-3" style="font-size: 1.5rem;"></i>
-            <div>
-                <h6 class="mb-1 text-warning">Documentos do Cliente</h6>
-                <small class="text-muted">Faça upload dos documentos do cliente (opcional)</small>
+<div class="wizard-section mb-2">
+    <div class="wizard-section-title d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-lock text-danger"></i>
+            <span class="fw-semibold">Documentos Obrigatórios</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-danger-subtle text-danger" id="countObrig">0/0</span>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0" id="tblObrigatorios">
+            <thead class="table-light">
+                <tr><th>Tipo</th><th>Categoria</th><th>Periodicidade</th><th>Status</th><th>Ação</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="wizard-section mb-2">
+    <div class="wizard-section-title d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-circle-plus text-primary"></i>
+            <span class="fw-semibold">Documentos Adicionais</span>
+        </div>
+        <div class="d-flex gap-2">
+            <select id="selAdicionarOpcional" class="form-select form-select-sm" style="min-width:260px">
+                <option value="">-- Adicionar Documento Adicional --</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary" id="btnAddOpcional" type="button" title="Adicionar">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0" id="tblOpcionais">
+            <thead class="table-light">
+                <tr><th>Tipo</th><th>Categoria</th><th>Periodicidade</th><th>Status</th><th>Ação</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="alert alert-secondary small" id="wizardDocsResumo">Carregando...</div>
+
+<template id="rowDocTemplate">
+    <tr data-tipo-id="">
+        <td class="tipo-nome fw-semibold"></td>
+        <td class="tipo-categoria small text-muted"></td>
+        <td class="tipo-periodicidade small"></td>
+        <td class="status-col"></td>
+        <td>
+            <div class="d-flex gap-2 justify-content-center">
+                <button type="button" class="btn btn-sm btn-outline-primary btn-upload" title="Enviar">
+                    <i class="fas fa-upload"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary d-none btn-ver" title="Visualizar arquivo">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger d-none btn-remover" title="Remover">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Seção: Documentos Principais -->
-    <div class="wizard-section">
-        <h5 class="wizard-section-title">
-            <i class="fas fa-id-card wizard-icon"></i>
-            Documentos de Identificação
-        </h5>
-        
-        <div class="row">
-            <!-- RG/CPF -->
-            {% include 'core/wizard/wizard_field.html' with field=form.documento_rg field_size='md' %}
-            
-            <!-- CPF -->
-            {% include 'core/wizard/wizard_field.html' with field=form.documento_cpf field_size='md' %}
-            
-            <!-- CNH -->
-            {% include 'core/wizard/wizard_field.html' with field=form.documento_cnh field_size='md' %}
-            
-            <!-- Passaporte -->
-            {% include 'core/wizard/wizard_field.html' with field=form.documento_passaporte field_size='md' %}
-        </div>
-    </div>
-
-    <!-- Seção: Documentos Empresariais (Para PJ) -->
-    <div class="wizard-section">
-        <h5 class="wizard-section-title">
-            <i class="fas fa-building wizard-icon"></i>
-            Documentos Empresariais
-        </h5>
-        
-        <div class="row">
-            <!-- Contrato Social -->
-            {% include 'core/wizard/wizard_field.html' with field=form.contrato_social field_size='md' %}
-            
-            <!-- CNPJ -->
-            {% include 'core/wizard/wizard_field.html' with field=form.documento_cnpj field_size='md' %}
-            
-            <!-- Inscrição Estadual -->
-            {% include 'core/wizard/wizard_field.html' with field=form.inscricao_estadual field_size='md' %}
-            
-            <!-- Alvará de Funcionamento -->
-            {% include 'core/wizard/wizard_field.html' with field=form.alvara_funcionamento field_size='md' %}
-        </div>
-    </div>
-
-    <!-- Seção: Documentos Adicionais -->
-    <div class="wizard-section">
-        <h5 class="wizard-section-title">
-            <i class="fas fa-folder wizard-icon"></i>
-            Documentos Adicionais
-        </h5>
-        
-        <div class="row">
-            <!-- Comprovante de Endereço -->
-            {% include 'core/wizard/wizard_field.html' with field=form.comprovante_endereco field_size='md' %}
-            
-            <!-- Comprovante de Renda -->
-            {% include 'core/wizard/wizard_field.html' with field=form.comprovante_renda field_size='md' %}
-            
-            <!-- Certidões -->
-            {% include 'core/wizard/wizard_field.html' with field=form.certidoes field_size='md' %}
-            
-            <!-- Outros Documentos -->
-            {% include 'core/wizard/wizard_field.html' with field=form.outros_documentos field_size='md' %}
-        </div>
-    </div>
-
-    <!-- Seção: Observações sobre Documentos -->
-    <div class="wizard-section">
-        <h5 class="wizard-section-title">
-            <i class="fas fa-sticky-note wizard-icon"></i>
-            Observações sobre Documentos
-        </h5>
-        
-        <div class="row">
-            {% include 'core/wizard/wizard_field.html' with field=form.observacoes_documentos field_size='xl' %}
-        </div>
-    </div>
+            <input type="file" class="d-none input-file" />
+        </td>
+    </tr>
+</template>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Funcionalidade para upload de arquivos
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    
-    fileInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            const fileList = this.files;
-            const label = this.parentElement.querySelector('label');
-            
-            if (fileList.length > 0) {
-                const fileName = fileList[0].name;
-                if (label) {
-                    label.innerHTML = `<i class="fas fa-check text-success me-2"></i>${fileName}`;
-                }
-                
-                // Adicionar indicador visual de sucesso
-                this.classList.add('file-uploaded');
-            } else {
-                if (label) {
-                    const originalText = label.getAttribute('data-original-text') || 'Selecionar arquivo';
-                    label.innerHTML = originalText;
-                }
-                this.classList.remove('file-uploaded');
-            }
-        });
-        
-        // Salvar texto original do label
-        const label = input.parentElement.querySelector('label');
-        if (label && !label.getAttribute('data-original-text')) {
-            label.setAttribute('data-original-text', label.textContent);
-        }
-    });
-    
-    // Validação de tipos de arquivo
-    function validateFileType(input, allowedTypes) {
-        const file = input.files[0];
-        if (file) {
-            const fileType = file.type;
-            const fileName = file.name.toLowerCase();
-            
-            const isValidType = allowedTypes.some(type => 
-                fileType.includes(type) || fileName.endsWith(type)
-            );
-            
-            if (!isValidType) {
-                alert('Tipo de arquivo não permitido. Use apenas: ' + allowedTypes.join(', '));
-                input.value = '';
-                return false;
-            }
-            
-            // Validar tamanho do arquivo (máximo 5MB)
-            const maxSize = 5 * 1024 * 1024; // 5MB
-            if (file.size > maxSize) {
-                alert('Arquivo muito grande. Tamanho máximo: 5MB');
-                input.value = '';
-                return false;
-            }
-        }
-        return true;
+(function(){
+    function bytes(n){ if(!n && n!==0) return ''; const u=['B','KB','MB']; const i=Math.floor(Math.log(n)/Math.log(1024)); return (n/Math.pow(1024,i)).toFixed(1)+' '+u[i]; }
+    function csrf(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+    const URL_LIST = '{% url "documentos:wizard_docs_list" %}';
+    const URL_UPLOAD = '{% url "documentos:wizard_docs_upload" %}';
+    const URL_DELETE_PATTERN = '{% url "documentos:wizard_docs_delete" 999999 %}';
+    function buildDeleteUrl(id){ return URL_DELETE_PATTERN.replace('999999', id); }
+    let state = { obrigatorios:[], opcionais:[] };
+    const el={};
+    function init(){
+        el.tblObrig=document.querySelector('#tblObrigatorios tbody');
+        el.tblOpc=document.querySelector('#tblOpcionais tbody');
+        el.tmpl=document.getElementById('rowDocTemplate');
+        el.selOpc=document.getElementById('selAdicionarOpcional');
+        el.btnAdd=document.getElementById('btnAddOpcional');
+        el.resumo=document.getElementById('wizardDocsResumo');
+        el.countObrig=document.getElementById('countObrig');
+        if(el.btnAdd){ el.btnAdd.addEventListener('click', onAdd); }
+        load();
     }
-    
-    // Aplicar validação aos campos de arquivo
-    fileInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            validateFileType(this, ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']);
-        });
-    });
-    
-    // Preview de imagens
-    fileInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Criar ou atualizar preview da imagem
-                    let preview = input.parentElement.querySelector('.image-preview');
-                    if (!preview) {
-                        preview = document.createElement('img');
-                        preview.className = 'image-preview mt-2';
-                        preview.style.maxWidth = '200px';
-                        preview.style.maxHeight = '150px';
-                        preview.style.borderRadius = '8px';
-                        preview.style.border = '1px solid #dee2e6';
-                        input.parentElement.appendChild(preview);
-                    }
-                    preview.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    });
-});
+    function onAdd(){ const v=el.selOpc.value; if(!v) return; const obj=state.opcionais.find(o=>o.tipo_id==v); if(obj){ obj.addedTempRow=true; render(); el.selOpc.value=''; } }
+    function render(){
+        el.tblObrig.innerHTML=''; el.tblOpc.innerHTML='';
+        el.selOpc.querySelectorAll('option:not([value=""])').forEach(o=>o.remove());
+        let enviados=0,total=state.obrigatorios.length;
+        state.obrigatorios.forEach(d=>{const tr=row(d,true); el.tblObrig.appendChild(tr); if(d.uploaded) enviados++;});
+        state.opcionais.forEach(d=>{ if(!d.uploaded){ const opt=document.createElement('option'); opt.value=d.tipo_id; opt.textContent=d.nome+' ('+d.categoria+')'; el.selOpc.appendChild(opt);} if(d.addedTempRow||d.uploaded){ d.addedTempRow=true; el.tblOpc.appendChild(row(d,false)); }});
+        el.countObrig.textContent=enviados+'/'+total;
+        el.resumo.innerHTML= enviados===total ? '<span class="text-success"><i class="fas fa-check me-1"></i>Todos os obrigatórios enviados.</span>' : '<span class="text-danger"><i class="fas fa-triangle-exclamation me-1"></i>Envie todos os obrigatórios para avançar.</span>';
+        controlaNext(enviados===total);
+    }
+    function controlaNext(ok){ const btn=document.querySelector('[data-wizard-next]'); if(btn){ btn.disabled=!ok; btn.title= ok? '' : 'Envie todos os documentos obrigatórios.'; } }
+    function row(d,ob){ const n=el.tmpl.content.firstElementChild.cloneNode(true); n.dataset.tipoId=d.tipo_id; n.querySelector('.tipo-nome').textContent=d.nome; n.querySelector('.tipo-categoria').textContent=d.categoria||'-'; n.querySelector('.tipo-periodicidade').textContent=d.periodicidade||'-'; const st=n.querySelector('.status-col'); if(d.uploaded){ st.innerHTML='<span class="badge bg-success-subtle text-success">Enviado</span><div class="small text-muted">'+(d.filename||'')+' '+(d.tamanho? '('+bytes(d.tamanho)+')':'')+'</div>'; n.querySelector('.btn-remover').classList.remove('d-none'); n.querySelector('.btn-ver').classList.remove('d-none'); } else { st.innerHTML= ob? '<span class="badge bg-danger-subtle text-danger">Pendente</span>' : '<span class="badge bg-secondary">Opcional</span>'; } const inp=n.querySelector('.input-file'); n.querySelector('.btn-upload').addEventListener('click',()=>inp.click()); inp.addEventListener('change',()=>{ if(!inp.files.length) return; upload(d.tipo_id, inp.files[0]); }); n.querySelector('.btn-remover').addEventListener('click',()=>remover(d)); n.querySelector('.btn-ver').addEventListener('click',()=>visualizar(d)); return n; }
+    function visualizar(d){ if(!d.temp_id) return; window.open('/media/'+d.filename,'_blank'); }
+    function remover(d){ if(!d.temp_id) return; fetch(buildDeleteUrl(d.temp_id),{method:'POST',headers:{'X-CSRFToken':csrf()}}).then(r=>r.json()).then(j=>{ if(j.ok){ d.uploaded=false; d.temp_id=null; render(); } else alert('Erro ao remover'); }).catch(()=>alert('Falha remoção')); }
+    function upload(id,file){ const fd=new FormData(); fd.append('tipo_id',id); fd.append('arquivo',file); fetch(URL_UPLOAD,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd}).then(r=>r.json()).then(j=>{ if(j.ok){ const all=[...state.obrigatorios,...state.opcionais]; const obj=all.find(x=>x.tipo_id==id); Object.assign(obj,{uploaded:true,temp_id:j.temp_id,filename:j.filename,tamanho:j.tamanho,addedTempRow:true}); render(); } else alert(j.error||'Falha upload'); }).catch(()=>alert('Erro upload')); }
+    function load(){
+        el.resumo.textContent='Carregando...';
+        fetch(URL_LIST,{headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(async r=>{ let data=null; try{ data=await r.json(); }catch(_){} if(!r.ok){ el.resumo.innerHTML='<span class="text-danger">Falha '+r.status+'</span>'; throw new Error('HTTP '+r.status); } return data; })
+            .then(d=>{ state=d||state; render(); })
+            .catch(err=>{ if(!(err && err.message && err.message.startsWith('HTTP'))){ el.resumo.innerHTML='<span class="text-danger">Erro ao carregar</span>'; } });
+    }
+    document.addEventListener('DOMContentLoaded',init);
+})();
 </script>
-
 <style>
-/* Estilos para upload de arquivos */
-.file-uploaded {
-    border-color: #198754 !important;
-    background-color: #f8fff9 !important;
-}
-
-.image-preview {
-    display: block;
-    margin-top: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
-}
-
-.image-preview:hover {
-    transform: scale(1.05);
-}
-
-.wizard-file {
-    padding: 0.75rem;
-    border: 2px dashed #dee2e6;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.wizard-file:hover {
-    border-color: #0d6efd;
-    background-color: #f8f9fa;
-}
-
-.wizard-file:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
+    #tblObrigatorios tbody tr td, #tblOpcionais tbody tr td { vertical-align: middle; }
+    .bg-success-subtle{ background:#e9f7ef; }
+    .bg-danger-subtle{ background:#fdecec; }
+    .badge{ font-weight:500; }
+    .wizard-section-title{ padding:.25rem 0 .5rem; border-bottom:1px solid #e9ecef; margin-bottom:.75rem; }
+    #tblObrigatorios th:nth-child(1), #tblObrigatorios td:nth-child(1),
+    #tblOpcionais   th:nth-child(1), #tblOpcionais   td:nth-child(1){ width:22%; }
+    #tblObrigatorios th:nth-child(2), #tblObrigatorios td:nth-child(2),
+    #tblOpcionais   th:nth-child(2), #tblOpcionais   td:nth-child(2){ width:30%; }
+    #tblObrigatorios th:nth-child(3), #tblObrigatorios td:nth-child(3),
+    #tblObrigatorios th:nth-child(4), #tblObrigatorios td:nth-child(4),
+    #tblObrigatorios th:nth-child(5), #tblObrigatorios td:nth-child(5),
+    #tblOpcionais   th:nth-child(3), #tblOpcionais   td:nth-child(3),
+    #tblOpcionais   th:nth-child(4), #tblOpcionais   td:nth-child(4),
+    #tblOpcionais   th:nth-child(5), #tblOpcionais   td:nth-child(5){ width:16%; text-align:center; }
+    #tblObrigatorios th:nth-child(3), #tblOpcionais th:nth-child(3){ white-space: nowrap; }
+    #tblObrigatorios td:nth-child(5) .d-flex,
+    #tblOpcionais td:nth-child(5) .d-flex{ justify-content: center; }
 </style>
 {% endblock %}
+
+{% block modals %}{% endblock %}

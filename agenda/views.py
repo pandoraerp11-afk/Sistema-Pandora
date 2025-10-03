@@ -1,14 +1,23 @@
+"""Views for the agenda app."""
+
 # agenda/views.py
 import calendar
 import contextlib
 import json
+import logging
 from datetime import date, datetime, timedelta
+from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Q
-from django.http import HttpResponseForbidden, JsonResponse
+from django.db.models import Count, Q, QuerySet
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseForbidden,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -16,35 +25,42 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from chat.models import Conversa, Mensagem
 from core.mixins import TenantRequiredMixin
+from core.models import Tenant
 from core.utils import get_current_tenant
 
-from .forms import EventoBuscaForm, EventoCalendarioForm, EventoForm
-from .models import Evento, EventoLembrete, LogEvento
+from .forms import EventoForm
+from .models import AgendaConfiguracao, Evento, EventoLembrete, LogEvento
+
+# Constantes
+MESES_DO_ANO = 12
+LOGGER = logging.getLogger(__name__)
 
 
 class AgendaMixin(LoginRequiredMixin, TenantRequiredMixin):
-    """Mixin base para views de agenda"""
+    """Mixin base para views de agenda."""
 
     model = Evento
 
-    def get_queryset(self):
-        """Filtra eventos por tenant"""
+    def get_queryset(self) -> "QuerySet[Evento]":
+        """Filtra eventos por tenant."""
         queryset = super().get_queryset()
         tenant = get_current_tenant(self.request)
         if tenant:
             queryset = queryset.filter(tenant=tenant)
         return queryset
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: object) -> dict[str, object]:
+        """Adiciona o tenant atual ao contexto."""
         context = super().get_context_data(**kwargs)
         context["tenant"] = get_current_tenant(self.request)
         return context
 
 
 @login_required
-def agenda_home(request):
-    """Dashboard principal do módulo agenda"""
+def agenda_home(request: HttpRequest) -> HttpResponse:
+    """Dashboard principal do módulo agenda."""
     tenant = get_current_tenant(request)
 
     # Superusuário não precisa selecionar empresa
@@ -82,13 +98,18 @@ def agenda_home(request):
     # Próximos eventos (próximos 7 dias)
     proximos_7_dias = hoje + timedelta(days=7)
     proximos_eventos = eventos_qs.filter(
-        data_inicio__date__gte=hoje, data_inicio__date__lte=proximos_7_dias, status="pendente"
+        data_inicio__date__gte=hoje,
+        data_inicio__date__lte=proximos_7_dias,
+        status="pendente",
     ).order_by("data_inicio")[:10]
 
     # Eventos recentes (últimos 7 dias)
     ultimos_7_dias = hoje - timedelta(days=7)
-    eventos_recentes = eventos_qs.filter(data_inicio__date__gte=ultimos_7_dias, data_inicio__date__lte=hoje).order_by(
-        "-data_inicio"
+    eventos_recentes = eventos_qs.filter(
+        data_inicio__date__gte=ultimos_7_dias,
+        data_inicio__date__lte=hoje,
+    ).order_by(
+        "-data_inicio",
     )[:5]
 
     # Top usuários por eventos (responsáveis mais ativos)
@@ -148,13 +169,14 @@ def agenda_home(request):
 
 
 class EventoListView(AgendaMixin, ListView):
-    """View para listagem de eventos"""
+    """Lista de eventos."""
 
     template_name = "agenda/evento_list.html"
     context_object_name = "eventos"
     paginate_by = 20
 
-    def get_queryset(self):
+    def get_queryset(self) -> "QuerySet[Evento]":
+        """Retorna o queryset com filtros aplicados via query string."""
         queryset = super().get_queryset()
 
         # Filtros de busca
@@ -167,7 +189,7 @@ class EventoListView(AgendaMixin, ListView):
 
         if search:
             queryset = queryset.filter(
-                Q(titulo__icontains=search) | Q(descricao__icontains=search) | Q(local__icontains=search)
+                Q(titulo__icontains=search) | Q(descricao__icontains=search) | Q(local__icontains=search),
             )
 
         if status:
@@ -187,13 +209,12 @@ class EventoListView(AgendaMixin, ListView):
 
         return queryset.order_by("-data_inicio")
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: object) -> dict[str, object]:
+        """Monta contexto adicional para a listagem (cards e atalhos)."""
         context = super().get_context_data(**kwargs)
-        eventos = self.get_queryset()
         tenant = get_current_tenant(self.request)
-
-        # Estatísticas para cards
         hoje = timezone.now().date()
+        proximos_7_dias = hoje + timedelta(days=7)
 
         context.update(
             {
@@ -201,48 +222,91 @@ class EventoListView(AgendaMixin, ListView):
                 "subtitulo": "Gerenciamento de eventos da agenda",
                 "add_url": reverse("agenda:evento_create"),
                 "module": "agenda",
-                # Formulário de busca
-                "form_busca": EventoBuscaForm(data=self.request.GET, tenant=tenant),
-                # Estatísticas
-                "total_count": eventos.count(),
-                "eventos_hoje": eventos.filter(data_inicio__date=hoje).count(),
-                "eventos_pendentes": eventos.filter(status="pendente").count(),
-                "eventos_realizados": eventos.filter(status="realizado").count(),
-            }
+                "eventos_hoje": Evento.objects.filter(
+                    tenant=tenant,
+                    data_inicio__date=hoje,
+                    status="pendente",
+                ).order_by("data_inicio"),
+                "eventos_proximos": Evento.objects.filter(
+                    tenant=tenant,
+                    data_inicio__date__gte=hoje,
+                    data_inicio__date__lte=proximos_7_dias,
+                    status="pendente",
+                ).order_by("data_inicio"),
+            },
+        )
+        return context
+
+
+class EventoDetailView(AgendaMixin, DetailView):
+    """View para detalhes do evento."""
+
+    template_name = "agenda/evento_detail.html"
+    context_object_name = "evento"
+
+    def get_context_data(self, **kwargs: object) -> dict[str, object]:
+        """Inclui logs, lembretes e permissões no contexto."""
+        context = super().get_context_data(**kwargs)
+        evento = self.object
+
+        # Logs do evento
+        logs = LogEvento.objects.filter(evento=evento).order_by("-data_hora")[:10]
+
+        # Verificar se o usuário pode editar
+        user = self.request.user
+        pode_editar = user.is_superuser or user == evento.responsavel or user in evento.participantes.all()
+
+        context.update(
+            {
+                "titulo": f"Evento: {evento.titulo}",
+                "subtitulo": "Detalhes do evento",
+                "pode_editar": pode_editar,
+            },
         )
 
+        # Lembretes
+        lembretes = EventoLembrete.objects.filter(evento=evento).order_by("minutos_antes")
+        context.update(
+            {
+                "lembretes": lembretes,
+                "logs": logs,
+            },
+        )
         return context
 
 
 class EventoCreateView(AgendaMixin, CreateView):
-    """View para criação de eventos"""
+    """View para criação de eventos."""
 
     form_class = EventoForm
     template_name = "agenda/evento_form.html"
     success_url = reverse_lazy("agenda:evento_list")
 
-    def get_form_kwargs(self):
+    def get_form_kwargs(self) -> dict[str, object]:
+        """Inclui o request nos kwargs do form."""
         kwargs = super().get_form_kwargs()
         kwargs["request"] = self.request
         return kwargs
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: object) -> dict[str, object]:
+        """Adiciona títulos e dados auxiliares ao contexto do form."""
         context = super().get_context_data(**kwargs)
         context.update(
             {
                 "titulo": "Novo Evento",
                 "subtitulo": "Cadastrar novo evento na agenda",
                 "module": "agenda",
-            }
+            },
         )
         # Integração: se vindo de uma conversa do chat, mostrar dica
         conversa_id = self.request.GET.get("conversa_id")
         if conversa_id:
-            context["conversa_origem_id"] = conversa_id
+            context["conversa_id"] = self.request.GET.get("conversa_id")
             context["subtitulo"] = "Agendar reunião a partir do chat"
         return context
 
-    def form_valid(self, form):
+    def form_valid(self, form: EventoForm) -> HttpResponse:
+        """Processa o formulário quando válido e aplica integrações auxiliares."""
         # Definir tenant
         tenant = get_current_tenant(self.request)
         if tenant:
@@ -256,12 +320,14 @@ class EventoCreateView(AgendaMixin, CreateView):
         conversa_id = self.request.GET.get("conversa_id")
         if conversa_id:
             try:
-                from chat.models import Conversa
-
                 conversa = Conversa.objects.get(id=conversa_id)
                 # Adicionar participantes da conversa ao evento
                 participantes_ids = list(conversa.participantes.values_list("id", flat=True))
             except Exception:
+                LOGGER.exception(
+                    "Falha ao obter conversa %s para pré-preencher participantes.",
+                    conversa_id,
+                )
                 participantes_ids = []
         else:
             participantes_ids = []
@@ -279,40 +345,46 @@ class EventoCreateView(AgendaMixin, CreateView):
         # Mensagem de sistema no chat vinculando ao evento criado
         if conversa_id:
             try:
-                from chat.models import Conversa, Mensagem
-
                 conversa = Conversa.objects.get(id=conversa_id)
                 url = reverse("agenda:evento_detail", args=[self.object.id])
                 Mensagem.objects.create(
                     tenant=self.object.tenant,
                     conversa=conversa,
                     remetente=self.request.user,
-                    conteudo=f"Reunião agendada: {self.object.titulo} – veja os detalhes em {url}",
                     tipo="sistema",
+                    conteudo=f"Reunião agendada: {self.object.titulo} - veja os detalhes em {url}",
                 )
             except Exception:
-                pass
+                LOGGER.exception(
+                    "Falha ao registrar mensagem de sistema para conversa %s.",
+                    conversa_id,
+                )
 
-        messages.success(self.request, "Evento criado com sucesso!")
         return response
 
     # Método reutilizável também chamado pelo UpdateView
-    def _aplicar_lembretes_padrao(self, form):  # compat: mantido no CreateView para não quebrar referências
+    def _aplicar_lembretes_padrao(self, form: EventoForm) -> None:
+        """Aplica lembretes padrão no create.
+
+        Compat: mantido no CreateView para não quebrar referências existentes.
+        """
         aplicar_lembretes_padrao(self.object, form.cleaned_data)
 
 
 class EventoUpdateView(AgendaMixin, UpdateView):
-    """View para edição de eventos"""
+    """Edita um evento existente."""
 
     form_class = EventoForm
     template_name = "agenda/evento_form.html"
 
-    def get_form_kwargs(self):
+    def get_form_kwargs(self) -> dict[str, object]:
+        """Inclui o request nos kwargs do form."""
         kwargs = super().get_form_kwargs()
         kwargs["request"] = self.request
         return kwargs
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: object) -> dict[str, object]:
+        """Adiciona títulos e o próprio evento ao contexto."""
         context = super().get_context_data(**kwargs)
         context.update(
             {
@@ -320,14 +392,12 @@ class EventoUpdateView(AgendaMixin, UpdateView):
                 "subtitulo": "Editar dados do evento",
                 "module": "agenda",
                 "evento": self.object,
-            }
+            },
         )
         return context
 
-    def get_success_url(self):
-        return reverse("agenda:evento_detail", kwargs={"pk": self.object.pk})
-
-    def form_valid(self, form):
+    def form_valid(self, form: EventoForm) -> HttpResponse:
+        """Processa o formulário válido."""
         response = super().form_valid(form)
         aplicar_lembretes_padrao(self.object, form.cleaned_data)
         messages.success(self.request, "Evento atualizado com sucesso!")
@@ -337,105 +407,97 @@ class EventoUpdateView(AgendaMixin, UpdateView):
 # ------------------------------------------------------------------
 # Função util compartilhada para aplicação de lembretes (Create/Update)
 # ------------------------------------------------------------------
-def aplicar_lembretes_padrao(evento, cleaned_data):
+def aplicar_lembretes_padrao(evento: Evento, cleaned_data: dict) -> None:
+    """Aplica os lembretes padrão a um evento."""
     try:
-        from .models import AgendaConfiguracao
+        minutos_set = _get_minutos_lembretes(cleaned_data, evento.tenant)
+        usuarios_ids = _get_usuarios_para_lembrete(evento)
 
-        tenant = evento.tenant
-        lembrete_15 = cleaned_data.get("lembrete_15")
-        lembrete_60 = cleaned_data.get("lembrete_60")
-
-        minutos_set = set()
-        if lembrete_15:
-            minutos_set.add(15)
-        if lembrete_60:
-            minutos_set.add(60)
-        try:
-            cfg = tenant.agenda_config
-            for m in cfg.lembretes_padrao:
-                try:
-                    minutos_set.add(int(m))
-                except Exception:
-                    continue
-        except AgendaConfiguracao.DoesNotExist:
-            minutos_set.update({15, 60})
-
-        usuarios = set()
-        if evento.responsavel_id:
-            usuarios.add(evento.responsavel_id)
-        with contextlib.suppress(Exception):
-            usuarios.update(list(evento.participantes.values_list("id", flat=True)))
-
-        def set_lembrete(uid, minutos, ativo):
-            try:
-                obj, _ = EventoLembrete.objects.get_or_create(evento=evento, usuario_id=uid, minutos_antes=minutos)
-                if obj.ativo != ativo:
-                    obj.ativo = ativo
-                    obj.save(update_fields=["ativo"])
-            except Exception:
-                pass
-
-        for uid in usuarios:
-            for minutos in minutos_set:
-                set_lembrete(uid, minutos, True)
-            try:
-                existentes = EventoLembrete.objects.filter(evento=evento, usuario_id=uid)
-                for lemb in existentes:
-                    if lemb.minutos_antes not in minutos_set and lemb.ativo:
-                        lemb.ativo = False
-                        lemb.save(update_fields=["ativo"])
-            except Exception:
-                pass
+        for user_id in usuarios_ids:
+            _atualizar_lembretes_usuario(evento, user_id, minutos_set)
     except Exception:
-        # Silencia totalmente erros de lembretes para não quebrar fluxo principal
-        pass
+        # Loga e mantém o fluxo principal sem interrupção
+        LOGGER.exception("Falha ao aplicar lembretes padrão para o evento %s.", evento.id)
 
 
-class EventoDetailView(AgendaMixin, DetailView):
-    """View para detalhes do evento"""
+def _get_minutos_lembretes(cleaned_data: dict, tenant: Tenant) -> set[int]:
+    """Retorna o conjunto de minutos para os lembretes."""
+    minutos_set = set()
+    if cleaned_data.get("lembrete_15"):
+        minutos_set.add(15)
+    if cleaned_data.get("lembrete_60"):
+        minutos_set.add(60)
 
-    template_name = "agenda/evento_detail.html"
-    context_object_name = "evento"
+    try:
+        cfg = tenant.agenda_config
+        for m in cfg.lembretes_padrao:
+            with contextlib.suppress(ValueError):
+                minutos_set.add(int(m))
+    except AgendaConfiguracao.DoesNotExist:
+        minutos_set.update({15, 60})
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        evento = self.object
+    return minutos_set
 
-        # Logs do evento
-        logs = LogEvento.objects.filter(evento=evento).order_by("-data_hora")[:10]
 
-        # Verificar se o usuário pode editar
-        user = self.request.user
-        pode_editar = user.is_superuser or user == evento.responsavel or user in evento.participantes.all()
+def _get_usuarios_para_lembrete(evento: Evento) -> set[int]:
+    """Retorna o conjunto de IDs de usuários para receber lembretes."""
+    usuarios = set()
+    if evento.responsavel_id:
+        usuarios.add(evento.responsavel_id)
+    with contextlib.suppress(Exception):
+        usuarios.update(list(evento.participantes.values_list("id", flat=True)))
+    return usuarios
 
-        context.update(
-            {
-                "titulo": f"Evento: {evento.titulo}",
-                "subtitulo": "Detalhes do evento",
-                "logs": logs,
-                "pode_editar": pode_editar,
-                "lembretes_participantes": evento.lembretes.select_related("usuario").order_by(
-                    "usuario__first_name", "minutos_antes"
-                ),
-            }
+
+def _atualizar_lembretes_usuario(evento: Evento, user_id: int, minutos_set: set[int]) -> None:
+    """Cria ou atualiza lembretes para um usuário específico."""
+    for minutos in minutos_set:
+        try:
+            lembrete, _ = EventoLembrete.objects.get_or_create(
+                evento=evento,
+                usuario_id=user_id,
+                minutos_antes=minutos,
+            )
+            if not lembrete.ativo:
+                lembrete.ativo = True
+                lembrete.save(update_fields=["ativo"])
+        except Exception:
+            LOGGER.exception(
+                "Falha ao criar/ativar lembrete do usuário %s em %s para %s minutos.",
+                user_id,
+                evento.id,
+                minutos,
+            )
+
+    # Desativa lembretes que não estão mais no set
+    try:
+        existentes = EventoLembrete.objects.filter(evento=evento, usuario_id=user_id, ativo=True)
+        for lembrete in existentes:
+            if lembrete.minutos_antes not in minutos_set:
+                lembrete.ativo = False
+                lembrete.save(update_fields=["ativo"])
+    except Exception:
+        LOGGER.exception(
+            "Falha ao desativar lembretes obsoletos do usuário %s no evento %s.",
+            user_id,
+            evento.id,
         )
-
-        return context
 
 
 class EventoDeleteView(AgendaMixin, DeleteView):
-    """View para exclusão de eventos"""
+    """View para exclusão de eventos."""
 
     template_name = "agenda/evento_confirm_delete.html"
     success_url = reverse_lazy("agenda:evento_list")
 
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:  # noqa: ANN401
+        """Exclui o evento e adiciona mensagem de sucesso."""
         messages.success(request, "Evento excluído com sucesso!")
         return super().delete(request, *args, **kwargs)
 
 
 @login_required
-def gerenciar_lembrete_participante(request, pk):
+def gerenciar_lembrete_participante(request: HttpRequest, pk: int) -> HttpResponse | JsonResponse:
     """Cria/ativa/desativa lembretes individuais para um participante via POST."""
     evento = get_object_or_404(Evento, pk=pk)
     tenant = get_current_tenant(request)
@@ -454,18 +516,23 @@ def gerenciar_lembrete_participante(request, pk):
         return HttpResponseForbidden("Sem permissão")
 
     try:
-        lemb, created = EventoLembrete.objects.get_or_create(evento=evento, usuario_id=user_id, minutos_antes=minutos)
+        lemb, created = EventoLembrete.objects.get_or_create(
+            evento=evento,
+            usuario_id=user_id,
+            minutos_antes=minutos,
+        )
         if lemb.ativo != ativo_flag:
             lemb.ativo = ativo_flag
             lemb.save(update_fields=["ativo"])
         return JsonResponse({"ok": True, "created": created, "ativo": lemb.ativo})
     except Exception as e:
+        LOGGER.exception("Erro ao gerenciar lembrete de participante para evento %s.", evento.id)
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
 
 
 @login_required
-def agenda_calendar(request):
-    """View para visualização em calendário"""
+def agenda_calendar(request: HttpRequest) -> HttpResponse:
+    """View para visualização em calendário."""
     tenant = get_current_tenant(request)
 
     if not tenant:
@@ -478,18 +545,20 @@ def agenda_calendar(request):
 
     # Criar datas para o mês
     primeiro_dia = date(year, month, 1)
-    if month == 12:
+    if month == MESES_DO_ANO:
         ultimo_dia = date(year + 1, 1, 1) - timedelta(days=1)
     else:
         ultimo_dia = date(year, month + 1, 1) - timedelta(days=1)
 
     # Buscar eventos do mês
     eventos = Evento.objects.filter(
-        tenant=tenant, data_inicio__date__gte=primeiro_dia, data_inicio__date__lte=ultimo_dia
+        tenant=tenant,
+        data_inicio__date__gte=primeiro_dia,
+        data_inicio__date__lte=ultimo_dia,
     ).order_by("data_inicio")
 
     # Organizar eventos por dia
-    eventos_por_dia = {}
+    eventos_por_dia: dict[int, list[Evento]] = {}
     for evento in eventos:
         dia = evento.data_inicio.date().day
         if dia not in eventos_por_dia:
@@ -500,10 +569,10 @@ def agenda_calendar(request):
     cal = calendar.monthcalendar(year, month)
 
     # Navegação
-    mes_anterior = month - 1 if month > 1 else 12
+    mes_anterior = month - 1 if month > 1 else MESES_DO_ANO
     ano_anterior = year if month > 1 else year - 1
-    mes_proximo = month + 1 if month < 12 else 1
-    ano_proximo = year if month < 12 else year + 1
+    mes_proximo = month + 1 if month < MESES_DO_ANO else 1
+    ano_proximo = year if month < MESES_DO_ANO else year + 1
 
     context = {
         "titulo": "Calendário",
@@ -518,7 +587,6 @@ def agenda_calendar(request):
         "ano_anterior": ano_anterior,
         "mes_proximo": mes_proximo,
         "ano_proximo": ano_proximo,
-        "form_evento": EventoCalendarioForm(tenant=tenant),
     }
 
     return render(request, "agenda/agenda_calendar.html", context)
@@ -527,8 +595,8 @@ def agenda_calendar(request):
 # Views AJAX
 @login_required
 @csrf_exempt
-def evento_ajax_create(request):
-    """Criar evento via AJAX (para calendário)"""
+def evento_ajax_create(request: HttpRequest) -> JsonResponse:
+    """Criar evento via AJAX (para calendário)."""
     if request.method == "POST":
         data = json.loads(request.body)
         tenant = get_current_tenant(request)
@@ -548,14 +616,15 @@ def evento_ajax_create(request):
 
             return JsonResponse({"success": True, "evento_id": evento.id, "message": "Evento criado com sucesso!"})
         except Exception as e:
-            return JsonResponse({"success": False, "message": f"Erro ao criar evento: {str(e)}"})
+            LOGGER.exception("Erro ao criar evento via AJAX para tenant atual.")
+            return JsonResponse({"success": False, "message": f"Erro ao criar evento: {e!s}"})
 
     return JsonResponse({"success": False, "message": "Método não permitido"})
 
 
 @login_required
-def evento_ajax_update_status(request, pk):
-    """Atualizar status do evento via AJAX"""
+def evento_ajax_update_status(request: HttpRequest, pk: int) -> JsonResponse:
+    """Atualizar status do evento via AJAX."""
     if request.method == "POST":
         evento = get_object_or_404(Evento, pk=pk)
         tenant = get_current_tenant(request)
@@ -574,8 +643,8 @@ def evento_ajax_update_status(request, pk):
 
 
 @login_required
-def evento_search_ajax(request):
-    """Busca AJAX para eventos"""
+def evento_search_ajax(request: HttpRequest) -> JsonResponse:
+    """Busca AJAX para eventos."""
     term = request.GET.get("term", "")
     tenant = get_current_tenant(request)
 
@@ -583,25 +652,24 @@ def evento_search_ajax(request):
 
     if term:
         eventos_qs = eventos_qs.filter(
-            Q(titulo__icontains=term) | Q(descricao__icontains=term) | Q(local__icontains=term)
+            Q(titulo__icontains=term) | Q(descricao__icontains=term) | Q(local__icontains=term),
         )
 
-    results = []
-    for evento in eventos_qs[:10]:
-        results.append(
-            {
-                "id": evento.id,
-                "text": evento.titulo,
-                "data": evento.data_inicio.strftime("%d/%m/%Y %H:%M"),
-                "status": evento.get_status_display(),
-            }
-        )
+    results = [
+        {
+            "id": evento.id,
+            "text": evento.titulo,
+            "data": evento.data_inicio.strftime("%d/%m/%Y %H:%M"),
+            "status": evento.get_status_display(),
+        }
+        for evento in eventos_qs[:10]
+    ]
 
     return JsonResponse({"results": results})
 
 
 @login_required
-def api_eventos(request):
+def api_eventos(request: HttpRequest) -> JsonResponse:
     """Endpoint JSON para FullCalendar listar eventos do tenant atual."""
     tenant = get_current_tenant(request)
     if not tenant and not request.user.is_superuser:
@@ -620,37 +688,35 @@ def api_eventos(request):
         if end:
             qs = qs.filter(data_inicio__lte=datetime.fromisoformat(end))
     except Exception:
-        # Ignora filtros inválidos
-        pass
+        LOGGER.exception("Parâmetros de filtro inválidos em api_eventos.")
 
-    events = []
-    for e in qs:
-        events.append(
-            {
-                "id": e.id,
-                "title": e.titulo,
-                "start": e.data_inicio.isoformat() if e.data_inicio else None,
-                "end": e.data_fim.isoformat() if e.data_fim else None,
-                "allDay": bool(e.dia_inteiro),
-                "url": reverse("agenda:evento_detail", kwargs={"pk": e.pk}),
-                "extendedProps": {
-                    "status": e.status,
-                    "prioridade": e.prioridade,
-                    "description": e.descricao,
-                    "local": getattr(e, "local", ""),
-                    "responsavel": f"{e.responsavel.first_name} {e.responsavel.last_name}" if e.responsavel else "",
-                    "tipo_evento": getattr(e, "tipo_evento", ""),
-                },
-            }
-        )
+    events = [
+        {
+            "id": e.id,
+            "title": e.titulo,
+            "start": e.data_inicio.isoformat() if e.data_inicio else None,
+            "end": e.data_fim.isoformat() if e.data_fim else None,
+            "allDay": bool(e.dia_inteiro),
+            "url": reverse("agenda:evento_detail", kwargs={"pk": e.pk}),
+            "extendedProps": {
+                "status": e.status,
+                "prioridade": e.prioridade,
+                "description": e.descricao,
+                "local": getattr(e, "local", ""),
+                "responsavel": f"{e.responsavel.first_name} {e.responsavel.last_name}" if e.responsavel else "",
+                "tipo_evento": getattr(e, "tipo_evento", ""),
+            },
+        }
+        for e in qs
+    ]
 
     return JsonResponse(events, safe=False)
 
 
 # Views de relatórios
 @login_required
-def eventos_relatorio(request):
-    """Relatório de eventos"""
+def eventos_relatorio(request: HttpRequest) -> HttpResponse:
+    """Relatório de eventos."""
     tenant = get_current_tenant(request)
 
     if not tenant:
@@ -685,26 +751,26 @@ def eventos_relatorio(request):
 
 
 # Views funcionais (legacy)
-def evento_list(request):
-    """View funcional para listagem (legacy)"""
+def evento_list(request: HttpRequest) -> HttpResponse:
+    """View funcional para listagem (legacy)."""
     return EventoListView.as_view()(request)
 
 
-def evento_add(request):
-    """View funcional para criação (legacy)"""
+def evento_add(request: HttpRequest) -> HttpResponse:
+    """View funcional para criação (legacy)."""
     return EventoCreateView.as_view()(request)
 
 
-def evento_edit(request, pk):
-    """View funcional para edição (legacy)"""
+def evento_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    """View funcional para edição (legacy)."""
     return EventoUpdateView.as_view()(request, pk=pk)
 
 
-def evento_detail(request, pk):
-    """View funcional para detalhes (legacy)"""
-    return EventoDetailView.as_view()(request, pk=pk)
-
-
-def evento_delete(request, pk):
-    """View funcional para exclusão (legacy)"""
+def evento_delete(request: HttpRequest, pk: int) -> HttpResponse:
+    """View funcional para exclusão (legacy)."""
     return EventoDeleteView.as_view()(request, pk=pk)
+
+
+def evento_detail(request: HttpRequest, pk: int) -> HttpResponse:
+    """View funcional para detalhes (legacy)."""
+    return EventoDetailView.as_view()(request, pk=pk)

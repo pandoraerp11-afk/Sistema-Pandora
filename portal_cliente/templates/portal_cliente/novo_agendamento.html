@@ -1,28 +1,9 @@
-{% extends 'pandora_ultra_modern_base.html' %}
+{% extends 'portal_cliente/base_portal.html' %}
 {% load static %}
 
 {% block title %}Portal Cliente - Novo Agendamento{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'css/portal_cliente.css' %}" rel="stylesheet">
-<style>
-.slot-card {
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-.slot-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.slot-card.selected {
-    border-color: #0d6efd;
-    background-color: #e7f3ff;
-}
-.loading-spinner {
-    display: none;
-}
-</style>
-{% endblock %}
+{% block extra_css %}{{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -181,6 +162,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
 let servicoSelecionado = null;
 let slotSelecionado = null;

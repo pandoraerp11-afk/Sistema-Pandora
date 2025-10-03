@@ -1,13 +1,19 @@
-# admin/views.py (Versão Ultra Moderna)
+"""Módulo de administração para o sistema Pandora."""
 
+from __future__ import annotations
+
+import logging
 from datetime import timedelta
+from itertools import groupby
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Count, Q, Sum
-from django.http import Http404
+from django.core.paginator import Paginator
+from django.db.models import Count, Q, QuerySet, Sum
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -15,21 +21,30 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 from rest_framework import permissions, viewsets
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from clientes.models import Cliente
-from core.models import Tenant
-
-# Importações específicas do sistema
+from core.models import Tenant, TenantUser
 from core.utils import get_current_tenant
 from financeiro.models import ContaPagar, ContaReceber
+from funcionarios.models import Funcionario
 from obras.models import Obra
 from orcamentos.models import Orcamento
 from produtos.models import Produto
+from user_management.models import PerfilUsuarioEstendido
 
-from .forms import SystemAlertForm, SystemConfigurationForm, TenantConfigurationForm
-
-# Importações do módulo admin
-from .models import AdminActivity, SystemAlert, SystemConfiguration, TenantBackup, TenantConfiguration
+from .forms import (
+    SystemAlertForm,
+    SystemConfigurationForm,
+    TenantConfigurationForm,
+)
+from .models import (
+    AdminActivity,
+    SystemAlert,
+    SystemConfiguration,
+    TenantBackup,
+    TenantConfiguration,
+)
 from .serializers import (
     AdminActivitySerializer,
     DashboardStatsSerializer,
@@ -40,31 +55,60 @@ from .serializers import (
     TenantUsageReportSerializer,
 )
 
+if TYPE_CHECKING:
+    from django.db.models.query import QuerySet
+    from django.forms import BaseModelForm
+
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
+class ModuleInfo(TypedDict):
+    """Define a estrutura para as informações do módulo."""
+
+    id: str
+    name: str
+    description: str
+    icon: str
+    category: str
+    price: float
+    active: bool
+    usage: float
+
 
 # --- Views de Página (Renderizadas com Templates) ---
 
 
 @login_required
-def admin_home(request):
-    """View ultra-moderna para o dashboard administrativo com métricas em tempo real."""
+def admin_home(request: HttpRequest) -> HttpResponse | HttpResponseRedirect:
+    """View ultra-moderna para o dashboard administrativo com métricas em tempo real.
+
+    Args:
+        request: O objeto HttpRequest.
+
+    Returns:
+        Uma HttpResponse renderizando o dashboard ou um redirecionamento.
+
+    """
     template_name = "admin/admin_home.html"
     tenant = get_current_tenant(request)
 
     # Estatísticas baseadas no perfil do usuário
     if request.user.is_superuser:
         # Super Admin: Dados globais do sistema
-        from core.models import Tenant
-        from user_management.models import PerfilUsuarioEstendido
-
         # Métricas principais
         total_empresas = Tenant.objects.count()
         empresas_ativas = Tenant.objects.filter(status="active").count()
         usuarios_sistema = PerfilUsuarioEstendido.objects.count()
-        usuarios_ativos = PerfilUsuarioEstendido.objects.filter(status="ativo").count()
+        usuarios_ativos = PerfilUsuarioEstendido.objects.filter(
+            status="ativo",
+        ).count()
 
         # Alertas e notificações
-        alertas_criticos = SystemAlert.objects.filter(severity="critical", status="open").count()
+        alertas_criticos = SystemAlert.objects.filter(
+            severity="critical",
+            status="open",
+        ).count()
         alertas_pendentes = SystemAlert.objects.filter(status="open").count()
         alertas_resolvidos_hoje = SystemAlert.objects.filter(
             status="resolved",
@@ -72,7 +116,12 @@ def admin_home(request):
         ).count()
 
         # Atividades administrativas recentes
-        atividades_recentes = AdminActivity.objects.select_related("admin_user", "tenant").order_by("-created_at")[:10]
+        atividades_recentes = AdminActivity.objects.select_related(
+            "admin_user",
+            "tenant",
+        ).order_by(
+            "-created_at"
+        )[:10]
 
         # Métricas de performance
         performance_geral = 98.5  # Simulado - implementar cálculo real
@@ -100,11 +149,11 @@ def admin_home(request):
     else:
         # Admin da empresa: Dados específicos da empresa
         if not tenant:
-            messages.error(request, _("Selecione uma empresa para ver o dashboard."))
+            messages.error(
+                request,
+                _("Selecione uma empresa para ver o dashboard."),
+            )
             return redirect(reverse("core:tenant_select"))
-
-        from core.models import TenantUser
-        from user_management.models import PerfilUsuarioEstendido
 
         # Métricas da empresa
         tenant_users = TenantUser.objects.filter(tenant=tenant)
@@ -117,8 +166,15 @@ def admin_home(request):
         ).count()
 
         # Alertas específicos da empresa
-        alertas_criticos = SystemAlert.objects.filter(tenant=tenant, severity="critical", status="open").count()
-        alertas_pendentes = SystemAlert.objects.filter(tenant=tenant, status="open").count()
+        alertas_criticos = SystemAlert.objects.filter(
+            tenant=tenant,
+            severity="critical",
+            status="open",
+        ).count()
+        alertas_pendentes = SystemAlert.objects.filter(
+            tenant=tenant,
+            status="open",
+        ).count()
         alertas_resolvidos_hoje = SystemAlert.objects.filter(
             tenant=tenant,
             status="resolved",
@@ -136,10 +192,22 @@ def admin_home(request):
 
         # Dados para gráficos (específicos da empresa)
         alertas_por_severidade = {
-            "critical": SystemAlert.objects.filter(tenant=tenant, severity="critical").count(),
-            "high": SystemAlert.objects.filter(tenant=tenant, severity="high").count(),
-            "medium": SystemAlert.objects.filter(tenant=tenant, severity="medium").count(),
-            "low": SystemAlert.objects.filter(tenant=tenant, severity="low").count(),
+            "critical": SystemAlert.objects.filter(
+                tenant=tenant,
+                severity="critical",
+            ).count(),
+            "high": SystemAlert.objects.filter(
+                tenant=tenant,
+                severity="high",
+            ).count(),
+            "medium": SystemAlert.objects.filter(
+                tenant=tenant,
+                severity="medium",
+            ).count(),
+            "low": SystemAlert.objects.filter(
+                tenant=tenant,
+                severity="low",
+            ).count(),
         }
 
         context_specific = {
@@ -195,8 +263,16 @@ def admin_home(request):
 
 
 @login_required
-def alerts_page(request):
-    """View moderna para listar alertas com filtros avançados"""
+def alerts_page(request: HttpRequest) -> HttpResponse:
+    """View moderna para listar alertas com filtros avançados.
+
+    Args:
+        request: O objeto HttpRequest.
+
+    Returns:
+        Uma HttpResponse renderizando a lista de alertas.
+
+    """
     template_name = "admin/alerts_list.html"
 
     # Filtros
@@ -207,7 +283,10 @@ def alerts_page(request):
     date_to = request.GET.get("date_to", "")
 
     # Query base
-    alerts = SystemAlert.objects.select_related("tenant", "assigned_to").order_by("-created_at")
+    alerts = SystemAlert.objects.select_related(
+        "tenant",
+        "assigned_to",
+    ).order_by("-created_at")
 
     # Aplicar filtros
     if severity_filter:
@@ -227,8 +306,6 @@ def alerts_page(request):
         alerts = alerts.filter(tenant=tenant) if tenant else alerts.none()
 
     # Paginação
-    from django.core.paginator import Paginator
-
     paginator = Paginator(alerts, 25)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -250,8 +327,16 @@ def alerts_page(request):
 
 
 @login_required
-def configurations_page(request):
-    """View moderna para configurações do sistema"""
+def configurations_page(request: HttpRequest) -> HttpResponse:
+    """View moderna para configurações do sistema.
+
+    Args:
+        request: O objeto HttpRequest.
+
+    Returns:
+        Uma HttpResponse renderizando a página de configurações.
+
+    """
     template_name = "admin/configurations_list.html"
 
     # Filtros
@@ -265,14 +350,12 @@ def configurations_page(request):
     if category_filter:
         configs = configs.filter(category=category_filter)
     if search_query:
-        configs = configs.filter(Q(key__icontains=search_query) | Q(description__icontains=search_query))
+        configs = configs.filter(
+            Q(key__icontains=search_query) | Q(description__icontains=search_query),
+        )
 
     # Agrupar por categoria
-    from itertools import groupby
-
-    configs_by_category = {}
-    for category, group in groupby(configs, key=lambda x: x.category):
-        configs_by_category[category] = list(group)
+    configs_by_category = {category: list(group) for category, group in groupby(configs, key=lambda x: x.category)}
 
     context = {
         "configurations": configs,
@@ -287,7 +370,11 @@ def configurations_page(request):
     return render(request, template_name, context)
 
 
-class SystemAlertCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+class SystemAlertCreateView(
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    CreateView,
+):
     """View para criar novos alertas do sistema."""
 
     model = SystemAlert
@@ -295,10 +382,12 @@ class SystemAlertCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     template_name = "admin/system_alert_form.html"
     success_url = reverse_lazy("administration:alerts_page")
 
-    def test_func(self):
+    def test_func(self) -> bool:
+        """Verifica se o usuário é superuser."""
         return self.request.user.is_superuser
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
         context.update(
             {
@@ -309,12 +398,17 @@ class SystemAlertCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         )
         return context
 
-    def form_valid(self, form):
+    def form_valid(self, form: BaseModelForm) -> HttpResponse:
+        """Executa se o formulário for válido."""
         messages.success(self.request, "Alerta criado com sucesso!")
         return super().form_valid(form)
 
 
-class SystemAlertUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class SystemAlertUpdateView(
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    UpdateView,
+):
     """View para editar alertas do sistema."""
 
     model = SystemAlert
@@ -322,10 +416,12 @@ class SystemAlertUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
     template_name = "admin/system_alert_form.html"
     success_url = reverse_lazy("administration:alerts_page")
 
-    def test_func(self):
+    def test_func(self) -> bool:
+        """Verifica se o usuário é superuser."""
         return self.request.user.is_superuser
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
         context.update(
             {
@@ -336,12 +432,17 @@ class SystemAlertUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         )
         return context
 
-    def form_valid(self, form):
+    def form_valid(self, form: BaseModelForm) -> HttpResponse:
+        """Executa se o formulário for válido."""
         messages.success(self.request, "Alerta atualizado com sucesso!")
         return super().form_valid(form)
 
 
-class SystemConfigurationCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+class SystemConfigurationCreateView(
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    CreateView,
+):
     """View para criar configurações globais do sistema."""
 
     model = SystemConfiguration
@@ -349,10 +450,12 @@ class SystemConfigurationCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
     template_name = "admin/system_config_form.html"
     success_url = reverse_lazy("administration:configurations_page")
 
-    def test_func(self):
+    def test_func(self) -> bool:
+        """Verifica se o usuário é superuser."""
         return self.request.user.is_superuser
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
         context.update(
             {
@@ -363,12 +466,17 @@ class SystemConfigurationCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         )
         return context
 
-    def form_valid(self, form):
+    def form_valid(self, form: BaseModelForm) -> HttpResponse:
+        """Executa se o formulário for válido."""
         messages.success(self.request, "Configuração criada com sucesso!")
         return super().form_valid(form)
 
 
-class SystemConfigurationUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class SystemConfigurationUpdateView(
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    UpdateView,
+):
     """View para editar configurações globais do sistema."""
 
     model = SystemConfiguration
@@ -376,10 +484,12 @@ class SystemConfigurationUpdateView(LoginRequiredMixin, UserPassesTestMixin, Upd
     template_name = "admin/system_config_form.html"
     success_url = reverse_lazy("administration:configurations_page")
 
-    def test_func(self):
+    def test_func(self) -> bool:
+        """Verifica se o usuário é superuser."""
         return self.request.user.is_superuser
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
         context.update(
             {
@@ -390,7 +500,8 @@ class SystemConfigurationUpdateView(LoginRequiredMixin, UserPassesTestMixin, Upd
         )
         return context
 
-    def form_valid(self, form):
+    def form_valid(self, form: BaseModelForm) -> HttpResponse:
+        """Executa se o formulário for válido."""
         messages.success(self.request, "Configuração atualizada com sucesso!")
         return super().form_valid(form)
 
@@ -403,13 +514,18 @@ class TenantConfigurationUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "admin/tenant_config_form.html"
     success_url = reverse_lazy("administration:configurations_page")
 
-    def get_object(self, queryset=None):
+    def get_object(
+        self,
+        queryset: QuerySet[TenantConfiguration] | None = None,
+    ) -> TenantConfiguration:
         """Pega ou cria a configuração do tenant atual."""
+        _ = queryset  # Unused argument
         tenant = get_current_tenant(self.request)
         if not tenant:
-            raise Http404("Nenhuma empresa selecionada")
+            msg = "Nenhuma empresa selecionada"
+            raise Http404(msg)
 
-        config, created = TenantConfiguration.objects.get_or_create(
+        config, _created = TenantConfiguration.objects.get_or_create(
             tenant=tenant,
             defaults={
                 "max_users": 100,
@@ -422,12 +538,13 @@ class TenantConfigurationUpdateView(LoginRequiredMixin, UpdateView):
         )
         return config
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
         tenant = get_current_tenant(self.request)
         context.update(
             {
-                "page_title": f"Configurações - {tenant.name}",
+                "page_title": f"Configurações - {tenant.name if tenant else ''}",
                 "page_subtitle": "Configure os parâmetros da empresa",
                 "form_title": "Configurações da Empresa",
                 "current_tenant": tenant,
@@ -435,8 +552,12 @@ class TenantConfigurationUpdateView(LoginRequiredMixin, UpdateView):
         )
         return context
 
-    def form_valid(self, form):
-        messages.success(self.request, "Configurações da empresa atualizadas com sucesso!")
+    def form_valid(self, form: BaseModelForm) -> HttpResponse:
+        """Executa se o formulário for válido."""
+        messages.success(
+            self.request,
+            "Configurações da empresa atualizadas com sucesso!",
+        )
         return super().form_valid(form)
 
 
@@ -448,10 +569,12 @@ class SystemAlertListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     context_object_name = "alerts"
     paginate_by = 20
 
-    def test_func(self):
+    def test_func(self) -> bool:
+        """Verifica se o usuário é superuser."""
         return self.request.user.is_superuser
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[SystemAlert]:
+        """Retorna a queryset de alertas filtrada."""
         queryset = SystemAlert.objects.all().order_by("-created_at")
 
         # Filtros
@@ -468,17 +591,21 @@ class SystemAlertListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
         return queryset
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
         context.update(
             {
                 "page_title": "Alertas do Sistema",
                 "page_subtitle": "Monitoramento e gestão de alertas",
-                "tenants": Tenant.objects.filter(status="active").order_by("name"),
+                "tenants": Tenant.objects.filter(status="active").order_by(
+                    "name",
+                ),
                 "status_choices": SystemAlert.STATUS_CHOICES,
                 "severity_choices": SystemAlert.SEVERITY_CHOICES,
             },
         )
+        return context
 
 
 class AdminDashboardView(TemplateView):
@@ -486,7 +613,8 @@ class AdminDashboardView(TemplateView):
 
     template_name = "admin/dashboard_ultra_modern.html"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
         context["page_title"] = "Painel do Super Admin"
         return context
@@ -503,7 +631,8 @@ class SystemConfigurationsView(TemplateView):
 
     template_name = "admin/tenant_configurations.html"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
 
         # Pegar o tenant atual
@@ -536,7 +665,8 @@ class ManagementDashboardView(TemplateView):
 
     template_name = "management_home.html"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:  # noqa: ANN003
+        """Adiciona dados ao contexto do template."""
         context = super().get_context_data(**kwargs)
 
         # Dados gerais do sistema
@@ -569,24 +699,19 @@ class ManagementDashboardView(TemplateView):
 
         return context
 
-    def get_total_funcionarios(self):
+    def get_total_funcionarios(self) -> int:
         """Retorna o total de funcionários ativos."""
         try:
-            from funcionarios.models import Funcionario
-
             return Funcionario.objects.filter(ativo=True).count()
         except ImportError:
+            logger.warning("Módulo 'funcionarios' não encontrado. Usando valor mock.")
             return 156  # Valor fictício para demonstração
 
-    def get_pendencias_criticas(self):
+    def get_pendencias_criticas(self) -> int:
         """Retorna o número de pendências críticas."""
+        pendencias = 0
         try:
-            # Buscar pendências críticas de diferentes módulos
-            pendencias = 0
-
             # Contas a pagar vencidas
-            from financeiro.models import ContaPagar
-
             contas_vencidas = ContaPagar.objects.filter(
                 status="pendente",
                 data_vencimento__lt=timezone.now().date(),
@@ -594,16 +719,17 @@ class ManagementDashboardView(TemplateView):
             pendencias += contas_vencidas
 
             # Obras com problemas
-            from obras.models import Obra
-
-            obras_problemas = Obra.objects.filter(status__in=["parada", "atrasada"]).count()
+            obras_problemas = Obra.objects.filter(
+                status__in=["parada", "atrasada"],
+            ).count()
             pendencias += obras_problemas
 
-            return pendencias
-        except Exception:
+        except ImportError as e:
+            logger.warning("Erro ao importar módulo para pendências: %s", e)
             return 12  # Valor fictício
+        return pendencias
 
-    def get_performance_geral(self):
+    def get_performance_geral(self) -> int:
         """Calcula a performance geral do sistema."""
         try:
             # Lógica para calcular performance baseada em KPIs
@@ -616,54 +742,72 @@ class ManagementDashboardView(TemplateView):
             performance = (produtividade + qualidade + eficiencia + pontualidade) / 4
             return round(performance)
         except Exception:
+            logger.exception("Erro ao calcular performance geral")
             return 87
 
-    def get_tarefas_vencidas(self):
+    def get_tarefas_vencidas(self) -> int:
         """Retorna o número de tarefas vencidas."""
         try:
             # Integração com sistema de tarefas se existir
             return 8  # Valor fictício
         except Exception:
+            logger.exception("Erro ao buscar tarefas vencidas")
             return 8
 
-    def get_performance_departamentos(self):
+    def get_performance_departamentos(self) -> list[int]:
         """Retorna performance por departamento para gráfico radar."""
-        return [85, 92, 78, 88, 91, 87]  # Admin, Vendas, Produção, Financeiro, RH, TI
+        return [85, 92, 78, 88, 91, 87]
 
-    def get_monthly_performance(self):
+    def get_monthly_performance(self) -> list[int]:
         """Retorna dados de performance mensal."""
-        return [78, 82, 85, 83, 89, 87]  # Performance dos últimos 6 meses
+        return [78, 82, 85, 83, 89, 87]
 
-    def get_kpis_principais(self):
+    def get_kpis_principais(self) -> dict[str, dict[str, Any]]:
         """Retorna os KPIs principais."""
         return {
-            "produtividade": {"value": 87, "target": 85, "status": "success", "trend": "up"},
-            "qualidade": {"value": 92, "target": 90, "status": "success", "trend": "up"},
-            "eficiencia": {"value": 73, "target": 80, "status": "warning", "trend": "down"},
-            "pontualidade": {"value": 89, "target": 85, "status": "success", "trend": "up"},
+            "produtividade": {
+                "value": 87,
+                "target": 85,
+                "status": "success",
+                "trend": "up",
+            },
+            "qualidade": {
+                "value": 92,
+                "target": 90,
+                "status": "success",
+                "trend": "up",
+            },
+            "eficiencia": {
+                "value": 73,
+                "target": 80,
+                "status": "warning",
+                "trend": "down",
+            },
+            "pontualidade": {
+                "value": 89,
+                "target": 85,
+                "status": "success",
+                "trend": "up",
+            },
         }
 
-    def get_team_performance(self):
+    def get_team_performance(self) -> list[dict[str, Any]]:
         """Retorna dados de performance da equipe."""
         try:
-            from funcionarios.models import Funcionario
-
-            funcionarios = []
-            for func in Funcionario.objects.filter(ativo=True)[:10]:
-                funcionarios.append(
-                    {
-                        "nome": func.nome,
-                        "email": func.email,
-                        "departamento": getattr(func, "departamento", "Geral"),
-                        "performance": 75 + (hash(func.nome) % 25),  # Performance simulada
-                        "tarefas_concluidas": 10 + (hash(func.nome) % 10),
-                        "tarefas_total": 15,
-                        "status": "online" if hash(func.nome) % 3 == 0 else "busy",
-                    },
-                )
-
-            return funcionarios
-        except Exception:
+            return [
+                {
+                    "nome": func.nome,
+                    "email": func.email,
+                    "departamento": getattr(func, "departamento", "Geral"),
+                    "performance": 75 + (hash(func.nome) % 25),
+                    "tarefas_concluidas": 10 + (hash(func.nome) % 10),
+                    "tarefas_total": 15,
+                    "status": "online" if hash(func.nome) % 3 == 0 else "busy",
+                }
+                for func in Funcionario.objects.filter(ativo=True)[:10]
+            ]
+        except ImportError:
+            logger.warning("Módulo 'funcionarios' não encontrado. Usando dados mock.")
             # Dados fictícios para demonstração
             return [
                 {
@@ -695,34 +839,29 @@ class ManagementDashboardView(TemplateView):
                 },
             ]
 
-    def get_recent_activities(self):
+    def get_recent_activities(self) -> list[dict[str, Any]]:
         """Retorna atividades recentes do sistema."""
         try:
-            activities = []
-
-            # Buscar atividades de diferentes módulos
-            from datetime import timedelta
-
-            from django.contrib.auth import get_user_model
-
             # Últimos logins
-            User = get_user_model()
-            recent_users = User.objects.filter(last_login__gte=timezone.now() - timedelta(hours=24))[:5]
+            recent_users = User.objects.filter(
+                last_login__gte=timezone.now() - timedelta(hours=24),
+            ).order_by(
+                "-last_login"
+            )[:5]
 
-            for user in recent_users:
-                activities.append(
-                    {
-                        "user": user,
-                        "title": f"{user.first_name} fez login",
-                        "description": "Acesso ao sistema",
-                        "timestamp": user.last_login,
-                        "priority": "low",
-                        "status": "online",
-                    },
-                )
-
-            return activities
+            return [
+                {
+                    "user": user,
+                    "title": f"{user.first_name} fez login",
+                    "description": "Acesso ao sistema",
+                    "timestamp": user.last_login,
+                    "priority": "low",
+                    "status": "online",
+                }
+                for user in recent_users
+            ]
         except Exception:
+            logger.exception("Erro ao buscar atividades recentes")
             # Atividades fictícias
             return [
                 {
@@ -734,7 +873,11 @@ class ManagementDashboardView(TemplateView):
                     "status": "online",
                 },
                 {
-                    "user": type("User", (), {"first_name": "Sistema", "avatar": None})(),
+                    "user": type(
+                        "User",
+                        (),
+                        {"first_name": "Sistema", "avatar": None},
+                    )(),
                     "title": "Relatório gerado",
                     "description": "Relatório mensal de performance",
                     "timestamp": timezone.now() - timedelta(minutes=30),
@@ -750,10 +893,19 @@ class ManagementDashboardView(TemplateView):
 class DashboardStatsViewSet(viewsets.ViewSet):
     """Fornece estatísticas agregadas para o dashboard do super admin."""
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
 
-    def list(self, request):
-        """Agrega dados de todo o sistema para o super admin."""
+    def list(self, request: HttpRequest) -> Response:
+        """Agrega dados de todo o sistema para o super admin.
+
+        Args:
+            request: O objeto HttpRequest.
+
+        Returns:
+            Uma Response com os dados serializados.
+
+        """
+        _ = request  # Unused argument
         total_tenants = Tenant.objects.count()
         total_users = User.objects.count()
         total_clientes = Cliente.objects.count()
@@ -761,8 +913,18 @@ class DashboardStatsViewSet(viewsets.ViewSet):
         total_obras = Obra.objects.count()
         total_orcamentos = Orcamento.objects.count()
 
-        total_a_pagar = ContaPagar.objects.filter(status="pendente").aggregate(total=Sum("valor"))["total"] or 0
-        total_a_receber = ContaReceber.objects.filter(status="pendente").aggregate(total=Sum("valor"))["total"] or 0
+        total_a_pagar = (
+            ContaPagar.objects.filter(status="pendente").aggregate(
+                total=Sum("valor"),
+            )["total"]
+            or 0
+        )
+        total_a_receber = (
+            ContaReceber.objects.filter(status="pendente").aggregate(
+                total=Sum("valor"),
+            )["total"]
+            or 0
+        )
 
         # NOVO: Contagem de alertas abertos
         open_alerts = SystemAlert.objects.filter(status="open").count()
@@ -789,7 +951,7 @@ class SystemAlertViewSet(viewsets.ModelViewSet):
 
     queryset = SystemAlert.objects.all()
     serializer_class = SystemAlertSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
 
 
 class TenantConfigurationViewSet(viewsets.ModelViewSet):
@@ -797,16 +959,15 @@ class TenantConfigurationViewSet(viewsets.ModelViewSet):
 
     queryset = TenantConfiguration.objects.all()
     serializer_class = TenantConfigurationSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
 
 
 class AdminActivityViewSet(viewsets.ReadOnlyModelViewSet):
     """API para visualizar logs de atividade do admin."""
 
-    # CORREÇÃO: Ordenando pela data de criação mais recente
     queryset = AdminActivity.objects.all().order_by("-created_at")
     serializer_class = AdminActivitySerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
 
 
 class SystemConfigurationViewSet(viewsets.ModelViewSet):
@@ -814,7 +975,7 @@ class SystemConfigurationViewSet(viewsets.ModelViewSet):
 
     queryset = SystemConfiguration.objects.all()
     serializer_class = SystemConfigurationSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
 
 
 class TenantBackupViewSet(viewsets.ModelViewSet):
@@ -822,27 +983,56 @@ class TenantBackupViewSet(viewsets.ModelViewSet):
 
     queryset = TenantBackup.objects.all()
     serializer_class = TenantBackupSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
 
 
 class TenantUsageReportViewSet(viewsets.ReadOnlyModelViewSet):
     """API para gerar relatórios de uso dos tenants."""
 
     serializer_class = TenantUsageReportSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
 
-    def get_queryset(self):
-        # Lógica para gerar dados do relatório
-        # Exemplo: Agrupar dados por tenant
-        return Tenant.objects.annotate(num_users=Count("user"), num_obras=Count("obras"))
+    def get_queryset(self) -> QuerySet[Tenant]:
+        """Gera dados do relatório de uso.
+
+        Returns:
+            QuerySet de Tenants anotado com dados de uso.
+
+        """
+        return Tenant.objects.annotate(
+            num_users=Count("user"),
+            num_obras=Count("obras"),
+        )
+
+
+class TenantListLiteView(APIView):
+    """Lista simplificada de tenants (nome e subdomínio) usada por testes antigos.
+
+    Mantida para compatibilidade durante transição; quando estabilizado pode ser
+    substituída por endpoint mais completo versionado.
+    """
+
+    permission_classes: ClassVar[list] = [permissions.IsAdminUser]
+
+    def get(self, request: HttpRequest) -> Response:
+        qs = Tenant.objects.order_by("name").values("id", "name", "subdomain")[:200]
+        return Response(list(qs))
 
 
 # --- Novas Views para Completar o Módulo Admin ---
 
 
 @login_required
-def modules_page(request):
-    """View para gerenciar módulos contratados pela empresa"""
+def modules_page(request: HttpRequest) -> HttpResponse | HttpResponseRedirect:
+    """View para gerenciar módulos contratados pela empresa.
+
+    Args:
+        request: O objeto HttpRequest.
+
+    Returns:
+        Uma HttpResponse ou um redirecionamento.
+
+    """
     template_name = "admin/modules_dashboard.html"
     tenant = get_current_tenant(request)
 
@@ -851,7 +1041,7 @@ def modules_page(request):
         return redirect(reverse("core:tenant_select"))
 
     # Módulos disponíveis no sistema (simulado)
-    available_modules = [
+    available_modules: list[ModuleInfo] = [
         {
             "id": "obras",
             "name": "Gestão de Obras",
@@ -936,8 +1126,16 @@ def modules_page(request):
 
 
 @login_required
-def reports_page(request):
-    """View para relatórios e métricas da empresa"""
+def reports_page(request: HttpRequest) -> HttpResponse | HttpResponseRedirect:
+    """View para relatórios e métricas da empresa.
+
+    Args:
+        request: O objeto HttpRequest.
+
+    Returns:
+        Uma HttpResponse ou um redirecionamento.
+
+    """
     template_name = "admin/reports_dashboard.html"
     tenant = get_current_tenant(request)
 
@@ -1019,8 +1217,16 @@ def reports_page(request):
 
 
 @login_required
-def billing_page(request):
-    """View para plano e faturamento da empresa"""
+def billing_page(request: HttpRequest) -> HttpResponse | HttpResponseRedirect:
+    """View para plano e faturamento da empresa.
+
+    Args:
+        request: O objeto HttpRequest.
+
+    Returns:
+        Uma HttpResponse ou um redirecionamento.
+
+    """
     template_name = "admin/billing_dashboard.html"
     tenant = get_current_tenant(request)
 
@@ -1121,8 +1327,16 @@ def billing_page(request):
 
 
 @login_required
-def support_page(request):
-    """View para suporte técnico e tickets"""
+def support_page(request: HttpRequest) -> HttpResponse | HttpResponseRedirect:
+    """View para suporte técnico e tickets.
+
+    Args:
+        request: O objeto HttpRequest.
+
+    Returns:
+        Uma HttpResponse ou um redirecionamento.
+
+    """
     template_name = "admin/support_dashboard.html"
     tenant = get_current_tenant(request)
 
@@ -1146,76 +1360,35 @@ def support_page(request):
         {
             "id": "TK-2025-002",
             "title": "Solicitação de novo usuário",
-            "status": "in_progress",
-            "priority": "medium",
+            "status": "closed",
+            "priority": "low",
             "category": "request",
             "created_at": timezone.now() - timedelta(days=1),
-            "last_update": timezone.now() - timedelta(hours=4),
-            "assigned_to": "Maria Santos",
-            "description": "Criação de usuário para novo funcionário do departamento",
-        },
-        {
-            "id": "TK-2024-099",
-            "title": "Dúvida sobre backup automático",
-            "status": "resolved",
-            "priority": "low",
-            "category": "question",
-            "created_at": timezone.now() - timedelta(days=3),
-            "last_update": timezone.now() - timedelta(days=2),
-            "assigned_to": "Pedro Costa",
-            "description": "Como configurar backup automático dos dados",
+            "last_update": timezone.now() - timedelta(hours=5),
+            "assigned_to": "Ana Souza",
+            "description": "Adicionar novo usuário 'carlos.pereira' ao sistema.",
         },
     ]
 
-    # Estatísticas do suporte
-    support_stats = {
-        "total_tickets": len(tickets),
-        "open_tickets": len([t for t in tickets if t["status"] == "open"]),
-        "in_progress_tickets": len([t for t in tickets if t["status"] == "in_progress"]),
-        "resolved_tickets": len([t for t in tickets if t["status"] == "resolved"]),
-        "avg_response_time": "2h 15min",
-        "satisfaction_rate": "94%",
-    }
-
-    # Recursos de ajuda
-    help_resources = [
+    faqs = [
         {
-            "title": "Central de Ajuda",
-            "description": "Artigos e tutoriais completos",
-            "icon": "fas fa-book",
-            "url": "#help-center",
-            "category": "documentation",
+            "question": "Como resetar minha senha?",
+            "answer": "Você pode resetar sua senha na tela de login...",
         },
         {
-            "title": "Vídeos Tutoriais",
-            "description": "Aprenda através de vídeos práticos",
-            "icon": "fas fa-play-circle",
-            "url": "#video-tutorials",
-            "category": "video",
-        },
-        {
-            "title": "Comunidade",
-            "description": "Fórum de usuários e discussões",
-            "icon": "fas fa-users",
-            "url": "#community",
-            "category": "community",
-        },
-        {
-            "title": "API Documentation",
-            "description": "Documentação técnica da API",
-            "icon": "fas fa-code",
-            "url": "#api-docs",
-            "category": "technical",
+            "question": "Como gerar um relatório de vendas?",
+            "answer": "Vá para o módulo de Vendas, clique em Relatórios...",
         },
     ]
 
     context = {
         "tickets": tickets,
-        "support_stats": support_stats,
-        "help_resources": help_resources,
+        "faqs": faqs,
+        "open_tickets": sum(1 for t in tickets if t["status"] == "open"),
+        "closed_tickets": sum(1 for t in tickets if t["status"] == "closed"),
         "tenant": tenant,
         "page_title": "Suporte Técnico",
-        "page_subtitle": "Obtenha ajuda e gerencie tickets de suporte",
+        "page_subtitle": "Acesse a ajuda, documentação e abra tickets de suporte",
     }
 
     return render(request, template_name, context)

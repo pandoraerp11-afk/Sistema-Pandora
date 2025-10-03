@@ -1,8 +1,10 @@
+from typing import Any
+
 from .base import BaseAnalyzer
 
 
 class SecurityAnalyzer(BaseAnalyzer):
-    def analyze(self, file_path: str, content: str) -> List[Dict[str, Any]]:
+    def analyze(self, file_path: str, content: str) -> list[dict[str, Any]]:
         issues = []
 
         # Análise com Bandit

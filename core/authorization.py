@@ -6,37 +6,43 @@ Esta camada será usada gradualmente (feature flag) pelo menu e middleware.
 
 from __future__ import annotations
 
+import contextlib
+import json
+import logging
 from dataclasses import dataclass
+from importlib import import_module
+from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
-
-"""Import do permission_resolver removido para permitir monkeypatch dinâmico em testes.
-A resolução agora ocorre dentro de can_access_module via importlib para refletir alterações
-feitas com monkeypatch.setattr no módulo original (ex: test_authorization_logging).
-"""
-from importlib import import_module
-
 from django.core.cache import cache
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
+    from django.http import HttpRequest
+
+    from .models import Tenant
+
 try:
-    from prometheus_client import Counter as _PromCounter  # opcional
+    import prometheus_client as _prom
 
     _PROM_ENABLED = True
-except Exception:  # pragma: no cover
-    _PromCounter = None
+except ImportError:  # pragma: no cover
+    _prom = None
     _PROM_ENABLED = False
 
-if _PROM_ENABLED:
-    MODULE_DENY_COUNTER = _PromCounter(
-        "pandora_module_denials_total", "Total de negações de acesso a módulos", ["module", "reason"]
+logger = logging.getLogger(__name__)
+
+# Métricas Prometheus
+if _PROM_ENABLED and _prom:
+    MODULE_DENY_COUNTER = _prom.Counter(
+        "pandora_module_denials_total",
+        "Total de negações de acesso a módulos.",
+        ["module", "reason"],
     )
 else:  # pragma: no cover
     MODULE_DENY_COUNTER = None
-import contextlib
-import json
 
-# Razões padronizadas (strings simples para facilitar logging e cabeçalhos)
+# Razões padronizadas
 REASON_OK = "OK"
 REASON_NO_TENANT = "NO_TENANT"
 REASON_SUPERUSER = "SUPERUSER_BYPASS"
@@ -47,225 +53,266 @@ REASON_UNKNOWN_ERROR = "UNKNOWN_ERROR"
 REASON_RESOLVER_DENY = "PERMISSION_RESOLVER_DENY"
 
 PORTAL_USER_GROUP_NAME = getattr(settings, "PORTAL_USER_GROUP_NAME", "PortalUser")
+DEFAULT_DEDUP_SECONDS = 0
 
 
 @dataclass(frozen=True)
 class AccessDecision:
+    """Representa o resultado de uma verificação de acesso."""
+
     allowed: bool
     reason: str = REASON_OK
 
 
-def is_portal_user(user) -> bool:
-    """Heurística NÃO invasiva para identificar usuário portal sem exigir migração imediata.
+def is_portal_user(user: AbstractBaseUser | AnonymousUser | None) -> bool:
+    """Verifica de forma não invasiva se um usuário é do tipo portal.
+
     Ordem de verificação:
-    1. Campo user_type == 'PORTAL'
-    2. Atributo dinâmico is_portal_user True
-    3. Grupo Django 'PortalUser'
-    (Extensível futuramente)
+    1. Campo `user.user_type == 'PORTAL'`
+    2. Atributo dinâmico `user.is_portal_user is True`
+    3. Pertence ao grupo Django 'PortalUser'
     """
-    if not user or isinstance(user, AnonymousUser):
+    if not user or not getattr(user, "is_authenticated", False):
         return False
-    # Campo canônico
+
     if getattr(user, "user_type", None) == "PORTAL":
         return True
-    if getattr(user, "is_portal_user", False):  # atributo ad hoc
+    if getattr(user, "is_portal_user", False):
         return True
+
     try:
         return user.groups.filter(name=PORTAL_USER_GROUP_NAME).exists()
-    except Exception:
+    except (AttributeError, TypeError):
+        # Se o objeto de usuário não tiver `groups` ou for de um tipo inesperado.
         return False
 
 
-def _tenant_has_module(tenant, module_name: str) -> bool:
-    try:
-        if not (tenant and module_name):
-            return False
-        # Primeiro usar API canonical
-        if hasattr(tenant, "is_module_enabled"):
-            try:
-                if tenant.is_module_enabled(module_name):
-                    return True
-            except Exception:
-                pass
-        # Fallback: aceitar enabled_modules como JSON string de lista ou lista literal
-        raw = getattr(tenant, "enabled_modules", None)
-        if not raw:
-            return False
-        if isinstance(raw, str):
-            try:
-                parsed = json.loads(raw)
-            except Exception:
-                # Pode estar em formato já de lista textual simples, tentar heurística básica
-                parsed = []
-            if isinstance(parsed, list):
-                return module_name in parsed
-        elif isinstance(raw, list):
-            return module_name in raw
-        elif isinstance(raw, dict):  # já tratado em is_module_enabled normalmente
-            mods = raw.get("modules") if "modules" in raw else None
-            if isinstance(mods, list):
-                return module_name in mods
-        return False
-    except Exception:
-        return False
+def _parse_enabled_modules(raw_modules: str | list | dict | None) -> list[str]:
+    """Interpreta o valor de 'enabled_modules' que pode ser string JSON, lista ou dict."""
+    if isinstance(raw_modules, list):
+        return raw_modules
+    if isinstance(raw_modules, str):
+        try:
+            parsed = json.loads(raw_modules)
+            return parsed if isinstance(parsed, list) else []
+        except json.JSONDecodeError:
+            return []
+    if isinstance(raw_modules, dict):
+        # Formato legado onde os módulos estão sob a chave "modules"
+        modules = raw_modules.get("modules")
+        return modules if isinstance(modules, list) else []
+    return []
 
 
-def can_access_module(user, tenant, module_name: str | None) -> AccessDecision:
-    """Decide acesso a um módulo.
+def _tenant_has_module(tenant: Tenant, module_name: str) -> bool:
+    """Verifica se um módulo está habilitado para o tenant.
 
-    NÃO levanta exceções; sempre retorna AccessDecision.
-    Mantém compatibilidade: se feature flag estiver desligada, chamada pode ser evitada pelo caller.
+    Compatível com múltiplos formatos do campo enabled_modules (dict/list/str JSON)
+    e com a API canônica tenant.is_module_enabled. Se a API canônica retornar
+    True, curte-circuita; se retornar False ou lançar exceção, tentamos o fallback
+    de parsing para manter compatibilidade com dados legados.
     """
-    # Superuser
-    try:
-        if getattr(user, "is_superuser", False):
-            return AccessDecision(True, REASON_SUPERUSER)
-    except Exception:
-        pass
+    if not tenant or not module_name:
+        return False
 
-    if not tenant:
-        # Sem tenant (usuário portal puro?) não liberamos menu corporativo
-        return AccessDecision(False, REASON_NO_TENANT)
+    # 1. API Canônica (preferencial), mas não aborta fallback em caso de False
+    if hasattr(tenant, "is_module_enabled"):
+        try:
+            canonical = bool(tenant.is_module_enabled(module_name))
+            if canonical:
+                return True
+        except (AttributeError, TypeError, ValueError):
+            logger.warning(
+                "Erro ao chamar tenant.is_module_enabled para o tenant %s e módulo %s.",
+                getattr(tenant, "id", None),
+                module_name,
+                exc_info=True,
+            )
 
-    if not module_name:
-        return AccessDecision(False, REASON_MODULE_NAME_EMPTY)
+    # 2. Fallback para o campo 'enabled_modules'
+    raw_modules = getattr(tenant, "enabled_modules", None)
+    if raw_modules:
+        enabled_list = _parse_enabled_modules(raw_modules)
+        return module_name in enabled_list
 
-    # Checar módulo habilitado para o tenant
-    if not _tenant_has_module(tenant, module_name):
-        return AccessDecision(False, REASON_MODULE_DISABLED)
+    return False
 
-    # Política portal (whitelist tem precedência positiva: se estiver na whitelist, libera e não aplica resolver estrito)
+
+def _check_superuser(user: AbstractBaseUser | AnonymousUser | None) -> AccessDecision | None:
+    """Verifica se o usuário é superuser."""
+    if getattr(user, "is_superuser", False):
+        return AccessDecision(allowed=True, reason=REASON_SUPERUSER)
+    return None
+
+
+def _check_portal_user_policy(
+    user: AbstractBaseUser | AnonymousUser,
+    module_name: str,
+) -> AccessDecision | None:
+    """Aplica a política de acesso para usuários do portal."""
     if is_portal_user(user):
         portal_whitelist = getattr(settings, "PORTAL_ALLOWED_MODULES", [])
         if module_name not in portal_whitelist:
-            return AccessDecision(False, REASON_PORTAL_DENY)
-        # Se está na whitelist e módulo habilitado, acesso concedido imediatamente
-        return AccessDecision(True, REASON_OK)
+            return AccessDecision(allowed=False, reason=REASON_PORTAL_DENY)
+        # Se está na whitelist e o módulo está habilitado (verificado antes), concede acesso.
+        return AccessDecision(allowed=True, reason=REASON_OK)
+    return None
 
-    # Integração básica com permission_resolver: ação VIEW_<MODULE>
+
+def _check_permission_resolver(
+    user: AbstractBaseUser | AnonymousUser,
+    tenant: Tenant,
+    module_name: str,
+) -> AccessDecision | None:
+    """Verifica a permissão usando o `permission_resolver`."""
+    if not getattr(settings, "FEATURE_ENFORCE_PERMISSION_RESOLVER_STRICT", False):
+        return None  # Se não for estrito, não interfere na decisão.
+
     try:
-        action_code = f"VIEW_{module_name.upper()}"
-        # Import dinâmico para refletir monkeypatch em runtime
-        try:
-            resolver_mod = import_module("shared.services.permission_resolver")
-            resolver = getattr(resolver_mod, "permission_resolver", None)
-        except Exception:  # pragma: no cover
-            resolver = None
+        resolver_mod = import_module("shared.services.permission_resolver")
+        resolver = getattr(resolver_mod, "permission_resolver", None)
         if resolver:
-            allowed_action, reason_detail = resolver.resolve(user, tenant, action_code)
-            if not allowed_action:
-                if getattr(settings, "FEATURE_ENFORCE_PERMISSION_RESOLVER_STRICT", False):
-                    return AccessDecision(False, REASON_RESOLVER_DENY)
-        # Se não houver resolver ou erro, comportamento permissivo (desde que módulo habilitado) a menos que estrito exija negação em erro
-    except Exception:
-        if getattr(settings, "FEATURE_ENFORCE_PERMISSION_RESOLVER_STRICT", False):
-            return AccessDecision(False, REASON_UNKNOWN_ERROR)
+            action_code = f"VIEW_{module_name.upper()}"
+            try:
+                allowed, _ = resolver.resolve(user, tenant, action_code)
+            except Exception:
+                logger.exception("Exceção no permission_resolver.resolve")
+                return AccessDecision(allowed=False, reason=REASON_UNKNOWN_ERROR)
+            if not allowed:
+                return AccessDecision(allowed=False, reason=REASON_RESOLVER_DENY)
+    except (ImportError, AttributeError):
+        logger.exception("Falha ao executar o permission_resolver.")
+        return AccessDecision(allowed=False, reason=REASON_UNKNOWN_ERROR)
 
-    # FUTURO: Roles / object-level permissions aqui
+    return None
 
-    return AccessDecision(True, REASON_OK)
+
+def can_access_module(
+    user: AbstractBaseUser | AnonymousUser | None,
+    tenant: Tenant | None,
+    module_name: str | None,
+) -> AccessDecision:
+    """Decide o acesso a um módulo, retornando sempre um AccessDecision."""
+    # Inicia com uma decisão padrão de negação até que uma regra permita.
+    decision = AccessDecision(allowed=False, reason=REASON_UNKNOWN_ERROR)
+
+    # 1. Superuser tem acesso imediato.
+    if (superuser_decision := _check_superuser(user)) is not None:
+        return superuser_decision
+
+    # 2. Validações de pré-requisitos.
+    if not tenant:
+        return AccessDecision(allowed=False, reason=REASON_NO_TENANT)
+    if not module_name:
+        return AccessDecision(allowed=False, reason=REASON_MODULE_NAME_EMPTY)
+    if not _tenant_has_module(tenant, module_name):
+        return AccessDecision(allowed=False, reason=REASON_MODULE_DISABLED)
+
+    # 3. Se chegou aqui, a presunção é de acesso permitido, a menos que uma regra negue.
+    decision = AccessDecision(allowed=True, reason=REASON_OK)
+
+    # 4. Políticas específicas para usuários autenticados que podem negar o acesso.
+    if user and user.is_authenticated:
+        # A política do portal é uma exceção: ela concede se estiver na whitelist.
+        if (portal_decision := _check_portal_user_policy(user, module_name)) is not None:
+            return portal_decision  # Retorna a decisão do portal diretamente.
+
+        # O resolvedor de permissões pode negar o acesso.
+        if (resolver_decision := _check_permission_resolver(user, tenant, module_name)) is not None:
+            decision = resolver_decision
+
+    return decision
 
 
 def explain_decision(decision: AccessDecision) -> str:
-    """Retorna string descritiva simples (pode ser expandida para mapear reasons)."""
+    """Retorna uma string descritiva simples da decisão."""
     return decision.reason
 
 
-def log_module_denial(user, tenant, module_name: str | None, reason: str, request=None) -> None:
-    """Registra uma negação de acesso a módulo em AuditLog de forma tolerante a erros.
+def _log_prometheus_metric(module_name: str | None, reason: str) -> None:
+    """Incrementa o contador do Prometheus se habilitado."""
+    if MODULE_DENY_COUNTER:
+        with contextlib.suppress(Exception):
+            MODULE_DENY_COUNTER.labels(module=module_name or "unknown", reason=reason).inc()
 
-    - Não levanta exceções (fail-safe) para não quebrar fluxo de request.
-    - Usa action_type OTHER para evitar necessidade de migration.
-    - Mensagem estruturada iniciando com [MODULE_DENY] para facilitar grep / consulta.
-    - Controlado por feature flag opcional FEATURE_LOG_MODULE_DENIALS (default True).
-    """
-    if not getattr(settings, "FEATURE_LOG_MODULE_DENIALS", True):  # flag opcional
-        return
-    try:  # Import dentro da função para evitar import circular em inicialização
-        # Deduplicação temporal opcional (evita spam de logs em múltiplos reloads rápidos)
+
+def _log_cache_metric(module_name: str | None, reason: str) -> None:
+    """Incrementa um contador no cache para análise."""
+    metric_key = f"module_deny_count:{module_name or 'unknown'}:{reason}"
+    try:
+        # Tenta usar um incremento atômico se disponível
+        cu = import_module("shared.cache_utils")
+        incr_atomic = cu.incr_atomic
+        incr_atomic(metric_key, ttl=86400)
+    except (ImportError, AttributeError):
+        # Fallback para um get/set simples
         try:
-            from django.conf import settings as _s
+            current_value = cache.get(metric_key, 0)
+            cache.set(metric_key, int(current_value) + 1, timeout=86400)
+        except (ValueError, TypeError):
+            logger.warning("Falha ao incrementar métrica de negação no cache para %s.", metric_key)
 
-            dedup_seconds = int(getattr(_s, "LOG_MODULE_DENY_DEDUP_SECONDS", 0) or 0)
-        except Exception:
-            dedup_seconds = 0
-        if dedup_seconds and module_name:
-            cache_key = f"moddeny:{getattr(user, 'id', 0)}:{getattr(tenant, 'id', 0)}:{module_name}:{reason}"
-            # Se chave existe podemos ter dois cenários:
-            # 1. Log realmente já foi criado (situação normal) -> retornar cedo.
-            # 2. Chave "stale" deixada em cache (ex: entre testes pytest o DB é limpo mas cache persiste)
-            #    Nesse caso precisamos recriar o log (não retornar). Para detectar, consultamos o banco.
-            existing_flag = cache.get(cache_key)
-            if existing_flag:
-                try:
-                    from .models import AuditLog  # import local para evitar circular
 
-                    # Busca minimalista: mesmo user/tenant/action_type OTHER + módulo na mensagem
-                    if AuditLog.objects.filter(
-                        user=user if getattr(user, "is_authenticated", False) else None,
-                        tenant=tenant,
-                        action_type="OTHER",
-                        change_message__startswith="[MODULE_DENY]",
-                        change_message__contains=f"module={module_name or ''}",
-                    ).exists():
-                        return  # log válido já existe
-                    # Caso contrário, tratamos como stale e prosseguimos para criar novo log.
-                except Exception:
-                    # Qualquer erro na verificação: manter comportamento anterior (retornar cedo)
-                    return
-        # Métrica simples (contador diário por módulo + reason)
-        try:
-            # Incremento tolerante: usa utilitário com lock local para simular atomicidade em backends simples
-            from shared.cache_utils import incr_atomic  # import local p/ evitar custo global se não usado
+def _create_audit_log_entry(
+    user: AbstractBaseUser | AnonymousUser | None,
+    tenant: Tenant | None,
+    module_name: str | None,
+    reason: str,
+    request: HttpRequest | None,
+) -> None:
+    """Cria a entrada no AuditLog."""
+    try:
+        utils_mod = import_module("core.utils")
+        models_mod = import_module("core.models")
 
-            metric_key = f"module_deny_count:{module_name or 'unknown'}:{reason}"
-            incr_atomic(metric_key, ttl=86400)
-        except Exception:
-            # Fallback extremamente simples
-            try:
-                metric_key = f"module_deny_count:{module_name or 'unknown'}:{reason}"
-                cur = cache.get(metric_key, 0)
-                cache.set(metric_key, cur + 1, timeout=86400)
-            except Exception:
-                pass
-        from .models import AuditLog  # type: ignore
-        from .utils import get_client_ip  # type: ignore
+        get_client_ip = utils_mod.get_client_ip
+        audit_log_model = models_mod.AuditLog
+        tenant_model = models_mod.Tenant
 
-        ip = get_client_ip(request) if request else None
+        ip_address = get_client_ip(request) if request else None
         user_ref = user if getattr(user, "is_authenticated", False) else None
-        AuditLog.objects.create(
+
+        tenant_id = getattr(tenant, "id", None)
+        change_msg = f"[MODULE_DENY] module={module_name or ''} reason={reason} tenant={tenant_id}"
+
+        # Garantir que o campo FK 'tenant' receba uma instância válida ou None
+        tenant_fk = tenant if isinstance(tenant, tenant_model) else None
+
+        audit_log_model.objects.create(
             user=user_ref,
-            tenant=tenant,
+            tenant=tenant_fk,
             action_type="OTHER",
-            ip_address=ip,
-            change_message=f"[MODULE_DENY] module={module_name or ''} reason={reason} tenant={getattr(tenant, 'id', None)}",
+            ip_address=ip_address,
+            change_message=change_msg,
         )
-        # Prometheus counter
-        if MODULE_DENY_COUNTER:
-            try:
-                MODULE_DENY_COUNTER.labels(module=module_name or "unknown", reason=reason).inc()
-            except Exception:  # pragma: no cover
-                pass
-        # Seta chave de deduplicação somente após criação bem-sucedida
-        if dedup_seconds and module_name:
-            with contextlib.suppress(Exception):
-                cache.set(cache_key, 1, timeout=dedup_seconds)
-    except Exception:
-        # Silencia qualquer erro de logging para não impactar request principal
-        pass
+    except (ImportError, AttributeError):
+        logger.exception("Falha crítica ao tentar criar o registro de log de auditoria.")
 
 
-__all__ = [
-    "AccessDecision",
-    "can_access_module",
-    "explain_decision",
-    "log_module_denial",
-    "REASON_OK",
-    "REASON_NO_TENANT",
-    "REASON_SUPERUSER",
-    "REASON_MODULE_NAME_EMPTY",
-    "REASON_MODULE_DISABLED",
-    "REASON_PORTAL_DENY",
-    "REASON_UNKNOWN_ERROR",
-    "REASON_RESOLVER_DENY",
-]
+def log_module_denial(
+    user: AbstractBaseUser | AnonymousUser | None,
+    tenant: Tenant | None,
+    module_name: str | None,
+    reason: str,
+    request: HttpRequest | None = None,
+) -> None:
+    """Registra uma negação de acesso a módulo de forma segura e multifacetada."""
+    if not getattr(settings, "FEATURE_LOG_MODULE_DENIALS", True):
+        return
+
+    # Lógica de deduplicação para evitar spam de logs
+    dedup_seconds = int(getattr(settings, "LOG_MODULE_DENY_DEDUP_SECONDS", DEFAULT_DEDUP_SECONDS))
+    if dedup_seconds > 0 and module_name and user:
+        cache_key = f"moddeny:{getattr(user, 'id', 0)}:{getattr(tenant, 'id', 0)}:{module_name}:{reason}"
+        if cache.get(cache_key):
+            return  # Se a chave existe, o log recente já foi feito.
+        # Seta a chave de deduplicação imediatamente
+        with contextlib.suppress(Exception):
+            cache.set(cache_key, 1, timeout=dedup_seconds)
+
+    # Registra as métricas
+    _log_prometheus_metric(module_name, reason)
+    _log_cache_metric(module_name, reason)
+
+    # Cria o log de auditoria detalhado
+    _create_audit_log_entry(user, tenant, module_name, reason, request)
