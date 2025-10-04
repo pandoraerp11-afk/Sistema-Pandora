@@ -1,0 +1,20 @@
+runtime: python311
+entrypoint: ./entrypoint.sh
+
+instance_class: F1
+automatic_scaling:
+  max_instances: 1
+
+includes:
+  - env.yaml
+
+handlers:
+  - url: /static
+    static_dir: staticfiles
+  - url: /media
+    static_dir: media
+# Opcional: versão mínima segura de TLS (App Engine flexible não usa aqui, mas mantido como comentário)
+# env: standard
+
+beta_settings:
+  cloud_sql_instances: pandora-474013:us-central1:pandora

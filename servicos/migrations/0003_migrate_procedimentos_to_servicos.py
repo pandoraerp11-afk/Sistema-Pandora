@@ -9,11 +9,11 @@ def migrate_data(apps, schema_editor):
     """
     Migra dados de prontuarios.Procedimento para servicos.Servico e servicos.ServicoClinico.
     """
-    Procedimento = apps.get_model('prontuarios', 'Procedimento')
-    Servico = apps.get_model('servicos', 'Servico')
-    ServicoClinico = apps.get_model('servicos', 'ServicoClinico')
-    Tenant = apps.get_model('core', 'Tenant')
-    CategoriaServico = apps.get_model('servicos', 'CategoriaServico')
+    Procedimento = apps.get_model("prontuarios", "Procedimento")
+    Servico = apps.get_model("servicos", "Servico")
+    ServicoClinico = apps.get_model("servicos", "ServicoClinico")
+    Tenant = apps.get_model("core", "Tenant")
+    CategoriaServico = apps.get_model("servicos", "CategoriaServico")
 
     procedimento_to_servico_map = {}
 
@@ -25,7 +25,9 @@ def migrate_data(apps, schema_editor):
 
     for procedimento in Procedimento.objects.all():
         # Mapeia a categoria de 'choices' para um objeto ForeignKey
-        categoria_nome = dict(procedimento._meta.get_field('categoria').choices).get(procedimento.categoria, procedimento.categoria)
+        categoria_nome = dict(procedimento._meta.get_field("categoria").choices).get(
+            procedimento.categoria, procedimento.categoria
+        )
         # Garantir slug único para a categoria (o histórico não executa save customizado)
         base_cat_slug = slugify(categoria_nome) or f"categoria-{procedimento.id}"
         cat_slug = base_cat_slug
@@ -40,9 +42,9 @@ def migrate_data(apps, schema_editor):
         except CategoriaServico.DoesNotExist:
             categoria_obj = CategoriaServico.objects.create(
                 nome=categoria_nome,
-                descricao=f'Categoria migrada de {procedimento.categoria}',
+                descricao=f"Categoria migrada de {procedimento.categoria}",
                 slug=cat_slug,
-                ativo=True
+                ativo=True,
             )
 
         # Gerar slug único manualmente (model histórico não tem lógica de save custom)
@@ -62,7 +64,7 @@ def migrate_data(apps, schema_editor):
             descricao=procedimento.descricao,
             preco_base=procedimento.valor_base,
             categoria=categoria_obj,
-            ativo=procedimento.ativo
+            ativo=procedimento.ativo,
         )
 
         # 2. Criar o perfil clínico
@@ -75,34 +77,48 @@ def migrate_data(apps, schema_editor):
             requer_anamnese=procedimento.requer_anamnese,
             requer_termo_consentimento=procedimento.requer_termo_consentimento,
             permite_fotos_evolucao=procedimento.permite_fotos_evolucao,
-            intervalo_minimo_sessoes=procedimento.intervalo_minimo_sessoes
+            intervalo_minimo_sessoes=procedimento.intervalo_minimo_sessoes,
         )
 
         # 3. Salvar o mapeamento
         procedimento_to_servico_map[procedimento.id] = servico_obj.id
 
-    # Salvar o mapa em um arquivo para a próxima fase
-    with open('procedimento_servico_map.json', 'w') as f:
-        json.dump(procedimento_to_servico_map, f)
+    # Salvar o mapa em arquivo (somente para auditoria / futura referência).
+    # Em ambientes como App Engine (filesystem read-only) só /tmp é gravável.
+    import os
+
+    target_path = "/tmp/procedimento_servico_map.json"
+    try:
+        with open(target_path, "w") as f:
+            json.dump(procedimento_to_servico_map, f)
+    except OSError:
+        # Fallback silencioso: não falha a migração se não conseguir gravar.
+        # Poderíamos também logar via print (aparece em stdout de migração).
+        print("[WARN] Não foi possível gravar mapa de procedimentos em", target_path)
 
 
 def reverse_migrate_data(apps, schema_editor):
     """
     Função para reverter a migração.
     """
-    Servico = apps.get_model('servicos', 'Servico')
+    Servico = apps.get_model("servicos", "Servico")
     Servico.objects.filter(is_clinical=True).delete()
     import os
-    if os.path.exists('procedimento_servico_map.json'):
-        os.remove('procedimento_servico_map.json')
+
+    tmp_path = "/tmp/procedimento_servico_map.json"
+    if os.path.exists(tmp_path):
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('servicos', '0002_servicoclinico_servico_is_clinical_servico_tenant'),
-        ('prontuarios', '0001_initial'),
-        ('core', '0001_initial'),
+        ("servicos", "0002_servicoclinico_servico_is_clinical_servico_tenant"),
+        ("prontuarios", "0001_initial"),
+        ("core", "0001_initial"),
     ]
 
     operations = [

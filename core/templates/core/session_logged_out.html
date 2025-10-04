@@ -1,0 +1,9 @@
+{% extends 'base_auth.html' %}
+{% block title %}Sessão Encerrada{% endblock %}
+{% block content %}
+<div class="auth-card text-center">
+  <h1 class="h4 fw-bold mb-3">Você saiu do sistema</h1>
+  <p class="text-muted small mb-4">Sua sessão foi encerrada com sucesso. Feche o navegador se estiver em um computador público.</p>
+  <a href="{% url 'core:login' %}" class="btn btn-primary btn-sm">Voltar ao login</a>
+</div>
+{% endblock %}

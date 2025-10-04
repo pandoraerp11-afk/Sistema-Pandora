@@ -1,0 +1,98 @@
+# Arquivos e pastas ignorados no deploy do Google App Engine
+# Mantém o número de arquivos abaixo do limite (~10k) e evita envio de artefatos locais.
+
+# =====================================
+# Controle de versão / metadados
+# =====================================
+.git/
+.gitignore
+.gcloudignore
+
+# =====================================
+# Ambientes virtuais / dependências locais
+# =====================================
+venv/
+/venv/
+.env/
+.env
+ENV/
+*.egg-info/
+.eggs/
+
+# =====================================
+# Caches Python / ferramentas
+# =====================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py.class
+.cache/
+.mypy_cache/
+.pytest_cache/
+dmypy.json
+.dmypy.json
+
+# =====================================
+# Bancos locais (não subir SQLite de dev)
+# =====================================
+*.sqlite3
+db.sqlite3
+db_novo.sqlite3
+db_old_backup.sqlite3
+
+# =====================================
+# Logs e temporários
+# =====================================
+*.log
+*.tmp
+*.temp
+
+# =====================================
+# Documentação / builds locais
+# =====================================
+docs/_build/
+site/
+build/
+dist/
+
+# =====================================
+# IDE / Editores
+# =====================================
+.vscode/
+.idea/
+*.swp
+
+# =====================================
+# Arquivos de mídia (gerenciados via storage externo em produção)
+# (Comente se precisar enviar alguns assets iniciais)
+media/
+
+# =====================================
+# Staticfiles coletados localmente (serão regenerados no entrypoint)
+# Comente se quiser enviar já pré-coletado.
+staticfiles/
+
+# =====================================
+# Backups / extras
+# =====================================
+*.bak
+*.backup
+
+# =====================================
+# Arquivos grandes não essenciais
+# =====================================
+*.pdf
+*.xlsx
+*.xlsm
+
+# =====================================
+# Exceções explícitas (forçar envio)
+# =====================================
+!app.yaml
+!entrypoint.sh
+!requirements.txt
+!env.yaml
+
+# Observação: env.yaml é incluído porque app.yaml o referencia via 'includes'.
+# ATENÇÃO: confira se env.yaml não contém segredos que não deveriam ir para este projeto.

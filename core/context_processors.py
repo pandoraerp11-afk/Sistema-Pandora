@@ -3,6 +3,7 @@
 from importlib import import_module
 from typing import Any
 
+from django.conf import settings
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -10,7 +11,7 @@ from django.utils import timezone
 def tenant_context(request: HttpRequest) -> dict[str, Any]:
     """Contexto base do tenant + métricas leves Saúde."""
     tenant = getattr(request, "tenant", None)
-    data = {"current_tenant": tenant}
+    data = {"current_tenant": tenant, "VERSION": getattr(settings, "VERSION", "N/D")}
     if tenant and request.user.is_authenticated:
         try:
             pront_mod = import_module("prontuarios.models")

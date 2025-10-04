@@ -15,6 +15,10 @@ importlib.import_module("core.monkeypatches")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# =============================
+# Versão da aplicação (atualizar manual ou derivar de tag no futuro)
+VERSION = os.environ.get("PANDORA_VERSION", "0.1.0-dev")
+
 FEATURE_ENFORCE_PERMISSION_RESOLVER_STRICT = (
     os.environ.get("FEATURE_ENFORCE_PERMISSION_RESOLVER_STRICT", "False") == "True"
 )
@@ -57,13 +61,21 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "https://8000-i881injdm9bubmu7elb87-5ff893a2.manusvm.computer",
-    "*",
+    "*",  # fallback amplo (substituível por PANDORA_ALLOWED_HOSTS)
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     "https://8000-i881injdm9bubmu7elb87-5ff893a2.manusvm.computer",
 ]
+
+# Ajustes dinâmicos via env
+_allowed_hosts_env = os.environ.get("PANDORA_ALLOWED_HOSTS")
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+_csrf_env = os.environ.get("PANDORA_CSRF_ORIGINS")
+if _csrf_env:
+    CSRF_TRUSTED_ORIGINS = [o.strip().rstrip("/") for o in _csrf_env.split(",") if o.strip()]
 
 # Render.com: adicionar host/origem dinamicamente se variável estiver presente
 _render_external_url = os.environ.get("RENDER_EXTERNAL_URL")
@@ -77,6 +89,41 @@ if _render_external_url:
         _origin = f"{_p.scheme}://{_p.hostname}"
         if _origin not in CSRF_TRUSTED_ORIGINS:
             CSRF_TRUSTED_ORIGINS.append(_origin)
+
+# =============================
+# Segurança HTTP (valores seguros mínimos; podem ser endurecidos depois)
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'")  # Avaliar nonce/hash posteriormente
+CSP_IMG_SRC = ("'self'", "data:")
+
+SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", str(60 if DEBUG else 60 * 60 * 24 * 30)))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = os.environ.get("SECURE_HSTS_PRELOAD", "False") == "True"
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "1" if not DEBUG else "0") == "1"
+CSRF_COOKIE_SECURE = os.environ.get("CSRF_COOKIE_SECURE", "1" if not DEBUG else "0") == "1"
+SECURE_SSL_REDIRECT = os.environ.get("DJANGO_FORCE_SSL", "True" if not DEBUG else "False") == "True"
+REFERRER_POLICY = "strict-origin-when-cross-origin"
+X_FRAME_OPTIONS = "DENY"
+
+# Email backend default (console em dev; SMTP se variáveis definidas)
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False") == "True"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@pandora.local")
+
+# Login throttle progressivo (além de rate limit global por IP)
+LOGIN_PROGRESSIVE_DELAY_BASE_SECONDS = int(os.environ.get("LOGIN_PROGRESSIVE_DELAY_BASE_SECONDS", "1"))
+LOGIN_PROGRESSIVE_DELAY_THRESHOLD = int(os.environ.get("LOGIN_PROGRESSIVE_DELAY_THRESHOLD", "5"))
+LOGIN_PROGRESSIVE_DELAY_MAX_SECONDS = int(os.environ.get("LOGIN_PROGRESSIVE_DELAY_MAX_SECONDS", "12"))
 
 INSTALLED_APPS = [
     # Aplicação ASGI em primeiro lugar
@@ -189,37 +236,32 @@ WSGI_APPLICATION = "pandora_erp.wsgi.application"
 ASGI_APPLICATION = "pandora_erp.asgi.application"
 
 REDIS_URL = os.environ.get("REDIS_URL") or os.environ.get("REDIS_HOST")
-if REDIS_URL:
-    # Formatos aceitos agora:
-    # 1) redis://host:port/db
-    # 2) rediss://host:port/db  (TLS - ex: Upstash)
-    # 3) host  (sem esquema, opcionalmente acompanhado de REDIS_PORT)
-    # 4) host:port (sem esquema)
-    # Só transformamos quando NÃO há esquema explícito (nem redis:// nem rediss://)
-    if not REDIS_URL.startswith(("redis://", "rediss://")):
-        # Pode vir no formato host ou host:port
-        if ":" in REDIS_URL:
-            host, port = REDIS_URL.split(":", 1)
-        else:
-            host = REDIS_URL
-            port = os.environ.get("REDIS_PORT", "6379")
-        REDIS_URL = f"redis://{host}:{port}/0"
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            # Se for rediss:// (TLS) o redis-py reconhece automaticamente.
-            # Caso seja necessário desabilitar validação de certificado (não recomendado)
-            # usar forma avançada via tuple (ver docs channels_redis) ajustando ssl.
-            "CONFIG": {"hosts": [REDIS_URL]},
-        },
-    }
+DISABLE_CHANNELS = os.environ.get("DISABLE_CHANNELS", "0") == "1"
+if not DISABLE_CHANNELS:
+    if REDIS_URL:
+        if not REDIS_URL.startswith(("redis://", "rediss://")):
+            if ":" in REDIS_URL:
+                host, port = REDIS_URL.split(":", 1)
+            else:
+                host = REDIS_URL
+                port = os.environ.get("REDIS_PORT", "6379")
+            REDIS_URL = f"redis://{host}:{port}/0"
+        CHANNEL_LAYERS = {
+            "default": {
+                "BACKEND": "channels_redis.core.RedisChannelLayer",
+                "CONFIG": {"hosts": [REDIS_URL]},
+            },
+        }
+    else:
+        CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 else:
-    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+    CHANNEL_LAYERS = {}
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        # Permite redefinir o arquivo do banco via variável de ambiente (ex: PANDORA_DB_FILE=db_new.sqlite3)
+        "NAME": BASE_DIR / os.environ.get("PANDORA_DB_FILE", "db.sqlite3"),
         "OPTIONS": {
             "timeout": 30,
         },

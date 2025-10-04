@@ -9,7 +9,8 @@ cargos e configurações.
 import contextlib
 import json
 import logging
-from typing import Any
+import time
+from typing import Any, cast
 
 from django.conf import settings
 from django.contrib import messages
@@ -18,6 +19,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User as DjangoUser  # typing aid
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages import get_messages
 from django.core.cache import cache
@@ -268,6 +270,20 @@ def _increment_login_attempts(request: HttpRequest) -> None:
             data = {"count": 0, "first_ts": now_ts}
         data["count"] = int(data.get("count", 0)) + 1
         cache.set(cache_key, data, timeout=window * 2 if window else None)
+
+        # Atraso progressivo opcional para mitigar brute force (além do rate limit duro)
+        try:
+            threshold = getattr(settings, "LOGIN_PROGRESSIVE_DELAY_THRESHOLD", 5)
+            base_delay = getattr(settings, "LOGIN_PROGRESSIVE_DELAY_BASE_SECONDS", 1)
+            max_delay = getattr(settings, "LOGIN_PROGRESSIVE_DELAY_MAX_SECONDS", 12)
+            attempt_count = int(data.get("count", 0))
+            if attempt_count >= threshold and not settings.TESTING:
+                # Crescimento linear simples (poderia ser exponencial limitado)
+                extra_attempts = attempt_count - threshold + 1
+                delay = min(base_delay * extra_attempts, max_delay)
+                time.sleep(delay)  # noqa: Sleep para desacelerar ataques automatizados
+        except Exception:
+            logger.exception("Falha ao aplicar atraso progressivo de login.")
     except Exception:
         logger.exception("Falha ao incrementar o contador de rate limit de login.")
 
@@ -485,6 +501,10 @@ def tenant_select(request: HttpRequest) -> HttpResponse:
 def logout_view(request: HttpRequest) -> HttpResponse:
     """View para logout."""
     logout(request)
+    display = request.GET.get("view")
+    if display == "page":
+        # Página dedicada (sem mensagem flash redundante)
+        return render(request, "core/session_logged_out.html", {"page_title": "Sessão Encerrada"})
     messages.success(request, "Logout realizado com sucesso.")
     return redirect("core:login")
 
@@ -503,8 +523,10 @@ def ui_permissions_json(request: HttpRequest) -> JsonResponse:
     model_name = request.GET.get("model_name")
     resource = request.GET.get("resource")
     tenant = get_current_tenant(request)
+    # Tipagem: forçamos cast apenas para satisfazer assinatura (CustomUser -> DjangoUser)
+    user_for_permissions = cast("DjangoUser", request.user)
     ui = build_ui_permissions(
-        request.user,
+        user_for_permissions,
         tenant,
         module_key=module_key,
         app_label=app_label,
